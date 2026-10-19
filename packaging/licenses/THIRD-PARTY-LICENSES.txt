@@ -1,0 +1,53 @@
+Third-party material in Odin Sphere Leifthrasir PC. The program itself is GPL-2.0-or-later (LICENSE.txt); its source
+code is at https://github.com/saulob/odin-sphere-leifthrasir-pc. The loader, runtime and video core lineage is listed
+in gpu/VENDOR.txt of the source.
+
+In the release package, the licence texts named below are in licenses\<folder>\, and licenses\MSYS2-PACKAGES.txt
+lists the exact version and source package of every DLL that ships next to osl-loader.exe.
+
+
+========================================================================
+Compiled into osl-loader.exe
+========================================================================
+
+shadPS4
+  https://github.com/shadps4-emu/shadPS4
+  GPL-2.0-or-later. Copyright the shadPS4 Emulator Project; file headers carry SPDX tags.     licenses\shadPS4
+  - The video core, shader recompiler and GPU command processing: commit
+    b4e7ae776071ceb1dd35004577a8719481e1d258 plus backported fixes (gpu/VENDOR.txt of the source).
+  - The game installer's PS4 package extractor (launcher/pkg_extract.cpp of the source), adapted from
+    src/core/file_format/pkg.cpp, pfs.h, pkg_type.cpp and src/core/crypto at
+    d339b3f7d663ba89bb5b3cd572ead77b41b0f0a8, the last revision before upstream commit
+    be22674f8c1ac84e1cff89947ff4a6753070f21b ("code: Remove fpkg code") removed them. Modified: Windows CNG
+    (bcrypt, part of Windows) or, on Linux, OpenSSL in place of Crypto++, 64-bit file sizes and bounds checks.
+
+sirit                       BSD-3-Clause. Copyright (c) 2019, sirit.                             licenses\sirit
+SPIRV-Headers               MIT-style Khronos licence. Copyright 2015-2024 The Khronos Group.    licenses\SPIRV-Headers
+AMD GCN register headers    MIT. Copyright (c) 2014-2021 Advanced Micro Devices, Inc.            text below
+half                        MIT. Copyright (c) 2012-2017 Christian Rau.                          licenses\half
+AMD FidelityFX Super Resolution 1 (ffx_a.h, ffx_fsr1.h)
+                            MIT. Copyright (c) 2021 Advanced Micro Devices, Inc.                 text below
+SMAA 1x                     MIT. Copyright (C) 2013 Jorge Jimenez, Jose I. Echevarria, Belen Masia,
+                            Fernando Navarro, Diego Gutierrez.                                   licenses\SMAA
+DejaVu Sans (embedded font) Bitstream Vera Fonts licence with the Arev additions; DejaVu changes are
+                            public domain. Copyright (c) 2003 Bitstream, Inc.; (c) 2006 Tavmjong Bah.
+                                                                                                 licenses\DejaVu
+Noto Sans 2.015 (embedded font; stands in for the PS4 system font set)
+                            SIL Open Font License 1.1. Copyright 2022 The Noto Project Authors.  licenses\NotoSans
+Noto Sans TC 2.004 (embedded font; stands in for the PS4 Chinese system font set)
+                            SIL Open Font License 1.1. Copyright 2014-2021 Adobe.                licenses\NotoSansTC
+Dear ImGui 1.92.9b          MIT. Copyright (c) 2014-2025 Omar Cornut.                            licenses\imgui
+magic_enum                  MIT. Copyright (c) 2019 - 2024 Daniil Goncharov.                     licenses\magic_enum
+miniz                       MIT. Copyright 2013-2014 RAD Game Tools and Valve Software;
+                            Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC.       licenses\miniz
+xbyak                       BSD-3-Clause. Copyright (c) 2007 MITSUNARI Shigeo.                   licenses\xbyak
+fmt                         MIT                                                                  licenses\fmt
+Boost (headers)             BSL-1.0                                                              licenses\boost
+tsl robin-map               MIT                                                                  licenses\robin-map
+Vulkan Memory Allocator     MIT                                                                  licenses\VulkanMemoryAllocator
+Vulkan headers              Apache-2.0 OR MIT                                                    licenses\vulkan-headers
+LLVM compiler-rt builtins   Apache-2.0 WITH LLVM-exception                                       licenses\compiler-rt
+
+TRG Launcher 1.1.0 (https://github.com/TekRantGaming/trg-launcher, b384a28c712c9320eea8f9d50639dec49981b6c1)
+  The launcher's windowing, pages and settings file. Neither the pinned revision nor the upstream repository
+  states a licence, so the right to redistribute it is not established.

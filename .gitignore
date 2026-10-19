@@ -1,0 +1,44 @@
+# User-supplied game data and everything derived from it (extracted/ and prepared/ live inside game/)
+/game/
+/user/
+/cache/
+/logs/
+
+# Build output, boot images (build/image) and packaged builds
+/build/
+/dist/
+/out/
+
+# Local tooling
+/.venv/
+__pycache__/
+*.py[cod]
+*.log
+*.part
+
+# Shader and pipeline caches, package metadata caches, should they land outside user/ or cache/
+*.spv
+*.pipeline_cache
+*.pkg_meta.json
+.pkg_extracted
+.osl_view.json
+
+# Safety net: never track PS4 packages, executables, modules or archives wherever they end up
+*.pkg
+eboot.bin
+*.prx
+*.sprx
+*.self
+*.elf
+*.cpk
+*.psarc
+*.plt
+
+# TRG Launcher, fetched by tools\build.ps1 (gpu\deps.txt)
+/third_party/trg-launcher/
+
+# Video core dependencies fetched by tools\build.ps1 (gpu\deps.txt); sirit, gcn, half and fonts are vendored
+/gpu/third_party/imgui/
+/gpu/third_party/magic_enum/
+/gpu/third_party/miniz/
+/gpu/third_party/xbyak/

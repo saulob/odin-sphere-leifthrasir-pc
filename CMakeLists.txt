@@ -1,0 +1,124 @@
+cmake_minimum_required(VERSION 3.24)
+project(odin_sphere_leifthrasir_pc LANGUAGES C CXX)
+set(OSL_PORT_VERSION "0.1.0")
+
+if (NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
+    message(FATAL_ERROR "Build with Clang: MSYS2 CLANG64 (tools\\build.ps1) on Windows, tools/build.sh on Linux.")
+endif()
+if (NOT WIN32 AND NOT (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$"))
+    message(FATAL_ERROR "Supported targets: Windows x64 and Linux x86_64.")
+endif()
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+if (WIN32)
+    set(CMAKE_C_EXTENSIONS OFF)
+else()
+    set(CMAKE_C_EXTENSIONS ON) # POSIX interfaces (sigjmp_buf, memfd_create) are hidden in strict ISO mode
+endif()
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE RelWithDebInfo)
+endif()
+# Repository paths in __FILE__ and std::source_location stay out of the binary; debug info keeps them.
+add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:-fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=>")
+if (NOT WIN32)
+    # Non-PIE: the heap handed to the guest (thread handles, TLS) must stay below 1 TiB (loader.c).
+    set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
+    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:-fno-pie>")
+    add_link_options(-no-pie)
+endif()
+
+if (NOT OSL_PORT_VERSION MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)")
+    message(FATAL_ERROR "OSL_PORT_VERSION must start with MAJOR.MINOR.PATCH")
+endif()
+file(CONFIGURE OUTPUT ${CMAKE_BINARY_DIR}/generated/osl_version.h CONTENT "#define OSL_VERSION_NUMBERS \
+${CMAKE_MATCH_1},${CMAKE_MATCH_2},${CMAKE_MATCH_3},0\n#define OSL_FILE_VERSION_STRING \
+\"${CMAKE_MATCH_1}.${CMAKE_MATCH_2}.${CMAKE_MATCH_3}.0\"\n#define OSL_VERSION_STRING \"${OSL_PORT_VERSION}\"\n")
+
+find_package(SDL3 CONFIG REQUIRED)
+find_package(Freetype REQUIRED)
+find_package(Threads REQUIRED)
+
+# Keyboard bindings shared by the launcher, the runtime pad and the video core.
+add_library(osl_keys STATIC src/osl_keys.c)
+target_include_directories(osl_keys PUBLIC src)
+target_link_libraries(osl_keys PUBLIC SDL3::SDL3)
+target_compile_options(osl_keys PRIVATE -Wall -Wextra -Werror)
+
+add_subdirectory(gpu)
+add_subdirectory(launcher)
+
+set(OSL_RUNTIME_SOURCES
+    src/runtime.c
+    src/runtime_audio.c
+    src/runtime_eventflag.c
+    src/runtime_fiber.c
+    src/runtime_file.c
+    src/runtime_font.c
+    src/runtime_kernel.c
+    src/runtime_memory.c
+    src/runtime_mutex.c
+    src/runtime_pad.c
+    src/runtime_platform.c
+    src/runtime_rtc.c
+    src/runtime_rwlock.c
+    src/runtime_savedata.c
+    src/runtime_sema.c
+    src/runtime_services.c
+    src/runtime_thread.c
+    src/runtime_time.c)
+# The built-in system fonts are assembled into runtime_font.c (.incbin): rebuild it when a font changes.
+set(OSL_NOTO_SANS ${CMAKE_SOURCE_DIR}/third_party/fonts/NotoSans-Regular.ttf)
+set(OSL_NOTO_SANS_TC ${CMAKE_SOURCE_DIR}/third_party/fonts/NotoSansTC-Regular.otf)
+set_source_files_properties(src/runtime_font.c PROPERTIES
+    COMPILE_DEFINITIONS "OSL_NOTO_SANS_PATH=\"${OSL_NOTO_SANS}\";OSL_NOTO_SANS_TC_PATH=\"${OSL_NOTO_SANS_TC}\""
+    OBJECT_DEPENDS "${OSL_NOTO_SANS};${OSL_NOTO_SANS_TC}")
+
+if (WIN32)
+    enable_language(RC)
+    # Relink when the application icon, the manifest or the version changes.
+    set_source_files_properties(src/osl-loader.rc PROPERTIES OBJECT_DEPENDS
+        "${CMAKE_SOURCE_DIR}/packaging/icons/app-icon.ico;${CMAKE_SOURCE_DIR}/src/osl-loader.manifest;${CMAKE_BINARY_DIR}/generated/osl_version.h")
+    set(OSL_PLATFORM_SOURCES src/compat_win.c src/runtime_log.c src/osl-loader.rc)
+else()
+    set(OSL_PLATFORM_SOURCES src/runtime_log_posix.c)
+endif()
+add_executable(osl-loader src/loader.c ${OSL_RUNTIME_SOURCES} ${OSL_PLATFORM_SOURCES})
+set_target_properties(osl-loader PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_include_directories(osl-loader PRIVATE src launcher ${CMAKE_BINARY_DIR}/generated)
+target_compile_options(osl-loader PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wall -Wextra -Werror -fno-omit-frame-pointer>)
+target_compile_options(osl-loader PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra>)
+if (WIN32)
+    # Windows 10 1903+ APIs (VirtualAlloc2, MapViewOfFile3).
+    target_compile_definitions(osl-loader PRIVATE _WIN32_WINNT=0x0A00 NTDDI_VERSION=0x0A000007)
+    # The PS4 user range (64 GiB - 1 TiB) must stay free of host allocations: no high-entropy ASLR.
+    # The guest main thread runs on the process stack: 16 MiB, committed (guest code has no stack probes).
+    target_link_options(osl-loader PRIVATE -Wl,--disable-high-entropy-va "SHELL:-Xlinker --stack -Xlinker 16777216,16777216")
+    target_link_libraries(osl-loader PRIVATE osl_launcher oslgpu SDL3::SDL3 Freetype::Freetype onecore bcrypt ws2_32 -pthread)
+else()
+    # -rdynamic: fault reports name host symbols (dladdr).
+    target_link_options(osl-loader PRIVATE -rdynamic)
+    target_link_libraries(osl-loader PRIVATE osl_launcher oslgpu SDL3::SDL3 Freetype::Freetype Threads::Threads ${CMAKE_DL_LIBS} m)
+endif()
+
+# Focused tests of the game profile, the settings file, the keys and the window fit (tools\test.ps1);
+# not part of the default build.
+add_executable(osl-tests EXCLUDE_FROM_ALL tests/game_tests.cpp)
+set_target_properties(osl-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_include_directories(osl-tests PRIVATE src launcher)
+target_compile_options(osl-tests PRIVATE -Wall -Wextra -Werror)
+target_link_libraries(osl-tests PRIVATE osl_launcher_core SDL3::SDL3)
+
+# Focused tests of the GPU tiling parameters and macro-tiled addresses (tools\test.ps1); not part of the default build.
+add_executable(osl-tiling-tests EXCLUDE_FROM_ALL tests/tiling_tests.cpp)
+set_target_properties(osl-tiling-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_include_directories(osl-tiling-tests PRIVATE gpu/shim gpu/shadps4 tests src ${CMAKE_BINARY_DIR}/gpu/include
+    gpu/third_party/gcn/include gpu/third_party/half/include gpu/third_party/xbyak)
+target_compile_options(osl-tiling-tests PRIVATE -Wall -Wextra -Werror)
+target_link_libraries(osl-tiling-tests PRIVATE oslgpu)
+
+# Focused tests of the windowed-mode size and centring arithmetic; not part of the default build.
+add_executable(osl-window-tests EXCLUDE_FROM_ALL tests/window_fit_tests.cpp)
+set_target_properties(osl-window-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_include_directories(osl-window-tests PRIVATE src)
+target_compile_options(osl-window-tests PRIVATE -Wall -Wextra -Werror)

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://recomp.fyi/schema/v1.json",
+  "game": "Odin Sphere Leifthrasir",
+  "system": "PS4",
+  "type": "recomp",
+  "original": {
+    "revision": "01.00",
+    "serial": "CUSA05083"
+  },
+  "project": "Odin Sphere Leifthrasir PC Port",
+  "status": "experimental",
+  "targets": [
+    "Windows"
+  ],
+  "toolchain": "shadPS4-derived runtime",
+  "approach": "Original PS4 x86-64 game code running directly on Windows through replacement PS4 system libraries and a Vulkan renderer derived from shadPS4",
+  "maintainers": [
+    {
+      "name": "saulob",
+      "link": "https://github.com/saulob"
+    }
+  ],
+  "notes": "Native Windows port in initial bring-up. Only the USA 1.00 base package (CUSA05083) is supported. No game files are included."
+}

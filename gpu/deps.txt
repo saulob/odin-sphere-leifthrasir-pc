@@ -1,0 +1,9 @@
+# Third-party sources fetched by tools\build.ps1 (git-ignored), paths relative to gpu\.
+# path                     url                                          commit
+third_party/imgui          https://github.com/ocornut/imgui.git          f1cc2ae15e53a861a874c3034aae6798fde194ab
+third_party/magic_enum     https://github.com/Neargye/magic_enum.git     e046b69a3736d314fad813e159b1c192eaef92cd
+third_party/miniz          https://github.com/richgel999/miniz.git       2948eebafc5b9f1c69bebed80333e403a09bd62d
+third_party/xbyak          https://github.com/herumi/xbyak.git           cd6bad3cad2e07a3e277c23d2b1f065320024717
+
+# Launcher (not video core): TRG Launcher 1.1.0, the same pin as geometry-wars-retro-evolved-2-recompiled
+../third_party/trg-launcher  https://github.com/TekRantGaming/trg-launcher.git  b384a28c712c9320eea8f9d50639dec49981b6c1

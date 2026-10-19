@@ -1,0 +1,35 @@
+#include <winuser.h>
+#include <winver.h>
+#include "osl_version.h"
+
+1 ICON "../packaging/icons/app-icon.ico"
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "osl-loader.manifest"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION OSL_VERSION_NUMBERS
+PRODUCTVERSION OSL_VERSION_NUMBERS
+FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+FILEFLAGS 0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+FILESUBTYPE VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName", "saulob"
+            VALUE "FileDescription", "Odin Sphere Leifthrasir PC"
+            VALUE "FileVersion", OSL_FILE_VERSION_STRING
+            VALUE "InternalName", "osl-loader"
+            VALUE "OriginalFilename", "osl-loader.exe"
+            VALUE "ProductName", "Odin Sphere Leifthrasir PC"
+            VALUE "ProductVersion", OSL_VERSION_STRING
+            VALUE "Comments", "https://github.com/saulob/odin-sphere-leifthrasir-pc"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
