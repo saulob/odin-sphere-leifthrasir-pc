@@ -17,8 +17,8 @@ std::string DisplayVersion(std::string_view version) {
 constexpr PackageLayer kUsaLayers[] = {{"01.00", "01.01", false}};
 
 // The render size instructions of the USA 1.00 eboot: the three render targets the graphics device creates, the two
-// GPU buffer allocations sized from the same pair, and the two viewports the frame setup sets. All seven load the
-// base PS4 1920x1080 pair; the game has no PS4 Pro path.
+// GPU buffer allocations sized from the same pair, the two viewports the frame setup sets, and the engine's packed
+// float screen size that its 2D projection uses. All load the base PS4 1920x1080 pair; the game has no PS4 Pro path.
 constexpr OslResolutionSite kUsaResolutionSites[] = {
     {0x6ac0b8, 1, {0xbe}, 1920, 0}, {0x6ac0bd, 1, {0xba}, 1080, 1},
     {0x6ac1e9, 1, {0xbe}, 1920, 0}, {0x6ac1ee, 1, {0xba}, 1080, 1},
@@ -27,6 +27,7 @@ constexpr OslResolutionSite kUsaResolutionSites[] = {
     {0x6ac3de, 1, {0xbe}, 1920, 0}, {0x6ac3e3, 1, {0xba}, 1080, 1},
     {0x6accd0, 1, {0xb9}, 1920, 0}, {0x6accd5, 2, {0x41, 0xb8}, 1080, 1},
     {0x6ae682, 1, {0xb9}, 1920, 0}, {0x6ae687, 2, {0x41, 0xb8}, 1080, 1},
+    {0x6b3d72, 2, {0x48, 0xb8}, 0x44f00000, 0, 0x44870000, 1},
 };
 
 constexpr GameBuild kGameBuilds[] = {

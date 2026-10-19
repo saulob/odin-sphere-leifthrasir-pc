@@ -218,6 +218,8 @@ int VideoOutDriver::RegisterBuffers(VideoOutPort* port, s32 startIndex, void* co
     auto& group = port->groups[group_index];
     std::memcpy(&group.attrib, attribute, sizeof(BufferAttribute));
     group.is_occupied = true;
+    std::printf("OSL: VideoOut source %ux%u pitch %u\n", attribute->width, attribute->height,
+                attribute->pitch_in_pixel);
 
     for (u32 i = 0; i < bufferNum; i++) {
         const uintptr_t address = reinterpret_cast<uintptr_t>(addresses[i]);

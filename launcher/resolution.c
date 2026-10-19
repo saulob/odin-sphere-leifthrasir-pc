@@ -47,21 +47,40 @@ static int fail(char *error, size_t size, const char *what, uint32_t offset) {
     return 0;
 }
 
+static uint32_t float_bits(int value) {
+    const float number = (float)value;
+    uint32_t bits;
+    memcpy(&bits, &number, 4);
+    return bits;
+}
+
 int osl_apply_resolution(unsigned char *image, uint64_t image_size, const OslResolutionSite *sites, size_t count,
                          const OslResolution *resolution, char *error, size_t error_size) {
     for (size_t i = 0; i < count; ++i) {
         const OslResolutionSite *site = &sites[i];
-        const uint64_t end = (uint64_t)site->offset + site->opcode_length + 4;
+        const uint64_t immediate_size = site->packed_floats ? 8 : 4;
+        const uint64_t end = (uint64_t)site->offset + site->opcode_length + immediate_size;
         if (end > image_size) return fail(error, error_size, "site outside the image", site->offset);
         const unsigned char *at = image + site->offset;
         uint32_t current;
         memcpy(&current, at + site->opcode_length, 4);
         if (memcmp(at, site->opcode, site->opcode_length) || current != site->value)
             return fail(error, error_size, "unexpected instruction", site->offset);
+        if (site->packed_floats) {
+            memcpy(&current, at + site->opcode_length + 4, 4);
+            if (current != site->value_high)
+                return fail(error, error_size, "unexpected instruction", site->offset);
+        }
     }
     for (size_t i = 0; i < count; ++i) {
-        const uint32_t value = (uint32_t)(sites[i].height ? resolution->height : resolution->width);
-        memcpy(image + sites[i].offset + sites[i].opcode_length, &value, 4);
+        const OslResolutionSite *site = &sites[i];
+        if (site->packed_floats) {
+            const uint32_t values[2] = {float_bits(resolution->width), float_bits(resolution->height)};
+            memcpy(image + site->offset + site->opcode_length, values, sizeof(values));
+        } else {
+            const uint32_t value = (uint32_t)(site->height ? resolution->height : resolution->width);
+            memcpy(image + site->offset + site->opcode_length, &value, 4);
+        }
     }
     return 1;
 }

@@ -26,6 +26,7 @@
 #include <chrono>
 #include <cmath>
 #include <csetjmp>
+#include <cstdio>
 #include <cstring>
 #include <ctime>
 #include <filesystem>
@@ -615,6 +616,15 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
     {
         const vk::Extent2D extent = swapchain.GetExtent();
         SetExpectedGameSize(s32(extent.width), s32(extent.height));
+        const auto& present_settings = OslSettings::Get();
+        const std::array present_size{present_settings.image_width.load(), present_settings.image_height.load(),
+                                      int(extent.width), int(extent.height), window.GetWidth(), window.GetHeight()};
+        static std::array last_present_size{present_size};
+        if (present_size != last_present_size) {
+            last_present_size = present_size;
+            std::printf("OSL: present source %dx%d -> swapchain %dx%d, window %dx%d\n", present_size[0],
+                        present_size[1], present_size[2], present_size[3], present_size[4], present_size[5]);
+        }
         const vk::ImageSubresourceRange color_range{
             .aspectMask = vk::ImageAspectFlagBits::eColor,
             .baseMipLevel = 0,

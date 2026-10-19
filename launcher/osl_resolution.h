@@ -36,13 +36,15 @@ int osl_aspect_index(const char *key);
 /* The width is aligned to the 8-pixel tile; a target above the 4K pixel count keeps its ratio and loses height. */
 OslResolution osl_render_target(const OslResolution *resolution, const OslAspectRatio *aspect);
 
-/* One `mov reg, imm32` in the game that holds a render width or height. */
+/* One instruction in the game that holds a render width, height, or the packed float screen size. */
 typedef struct {
     uint32_t offset; /* image offset of the opcode */
     uint8_t opcode_length;
     uint8_t opcode[2];
-    uint32_t value;  /* the original immediate */
+    uint32_t value;       /* the original immediate, or the low word of a packed 64-bit immediate */
     int height;
+    uint32_t value_high;  /* the high word of a packed 64-bit immediate */
+    int packed_floats;    /* 1 when value/value_high are the float bits of the width and height */
 } OslResolutionSite;
 
 /* Writes the resolution's width and height into every site after checking each one still holds the original

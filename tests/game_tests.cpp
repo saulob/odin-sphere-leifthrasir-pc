@@ -167,7 +167,7 @@ void TestProfile() {
     CHECK(std::string(build.label) == "CUSA05083 1.00 USA");
     CHECK(std::string(build.region) == "USA");
     CHECK(build.layers.size() == 1);
-    CHECK(build.resolution_sites.size() == 14);
+    CHECK(build.resolution_sites.size() == 15);
     CHECK(std::string(FinishedLayer(build).app_ver) == "01.00");
     CHECK(std::string(FinishedLayer(build).sfo_version) == "01.01");
     CHECK(!FinishedLayer(build).update);
@@ -475,13 +475,17 @@ void TestResolutionSites() {
 
     size_t image_size = 0;
     for (const OslResolutionSite& site : build.resolution_sites) {
-        image_size = std::max<size_t>(image_size, site.offset + site.opcode_length + 4);
+        const size_t immediate = site.packed_floats ? 8 : 4;
+        image_size = std::max<size_t>(image_size, site.offset + site.opcode_length + immediate);
     }
     std::vector<unsigned char> image(image_size);
     const auto install_sites = [&] {
         for (const OslResolutionSite& site : build.resolution_sites) {
             std::memcpy(image.data() + site.offset, site.opcode, site.opcode_length);
             std::memcpy(image.data() + site.offset + site.opcode_length, &site.value, 4);
+            if (site.packed_floats) {
+                std::memcpy(image.data() + site.offset + site.opcode_length + 4, &site.value_high, 4);
+            }
         }
     };
     const auto immediate = [&](const OslResolutionSite& site) {
@@ -489,18 +493,50 @@ void TestResolutionSites() {
         std::memcpy(&value, image.data() + site.offset + site.opcode_length, 4);
         return value;
     };
+    const auto immediate_high = [&](const OslResolutionSite& site) {
+        uint32_t value = 0;
+        std::memcpy(&value, image.data() + site.offset + site.opcode_length + 4, 4);
+        return value;
+    };
+    const auto float_value = [](uint32_t bits) {
+        float value = 0.0f;
+        std::memcpy(&value, &bits, 4);
+        return value;
+    };
+    const auto verify = [&](const OslResolution& target) {
+        for (const OslResolutionSite& site : build.resolution_sites) {
+            if (site.packed_floats) {
+                CHECK(float_value(immediate(site)) == float(target.width));
+                CHECK(float_value(immediate_high(site)) == float(target.height));
+            } else {
+                CHECK(immediate(site) == static_cast<uint32_t>(site.height ? target.height : target.width));
+            }
+        }
+    };
 
-    install_sites();
-    const OslResolution target = osl_render_target(&osl_resolutions[3], &osl_aspect_ratios[2]);
     char error[320] = "";
-    CHECK(osl_apply_resolution(image.data(), image.size(), build.resolution_sites.data(),
-                               build.resolution_sites.size(), &target, error, sizeof(error)));
-    for (const OslResolutionSite& site : build.resolution_sites) {
-        CHECK(immediate(site) == static_cast<uint32_t>(site.height ? target.height : target.width));
+    for (const int resolution : {0, 2, 3, 5}) {
+        for (const int aspect : {0, 2, 4}) {
+            const OslResolution target = osl_render_target(&osl_resolutions[resolution], &osl_aspect_ratios[aspect]);
+            install_sites();
+            CHECK(osl_apply_resolution(image.data(), image.size(), build.resolution_sites.data(),
+                                       build.resolution_sites.size(), &target, error, sizeof(error)));
+            verify(target);
+        }
     }
 
+    const OslResolution target = osl_render_target(&osl_resolutions[3], &osl_aspect_ratios[2]);
     install_sites();
     image[build.resolution_sites[0].offset + build.resolution_sites[0].opcode_length] ^= 0x01;
+    error[0] = 0;
+    CHECK(!osl_apply_resolution(image.data(), image.size(), build.resolution_sites.data(),
+                                build.resolution_sites.size(), &target, error, sizeof(error)));
+    CHECK(error[0] != 0);
+
+    install_sites();
+    const OslResolutionSite& packed = build.resolution_sites.back();
+    CHECK(packed.packed_floats);
+    image[packed.offset + packed.opcode_length + 4] ^= 0x01;
     error[0] = 0;
     CHECK(!osl_apply_resolution(image.data(), image.size(), build.resolution_sites.data(),
                                 build.resolution_sites.size(), &target, error, sizeof(error)));
