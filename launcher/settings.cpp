@@ -10,6 +10,7 @@
 
 #include "osl_keys.h"
 #include "osl_launcher.h"
+#include "osl_resolution.h"
 #include "game_files.h"
 #include "utf8.h"
 
@@ -27,12 +28,15 @@ constexpr ManagedSetting kBaseSettings[] = {
     {kUpscaleKey, "0"},
     {kSharpenKey, "1"},
     {kSharpenStrengthKey, "75"},
+    {kRenderResolutionKey, kNativeResolution},
+    {kAspectRatioKey, kDefaultAspectRatio},
     {kGraphicsCardKey, kAutomaticGpu},
     {kAntiAliasingKey, "0"},
     {kAnisotropyKey, "0"},
     {kShowFpsTitleKey, "0"},
     {kShowResolutionTitleKey, "0"},
     {kShowFrameCounterKey, "0"},
+    {kDetailedLoggingKey, "1"},
     {kLauncherXKey, ""},
     {kLauncherYKey, ""},
     {kLauncherWidthKey, ""},
@@ -81,6 +85,14 @@ bool IsValidSetting(std::string_view key, std::string_view value) {
     if (key == kPresentationKey) {
         return std::any_of(std::begin(kPresentationChoices), std::end(kPresentationChoices),
                            [&](const PresentationChoice& choice) { return value == choice.key; });
+    }
+    if (key == kRenderResolutionKey) {
+        return std::any_of(std::begin(osl_resolutions), std::end(osl_resolutions),
+                           [&](const OslResolution& resolution) { return value == resolution.key; });
+    }
+    if (key == kAspectRatioKey) {
+        return std::any_of(std::begin(osl_aspect_ratios), std::end(osl_aspect_ratios),
+                           [&](const OslAspectRatio& aspect) { return value == aspect.key; });
     }
     return true;
 }
@@ -178,3 +190,30 @@ bool LauncherWanted(bool game_ready, bool show_setting, bool shift_held, bool sk
 }
 
 } // namespace osl
+
+extern "C" int osl_render_resolution(const char* settings_file, const char* image_dir) {
+    using namespace osl;
+    if (RestrictedToNativeResolution(BuildOfImageDir(image_dir))) {
+        return 0;
+    }
+    const LauncherSettings settings(PathFromUtf8(settings_file ? settings_file : ""));
+    return osl_resolution_index(settings.Get(kRenderResolutionKey, kNativeResolution).c_str());
+}
+
+extern "C" int osl_aspect_ratio(const char* settings_file, const char* image_dir) {
+    using namespace osl;
+    if (RestrictedToNativeResolution(BuildOfImageDir(image_dir))) {
+        return 0;
+    }
+    const LauncherSettings settings(PathFromUtf8(settings_file ? settings_file : ""));
+    return osl_aspect_index(settings.Get(kAspectRatioKey, kDefaultAspectRatio).c_str());
+}
+
+extern "C" int osl_detailed_logging(const char* settings_file) {
+    using namespace osl;
+    if (!settings_file || !*settings_file) {
+        return 1;
+    }
+    const LauncherSettings settings(PathFromUtf8(settings_file));
+    return settings.GetBool(kDetailedLoggingKey, true) ? 1 : 0;
+}

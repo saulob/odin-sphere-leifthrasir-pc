@@ -21,12 +21,15 @@ refused.
 - **Native PC port**: the game's own x86-64 code runs directly on the PC. It is not an emulator.
 - **TRG launcher** that installs the game directly from your own `.pkg` file and remembers its window position
 - **Windowed** and **Borderless Fullscreen**, switched with **F11** while playing, with window size and monitor selection
+- **Aspect Ratio**: 16:9 Original, 16:10, 21:9 Ultrawide, 32:9 Super Ultrawide, 4:3 and 5:4
+- **Render resolution** from 480p to 4K, separate from the window size
 - **Graphics card selection**, **VSync**, **Presentation** (letterbox or stretch)
 - **Upscaling** (AMD FSR 1) and **sharpening** (AMD RCAS)
 - **SMAA** anti-aliasing and **anisotropic texture filtering** (Game, 2x, 4x, 8x, 16x)
 - Frame rate and render resolution in the window title, and an in-game **frame counter**
 - An in-game settings menu: **F10** on the keyboard, or **R3 + L2** on the controller
 - Xbox controllers without setup, and keyboard support
+- **Local PS4 trophies**, offline on this PC, shown on the launcher's Trophies page
 - Portable `user` and `logs` folders next to the program for settings, saves, the shader cache and logs
 
 ## What you need
@@ -63,6 +66,8 @@ Everything is kept next to the program:
 | --- | --- |
 | `user\osl.ini` | Launcher and game settings |
 | `user\savedata\` | Your saves |
+| `user\trophy\` | Your trophy progress and the trophy list and icons unpacked from your game |
+| `user\keys.json` | Your Trophy Key, if you configure one |
 | `user\cache\CUSA05083\` | Shader cache, so later starts load faster |
 | `logs\` | One `odin_sphere_leifthrasir_NNN.log` per run |
 | `game\` | The installed game (unpacked from your own package) |
@@ -70,17 +75,32 @@ Everything is kept next to the program:
 ## The launcher
 
 - **Play**: install or reinstall the game from your `.pkg`, the **Ready to play** status and **Show this launcher**
-- **Display**: display mode, window size, monitor, graphics card, VSync, Presentation, FSR 1 upscaling and RCAS sharpening
-- **Graphics**: SMAA anti-aliasing and anisotropic texture filtering
+- **Display**: display mode, window size, monitor, Aspect Ratio, graphics card, VSync, Presentation, FSR 1 upscaling and RCAS sharpening
+- **Graphics**: Render resolution, SMAA anti-aliasing and anisotropic texture filtering
+- **Gameplay**: frame rate and render resolution in the title, and the in-game frame counter
 - **Controls**: every keyboard binding and the port hotkeys, with **Reset to defaults**
-- **About**: the port version, the game, the renderer and the library versions, the game, saves and logs folders, the settings file and **Reset all settings**
+- **Trophies**: your local PS4 trophy progress, the trophy list and the Trophy Key setup
+- **About**: the port version, the game, the renderer and the library versions, the game, saves and logs folders, the settings file, **Reset all settings**, and **Diagnostics** with Detailed logging and a button that opens the logs folder
 
 Hold **Shift** while starting to bring the launcher back after turning **Show this launcher** off.
 
+**Alt+F4** (or the window close button) quits the launcher. **Esc** cancels the keyboard-binding capture and pop-ups; it does not quit. **Ctrl+S** saves the launcher settings without starting the game.
+
 **F10** (or **R3 + L2**) opens the in-game settings menu with the display mode, VSync, FSR 1, sharpening and the frame counter.
 
-Aspect Ratio and custom Render resolution are not offered yet: they need verified render-resolution
-sites in this game's executable, which have not been established.
+The Render resolution and Aspect Ratio options change the game's verified internal render-target sites. Only
+**16:9 Original** is undistorted: the game's 2D scene is still laid out for its original 16:9 canvas, so
+21:9 and 32:9 stretch the gameplay horizontally instead of showing more of the world, and 16:10, 4:3 and
+5:4 squeeze it. The HUD, menus and prerendered videos are not adjusted either.
+
+Xbox button prompts, cheats and the menu-text language are not exposed: the US build used here contains a
+single English text set, and Odin Sphere's prompt atlases and gameplay values have not yet been verified for
+those launcher options. The PlayStation prompts and the game's own text are used.
+
+**Detailed logging** (About, Diagnostics) is on by default and keeps the log of every session. Turned off, a run
+still writes its log while it runs, but a normal exit discards it so normal sessions do not accumulate files. A
+crash or abnormal exit keeps the log, and crash diagnostics are never discarded. **Open logs folder** opens the
+folder that holds the logs, creating it first when it does not exist.
 
 ## Building it yourself
 

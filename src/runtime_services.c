@@ -7,6 +7,8 @@
 #define _GNU_SOURCE
 #include "runtime.h"
 #include "oslgpu.h"
+#include "runtime_log.h"
+#include "trophies/trophy_runtime.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -144,6 +146,8 @@ static ABI __attribute__((noreturn)) void load_exec(const char *path, char *cons
     if (path) runtime_file_translate(path,host,sizeof(host));
     printf("LoadExec: %s -> %s\n",path ? path : "(null)",host[0] ? host : "(no host file)");
     fflush(NULL);
+    runtime_log_mark_clean_exit();
+    runtime_log_finalize();
     _exit(LOAD_EXEC_EXIT); /* no destructors: GPU and guest threads are running */
 }
 
@@ -507,31 +511,17 @@ static ABI int32_t ime_panel_size_extended(const ImeParam *param, const void *ex
     return 0;
 }
 
-/* ---- Trophies: no PSN and no local trophy store yet; unlocks are accepted and discarded ---- */
-static ABI int32_t trophy_context(int32_t *ctx,int32_t user,uint32_t label,uint64_t options) {
-    (void)user; (void)label; (void)options;
-    if (!ctx) return (int32_t)0x80551603; /* INVALID_ARGUMENT */
-    *ctx=(int32_t)new_id();
-    return 0;
-}
-static ABI int32_t trophy_handle(int32_t *handle) {
-    if (!handle) return (int32_t)0x80551603;
-    *handle=(int32_t)new_id();
-    return 0;
-}
-static ABI int32_t trophy_register(int32_t ctx,int32_t handle,uint64_t options) { (void)ctx; (void)handle; (void)options; return 0; }
-static ABI int32_t trophy_unlock(int32_t ctx,int32_t handle,int32_t id,int32_t *platinum) {
-    (void)ctx; (void)handle; (void)id;
-    if (platinum) *platinum=0;
-    return 0;
-}
-static ABI int32_t trophy_unlock_state(int32_t ctx,int32_t handle,uint32_t *flags,uint32_t *count) {
-    (void)ctx; (void)handle;
-    if (count) *count=0;
-    if (flags) memset(flags,0,16); /* an empty unlock set: nothing has been won on this PC */
-    return 0;
-}
-static ABI int32_t trophy_destroy_handle(int32_t handle) { (void)handle; return 0; }
+/* ---- Trophies: kept on this PC (src/trophies) ---- */
+static ABI int32_t trophy_context(int32_t *ctx,int32_t user,uint32_t label,uint64_t options) { return trophy_runtime_create_context(ctx,user,label,options); }
+static ABI int32_t trophy_handle(int32_t *handle) { return trophy_runtime_create_handle(handle); }
+static ABI int32_t trophy_register(int32_t ctx,int32_t handle,uint64_t options) { return trophy_runtime_register_context(ctx,handle,options); }
+static ABI int32_t trophy_unlock(int32_t ctx,int32_t handle,int32_t id,int32_t *platinum) { return trophy_runtime_unlock(ctx,handle,id,platinum); }
+static ABI int32_t trophy_game_info(int32_t ctx,int32_t handle,void *details,void *data) { return trophy_runtime_game_info(ctx,handle,details,data); }
+static ABI int32_t trophy_info(int32_t ctx,int32_t handle,int32_t id,void *details,void *data) { return trophy_runtime_trophy_info(ctx,handle,id,details,data); }
+static ABI int32_t trophy_unlock_state(int32_t ctx,int32_t handle,uint32_t *flags,uint32_t *count) { return trophy_runtime_unlock_state(ctx,handle,flags,count); }
+static ABI int32_t trophy_abort_handle(int32_t handle) { (void)handle; return 0; }
+static ABI int32_t trophy_destroy_handle(int32_t handle) { return trophy_runtime_destroy_handle(handle); }
+static ABI int32_t trophy_destroy_context(int32_t ctx) { return trophy_runtime_destroy_context(ctx); }
 
 /* ---- PlayGo: fully installed package ---- */
 static int playgo_handle, playgo_chunks=-1;
@@ -818,8 +808,9 @@ static const RuntimeExport exports[]={
     {"sceImeDialogGetPanelSizeExtended",ime_panel_size_extended},
     {"sceNpTrophyCreateContext",trophy_context}, {"sceNpTrophyCreateHandle",trophy_handle},
     {"sceNpTrophyRegisterContext",trophy_register}, {"sceNpTrophyUnlockTrophy",trophy_unlock},
-    {"sceNpTrophyGetTrophyUnlockState",trophy_unlock_state},
-    {"sceNpTrophyDestroyHandle",trophy_destroy_handle},
+    {"sceNpTrophyGetGameInfo",trophy_game_info}, {"sceNpTrophyGetTrophyInfo",trophy_info},
+    {"sceNpTrophyGetTrophyUnlockState",trophy_unlock_state}, {"sceNpTrophyAbortHandle",trophy_abort_handle},
+    {"sceNpTrophyDestroyHandle",trophy_destroy_handle}, {"sceNpTrophyDestroyContext",trophy_destroy_context},
     {"scePlayGoInitialize",playgo_init}, {"scePlayGoOpen",playgo_open}, {"scePlayGoGetChunkId",playgo_chunk_ids},
     {"scePlayGoGetLocus",playgo_locus}, {"scePlayGoSetInstallSpeed",playgo_speed},
     {"scePlayGoGetInstallSpeed",playgo_get_speed}, {"scePlayGoGetProgress",playgo_progress},

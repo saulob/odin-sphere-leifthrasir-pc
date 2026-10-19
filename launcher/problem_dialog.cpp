@@ -36,7 +36,7 @@ void ProblemDialog::Draw(const trg::Fonts& fonts, const trg::Theme& theme) {
         {ImGuiCol_PopupBg, theme.popup},     {ImGuiCol_Border, theme.warn_dot},
         {ImGuiCol_TitleBg, theme.panel},     {ImGuiCol_TitleBgActive, theme.panel},
         {ImGuiCol_Text, theme.text},         {ImGuiCol_Button, theme.accent},
-        {ImGuiCol_ButtonHovered, theme.accent_hot}, {ImGuiCol_ButtonActive, theme.accent},
+        {ImGuiCol_ButtonHovered, theme.accent_hot}, {ImGuiCol_ButtonActive, theme.frame_active},
         {ImGuiCol_NavCursor, theme.text}};
     for (const auto& [slot, color] : colors) {
         ImGui::PushStyleColor(slot, color);

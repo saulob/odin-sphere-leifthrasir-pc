@@ -29,11 +29,15 @@ add_library(osl_imgui_sdl STATIC ${IMGUI_DIR}/backends/imgui_impl_sdl3.cpp ${IMG
 target_include_directories(osl_imgui_sdl PUBLIC ${IMGUI_DIR})
 target_link_libraries(osl_imgui_sdl PUBLIC SDL3::SDL3)
 
-# Game files (check, PKG unpacking, install, boot image), the settings file and the Display options: no window needed
-# (tests link only this).
+# Game files (check, PKG unpacking, install, boot image), the trophies (src/trophies), the settings file and the
+# Display options: no window needed (tests link only this).
 find_package(ZLIB REQUIRED)
 add_library(osl_launcher_core STATIC boot_image.cpp file_browser.cpp game_files.cpp game_install.cpp game_profile.cpp
-    options.cpp paths.cpp pkg_extract.cpp settings.cpp)
+    options.cpp paths.cpp pkg_extract.cpp resolution.c settings.cpp trophy_content.cpp
+    ${PROJECT_SOURCE_DIR}/src/trophies/trophy_data.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trophy_key.cpp
+    ${PROJECT_SOURCE_DIR}/src/trophies/trophy_pack.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trophy_runtime.cpp
+    ${PROJECT_SOURCE_DIR}/src/trophies/trophy_service.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trophy_store.cpp
+    ${PROJECT_SOURCE_DIR}/src/trophies/trophy_view.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trp_archive.cpp)
 target_include_directories(osl_launcher_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(osl_launcher_core PUBLIC trg_core SDL3::SDL3 osl_keys PRIVATE ZLIB::ZLIB)
 # Hashes and ciphers: CNG on Windows, OpenSSL's libcrypto elsewhere.
@@ -47,8 +51,9 @@ else()
     target_link_libraries(osl_launcher_core PRIVATE OpenSSL::Crypto)
     set(OSL_LOG_SOURCE ${PROJECT_SOURCE_DIR}/src/runtime_log_posix.c)
 endif()
+set(OSL_LOG_SOURCES ${OSL_LOG_SOURCE} ${PROJECT_SOURCE_DIR}/src/runtime_session_log.c)
 
-add_library(osl_launcher STATIC host.cpp launcher.cpp package_browser.cpp problem_dialog.cpp shift_key.cpp)
+add_library(osl_launcher STATIC host.cpp launcher.cpp package_browser.cpp problem_dialog.cpp shift_key.cpp trophy_page.cpp)
 target_compile_definitions(osl_launcher PRIVATE OSL_PORT_VERSION="${OSL_PORT_VERSION}")
 target_include_directories(osl_launcher PRIVATE ${PROJECT_SOURCE_DIR}/gpu/shim)
 target_link_libraries(osl_launcher PUBLIC osl_launcher_core trg_launcher osl_imgui_sdl ${CMAKE_DL_LIBS})
@@ -56,3 +61,12 @@ target_link_libraries(osl_launcher PUBLIC osl_launcher_core trg_launcher osl_img
 set_target_properties(osl_launcher_core osl_launcher PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
 target_compile_options(osl_launcher_core PRIVATE -Wall -Wextra)
 target_compile_options(osl_launcher PRIVATE -Wall -Wextra)
+
+# Focused tests of the local trophies (tools\test.ps1); not part of the default build.
+find_package(PNG REQUIRED)
+add_executable(osl-trophy-tests EXCLUDE_FROM_ALL ../tests/trophy_tests.cpp ${OSL_LOG_SOURCES} ../gpu/shim/osl_png.cpp)
+target_link_libraries(osl-trophy-tests PRIVATE osl_launcher_core PNG::PNG)
+target_include_directories(osl-trophy-tests PRIVATE ${PROJECT_SOURCE_DIR}/gpu/shim)
+target_compile_definitions(osl-trophy-tests PRIVATE OSL_TROPHY_SOURCE_DIR="${PROJECT_SOURCE_DIR}/src/trophies")
+set_target_properties(osl-trophy-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_compile_options(osl-trophy-tests PRIVATE -Wall -Wextra)

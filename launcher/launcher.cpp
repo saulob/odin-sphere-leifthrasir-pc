@@ -22,9 +22,11 @@
 
 #include "osl_accent.h"
 #include "osl_displays.h"
+#include "osl_resolution.h"
 #include "game_files.h"
 #include "game_install.h"
 #include "host.h"
+#include "launcher_quit.h"
 #include "options.h"
 #include "package_browser.h"
 #include "placement.h"
@@ -32,6 +34,7 @@
 #include "problem_dialog.h"
 #include "settings.h"
 #include "shift_key.h"
+#include "trophy_page.h"
 #include "utf8.h"
 
 #ifndef OSL_PORT_VERSION
@@ -45,7 +48,14 @@ ImGuiKey ImGui_ImplSDL3_KeyEventToImGuiKey(SDL_Keycode keycode, SDL_Scancode sca
 namespace osl {
 namespace {
 
-const ImVec4 kAccent = ImVec4(kAccentRed / 255.0f, kAccentGreen / 255.0f, kAccentBlue / 255.0f, 1.0f);
+ImVec4 PaletteColor(int red, int green, int blue, float alpha = 1.0f) {
+    return ImVec4(red / 255.0f, green / 255.0f, blue / 255.0f, alpha);
+}
+
+const ImVec4 kAccent = PaletteColor(kAccentRed, kAccentGreen, kAccentBlue);
+const ImVec4 kAccentHot = PaletteColor(kAccentHotRed, kAccentHotGreen, kAccentHotBlue);
+const ImVec4 kAccentPressed = PaletteColor(kAccentPressedRed, kAccentPressedGreen, kAccentPressedBlue);
+const ImVec4 kAccentSubtle = PaletteColor(kAccentSubtleRed, kAccentSubtleGreen, kAccentSubtleBlue);
 constexpr double kPlayFeedbackSeconds = 0.4;
 constexpr char kPortTitle[] = "Odin Sphere Leifthrasir PC";
 const std::string kPortUrl = std::string("https://") + kPortRepository;
@@ -95,6 +105,14 @@ constexpr char kAntiAliasingHelp[] =
     "SMAA smooths jagged edges on the finished picture, at a small cost in performance.";
 constexpr char kAnisotropyHelp[] =
     "Sharper textures on floors and walls seen at an angle. Game uses the game's own filtering.";
+constexpr char kAspectRatioHelp[] = "Sets the game's target rendering shape and the Window size choices.";
+constexpr char kRestrictedAspectRatioHelp[] =
+    "This game build renders at 16:9; the other aspect ratios are not available for it.";
+constexpr char kRenderResolutionHelp[] =
+    "The resolution the game renders at. It is separate from the window size: the picture is scaled to the window. "
+    "1440p and above need a powerful graphics card.";
+constexpr char kRestrictedRenderResolutionHelp[] =
+    "This game build renders at its original size; the custom render resolutions are not available for it.";
 constexpr char kShowFpsTitleHelp[] = "Shows the frame rate in the window title: Odin Sphere Leifthrasir | FPS: 60.00";
 constexpr char kShowResolutionTitleHelp[] =
     "Shows the game's render resolution in the window title: Odin Sphere Leifthrasir | 1920x1080";
@@ -109,14 +127,20 @@ std::vector<std::string> ListGpuNames() {
 
 trg::Theme LauncherTheme() {
     trg::Theme theme = trg::Theme::Midnight().WithAccent(kAccent);
-    // Warnings stay red-orange so they are never mistaken for the gold accent.
+    theme.accent_hot = kAccentHot;
+    theme.on_accent = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+    theme.frame_active = kAccentPressed;
+    theme.popup = ImVec4(kAccentSubtle.x, kAccentSubtle.y, kAccentSubtle.z, 0.99f);
+    // Warnings stay red-orange so they are never mistaken for the ruby accent.
     theme.warn = ImVec4(0.47f, 0.18f, 0.10f, 1.0f);
     theme.warn_dot = ImVec4(1.0f, 0.45f, 0.30f, 1.0f);
     return theme;
 }
 
 trg::HeaderPainter LauncherHeader() {
-    return trg::headers::Gradient(IM_COL32(10, 12, 24, 255), IM_COL32(52, 40, 10, 255), IM_COL32(8, 30, 44, 255),
+    return trg::headers::Gradient(IM_COL32(10, 12, 24, 255),
+                                  IM_COL32(kAccentSubtleRed, kAccentSubtleGreen, kAccentSubtleBlue, 255),
+                                  IM_COL32(kAccentPressedRed / 2, kAccentPressedGreen / 2, kAccentPressedBlue / 2, 255),
                                   IM_COL32(6, 8, 14, 255));
 }
 
@@ -194,6 +218,7 @@ public:
         gpu_names_ = ListGpuNames();
         placement_ = PlacementTracker(host_.Restored());
         fonts_ = trg::LoadSystemFonts(18.0f);
+        trophy_page_ = std::make_unique<TrophyPage>(host_, UserDir());
         launcher_ = std::make_unique<trg::Launcher>(MakeConfig());
         Log("shown");
 
@@ -226,6 +251,7 @@ public:
         }
         SavePlacement(placement_.Flush());
         launcher_.reset();
+        trophy_page_.reset();
         host_.Close();
         Log(outcome == Outcome::kPlay ? "closed, starting the game" : "closed");
         return true;
@@ -258,7 +284,7 @@ private:
             RequestPlay();
             break;
         case trg::Result::kQuit:
-            if (!play_.starting()) {
+            if (!play_.starting() && LauncherQuitAllowed(ImGui::IsKeyPressed(ImGuiKey_Escape, false))) {
                 return Outcome::kQuit;
             }
             break;
@@ -354,6 +380,7 @@ private:
             {"BY SAULOB", kAuthorUrl},
         };
         c.branding.background = LauncherHeader();
+        c.hints = "Enter  Play     Alt+F4  Quit     Ctrl+S  Save";
         c.note = "Play applies the changes. Save keeps them without starting.";
         for (const PageId page : kPageOrder) {
             c.pages.push_back(MakePage(page));
@@ -380,10 +407,14 @@ private:
             return {name, "Window, monitor, scaling and presentation.", [this](trg::Ui& ui) { PageDisplay(ui); },
                     nullptr};
         case PageId::kGraphics:
-            return {name, "Anti-aliasing and texture filtering.", [this](trg::Ui& ui) { PageGraphics(ui); },
+            return {name, "Resolution, anti-aliasing and texture filtering.", [this](trg::Ui& ui) { PageGraphics(ui); },
                     nullptr};
+        case PageId::kGameplay:
+            return {name, "Readouts.", [this](trg::Ui& ui) { PageGameplay(ui); }, nullptr};
         case PageId::kControls:
             return {name, "Controller and keyboard.", [this](trg::Ui& ui) { PageControls(ui); }, nullptr};
+        case PageId::kTrophies:
+            return {name, "Your trophies on this PC.", [this](trg::Ui& ui) { PageTrophies(ui); }, nullptr};
         case PageId::kAbout:
             return {name, "This port, and where your files and settings live.", [this](trg::Ui& ui) { PageAbout(ui); },
                     nullptr};
@@ -492,6 +523,9 @@ private:
             }
             paths_ = ActiveBuildPaths(RootsOf(paths_));
             Recheck();
+            if (trophy_page_) {
+                trophy_page_->Invalidate();
+            }
             launcher_->SetStatus(std::string(message.title) + ". " + message.text, 6.0);
             return;
         }
@@ -508,13 +542,31 @@ private:
 
     const Display* SelectedDisplay() const { return DisplayForSetting(displays_, settings_.GetInt(kMonitorKey, 1)); }
 
+    const OslAspectRatio& SavedAspectRatio() const {
+        return osl_aspect_ratios[osl_aspect_index(settings_.Get(kAspectRatioKey, kDefaultAspectRatio).c_str())];
+    }
+
     void PageDisplay(trg::Ui& ui) {
         ui.Choice("Display mode", "Borderless Fullscreen fills the monitor. F11 switches while playing.", kDisplayModeKey,
                   "windowed", {{"windowed", "Windowed"}, {"borderless", "Borderless Fullscreen"}}, 2);
+        const OslAspectRatio& previous_aspect = SavedAspectRatio();
         ui.Row("Window size", kWindowSizeHelp);
         WindowSizeCombo();
         ui.Row("Monitor", kMonitorHelp);
         MonitorCombo();
+        std::vector<trg::Option> aspects;
+        const bool custom = !RestrictedToNativeResolution(build_);
+        for (const OslAspectRatio& aspect : osl_aspect_ratios) {
+            if (custom || std::string_view(aspect.key) == kDefaultAspectRatio) {
+                aspects.push_back({aspect.key, aspect.name});
+            }
+        }
+        ui.Combo("Aspect Ratio", custom ? kAspectRatioHelp : kRestrictedAspectRatioHelp, kAspectRatioKey,
+                 kDefaultAspectRatio, aspects);
+        if (&SavedAspectRatio() != &previous_aspect) {
+            const int height = settings_.GetInt(kWindowHeightKey, kDefaultWindowHeight);
+            settings_.SetInt(kWindowWidthKey, WindowSizeOf(height, SavedAspectRatio()).width);
+        }
         ui.Row("Graphics card", kGraphicsCardHelp);
         GraphicsCardCombo();
         ui.Toggle("VSync", kVSyncHelp, kVSyncKey, true, "Off", "On");
@@ -529,10 +581,6 @@ private:
         ImGui::BeginDisabled(!settings_.GetBool(kSharpenKey, true));
         ui.SliderInt("Sharpening strength", "How strong the sharpening is.", kSharpenStrengthKey, 75, 0, 100, "%d%%", 5);
         ImGui::EndDisabled();
-        ui.Heading("Readouts");
-        ui.Toggle("Frame rate in title", kShowFpsTitleHelp, kShowFpsTitleKey, false, "Off", "On");
-        ui.Toggle("Render resolution in title", kShowResolutionTitleHelp, kShowResolutionTitleKey, false, "Off", "On");
-        ui.Toggle("Frame counter", kFrameCounterHelp, kShowFrameCounterKey, false, "Hidden", "Shown");
         ui.EndRows();
     }
 
@@ -546,7 +594,7 @@ private:
         const WindowSize current{width, height};
         const Display* display = SelectedDisplay();
         if (ImGui::BeginCombo("##window_size", WindowSizeLabel(current).c_str())) {
-            for (const WindowSize size : WindowSizes()) {
+            for (const WindowSize size : WindowSizesFor(SavedAspectRatio())) {
                 const bool selected = size == current;
                 if (!selected && display && !WindowSizeFits(size, *display)) {
                     continue;
@@ -591,9 +639,25 @@ private:
     }
 
     void PageGraphics(trg::Ui& ui) {
+        const bool custom = !RestrictedToNativeResolution(build_);
+        std::vector<trg::Option> options;
+        for (const OslResolution& resolution : osl_resolutions) {
+            if (custom || std::string_view(resolution.key) == kNativeResolution) {
+                options.push_back({resolution.key, ResolutionLabel(resolution)});
+            }
+        }
+        ui.Combo("Render resolution", custom ? kRenderResolutionHelp : kRestrictedRenderResolutionHelp,
+                 kRenderResolutionKey, kNativeResolution, options);
         ui.Toggle("Anti-aliasing", kAntiAliasingHelp, kAntiAliasingKey, false, "Off", "SMAA");
         ui.Combo("Texture filtering", kAnisotropyHelp, kAnisotropyKey, "0",
                  {{"0", "Game"}, {"2", "2x"}, {"4", "4x"}, {"8", "8x"}, {"16", "16x"}});
+        ui.EndRows();
+    }
+
+    void PageGameplay(trg::Ui& ui) {
+        ui.Toggle("Frame rate in title", kShowFpsTitleHelp, kShowFpsTitleKey, false, "Off", "On");
+        ui.Toggle("Render resolution in title", kShowResolutionTitleHelp, kShowResolutionTitleKey, false, "Off", "On");
+        ui.Toggle("Frame counter", kFrameCounterHelp, kShowFrameCounterKey, false, "Hidden", "Shown");
         ui.EndRows();
     }
 
@@ -634,6 +698,11 @@ private:
 
     std::filesystem::path UserDir() const { return PathFromUtf8(config_.user_dir ? config_.user_dir : "user"); }
 
+    void PageTrophies(trg::Ui& ui) {
+        trophy_page_->SetGame(files_ == GameFileState::kValid ? paths_.app0 : std::filesystem::path());
+        trophy_page_->Draw(ui);
+    }
+
     void PageAbout(trg::Ui& ui) {
         ui.Paragraph("Odin Sphere Leifthrasir for PlayStation 4, running natively on this PC. No game files are included; "
                      "the game runs from the user's own copy.");
@@ -645,9 +714,6 @@ private:
         const std::filesystem::path user = UserDir();
         std::filesystem::create_directories(user, ec);
         ui.FolderRow("Saves and settings", "Settings, saves and caches.", "Open user folder", Utf8(user));
-        if (config_.logs_dir && *config_.logs_dir && std::filesystem::is_directory(PathFromUtf8(config_.logs_dir), ec)) {
-            ui.FolderRow("Logs", "One numbered log per run.", "Open logs folder", config_.logs_dir);
-        }
         if (ui.ButtonRow("Settings file", "Launcher choices stored as plain text.", "Show settings file") &&
             launcher_->Save()) {
             trg::OpenInFileManager(Utf8(std::filesystem::exists(settings_.file(), ec) ? settings_.file() : user));
@@ -657,6 +723,12 @@ private:
             settings_.ResetToDefaults();
             launcher_->SetStatus("Settings reset to defaults. Save or press Play to keep them.", 6.0);
             Log("settings reset to defaults (pending)");
+        }
+        ui.Heading("Diagnostics");
+        ui.Toggle("Detailed logging", "Keeps logs for normal sessions. Crash diagnostics are always preserved.",
+                  kDetailedLoggingKey, true);
+        if (ui.ButtonRow("Logs folder", "Open the folder containing session and crash logs", "Open logs folder")) {
+            OpenLogsFolder();
         }
         ui.Info("Port version", OSL_PORT_VERSION);
         const std::string game = InstalledGameName(files_, build_);
@@ -675,6 +747,28 @@ private:
         ui.Link(kPortRepository, kPortUrl);
     }
 
+    void OpenLogsFolder() {
+        if (!config_.logs_dir || !*config_.logs_dir) {
+            Log("could not open the logs folder: no logs directory is configured");
+            launcher_->SetStatus("Could not open the logs folder.", 6.0);
+            return;
+        }
+        std::error_code ec;
+        std::filesystem::path folder = PathFromUtf8(config_.logs_dir);
+        std::filesystem::create_directories(folder, ec);
+        if (!std::filesystem::is_directory(folder, ec)) {
+            Log("could not create the logs folder %s: %s", Utf8(folder).c_str(), ec.message().c_str());
+            const std::filesystem::path parent = folder.parent_path();
+            ec.clear();
+            if (parent.empty() || !std::filesystem::is_directory(parent, ec)) {
+                launcher_->SetStatus("Could not open the logs folder.", 6.0);
+                return;
+            }
+            folder = parent;
+        }
+        trg::OpenInFileManager(Utf8(folder));
+    }
+
     const OslLauncherConfig& config_;
     LauncherSettings& settings_;
     GamePaths paths_;
@@ -685,6 +779,7 @@ private:
     std::vector<std::string> gpu_names_;
     trg::Fonts fonts_;
     std::unique_ptr<trg::Launcher> launcher_;
+    std::unique_ptr<TrophyPage> trophy_page_;
     PlayGate play_;
     ProblemDialog problem_;
     PlacementTracker placement_;

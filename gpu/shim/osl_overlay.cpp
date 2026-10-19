@@ -52,6 +52,24 @@ namespace OslOverlay {
 
 namespace {
 
+ImVec4 AccentColor() {
+    return ImVec4(osl::kAccentRed / 255.0f, osl::kAccentGreen / 255.0f, osl::kAccentBlue / 255.0f, 1.0f);
+}
+
+ImVec4 AccentHotColor() {
+    return ImVec4(osl::kAccentHotRed / 255.0f, osl::kAccentHotGreen / 255.0f, osl::kAccentHotBlue / 255.0f, 1.0f);
+}
+
+ImVec4 AccentPressedColor() {
+    return ImVec4(osl::kAccentPressedRed / 255.0f, osl::kAccentPressedGreen / 255.0f,
+                  osl::kAccentPressedBlue / 255.0f, 1.0f);
+}
+
+ImVec4 AccentSubtleColor() {
+    return ImVec4(osl::kAccentSubtleRed / 255.0f, osl::kAccentSubtleGreen / 255.0f,
+                  osl::kAccentSubtleBlue / 255.0f, 1.0f);
+}
+
 std::mutex imgui_mutex; // the ImGui context: window thread (input) and present thread
 bool initialized = false;
 std::atomic<bool> menu_open{false};
@@ -261,7 +279,7 @@ void ImageTab() {
     ImGui::SeparatorText("Scaling and sharpening");
     if (BeginRows("##scaling")) {
         CheckRow("Upscale with FSR 1", s.fsr1,
-                 "Enlarges the game's image to the window with AMD FidelityFX Super Resolution 1.");
+                 "Enlarges the game's image to the window with AMD FidelityFX Super Resolution 1. For more FPS: Render resolution 720p + FSR 1.");
         ImGui::BeginDisabled(rcas_blocked);
         CheckRow("Sharpening (RCAS)", s.rcas,
                  rcas_blocked && downscaling ? "No effect: the game's image is larger than the window."
@@ -430,7 +448,7 @@ void TextEntryBox() {
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
                      ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav |
                      ImGuiWindowFlags_NoFocusOnAppearing);
-    ImGui::TextColored(ImVec4(0.85f, 0.72f, 0.45f, 1.0f), "%s", text_entry_prompt.c_str());
+    ImGui::TextColored(AccentHotColor(), "%s", text_entry_prompt.c_str());
     ImGui::Separator();
     ImGui::SetWindowFontScale(1.4f);
     ImGui::Text("%s_", text_entry_text.c_str());
@@ -453,7 +471,7 @@ void ChoiceBox() {
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
                      ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav |
                      ImGuiWindowFlags_NoFocusOnAppearing);
-    ImGui::TextColored(ImVec4(0.85f, 0.72f, 0.45f, 1.0f), "%s", choice_title.c_str());
+    ImGui::TextColored(AccentHotColor(), "%s", choice_title.c_str());
     ImGui::Separator();
     // Save pictures are 228x128; rows without one keep the text aligned when others have one.
     const bool pictures = std::any_of(choice_textures.begin(), choice_textures.end(),
@@ -472,7 +490,7 @@ void ChoiceBox() {
             ImGui::SameLine();
         }
         if (selected) {
-            ImGui::TextColored(ImVec4(1.0f, 0.9f, 0.55f, 1.0f), "> %s", choice_items[i].c_str());
+            ImGui::TextColored(AccentHotColor(), "> %s", choice_items[i].c_str());
         } else {
             ImGui::Text("  %s", choice_items[i].c_str());
         }
@@ -483,8 +501,8 @@ void ChoiceBox() {
                 const float pad = 3.0f * base_scale;
                 ImGui::GetWindowDrawList()->AddRect(ImVec2(min.x - pad, min.y - pad),
                                                     ImVec2(max.x + pad, max.y + pad),
-                                                    IM_COL32(255, 230, 140, 255), 0.0f, 0,
-                                                    2.0f * base_scale);
+                                                    IM_COL32(osl::kAccentRed, osl::kAccentGreen, osl::kAccentBlue, 255),
+                                                    0.0f, 0, 2.0f * base_scale);
             }
             ImGui::SetScrollHereY();
         }
@@ -571,6 +589,23 @@ void Init(const Vulkan::Instance& instance, vk::Format format, u32 image_count) 
     style.FrameRounding = 4.0f;
     style.GrabRounding = 4.0f;
     style.Colors[ImGuiCol_WindowBg].w = 0.92f;
+    const ImVec4 accent = AccentColor();
+    const ImVec4 accent_hot = AccentHotColor();
+    style.Colors[ImGuiCol_CheckMark] = accent;
+    style.Colors[ImGuiCol_SliderGrab] = accent;
+    style.Colors[ImGuiCol_SliderGrabActive] = accent_hot;
+    style.Colors[ImGuiCol_PlotHistogram] = accent;
+    style.Colors[ImGuiCol_PlotHistogramHovered] = accent_hot;
+    style.Colors[ImGuiCol_ButtonHovered] = accent;
+    style.Colors[ImGuiCol_ButtonActive] = AccentPressedColor();
+    style.Colors[ImGuiCol_HeaderHovered] = accent;
+    style.Colors[ImGuiCol_HeaderActive] = AccentPressedColor();
+    style.Colors[ImGuiCol_TabHovered] = accent;
+    style.Colors[ImGuiCol_TabSelected] = accent;
+    style.Colors[ImGuiCol_TabSelectedOverline] = accent_hot;
+    style.Colors[ImGuiCol_FrameBgActive] = AccentSubtleColor();
+    style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(accent.x, accent.y, accent.z, 0.35f);
+    style.Colors[ImGuiCol_NavCursor] = accent;
 
     ImFontConfig font_config;
     font_config.FontDataOwnedByAtlas = false;

@@ -63,6 +63,7 @@ set(OSL_RUNTIME_SOURCES
     src/runtime_rtc.c
     src/runtime_rwlock.c
     src/runtime_savedata.c
+    src/runtime_session_log.c
     src/runtime_sema.c
     src/runtime_services.c
     src/runtime_thread.c
@@ -103,9 +104,16 @@ endif()
 
 # Focused tests of the game profile, the settings file, the keys and the window fit (tools\test.ps1);
 # not part of the default build.
-add_executable(osl-tests EXCLUDE_FROM_ALL tests/game_tests.cpp)
+if (WIN32)
+    set(OSL_TEST_LOG_SOURCES src/runtime_log.c)
+else()
+    set(OSL_TEST_LOG_SOURCES src/runtime_log_posix.c)
+endif()
+set(OSL_TEST_LOG_SOURCES ${OSL_TEST_LOG_SOURCES} src/runtime_session_log.c)
+add_executable(osl-tests EXCLUDE_FROM_ALL tests/game_tests.cpp ${OSL_TEST_LOG_SOURCES})
 set_target_properties(osl-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
 target_include_directories(osl-tests PRIVATE src launcher)
+target_compile_definitions(osl-tests PRIVATE OSL_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 target_compile_options(osl-tests PRIVATE -Wall -Wextra -Werror)
 target_link_libraries(osl-tests PRIVATE osl_launcher_core SDL3::SDL3)
 

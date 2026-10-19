@@ -6,6 +6,7 @@
 
 #include "osl_displays.h"
 #include "osl_keys.h"
+#include "osl_resolution.h"
 #include "trg/settings.h"
 
 namespace osl {
@@ -16,17 +17,18 @@ struct WindowSize {
     bool operator==(const WindowSize&) const = default;
 };
 
-// The game's own picture is 1920 x 1080; window sizes keep 16:9.
+// In pixels. The game's own picture is 1920 x 1080.
 inline constexpr int kWindowHeights[] = {720, 900, 1080, 1440, 2160};
 inline constexpr WindowSize kGamePictureSize{1920, 1080};
 
-WindowSize WindowSizeOf(int height);
-std::vector<WindowSize> WindowSizes();
+WindowSize WindowSizeOf(int height, const OslAspectRatio& aspect);
 
-enum class PageId { kPlay, kDisplay, kGraphics, kControls, kAbout };
+std::vector<WindowSize> WindowSizesFor(const OslAspectRatio& aspect);
 
-inline constexpr PageId kPageOrder[] = {PageId::kPlay, PageId::kDisplay, PageId::kGraphics, PageId::kControls,
-                                        PageId::kAbout};
+enum class PageId { kPlay, kDisplay, kGraphics, kGameplay, kControls, kTrophies, kAbout };
+
+inline constexpr PageId kPageOrder[] = {PageId::kPlay,     PageId::kDisplay,  PageId::kGraphics, PageId::kGameplay,
+                                        PageId::kControls, PageId::kTrophies, PageId::kAbout};
 
 const char* PageName(PageId page);
 
@@ -35,6 +37,9 @@ WindowSize FitGameWindow(WindowSize requested, const Display& display);
 
 // Whether the size fits the display, so the game window is not larger than the screen.
 bool WindowSizeFits(WindowSize size, const Display& display);
+
+// "Native (1080p) — 1920 × 1080".
+std::string ResolutionLabel(const OslResolution& resolution);
 
 // "1920 × 1080", with a note on the game's own picture size.
 std::string WindowSizeLabel(WindowSize size);

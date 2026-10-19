@@ -26,11 +26,20 @@ From the repository, after `tools\build.ps1` has completed:
 opens; the Play page should already say **Ready to play**. Press **PLAY**. The runtime, graphics,
 audio, controller and UI behavior is tested manually only.
 
+The first manual pass should also check the new parity features: Display's Aspect Ratio and Window
+size choices, Graphics' Render resolution (try 720p, then 1440p, then 4K), the Gameplay readouts,
+the Trophies page, and that the in-game menu (F10 / R3+L2) still opens and saves its settings. Keep
+Render resolution at Native while checking the rest first.
+
 To return the diagnostics, attach the newest log:
 
 ```
 build\logs\odin_sphere_leifthrasir_NNN.log
 ```
+
+Detailed logging is on by default. If it is turned off in About → Diagnostics, a normal exit removes that
+run's log; crashes and abnormal exits still keep it. The About page's **Open logs folder** button opens the
+active log folder (or creates the default logs folder when no log exists yet).
 
 (The release layout uses `logs\odin_sphere_leifthrasir_NNN.log` next to `osl-loader.exe`.)
 

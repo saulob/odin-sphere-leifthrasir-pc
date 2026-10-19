@@ -16,11 +16,15 @@ $buildDir = Join-Path $script:RepoRoot 'build\cmake\clang64'
 if (-not (Test-Path -LiteralPath (Join-Path $buildDir 'build.ninja'))) { Stop-Tool 'Run tools\build.ps1 first: it configures the build.' }
 
 Write-Step 'Building the tests'
-& ninja -C $buildDir osl-tests osl-window-tests osl-tiling-tests
+& ninja -C $buildDir osl-tests osl-window-tests osl-tiling-tests osl-trophy-tests
 if ($LASTEXITCODE -ne 0) { Stop-Tool 'Test build failed' }
 
 Write-Step 'Running the game, settings and keys tests'
 & (Join-Path $buildDir 'bin\osl-tests.exe')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+Write-Step 'Running the trophy tests'
+& (Join-Path $buildDir 'bin\osl-trophy-tests.exe')
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step 'Running the window fit tests'

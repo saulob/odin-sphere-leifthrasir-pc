@@ -2,10 +2,12 @@
 // Synthetic files in a temporary folder: no window, no Vulkan, no game files.
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -14,10 +16,19 @@
 #include "game_files.h"
 #include "game_install.h"
 #include "game_profile.h"
+#include "launcher_quit.h"
 #include "options.h"
+#include "osl_accent.h"
+#include "osl_launcher.h"
+#include "runtime_log.h"
 #include "settings.h"
+#include "utf8.h"
 
 using namespace osl;
+
+#ifndef OSL_SOURCE_DIR
+#define OSL_SOURCE_DIR "."
+#endif
 
 namespace {
 
@@ -39,6 +50,25 @@ std::filesystem::path TempDir(const char* name) {
     std::filesystem::remove_all(dir, ec);
     std::filesystem::create_directories(dir, ec);
     return dir;
+}
+
+std::string ReadFile(const std::filesystem::path& path) {
+    std::ifstream file(path, std::ios::binary);
+    return {std::istreambuf_iterator<char>(file), {}};
+}
+
+uint32_t Little32(const std::string& data, size_t at) {
+    return static_cast<uint32_t>(static_cast<unsigned char>(data[at])) |
+           static_cast<uint32_t>(static_cast<unsigned char>(data[at + 1])) << 8 |
+           static_cast<uint32_t>(static_cast<unsigned char>(data[at + 2])) << 16 |
+           static_cast<uint32_t>(static_cast<unsigned char>(data[at + 3])) << 24;
+}
+
+uint32_t Big32(const std::string& data, size_t at) {
+    return static_cast<uint32_t>(static_cast<unsigned char>(data[at])) << 24 |
+           static_cast<uint32_t>(static_cast<unsigned char>(data[at + 1])) << 16 |
+           static_cast<uint32_t>(static_cast<unsigned char>(data[at + 2])) << 8 |
+           static_cast<uint32_t>(static_cast<unsigned char>(data[at + 3]));
 }
 
 void WriteSfo(const std::filesystem::path& path, const std::vector<std::pair<std::string, std::string>>& values) {
@@ -75,6 +105,53 @@ void WriteSfo(const std::filesystem::path& path, const std::vector<std::pair<std
     file.write(out.data(), static_cast<std::streamsize>(out.size()));
 }
 
+void TestBranding() {
+    CHECK(kAccentRed == 209 && kAccentGreen == 42 && kAccentBlue == 120);
+    CHECK(kAccentHotRed == 231 && kAccentHotGreen == 71 && kAccentHotBlue == 145);
+    CHECK(kAccentPressedRed == 168 && kAccentPressedGreen == 31 && kAccentPressedBlue == 93);
+    CHECK(kAccentSubtleRed == 50 && kAccentSubtleGreen == 21 && kAccentSubtleBlue == 37);
+
+    const std::filesystem::path root(OSL_SOURCE_DIR);
+    const std::string accent = ReadFile(root / "launcher" / "launcher.cpp");
+    CHECK(accent.find("WithAccent(kAccent)") != std::string::npos);
+    CHECK(accent.find("theme.accent_hot = kAccentHot") != std::string::npos);
+    CHECK(accent.find("kAccentRed = 224") == std::string::npos);
+    CHECK(accent.find("52, 40, 10") == std::string::npos);
+
+    const std::string overlay = ReadFile(root / "gpu" / "shim" / "osl_overlay.cpp");
+    CHECK(overlay.find("AccentHotColor()") != std::string::npos);
+    CHECK(overlay.find("0.85f, 0.72f, 0.45f") == std::string::npos);
+    CHECK(overlay.find("255, 230, 140") == std::string::npos);
+    CHECK(ReadFile(root / "launcher" / "trophy_page.cpp").find("Dragon's Crown") == std::string::npos);
+
+    const std::string svg = ReadFile(root / "game-console-ecommerce-svgrepo-com.svg");
+    CHECK(svg.find("#D12A78") != std::string::npos);
+    CHECK(svg.find("#F4EAF0") != std::string::npos);
+    const std::string generator = ReadFile(root / "tools" / "make-app-icon.py");
+    CHECK(generator.find("osl_accent.h") != std::string::npos);
+    CHECK(generator.find("game-console-ecommerce-svgrepo-com.svg") != std::string::npos);
+
+    const std::string ico = ReadFile(root / "packaging" / "icons" / "app-icon.ico");
+    CHECK(ico.size() > 6);
+    CHECK(static_cast<unsigned char>(ico[0]) == 0 && static_cast<unsigned char>(ico[1]) == 0);
+    CHECK(static_cast<unsigned char>(ico[2]) == 1 && static_cast<unsigned char>(ico[3]) == 0);
+    const int count = static_cast<unsigned char>(ico[4]) | static_cast<unsigned char>(ico[5]) << 8;
+    CHECK(count == 7);
+    const int sizes[] = {16, 24, 32, 48, 64, 128, 256};
+    for (int i = 0; i < count && i < 7; ++i) {
+        const size_t entry = 6 + i * 16;
+        CHECK(static_cast<unsigned char>(ico[entry]) == (sizes[i] < 256 ? sizes[i] : 0));
+        CHECK(static_cast<unsigned char>(ico[entry + 1]) == (sizes[i] < 256 ? sizes[i] : 0));
+        const uint32_t bytes = Little32(ico, entry + 8);
+        const uint32_t offset = Little32(ico, entry + 12);
+        CHECK(offset + bytes <= ico.size());
+        CHECK(ico.compare(offset, 8, "\x89PNG\r\n\x1a\n") == 0);
+        CHECK(ico.compare(offset + 12, 4, "IHDR") == 0);
+        CHECK(Big32(ico, offset + 16) == static_cast<uint32_t>(sizes[i]));
+        CHECK(Big32(ico, offset + 20) == static_cast<uint32_t>(sizes[i]));
+    }
+}
+
 void TestProfile() {
     const std::span<const GameBuild> builds = SupportedBuilds();
     CHECK(builds.size() == 1);
@@ -90,6 +167,7 @@ void TestProfile() {
     CHECK(std::string(build.label) == "CUSA05083 1.00 USA");
     CHECK(std::string(build.region) == "USA");
     CHECK(build.layers.size() == 1);
+    CHECK(build.resolution_sites.size() == 14);
     CHECK(std::string(FinishedLayer(build).app_ver) == "01.00");
     CHECK(std::string(FinishedLayer(build).sfo_version) == "01.01");
     CHECK(!FinishedLayer(build).update);
@@ -184,6 +262,9 @@ void TestSettings() {
     CHECK(settings.Get(kAntiAliasingKey, "") == "0");
     CHECK(settings.Get(kUpscaleKey, "") == "0");
     CHECK(settings.Get(kSharpenKey, "") == "1");
+    CHECK(settings.Get(kRenderResolutionKey, "") == "native");
+    CHECK(settings.Get(kAspectRatioKey, "") == "16:9");
+    CHECK(settings.Get(kDetailedLoggingKey, "") == "1");
     CHECK(settings.GetBool(kShowLauncherKey, false));
     CHECK(settings.GetInt(kWindowHeightKey, 0) == 1080);
 
@@ -194,17 +275,25 @@ void TestSettings() {
     CHECK(!IsValidSetting(kAnisotropyKey, "3"));
     CHECK(IsValidSetting(kPresentationKey, "stretch"));
     CHECK(!IsValidSetting(kPresentationKey, "cover"));
+    CHECK(IsValidSetting(kRenderResolutionKey, "1440p"));
+    CHECK(!IsValidSetting(kRenderResolutionKey, "9000p"));
+    CHECK(IsValidSetting(kAspectRatioKey, "21:9"));
+    CHECK(!IsValidSetting(kAspectRatioKey, "1:1"));
     CHECK(IsValidSetting(osl_key_actions[OSL_KEY_CROSS].ini_key, "Q"));
     CHECK(!IsValidSetting(osl_key_actions[OSL_KEY_CROSS].ini_key, "not a key"));
     CHECK(IsLauncherPlacementSetting(kLauncherXKey));
 
     settings.Set(kDisplayModeKey, "borderless");
     settings.Set(kMonitorKey, "2");
+    settings.Set(kRenderResolutionKey, "1440p");
+    settings.Set(kAspectRatioKey, "21:9");
     settings.Set(kLauncherXKey, "120");
     CHECK(settings.Save());
     LauncherSettings reloaded(dir / "osl.ini");
     CHECK(reloaded.Get(kDisplayModeKey, "") == "borderless");
     CHECK(reloaded.GetInt(kMonitorKey, 1) == 2);
+    CHECK(reloaded.Get(kRenderResolutionKey, "") == "1440p");
+    CHECK(reloaded.Get(kAspectRatioKey, "") == "21:9");
     CHECK(reloaded.GetInt(kLauncherXKey, 0) == 120);
     CHECK(!std::filesystem::exists(dir / "osl.ini.tmp"));
 
@@ -237,15 +326,32 @@ void TestKeys() {
 }
 
 void TestOptionsAndInstall() {
-    CHECK(WindowSizeOf(1080) == (WindowSize{1920, 1080}));
-    CHECK(WindowSizeOf(720) == (WindowSize{1280, 720}));
-    const std::vector<WindowSize> sizes = WindowSizes();
+    CHECK(WindowSizeOf(1080, osl_aspect_ratios[0]) == (WindowSize{1920, 1080}));
+    CHECK(WindowSizeOf(720, osl_aspect_ratios[0]) == (WindowSize{1280, 720}));
+    const std::vector<WindowSize> sizes = WindowSizesFor(osl_aspect_ratios[0]);
     CHECK(sizes.size() == std::size(kWindowHeights));
     CHECK(sizes.back() == (WindowSize{3840, 2160}));
+    CHECK(WindowSizeOf(1080, osl_aspect_ratios[2]) == (WindowSize{2520, 1080}));
     CHECK(WindowSizeLabel(kGamePictureSize).find("the game's own size") != std::string::npos);
     CHECK(std::string(PageName(PageId::kPlay)) == "Play");
     CHECK(std::string(PageName(PageId::kAbout)) == "About");
     CHECK(std::string(PageName(PageId::kGraphics)) == "Graphics");
+    CHECK(std::string(PageName(PageId::kGameplay)) == "Gameplay");
+    CHECK(std::string(PageName(PageId::kTrophies)) == "Trophies");
+    CHECK(!LauncherQuitAllowed(true));
+    CHECK(LauncherQuitAllowed(false));
+
+    CHECK(osl_resolution_index("native") == 0);
+    CHECK(osl_resolution_index("4K") == 5);
+    CHECK(osl_resolution_index("bogus") == 0);
+    CHECK(osl_aspect_index("16:9") == 0);
+    CHECK(osl_aspect_index("21:9") == 2);
+    CHECK(osl_aspect_index("bogus") == 0);
+    CHECK(ResolutionLabel(osl_resolutions[0]).find("1920") != std::string::npos);
+    const OslResolution target = osl_render_target(&osl_resolutions[3], &osl_aspect_ratios[0]);
+    CHECK(target.width == 2560 && target.height == 1440);
+    const OslResolution wide = osl_render_target(&osl_resolutions[0], &osl_aspect_ratios[2]);
+    CHECK(wide.height == 1080 && wide.width == 2520);
 
     for (const InstallStatus status : {InstallStatus::kInstalled, InstallStatus::kCancelled, InstallStatus::kNotPackage,
                                        InstallStatus::kUnsupportedPackage, InstallStatus::kNotGameFolder,
@@ -266,9 +372,149 @@ void TestHash() {
     CHECK(Sha256Hex(dir / "missing.bin").empty());
 }
 
+void TestSettingsReaders() {
+    const std::filesystem::path dir = TempDir("readers");
+    const GameBuild& build = SupportedBuilds()[0];
+    std::ofstream(dir / "image.json") << "{\n  \"title_id\": \"" << build.title_id << "\",\n  \"app_ver\": \""
+                                      << FinishedLayer(build).app_ver << "\",\n  \"eboot_sha256\": \""
+                                      << build.eboot_sha256 << "\"\n}\n";
+    std::ofstream(dir / "osl.ini") << "render_resolution = 1440p\naspect_ratio = 21:9\n";
+    CHECK(osl_render_resolution((dir / "osl.ini").string().c_str(), dir.string().c_str()) == 3);
+    CHECK(osl_aspect_ratio((dir / "osl.ini").string().c_str(), dir.string().c_str()) == 2);
+    std::ofstream(dir / "osl.ini") << "render_resolution = 4K\naspect_ratio = 32:9\n";
+    CHECK(osl_render_resolution((dir / "osl.ini").string().c_str(), dir.string().c_str()) == 5);
+    CHECK(osl_aspect_ratio((dir / "osl.ini").string().c_str(), dir.string().c_str()) == 3);
+    CHECK(osl_render_resolution((dir / "missing.ini").string().c_str(), dir.string().c_str()) == 0);
+}
+
+void TestDetailedLogging() {
+    const std::filesystem::path dir = TempDir("logging");
+    const std::filesystem::path file = dir / "osl.ini";
+    bool managed = false;
+    for (const ManagedSetting& setting : ManagedSettings()) {
+        managed |= setting.key == kDetailedLoggingKey && setting.default_value == "1";
+    }
+    CHECK(managed);
+    CHECK(LauncherSettings(file).GetBool(kDetailedLoggingKey, true));
+    CHECK(osl_detailed_logging(file.string().c_str()) == 1);
+    CHECK(osl_detailed_logging(nullptr) == 1);
+
+    std::ofstream(file) << "detailed_logging = 0\n";
+    CHECK(!LauncherSettings(file).GetBool(kDetailedLoggingKey, true));
+    CHECK(osl_detailed_logging(file.string().c_str()) == 0);
+    std::ofstream(file) << "detailed_logging = 1\n";
+    CHECK(osl_detailed_logging(file.string().c_str()) == 1);
+    std::ofstream(file) << "detailed_logging = true\n";
+    CHECK(osl_detailed_logging(file.string().c_str()) == 1);
+    std::ofstream(file) << "detailed_logging = garbage\n";
+    CHECK(osl_detailed_logging(file.string().c_str()) == 1);
+    std::ofstream(file) << "vsync = 0\n";
+    CHECK(osl_detailed_logging(file.string().c_str()) == 1);
+
+    {
+        LauncherSettings settings(file);
+        settings.SetBool(kDetailedLoggingKey, false);
+        CHECK(settings.Save());
+        CHECK(osl_detailed_logging(file.string().c_str()) == 0);
+    }
+    {
+        LauncherSettings settings(file);
+        CHECK(!settings.GetBool(kDetailedLoggingKey, true));
+        settings.ResetToDefaults();
+        CHECK(settings.Save());
+    }
+    CHECK(osl_detailed_logging(file.string().c_str()) == 1);
+}
+
+void TestLogsDirectory() {
+    const std::filesystem::path root = TempDir("logs-directory");
+    char out[4096];
+
+    const std::filesystem::path default_dir = root / "logs";
+    CHECK(osl_logs_directory(Utf8(default_dir).c_str(), nullptr, out, sizeof(out)));
+    CHECK(PathFromUtf8(out) == default_dir);
+    CHECK(!std::filesystem::exists(default_dir));
+
+    const std::filesystem::path log = root / "nested" / "run.log";
+    CHECK(osl_logs_directory(Utf8(default_dir).c_str(), Utf8(log).c_str(), out, sizeof(out)));
+    CHECK(PathFromUtf8(out) == log.parent_path());
+
+    CHECK(osl_logs_directory(Utf8(default_dir).c_str(), "", out, sizeof(out)));
+    CHECK(PathFromUtf8(out) == default_dir);
+    CHECK(!osl_logs_directory(nullptr, nullptr, out, sizeof(out)));
+    CHECK(!osl_logs_directory(Utf8(default_dir).c_str(), Utf8(log).c_str(), nullptr, sizeof(out)));
+    CHECK(!osl_logs_directory(Utf8(default_dir).c_str(), Utf8(log).c_str(), out, 0));
+
+    const std::filesystem::path unicode =
+        root / "logs with space" / PathFromUtf8("\xE6\x97\xA5\xE6\x9C\xAC\xE8\xAA\x9E");
+    CHECK(osl_logs_directory(Utf8(unicode).c_str(), nullptr, out, sizeof(out)));
+    CHECK(PathFromUtf8(out) == unicode);
+}
+
+void TestLogRetention() {
+    CHECK(runtime_log_should_remove(0, 1, 0));
+    CHECK(!runtime_log_should_remove(1, 1, 0));
+    CHECK(!runtime_log_should_remove(0, 0, 0));
+    CHECK(!runtime_log_should_remove(0, 1, 1));
+
+    const std::filesystem::path file = TempDir("log-retention") / "run.log";
+    std::ofstream(file) << "run\n";
+    CHECK(std::filesystem::exists(file));
+    runtime_log_set_session_path(file.string().c_str());
+    runtime_log_set_detailed(0);
+    runtime_log_mark_clean_exit();
+    runtime_log_finalize();
+    CHECK(!std::filesystem::exists(file));
+}
+
+void TestResolutionSites() {
+    const GameBuild& build = SupportedBuilds()[0];
+    CHECK(!build.resolution_sites.empty());
+    CHECK(!RestrictedToNativeResolution(&build));
+    CHECK(!RestrictedToNativeResolution(nullptr));
+
+    size_t image_size = 0;
+    for (const OslResolutionSite& site : build.resolution_sites) {
+        image_size = std::max<size_t>(image_size, site.offset + site.opcode_length + 4);
+    }
+    std::vector<unsigned char> image(image_size);
+    const auto install_sites = [&] {
+        for (const OslResolutionSite& site : build.resolution_sites) {
+            std::memcpy(image.data() + site.offset, site.opcode, site.opcode_length);
+            std::memcpy(image.data() + site.offset + site.opcode_length, &site.value, 4);
+        }
+    };
+    const auto immediate = [&](const OslResolutionSite& site) {
+        uint32_t value = 0;
+        std::memcpy(&value, image.data() + site.offset + site.opcode_length, 4);
+        return value;
+    };
+
+    install_sites();
+    const OslResolution target = osl_render_target(&osl_resolutions[3], &osl_aspect_ratios[2]);
+    char error[320] = "";
+    CHECK(osl_apply_resolution(image.data(), image.size(), build.resolution_sites.data(),
+                               build.resolution_sites.size(), &target, error, sizeof(error)));
+    for (const OslResolutionSite& site : build.resolution_sites) {
+        CHECK(immediate(site) == static_cast<uint32_t>(site.height ? target.height : target.width));
+    }
+
+    install_sites();
+    image[build.resolution_sites[0].offset + build.resolution_sites[0].opcode_length] ^= 0x01;
+    error[0] = 0;
+    CHECK(!osl_apply_resolution(image.data(), image.size(), build.resolution_sites.data(),
+                                build.resolution_sites.size(), &target, error, sizeof(error)));
+    CHECK(error[0] != 0);
+
+    install_sites();
+    CHECK(!osl_apply_resolution(image.data(), build.resolution_sites[0].offset, build.resolution_sites.data(),
+                                build.resolution_sites.size(), &target, error, sizeof(error)));
+}
+
 } // namespace
 
 int main() {
+    TestBranding();
     TestProfile();
     TestSfoIdentity();
     TestGameTree();
@@ -276,6 +522,11 @@ int main() {
     TestKeys();
     TestOptionsAndInstall();
     TestHash();
+    TestSettingsReaders();
+    TestDetailedLogging();
+    TestLogsDirectory();
+    TestResolutionSites();
+    TestLogRetention();
     std::printf("%s (%d checks, %d failures)\n", g_failures ? "FAILED" : "OK", g_checks, g_failures);
     return g_failures ? 1 : 0;
 }

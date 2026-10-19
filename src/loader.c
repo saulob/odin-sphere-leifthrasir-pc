@@ -7,8 +7,10 @@
 #include <time.h>
 #include <inttypes.h>
 #include "runtime.h"
+#include "trophies/trophy_runtime.h"
 #include "oslgpu.h"
 #include "osl_launcher.h"
+#include "osl_resolution.h"
 #include "runtime_log.h"
 #if !defined(__x86_64__) || !defined(__GNUC__)
 #error Odin Sphere Leifthrasir PC requires x86-64 GCC or Clang (including MinGW).
@@ -33,6 +35,9 @@ typedef struct { uint64_t target, kind, value, addend; } Reloc;
 static char (*names)[128];
 static uint64_t import_count;
 static unsigned char *image;
+static const OslResolution *render_resolution=&osl_resolutions[0];
+static const OslAspectRatio *aspect_ratio=&osl_aspect_ratios[0];
+static OslResolution render_target;
 static size_t page_size;
 typedef struct { uint64_t base, size, init, tls_address, tls_memsz, tls_filesz, tls_module; } LinkedModule;
 static LinkedModule modules[16];
@@ -41,6 +46,8 @@ static int entered_game;
 static int gpu_enabled;
 
 static void fail(const char *message) { fprintf(stderr, "ERROR: %s\n", message); exit(1); }
+/* For failures after the GPU threads started: exit() would run destructors under them. */
+static void fail_running(const char *message) { fprintf(stderr, "ERROR: %s\n", message); runtime_log_flush(); _exit(1); }
 static uint64_t read64(FILE *f) {
     unsigned char b[8];
     if (fread(b, 1, 8, f) != 8) fail("truncated boot file");
@@ -115,6 +122,7 @@ static void describe_address(char *out, size_t size, uintptr_t address) {
 static int fatal_reported;
 static LONG fatal_exception(EXCEPTION_POINTERS *info) {
     if (__atomic_exchange_n(&fatal_reported,1,__ATOMIC_ACQ_REL)) { Sleep(INFINITE); }
+    runtime_log_mark_crash();
     const EXCEPTION_RECORD *record=info->ExceptionRecord;
     const CONTEXT *c=info->ContextRecord;
     char where[MAX_PATH+64];
@@ -215,6 +223,7 @@ static void fault(int sig, siginfo_t *info, void *context) {
         pthread_sigmask(SIG_UNBLOCK, &unblock, NULL);
         siglongjmp(*recover, 1);
     }
+    runtime_log_mark_crash();
     /* The process is terminating: dladdr/snprintf are acceptable here. */
     ucontext_t *uc = context;
     uintptr_t rip = (uintptr_t)uc->uc_mcontext.gregs[REG_RIP];
@@ -274,6 +283,7 @@ static void dump_frames(ucontext_t *uc) {
 static void thread_dump(int sig, siginfo_t *info, void *context) { (void)sig; (void)info; dump_frames(context); }
 static void watchdog(int sig, siginfo_t *info, void *context) {
     (void)info;
+    runtime_log_mark_crash();
     const char head[]="STOP: watchdog timeout; thread stacks:\n";
     { ssize_t written_=write(2,head,sizeof(head)-1); (void)written_; }
     dump_frames(context);
@@ -412,24 +422,31 @@ int main(int argc, char **argv) {
     const OslPathRequest request={boot,app0,user_dir,logs_dir};
     if (!osl_resolve_paths(&request,&paths)) fail("cannot locate the game folders");
     boot=paths.boot; app0=paths.app0; user_dir=paths.user_dir;
+    static char settings_file[4200];
+    snprintf(settings_file,sizeof(settings_file),"%s/osl.ini",user_dir);
     char log_path[4200];
+    static char log_folder[4200];
+    snprintf(log_folder,sizeof(log_folder),"%s",paths.logs_dir);
     if (runtime_log_start(paths.logs_dir,log_file,log_path,sizeof(log_path))) {
         time_t now=time(NULL);
         char stamp[32];
         strftime(stamp,sizeof(stamp),"%Y-%m-%dT%H:%M:%S",localtime(&now));
         printf("[run] %s\n[run] %s\n[run] log %s\n[run] prepared root %s\n",stamp,command_line(argc,argv),log_path,app0);
         atexit(runtime_log_flush);
+        runtime_log_set_detailed(osl_detailed_logging(settings_file));
+        runtime_log_install_cleanup();
+        if (!osl_logs_directory(paths.logs_dir,log_path,log_folder,sizeof(log_folder)))
+            snprintf(log_folder,sizeof(log_folder),"%s",paths.logs_dir);
     } else fprintf(stderr,"Cannot create the log %s\n",log_file ? log_file : paths.logs_dir);
-    static char settings_file[4200];
-    snprintf(settings_file,sizeof(settings_file),"%s/osl.ini",user_dir);
     if (!cpu_only && !check_imports) {
         OslGraphicsCheck check_graphics=NULL;
 #ifndef _WIN32
         check_graphics=osl_check_vulkan;
 #endif
-        OslLauncherConfig launcher={app0,paths.image_dir,user_dir,settings_file,paths.logs_dir,skip_launcher,force_launcher,check_graphics};
+        OslLauncherConfig launcher={app0,paths.image_dir,user_dir,settings_file,log_folder,skip_launcher,force_launcher,check_graphics};
         OslLauncherResult launched=osl_launcher_run(&launcher);
-        if (launched==OSL_LAUNCHER_QUIT) exit(0);
+        runtime_log_set_detailed(osl_detailed_logging(settings_file));
+        if (launched==OSL_LAUNCHER_QUIT) { runtime_log_mark_clean_exit(); exit(0); }
         if (launched==OSL_LAUNCHER_BLOCKED) exit(1);
     }
     if (!osl_resolve_paths(&request,&paths)) fail("cannot locate the game folders");
@@ -437,6 +454,9 @@ int main(int argc, char **argv) {
     OslGameBuild game_build;
     const int known_build=osl_game_build(paths.image_dir,&game_build);
     printf("OSL: game build %s\n",known_build ? game_build.label : "not a supported build");
+    render_resolution=&osl_resolutions[osl_render_resolution(settings_file,paths.image_dir)];
+    aspect_ratio=&osl_aspect_ratios[osl_aspect_ratio(settings_file,paths.image_dir)];
+    render_target=osl_render_target(render_resolution,aspect_ratio);
     runtime_pad_set_settings(settings_file);
     if (app0) {
         runtime_file_configure(app0, user_dir ? user_dir : "user");
@@ -444,6 +464,7 @@ int main(int argc, char **argv) {
         snprintf(sfo,sizeof(sfo),"%s/sce_sys/param.sfo",app0);
         if (sfo_value(sfo,"INSTALL_DIR_SAVEDATA",id,sizeof(id),NULL) || sfo_value(sfo,"TITLE_ID",id,sizeof(id),NULL))
             runtime_savedata_configure(id);
+        trophy_runtime_configure(app0, user_dir ? user_dir : "user");
     }
     oslgpu_register_kernel();
 #ifdef _WIN32
@@ -620,6 +641,20 @@ int main(int argc, char **argv) {
         runtime_log_flush();
         _exit(missing ? 1 : 0); /* no destructors: GPU threads are running */
     }
+    if (render_resolution!=&osl_resolutions[0] || aspect_ratio!=&osl_aspect_ratios[0]) {
+        char error[320];
+        if (!known_build) fail_running("render resolution and aspect ratio need a supported game build");
+        if (game_build.resolution_site_count==0)
+            fail_running("render resolution and aspect ratio are not available for this game build");
+        if (!osl_apply_resolution(image,size,game_build.resolution_sites,game_build.resolution_site_count,
+                                  &render_target,error,sizeof(error))) {
+            char message[400];
+            snprintf(message,sizeof(message),"%s, game build %s",error,game_build.label);
+            fail_running(message);
+        }
+    }
+    printf("OSL: render resolution %dx%d (%s)\n",render_target.width,render_target.height,render_resolution->key);
+    printf("OSL: Aspect ratio: %s, render target %dx%d\n",aspect_ratio->name,render_target.width,render_target.height);
 #ifdef _WIN32
     printf("Guest TCB loads redirected to the TEB TLS slot: %" PRIu64 "\n", patch_tcb_loads(segments, ns));
 #endif

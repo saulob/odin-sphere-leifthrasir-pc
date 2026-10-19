@@ -47,6 +47,8 @@ int32_t* runtime_errno(void);
 void runtime_memory_set_gpu_hooks(RuntimeGpuRange map, RuntimeGpuRange unmap, RuntimeGpuRange invalidate);
 // runtime_log.c
 void runtime_log_flush(void);
+void runtime_log_mark_clean_exit(void);
+void runtime_log_finalize(void);
 }
 
 Frontend::WindowSDL* g_window = nullptr;
@@ -211,6 +213,8 @@ extern "C" int oslgpu_init(const OslGpuConfig* config) {
             SDL_Delay(2);
         }
         LOG_INFO(Frontend, "Window closed by user");
+        runtime_log_mark_clean_exit();
+        runtime_log_finalize();
         runtime_log_flush();
         std::_Exit(0);
     });

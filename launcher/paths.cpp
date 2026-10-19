@@ -126,6 +126,28 @@ fs::path PortableRoot(const fs::path& exe_dir) {
 } // namespace
 } // namespace osl
 
+extern "C" int osl_logs_directory(const char* logs_dir, const char* log_file, char* out, size_t size) {
+    if (!out || size == 0) {
+        return 0;
+    }
+    fs::path directory = logs_dir && *logs_dir ? osl::PathFromUtf8(logs_dir) : fs::path();
+    if (log_file && *log_file) {
+        std::error_code ec;
+        const fs::path file = osl::PathFromUtf8(log_file);
+        const fs::path absolute = fs::absolute(file, ec);
+        directory = (ec ? file : absolute).parent_path();
+    }
+    if (directory.empty()) {
+        return 0;
+    }
+    const std::string text = osl::Utf8(directory);
+    if (text.size() >= size) {
+        return 0;
+    }
+    std::memcpy(out, text.c_str(), text.size() + 1);
+    return 1;
+}
+
 extern "C" int osl_resolve_paths(const OslPathRequest* request, OslPaths* out) {
     fs::path exe_dir;
     if (!osl::ExecutableDirectory(exe_dir)) {

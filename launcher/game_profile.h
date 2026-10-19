@@ -5,6 +5,8 @@
 #include <span>
 #include <string>
 
+#include "osl_resolution.h"
+
 namespace osl {
 
 inline constexpr char kGameTitle[] = "Odin Sphere Leifthrasir";
@@ -30,6 +32,7 @@ struct GameBuild {
     const char* label;            // the name the log, the launcher and the loader show
     const char* region;
     std::span<const PackageLayer> layers; // base package first; the last layer is the finished game
+    std::span<const OslResolutionSite> resolution_sites;
 };
 
 // The supported builds, USA first.
@@ -43,6 +46,10 @@ std::string BuildMetadataText(const GameBuild& build);
 
 // The build whose base package a build's update is laid over, or nullptr when the build has no update.
 const GameBuild* BaseBuildOf(const GameBuild& build, std::span<const GameBuild> builds = SupportedBuilds());
+
+// True when the build's executable has no verified render resolution sites: it then runs only at its native size.
+// The launcher hides and the loader refuses the custom Render resolution and Aspect Ratio for such a build.
+bool RestrictedToNativeResolution(const GameBuild* build);
 
 std::string SupportedBuildsText();
 

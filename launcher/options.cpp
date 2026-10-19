@@ -13,14 +13,15 @@ std::string Dimensions(int width, int height) {
 
 } // namespace
 
-WindowSize WindowSizeOf(int height) {
-    return {static_cast<int>((static_cast<long>(height) * 16 + 4) / 9), height};
+WindowSize WindowSizeOf(int height, const OslAspectRatio& aspect) {
+    const long width = (static_cast<long>(height) * aspect.width * 2 + aspect.height) / (2 * aspect.height);
+    return {static_cast<int>(width), height};
 }
 
-std::vector<WindowSize> WindowSizes() {
+std::vector<WindowSize> WindowSizesFor(const OslAspectRatio& aspect) {
     std::vector<WindowSize> sizes;
     for (const int height : kWindowHeights) {
-        sizes.push_back(WindowSizeOf(height));
+        sizes.push_back(WindowSizeOf(height, aspect));
     }
     return sizes;
 }
@@ -30,7 +31,9 @@ const char* PageName(PageId page) {
     case PageId::kPlay: return "Play";
     case PageId::kDisplay: return "Display";
     case PageId::kGraphics: return "Graphics";
+    case PageId::kGameplay: return "Gameplay";
     case PageId::kControls: return "Controls";
+    case PageId::kTrophies: return "Trophies";
     case PageId::kAbout: return "About";
     }
     return "";
@@ -43,6 +46,10 @@ WindowSize FitGameWindow(WindowSize requested, const Display& display) {
 
 bool WindowSizeFits(WindowSize size, const Display& display) {
     return FitGameWindow(size, display) == size;
+}
+
+std::string ResolutionLabel(const OslResolution& resolution) {
+    return std::string(resolution.name) + " \xE2\x80\x94 " + Dimensions(resolution.width, resolution.height);
 }
 
 std::string WindowSizeLabel(WindowSize size) {

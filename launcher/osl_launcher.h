@@ -4,6 +4,8 @@
 
 #include <stddef.h>
 
+#include "osl_resolution.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -41,6 +43,23 @@ typedef struct {
 /* 0 when the executable's folder is unknown or a path does not fit. */
 int osl_resolve_paths(const OslPathRequest *request, OslPaths *paths);
 
+/* Index into osl_resolutions (osl_resolution.h) of the render_resolution in the settings file, among the resolutions
+ * the build image_dir was built from: 0 (native) when the file or the value is missing or the build has no verified
+ * render resolution sites. */
+int osl_render_resolution(const char *settings_file, const char *image_dir);
+
+/* Index into osl_aspect_ratios of the aspect_ratio in the settings file, among the shapes the build image_dir was
+ * built from: 0 (16:9 Original) when the file or the value is missing or the build has no verified render resolution
+ * sites. */
+int osl_aspect_ratio(const char *settings_file, const char *image_dir);
+
+/* 1 when the settings file keeps the logs of normal sessions (detailed_logging; 1 by default). */
+int osl_detailed_logging(const char *settings_file);
+
+/* The folder holding this run's log: the log_file's parent when one is given, else logs_dir. 0 when
+ * neither yields a path. */
+int osl_logs_directory(const char *logs_dir, const char *log_file, char *out, size_t size);
+
 /* Fills `names` with the distinct names of the Vulkan devices the renderer can use and returns how many (none without a
  * usable Vulkan on Linux); enumerates only, no device is created. */
 int osl_gpu_names(char (*names)[256], int max);
@@ -55,6 +74,8 @@ int osl_build_boot_image(const char *app0, const char *out, char *error, size_t 
 
 typedef struct {
     const char *label;
+    const OslResolutionSite *resolution_sites;
+    size_t resolution_site_count;
 } OslGameBuild;
 
 /* The supported game build a boot image folder was built from (its image.json); 0 when it is not one. */
