@@ -17,8 +17,19 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_IMAGE = ROOT / 'build' / 'image' / 'CUSA05083-1.00'
-DEFAULT_APP0 = ROOT / 'game' / 'prepared' / 'CUSA05083-1.00'
+
+
+def active_build_folder():
+    """The newest prepared build, as the launcher picks it; the USA build when none is prepared."""
+    prepared = ROOT / 'game' / 'prepared'
+    views = [p for p in prepared.iterdir() if (p / '.osl_view.json').is_file()] if prepared.is_dir() else []
+    if views:
+        return max(views, key=lambda p: (p / '.osl_view.json').stat().st_mtime).name
+    return 'CUSA05083-1.00'
+
+
+DEFAULT_APP0 = ROOT / 'game' / 'prepared' / active_build_folder()
+DEFAULT_IMAGE = ROOT / 'build' / 'image' / DEFAULT_APP0.name
 MISSING = re.compile(r'^MISSING: (\S+) \((.*)\)$', re.M)
 INC_ENTRY = re.compile(r'\{"([^"]+)","([^"]*)"\}')
 

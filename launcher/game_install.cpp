@@ -730,7 +730,8 @@ InstallMessage DescribeInstall(InstallStatus status) {
     case InstallStatus::kNotGameFolder:
         return {"Not a game folder", "Select the folder that contains eboot.bin, sce_module and sce_sys."};
     case InstallStatus::kWrongGame:
-        return {"Wrong game", "This is not Odin Sphere Leifthrasir."};
+        return {"Unsupported game package",
+                "This is not a supported Odin Sphere Leifthrasir package. Supported: " + SupportedBuildsText() + "."};
     case InstallStatus::kWrongVersion:
         return {"Different version of Odin Sphere Leifthrasir", "This port supports " + SupportedBuildsText() + "."};
     case InstallStatus::kIncomplete:
@@ -752,8 +753,8 @@ InstallMessage DescribeInstall(InstallStatus status) {
         return {"Could not prepare the game", "The game's code could not be prepared. The log has the details."};
     case InstallStatus::kUpdateNeedsBase:
         return {"Base game required",
-                "This package is an update. Install the 1.00 base package of the same game first, then install the "
-                "update."};
+                "This package is an update. Install the base package with the same Title ID and Content ID first, then "
+                "install the update."};
     case InstallStatus::kActivated:
         return {"Game activated", "The selected build is now the active game."};
     case InstallStatus::kUpToDate:

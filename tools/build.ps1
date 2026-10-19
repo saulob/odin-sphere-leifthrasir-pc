@@ -3,9 +3,11 @@
   Builds osl-loader.exe incrementally (MSYS2 CLANG64, CMake + Ninja). -Run launches it.
 .DESCRIPTION
   Reuses what is current and updates only what is stale: the video core dependencies (gpu\deps.txt), the CMake
-  configuration and, once the game is installed, its boot image (build\image\CUSA05083-1.00). The one build
+  configuration and, once the game is installed, the boot image of the active prepared build. The one build
   configuration, RelWithDebInfo (-O2 -g -DNDEBUG), is what is tested and what a package must contain; nothing else
   is built. The game is installed from the launcher (Play page, Install game...), as in a release.
+.PARAMETER Version
+  The prepared build whose boot image to update (default: the active one, game\prepared\CUSA05083-1.00 by default).
 .PARAMETER Run
   Launches the loader that was just built and stays attached until the game is closed. The launcher opens first
   when its rules say so (docs\LAUNCHER.md). Logs to build\logs\odin_sphere_leifthrasir_NNN.log.
@@ -26,19 +28,27 @@ param(
     [switch]$Run,
     [switch]$Clean,
     [switch]$CheckImports,
+    [string]$Version = '',
     [int]$TimeoutSeconds = 0,
     [Parameter(ValueFromRemainingArguments = $true)][string[]]$LoaderArgs = @()
 )
 
 . (Join-Path $PSScriptRoot '_common.ps1')
-$version = 'CUSA05083-1.00'
 $config = 'RelWithDebInfo'
 $root = $script:RepoRoot
 $buildDir = Join-Path $root 'build\cmake\clang64'
+if (-not $Version) {
+    $views = @(Get-ChildItem -LiteralPath (Join-Path $root 'game\prepared') -Directory -ErrorAction SilentlyContinue |
+        Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName '.osl_view.json') } |
+        ForEach-Object {
+            [pscustomobject]@{ Name = $_.Name; Time = (Get-Item -LiteralPath (Join-Path $_.FullName '.osl_view.json')).LastWriteTime }
+        } | Sort-Object -Property Time -Descending)
+    $Version = if ($views.Count -gt 0) { $views[0].Name } else { 'CUSA05083-1.00' }
+}
 $loader = Join-Path $buildDir 'bin\osl-loader.exe'
-$view = Join-Path $root "game\prepared\$version"
+$view = Join-Path $root "game\prepared\$Version"
 $marker = Join-Path $view '.osl_view.json'
-$image = Join-Path $root "build\image\$version"
+$image = Join-Path $root "build\image\$Version"
 $loadExecExit = 30 # osl-loader: sceSystemServiceLoadExec ended the process
 
 # Rebuilt when the game was installed again or the boot image builder changed.

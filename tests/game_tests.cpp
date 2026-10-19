@@ -2,6 +2,7 @@
 // Synthetic files in a temporary folder: no window, no Vulkan, no game files.
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -154,7 +155,7 @@ void TestBranding() {
 
 void TestProfile() {
     const std::span<const GameBuild> builds = SupportedBuilds();
-    CHECK(builds.size() == 1);
+    CHECK(builds.size() == 3);
     const GameBuild& build = builds[0];
     CHECK(std::string(kGameTitle) == "Odin Sphere Leifthrasir");
     CHECK(std::string(build.title_id) == "CUSA05083");
@@ -162,8 +163,8 @@ void TestProfile() {
     CHECK(std::string(build.version) == "1.00");
     CHECK(std::string(build.folder) == "CUSA05083-1.00");
     CHECK(std::string(build.eboot_sha256) == "7c517194aba4e5eea55d9197efae47d1567bd785b8c0dced7d1b0f4028d3eed6");
-    CHECK(build.regional_archive == nullptr);
     CHECK(build.extra_files.empty());
+    CHECK(build.data_files.size() == 3);
     CHECK(std::string(build.label) == "CUSA05083 1.00 USA");
     CHECK(std::string(build.region) == "USA");
     CHECK(build.layers.size() == 1);
@@ -172,14 +173,51 @@ void TestProfile() {
     CHECK(std::string(FinishedLayer(build).sfo_version) == "01.01");
     CHECK(!FinishedLayer(build).update);
     CHECK(BaseBuildOf(build) == nullptr);
-    CHECK(SupportedBuildsText() == "CUSA05083 1.00 USA");
+    CHECK(UpdateBuildOf(build) == nullptr);
     CHECK(BuildMetadataText(build) == "APP_VER 1.00 \xC2\xB7 VERSION 1.01");
+
+    const GameBuild& japan_base = builds[1];
+    const GameBuild& japan = builds[2];
+    CHECK(std::string(japan_base.title_id) == "CUSA01290");
+    CHECK(std::string(japan_base.content_id) == "JP0005-CUSA01290_00-ODINSPHERELE0000");
+    CHECK(std::string(japan_base.version) == "1.00");
+    CHECK(std::string(japan_base.folder) == "CUSA01290-1.00");
+    CHECK(std::string(japan_base.eboot_sha256) ==
+          "d0add7e35bc5f58d5c9017fdce0878006c32f944fa8eb3d7ce62671257f5bcc7");
+    CHECK(std::string(japan_base.label) == "CUSA01290 1.00 Japan");
+    CHECK(std::string(japan_base.region) == "Japan");
+    CHECK(japan_base.layers.size() == 1);
+    CHECK(japan_base.resolution_sites.size() == 15);
+    CHECK(std::string(FinishedLayer(japan_base).app_ver) == "01.00");
+    CHECK(std::string(FinishedLayer(japan_base).sfo_version) == "01.00");
+    CHECK(BaseBuildOf(japan_base) == nullptr);
+    CHECK(UpdateBuildOf(japan_base) == &japan);
+
+    CHECK(std::string(japan.title_id) == "CUSA01290");
+    CHECK(std::string(japan.version) == "1.02");
+    CHECK(std::string(japan.folder) == "CUSA01290-1.02");
+    CHECK(std::string(japan.eboot_sha256) ==
+          "db96b839fe31adba4b3eb3547202f761d34881325c2fea650c4c020eded5d071");
+    CHECK(std::string(japan.label) == "CUSA01290 1.02 Japan");
+    CHECK(japan.layers.size() == 2);
+    CHECK(std::string(FinishedLayer(japan).app_ver) == "01.02");
+    CHECK(std::string(FinishedLayer(japan).sfo_version) == "01.00");
+    CHECK(FinishedLayer(japan).update);
+    CHECK(BaseBuildOf(japan) == &japan_base);
+    CHECK(UpdateBuildOf(japan) == nullptr);
+    CHECK(japan.resolution_sites.size() == 15);
+    CHECK(japan.data_files.size() == 6);
+    CHECK(japan.extra_files.size() == 1);
+    CHECK(BuildMetadataText(japan) == "APP_VER 1.02 \xC2\xB7 VERSION 1.00");
+
+    CHECK(SupportedBuildsText() == "CUSA05083 1.00 USA, CUSA01290 1.00 Japan and CUSA01290 1.02 Japan");
     CHECK(std::string(kPreparedMarker) == ".osl_view.json");
     const std::vector<std::string> shared(std::begin(kSharedGameFiles), std::end(kSharedGameFiles));
-    for (const char* name : {"eboot.bin", "sce_discmap.plt", "Odin2_BT_US.CPK", "Odin2_OR_US.CPK", "Odin2_RE_US.CPK",
-                             "sce_module/libc.prx", "sce_module/libSceFios2.prx", "sce_sys/param.sfo"}) {
+    for (const char* name : {"eboot.bin", "sce_discmap.plt", "sce_module/libc.prx", "sce_module/libSceFios2.prx",
+                             "sce_sys/param.sfo"}) {
         CHECK(std::find(shared.begin(), shared.end(), name) != shared.end());
     }
+    CHECK(shared.size() == 5);
     CHECK(std::string(kBundledModules[0]) == "libc.prx");
     CHECK(std::string(kBundledModules[1]) == "libSceFios2.prx");
 }
@@ -226,6 +264,33 @@ void TestSfoIdentity() {
     std::ifstream version(sfo, std::ios::binary);
     const std::string wrong_version((std::istreambuf_iterator<char>(version)), {});
     CHECK(CheckSfoIdentity(wrong_version).state == GameFileState::kDifferentVersion);
+
+    const std::vector<std::pair<std::string, std::string>> japan = {
+        {"TITLE", "Odin Sphere Leifthrasir"}, {"TITLE_ID", "CUSA01290"},
+        {"CONTENT_ID", "JP0005-CUSA01290_00-ODINSPHERELE0000"}, {"CATEGORY", "gd"},
+        {"APP_VER", "01.00"}, {"VERSION", "01.00"},
+    };
+    WriteSfo(sfo, japan);
+    std::ifstream base_file(sfo, std::ios::binary);
+    const std::string japan_base((std::istreambuf_iterator<char>(base_file)), {});
+    CHECK(CheckSfoIdentity(japan_base).state == GameFileState::kValid);
+    CHECK(CheckSfoIdentity(japan_base).build == &SupportedBuilds()[1]);
+    CHECK(CheckPackageIdentity(japan_base).state == GameFileState::kValid);
+    CHECK(CheckPackageIdentity(japan_base).layer == 0);
+
+    auto japan_update = japan;
+    for (auto& [key, value] : japan_update) {
+        if (key == "CATEGORY") value = "gp";
+        if (key == "APP_VER") value = "01.02";
+    }
+    WriteSfo(sfo, japan_update);
+    std::ifstream update_file(sfo, std::ios::binary);
+    const std::string update((std::istreambuf_iterator<char>(update_file)), {});
+    CHECK(CheckSfoIdentity(update).state == GameFileState::kValid);
+    CHECK(CheckSfoIdentity(update).build == &SupportedBuilds()[2]);
+    CHECK(CheckPackageIdentity(update).state == GameFileState::kValid);
+    CHECK(CheckPackageIdentity(update).build == &SupportedBuilds()[2]);
+    CHECK(CheckPackageIdentity(update).layer == 1);
 }
 
 void TestGameTree() {
@@ -243,8 +308,35 @@ void TestGameTree() {
     CHECK(missing.detail == "missing eboot.bin");
     CHECK(missing.build == &SupportedBuilds()[0]);
     CHECK(InstalledGameName(GameFileState::kValid, missing.build) == "PS4 CUSA05083 1.00 USA");
+    CHECK(InstalledGameName(GameFileState::kValid, &SupportedBuilds()[2]) == "PS4 CUSA01290 1.02 Japan");
     CHECK(InstalledGameName(GameFileState::kMissing, missing.build) == "Not installed");
     CHECK(std::string(StateName(GameFileState::kDifferentVersion)) == "different version");
+}
+
+void TestBuildSelection() {
+    const std::filesystem::path root = TempDir("build-selection");
+    const GameRoots roots{root / "prepared", root / "image"};
+    const std::span<const GameBuild> builds = SupportedBuilds();
+    CHECK(LastPreparedBuild(roots) == nullptr);
+    CHECK(ActiveBuildPaths(roots).app0 == BuildPaths(roots, builds[0]).app0);
+
+    const auto write_marker = [&](const GameBuild& build, int seconds) {
+        std::filesystem::create_directories(roots.prepared / build.folder);
+        std::ofstream marker(roots.prepared / build.folder / kPreparedMarker);
+        marker << "{\"version\": \"" << build.version << "\", \"scope\": \"full\"}\n";
+        marker.close();
+        std::filesystem::last_write_time(roots.prepared / build.folder / kPreparedMarker,
+                                         std::filesystem::file_time_type(std::chrono::seconds(seconds)));
+    };
+    write_marker(builds[0], 10);
+    write_marker(builds[1], 20);
+    write_marker(builds[2], 30);
+    CHECK(LastPreparedBuild(roots) == &builds[2]);
+    CHECK(ActiveBuildPaths(roots).app0 == BuildPaths(roots, builds[2]).app0);
+
+    write_marker(builds[1], 40);
+    CHECK(LastPreparedBuild(roots) == &builds[1]);
+    CHECK(UpdateBuildOf(*LastPreparedBuild(roots)) == &builds[2]);
 }
 
 void TestSettings() {
@@ -362,6 +454,8 @@ void TestOptionsAndInstall() {
         CHECK(!message.title.empty() && !message.text.empty());
     }
     CHECK(DescribeInstall(InstallStatus::kWrongVersion).text.find("CUSA05083 1.00 USA") != std::string::npos);
+    CHECK(DescribeInstall(InstallStatus::kWrongVersion).text.find("CUSA01290 1.02 Japan") != std::string::npos);
+    CHECK(DescribeInstall(InstallStatus::kWrongGame).text.find("CUSA01290 1.02 Japan") != std::string::npos);
 }
 
 void TestHash() {
@@ -467,11 +561,11 @@ void TestLogRetention() {
     CHECK(!std::filesystem::exists(file));
 }
 
-void TestResolutionSites() {
-    const GameBuild& build = SupportedBuilds()[0];
+void TestBuildResolutionSites(const GameBuild& build) {
     CHECK(!build.resolution_sites.empty());
+    CHECK(build.resolution_sites.size() == 15);
+    CHECK(build.resolution_sites.back().packed_floats);
     CHECK(!RestrictedToNativeResolution(&build));
-    CHECK(!RestrictedToNativeResolution(nullptr));
 
     size_t image_size = 0;
     for (const OslResolutionSite& site : build.resolution_sites) {
@@ -535,7 +629,6 @@ void TestResolutionSites() {
 
     install_sites();
     const OslResolutionSite& packed = build.resolution_sites.back();
-    CHECK(packed.packed_floats);
     image[packed.offset + packed.opcode_length + 4] ^= 0x01;
     error[0] = 0;
     CHECK(!osl_apply_resolution(image.data(), image.size(), build.resolution_sites.data(),
@@ -547,6 +640,13 @@ void TestResolutionSites() {
                                 build.resolution_sites.size(), &target, error, sizeof(error)));
 }
 
+void TestResolutionSites() {
+    CHECK(!RestrictedToNativeResolution(nullptr));
+    for (const GameBuild& build : SupportedBuilds()) {
+        TestBuildResolutionSites(build);
+    }
+}
+
 } // namespace
 
 int main() {
@@ -554,6 +654,7 @@ int main() {
     TestProfile();
     TestSfoIdentity();
     TestGameTree();
+    TestBuildSelection();
     TestSettings();
     TestKeys();
     TestOptionsAndInstall();

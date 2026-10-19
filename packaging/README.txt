@@ -14,8 +14,11 @@ NO GAME FILES ARE INCLUDED
 You need your own legally obtained copy of the game: a decrypted Odin Sphere
 Leifthrasir PS4 package (.pkg). This port runs:
 
-  US: Title ID CUSA05083, version 1.00 (the base package, APP_VER 01.00,
-      VERSION 01.01)
+  US:    Title ID CUSA05083, version 1.00 (the base package, APP_VER 01.00,
+         VERSION 01.01)
+  Japan: Title ID CUSA01290, base version 1.00 (APP_VER 01.00, VERSION 01.00)
+         and its 1.02 update (APP_VER 01.02, VERSION 01.00). Install the base
+         package first, then the update.
 
 Any other version is refused with "Different version of Odin Sphere
 Leifthrasir". A package still encrypted for a PS4 console cannot be unpacked on
@@ -41,7 +44,10 @@ INSTALL
 5. Wait while the launcher checks the package and unpacks it into the "game"
    folder next to the program. The .pkg file is only read and can be deleted
    afterwards.
-6. When the Play page says "Ready to play", press PLAY.
+6. For the Japanese 1.02 build, select the base package first; once it is
+   installed, select the 1.02 update package. The update becomes the active
+   build.
+7. When the Play page says "Ready to play", press PLAY.
 
 To repair the game files, use "Reinstall game..." on the Play page. Your
 settings and saves are kept. If an installation fails or is cancelled, the

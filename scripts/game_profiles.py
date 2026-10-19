@@ -17,7 +17,7 @@ PROFILES = {
             '1.00': {
                 'layers': ({'app_ver': '01.00', 'sfo_version': '01.01', 'update': False},),
                 'eboot_sha256': '7c517194aba4e5eea55d9197efae47d1567bd785b8c0dced7d1b0f4028d3eed6',
-                'folder': 'CUSA05083-1.00', 'regional_archive': None, 'extra_files': (),
+                'folder': 'CUSA05083-1.00', 'extra_files': (),
                 'data_files': ('Odin2_BT_US.CPK', 'Odin2_OR_US.CPK', 'Odin2_RE_US.CPK'),
             },
         },
@@ -26,6 +26,32 @@ PROFILES = {
         # Linked after the eboot in this order (libc.prx needs libSceFios2.prx, as in the other ports).
         'modules': ('libc.prx', 'libSceFios2.prx'),
         # What the loader needs; the game data (Odin2_*.CPK) is only unpacked with --scope full.
+        'core_patterns': ('eboot.bin', 'sce_module/*', 'sce_sys/*', '*.plt'),
+    },
+    'CUSA01290': {
+        'name': 'Odin Sphere Leifthrasir',
+        'region': 'Japan',
+        'content_id': 'JP0005-CUSA01290_00-ODINSPHERELE0000',
+        'versions': {
+            '1.00': {
+                'layers': ({'app_ver': '01.00', 'sfo_version': '01.00', 'update': False},),
+                'eboot_sha256': 'd0add7e35bc5f58d5c9017fdce0878006c32f944fa8eb3d7ce62671257f5bcc7',
+                'folder': 'CUSA01290-1.00', 'extra_files': (),
+                'data_files': ('Odin2_BOOT.CPK', 'Odin2_OR.CPK', 'Odin2_ORHD.CPK', 'Odin2_RE.CPK'),
+            },
+            # The 1.02 patch is laid over the base package; it replaces eboot.bin and adds the patch archives.
+            '1.02': {
+                'layers': ({'app_ver': '01.00', 'sfo_version': '01.00', 'update': False},
+                           {'app_ver': '01.02', 'sfo_version': '01.00', 'update': True}),
+                'eboot_sha256': 'db96b839fe31adba4b3eb3547202f761d34881325c2fea650c4c020eded5d071',
+                'folder': 'CUSA01290-1.02', 'extra_files': ('sce_discmap_patch.plt',),
+                'data_files': ('Odin2_BOOT.CPK', 'Odin2_OR.CPK', 'Odin2_ORHD.CPK', 'Odin2_RE.CPK',
+                               'Odin2_PATCH1_OR.CPK', 'Odin2_PATCH1_RE.CPK'),
+            },
+        },
+        'entry': 'eboot.bin',
+        'extra_executables': (),
+        'modules': ('libc.prx', 'libSceFios2.prx'),
         'core_patterns': ('eboot.bin', 'sce_module/*', 'sce_sys/*', '*.plt'),
     },
 }

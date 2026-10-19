@@ -20,5 +20,5 @@
       "link": "https://github.com/saulob"
     }
   ],
-  "notes": "Native Windows port in initial bring-up. Only the USA 1.00 base package (CUSA05083) is supported. No game files are included."
+  "notes": "Native Windows port. Supports the USA 1.00 base package (CUSA05083) and the Japanese base (CUSA01290 1.00) with its 1.02 update. No game files are included."
 }

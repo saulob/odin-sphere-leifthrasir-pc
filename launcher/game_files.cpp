@@ -318,10 +318,12 @@ GameCheck CheckGameTree(const std::filesystem::path& app0, std::span<const GameB
             return Result(GameFileState::kMissing, std::string("missing ") + name, {}, &build);
         }
     }
-    if (build.regional_archive && !IsRegularNonEmpty(app0 / build.regional_archive)) {
-        return Result(GameFileState::kMissing, std::string("missing ") + build.regional_archive, {}, &build);
-    }
     for (const char* name : build.extra_files) {
+        if (!IsRegularNonEmpty(app0 / name)) {
+            return Result(GameFileState::kMissing, std::string("missing ") + name, {}, &build);
+        }
+    }
+    for (const char* name : build.data_files) {
         if (!IsRegularNonEmpty(app0 / name)) {
             return Result(GameFileState::kMissing, std::string("missing ") + name, {}, &build);
         }

@@ -10,11 +10,10 @@
 
 ## Status
 
-Initial bring-up. This repository is the foundation of the port: the loader and runtime that map and
-run the game's own x86-64 code, the shadPS4-derived Vulkan video core, the launcher and installer,
-and the diagnostics that make the first boot debuggable. Only the USA 1.00 base package
-(`CUSA05083`, APP_VER `01.00`, VERSION `01.01`) is supported and verified; any other version is
-refused.
+This repository is the foundation of the port: the loader and runtime that map and run the game's own
+x86-64 code, the shadPS4-derived Vulkan video core, the launcher and installer, and the diagnostics
+that make the first boot debuggable. The USA 1.00 base package (`CUSA05083`) and the Japanese release
+(`CUSA01290` base 1.00 plus its 1.02 update) are supported; any other version is refused.
 
 ## Features
 
@@ -42,10 +41,13 @@ refused.
 | --- | --- |
 | Game | Odin Sphere Leifthrasir |
 | Platform | PlayStation 4 |
-| Supported build | Title ID `CUSA05083`, Content ID `UP0177-CUSA05083_00-ODINSPHERELE0000`, `APP_VER` `01.00`, `VERSION` `01.01`, `eboot.bin` SHA-256 `7c517194aba4e5eea55d9197efae47d1567bd785b8c0dced7d1b0f4028d3eed6` |
+| USA build | Title ID `CUSA05083`, Content ID `UP0177-CUSA05083_00-ODINSPHERELE0000`, `APP_VER` `01.00`, `VERSION` `01.01`, `eboot.bin` SHA-256 `7c517194aba4e5eea55d9197efae47d1567bd785b8c0dced7d1b0f4028d3eed6` |
+| Japanese base | Title ID `CUSA01290`, Content ID `JP0005-CUSA01290_00-ODINSPHERELE0000`, `APP_VER` `01.00`, `VERSION` `01.00`, `eboot.bin` SHA-256 `d0add7e35bc5f58d5c9017fdce0878006c32f944fa8eb3d7ce62671257f5bcc7` |
+| Japanese 1.02 update | Same Title and Content ID, `APP_VER` `01.02`, `VERSION` `01.00`, `eboot.bin` SHA-256 `db96b839fe31adba4b3eb3547202f761d34881325c2fea650c4c020eded5d071` |
 
 The launcher checks the Title ID, Content ID and versions in the package's `param.sfo` before it unpacks anything, and
-the `eboot.bin` hash before it installs the result. A package encrypted for a PS4 console cannot be unpacked on a PC.
+the `eboot.bin` hash before it installs the result. A Japanese update is only laid over the Japanese base package with
+the same Title ID and Content ID. A package encrypted for a PS4 console cannot be unpacked on a PC.
 
 ## Installing
 
@@ -53,8 +55,10 @@ the `eboot.bin` hash before it installs the result. A package encrypted for a PS
 2. Run **osl-loader.exe**. The launcher opens.
 3. On the **Play** page click **Install game...** and select your own Odin Sphere Leifthrasir `.pkg` file.
 4. Wait until **Ready to play** appears. The package is unpacked on your PC into the `game` folder next to the program
-   (about 4 GB). The `.pkg` file is only read, and you can delete it afterwards.
-5. Press **PLAY**.
+   (about 3.3 GB). The `.pkg` file is only read, and you can delete it afterwards.
+5. Japanese 1.02: install the Japanese base package first, then install its 1.02 update package the same way. The
+   update is laid over the base and becomes the active build.
+6. Press **PLAY**.
 
 **No game files are included** in the release, and the port does not download the game.
 
@@ -68,7 +72,7 @@ Everything is kept next to the program:
 | `user\savedata\` | Your saves |
 | `user\trophy\` | Your trophy progress and the trophy list and icons unpacked from your game |
 | `user\keys.json` | Your Trophy Key, if you configure one |
-| `user\cache\CUSA05083\` | Shader cache, so later starts load faster |
+| `user\cache\<Title ID>\` | Shader cache, so later starts load faster |
 | `logs\` | One `odin_sphere_leifthrasir_NNN.log` per run |
 | `game\` | The installed game (unpacked from your own package) |
 
@@ -93,9 +97,10 @@ The Render resolution and Aspect Ratio options change the game's verified intern
 21:9 and 32:9 stretch the gameplay horizontally instead of showing more of the world, and 16:10, 4:3 and
 5:4 squeeze it. The HUD, menus and prerendered videos are not adjusted either.
 
-Xbox button prompts, cheats and the menu-text language are not exposed: the US build used here contains a
-single English text set, and Odin Sphere's prompt atlases and gameplay values have not yet been verified for
-those launcher options. The PlayStation prompts and the game's own text are used.
+Xbox button prompts, cheats and a menu-text language selector are not exposed: the USA build contains a single
+English text set, and the Japanese build contains Japanese menus, subtitles and voices. Odin Sphere's prompt atlases and
+gameplay values have not yet been verified for those launcher options. The PlayStation prompts and each build's own
+text are used, and the two regions' assets are never mixed.
 
 **Detailed logging** (About, Diagnostics) is on by default and keeps the log of every session. Turned off, a run
 still writes its log while it runs, but a normal exit discards it so normal sessions do not accumulate files. A
@@ -106,7 +111,7 @@ folder that holds the logs, creating it first when it does not exist.
 
 1. Install [MSYS2](https://www.msys2.org) with the CLANG64 toolchain. `.\tools\setup.ps1` checks it and prints the `pacman` command for anything missing.
 2. `.\tools\build.ps1` fetches the pinned dependencies (TRG Launcher, Dear ImGui and a few small libraries) and builds `build\cmake\clang64\bin\osl-loader.exe`.
-3. `.\tools\build.ps1 -Run` also starts it. Install the game from the launcher's Play page, as in a release; the development build keeps it in `game\prepared\CUSA05083-1.00` and the boot image in `build\image\CUSA05083-1.00` of the repository.
+3. `.\tools\build.ps1 -Run` also starts it. Install the game from the launcher's Play page, as in a release; the development build keeps it in `game\prepared\<build folder>` and the boot image in `build\image\<build folder>` of the repository (`CUSA05083-1.00`, `CUSA01290-1.00` or `CUSA01290-1.02`).
 4. `.\tools\test.ps1` builds and runs the focused headless tests (game profile, settings, keys, window fit, GPU tiling). Python is not needed to build, test or play; the optional development scripts in `scripts\` use it (`.\tools\setup.ps1 -InstallPython`).
 
 ### Reference comparison

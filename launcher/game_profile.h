@@ -27,8 +27,8 @@ struct GameBuild {
     const char* version;          // the profile version: the preparation marker's "version"
     const char* folder;           // under game\prepared and game\image; distinct for each build
     const char* eboot_sha256;     // lower-case hex of the finished game's eboot.bin
-    const char* regional_archive; // nullptr when the build has none
-    std::span<const char* const> extra_files; // the other files of the build's update, required like the archive
+    std::span<const char* const> extra_files; // files the update adds, required like the game data
+    std::span<const char* const> data_files;  // the game's archives; required by a complete installation
     const char* label;            // the name the log, the launcher and the loader show
     const char* region;
     std::span<const PackageLayer> layers; // base package first; the last layer is the finished game
@@ -47,19 +47,19 @@ std::string BuildMetadataText(const GameBuild& build);
 // The build whose base package a build's update is laid over, or nullptr when the build has no update.
 const GameBuild* BaseBuildOf(const GameBuild& build, std::span<const GameBuild> builds = SupportedBuilds());
 
+// The newest build that continues this build's layers with another update, or nullptr when there is none.
+const GameBuild* UpdateBuildOf(const GameBuild& build, std::span<const GameBuild> builds = SupportedBuilds());
+
 // True when the build's executable has no verified render resolution sites: it then runs only at its native size.
 // The launcher hides and the loader refuses the custom Render resolution and Aspect Ratio for such a build.
 bool RestrictedToNativeResolution(const GameBuild* build);
 
 std::string SupportedBuildsText();
 
-// Files every complete game folder has, whatever the build. The build's regional archive is required too.
+// Files every complete game folder has, whatever the build. The build's data and extra files are required too.
 inline constexpr const char* kSharedGameFiles[] = {
     "eboot.bin",
     "sce_discmap.plt",
-    "Odin2_BT_US.CPK",
-    "Odin2_OR_US.CPK",
-    "Odin2_RE_US.CPK",
     "sce_module/libc.prx",
     "sce_module/libSceFios2.prx",
     "sce_sys/param.sfo",

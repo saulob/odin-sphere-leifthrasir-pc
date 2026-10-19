@@ -428,6 +428,12 @@ private:
                                                   : StatusTitle(files_);
         const std::string detail = ready && build_ ? BuildMetadataText(*build_) : StatusDetail(files_);
         ui.StatusCard(ready ? trg::Status::kReady : trg::Status::kAttention, title.c_str(), detail.c_str());
+        if (ready && build_) {
+            if (const GameBuild* update = UpdateBuildOf(*build_)) {
+                const std::string text = "Install the " + std::string(update->label) + " update package to play it.";
+                ui.Info("Update available", text.c_str());
+            }
+        }
         if (!install_failure_.empty()) {
             ui.Spacer(4);
             ImGui::PushStyleColor(ImGuiCol_Text, ui.theme().warn_dot);

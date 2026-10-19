@@ -57,7 +57,7 @@ foreach ($info in $infos) {
     $build = $info.profile
     if (-not $info.fake_pkg) { Write-Bad "$($info.file): retail PKG (needs console keys)"; $verdict = 1 }
     if ($build.layer -eq 0) {
-        Write-Ok ("{0}: {1} {2}, a complete game" -f $info.file, $build.title_id, $build.version)
+        Write-Ok ("{0}: {1} {2}, the base package" -f $info.file, $build.title_id, $build.version)
         continue
     }
     $base = @($infos | Where-Object { $_.profile -and $_.profile.title_id -eq $build.title_id -and $_.profile.layer -eq 0 })
@@ -69,7 +69,7 @@ foreach ($info in $infos) {
         $verdict = 1
     }
 }
-if (-not ($infos | Where-Object { $_.profile })) { Write-Bad 'no package of a supported build (CUSA05083)'; $verdict = 1 }
+if (-not ($infos | Where-Object { $_.profile })) { Write-Bad 'no package of a supported build'; $verdict = 1 }
 
 $prepared = Join-Path $GameRoot 'prepared'
 $views = @(Get-ChildItem -LiteralPath $prepared -Directory -ErrorAction SilentlyContinue)
