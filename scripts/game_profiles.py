@@ -54,6 +54,41 @@ PROFILES = {
         'modules': ('libc.prx', 'libSceFios2.prx'),
         'core_patterns': ('eboot.bin', 'sce_module/*', 'sce_sys/*', '*.plt'),
     },
+    'CUSA05262': {
+        'name': 'Odin Sphere Leifthrasir',
+        'region': 'Europe',
+        'content_id': 'EP1063-CUSA05262_00-ODINSPHERELE0000',
+        'versions': {
+            '1.00': {
+                'layers': ({'app_ver': '01.00', 'sfo_version': '01.00', 'update': False},),
+                'eboot_sha256': '3e6b1741e8a404d0f8fbe10bce93c6887974566f5be09ef1bddc22a00ba29feb',
+                'folder': 'CUSA05262-1.00', 'extra_files': (),
+                'data_files': ('Odin2_BT_DE.CPK', 'Odin2_BT_ES.CPK', 'Odin2_BT_FR.CPK', 'Odin2_BT_IT.CPK',
+                               'Odin2_BT_UK.CPK', 'Odin2_OR_DE.CPK', 'Odin2_OR_ES.CPK', 'Odin2_OR_FR.CPK',
+                               'Odin2_OR_IT.CPK', 'Odin2_OR_UK.CPK', 'Odin2_RE_DE.CPK', 'Odin2_RE_ES.CPK',
+                               'Odin2_RE_FR.CPK', 'Odin2_RE_IT.CPK', 'Odin2_RE_UK.CPK'),
+            },
+            # The 1.01 patch is laid over the base package; it replaces eboot.bin, adds the patch archives and
+            # completes the non-English menu and subtitle data.
+            '1.01': {
+                'layers': ({'app_ver': '01.00', 'sfo_version': '01.00', 'update': False},
+                           {'app_ver': '01.01', 'sfo_version': '01.00', 'update': True}),
+                'eboot_sha256': '572bf21e57febee415d739cded5516def9ca81e867ad3184c989367248edcd7e',
+                'folder': 'CUSA05262-1.01', 'extra_files': ('sce_discmap_patch.plt',),
+                'data_files': ('Odin2_BT_DE.CPK', 'Odin2_BT_ES.CPK', 'Odin2_BT_FR.CPK', 'Odin2_BT_IT.CPK',
+                               'Odin2_BT_UK.CPK', 'Odin2_OR_DE.CPK', 'Odin2_OR_ES.CPK', 'Odin2_OR_FR.CPK',
+                               'Odin2_OR_IT.CPK', 'Odin2_OR_UK.CPK', 'Odin2_RE_DE.CPK', 'Odin2_RE_ES.CPK',
+                               'Odin2_RE_FR.CPK', 'Odin2_RE_IT.CPK', 'Odin2_RE_UK.CPK', 'Odin2_EU_PATCH1_OR_DE.CPK',
+                               'Odin2_EU_PATCH1_OR_ES.CPK', 'Odin2_EU_PATCH1_OR_FR.CPK', 'Odin2_EU_PATCH1_OR_IT.CPK',
+                               'Odin2_EU_PATCH1_OR_UK.CPK', 'Odin2_EU_PATCH1_RE_DE.CPK', 'Odin2_EU_PATCH1_RE_ES.CPK',
+                               'Odin2_EU_PATCH1_RE_FR.CPK', 'Odin2_EU_PATCH1_RE_IT.CPK', 'Odin2_EU_PATCH1_RE_UK.CPK'),
+            },
+        },
+        'entry': 'eboot.bin',
+        'extra_executables': (),
+        'modules': ('libc.prx', 'libSceFios2.prx'),
+        'core_patterns': ('eboot.bin', 'sce_module/*', 'sce_sys/*', '*.plt'),
+    },
 }
 
 

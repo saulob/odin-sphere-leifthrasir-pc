@@ -2,6 +2,7 @@
 // Synthetic files in a temporary folder: no window, no Vulkan, no game files.
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
@@ -155,7 +156,7 @@ void TestBranding() {
 
 void TestProfile() {
     const std::span<const GameBuild> builds = SupportedBuilds();
-    CHECK(builds.size() == 3);
+    CHECK(builds.size() == 5);
     const GameBuild& build = builds[0];
     CHECK(std::string(kGameTitle) == "Odin Sphere Leifthrasir");
     CHECK(std::string(build.title_id) == "CUSA05083");
@@ -210,7 +211,47 @@ void TestProfile() {
     CHECK(japan.extra_files.size() == 1);
     CHECK(BuildMetadataText(japan) == "APP_VER 1.02 \xC2\xB7 VERSION 1.00");
 
-    CHECK(SupportedBuildsText() == "CUSA05083 1.00 USA, CUSA01290 1.00 Japan and CUSA01290 1.02 Japan");
+    const GameBuild& eu_base = builds[3];
+    const GameBuild& eu = builds[4];
+    CHECK(std::string(eu_base.title_id) == "CUSA05262");
+    CHECK(std::string(eu_base.content_id) == "EP1063-CUSA05262_00-ODINSPHERELE0000");
+    CHECK(std::string(eu_base.version) == "1.00");
+    CHECK(std::string(eu_base.folder) == "CUSA05262-1.00");
+    CHECK(std::string(eu_base.eboot_sha256) ==
+          "3e6b1741e8a404d0f8fbe10bce93c6887974566f5be09ef1bddc22a00ba29feb");
+    CHECK(std::string(eu_base.label) == "CUSA05262 1.00 Europe");
+    CHECK(std::string(eu_base.region) == "Europe");
+    CHECK(eu_base.layers.size() == 1);
+    CHECK(eu_base.extra_files.empty());
+    CHECK(eu_base.data_files.size() == 15);
+    CHECK(eu_base.resolution_sites.size() == 15);
+    CHECK(std::string(FinishedLayer(eu_base).app_ver) == "01.00");
+    CHECK(std::string(FinishedLayer(eu_base).sfo_version) == "01.00");
+    CHECK(BaseBuildOf(eu_base) == nullptr);
+    CHECK(UpdateBuildOf(eu_base) == &eu);
+    CHECK(BuildMetadataText(eu_base) == "APP_VER 1.00 \xC2\xB7 VERSION 1.00");
+
+    CHECK(std::string(eu.title_id) == "CUSA05262");
+    CHECK(std::string(eu.version) == "1.01");
+    CHECK(std::string(eu.folder) == "CUSA05262-1.01");
+    CHECK(std::string(eu.eboot_sha256) ==
+          "572bf21e57febee415d739cded5516def9ca81e867ad3184c989367248edcd7e");
+    CHECK(std::string(eu.label) == "CUSA05262 1.01 Europe");
+    CHECK(std::string(eu.region) == "Europe");
+    CHECK(eu.layers.size() == 2);
+    CHECK(std::string(FinishedLayer(eu).app_ver) == "01.01");
+    CHECK(std::string(FinishedLayer(eu).sfo_version) == "01.00");
+    CHECK(FinishedLayer(eu).update);
+    CHECK(BaseBuildOf(eu) == &eu_base);
+    CHECK(UpdateBuildOf(eu) == nullptr);
+    CHECK(eu.resolution_sites.size() == 15);
+    CHECK(eu.data_files.size() == 25);
+    CHECK(eu.extra_files.size() == 1);
+    CHECK(BuildMetadataText(eu) == "APP_VER 1.01 \xC2\xB7 VERSION 1.00");
+
+    CHECK(SupportedBuildsText() ==
+          "CUSA05083 1.00 USA, CUSA01290 1.00 Japan, CUSA01290 1.02 Japan, CUSA05262 1.00 Europe and CUSA05262 1.01 "
+          "Europe");
     CHECK(std::string(kPreparedMarker) == ".osl_view.json");
     const std::vector<std::string> shared(std::begin(kSharedGameFiles), std::end(kSharedGameFiles));
     for (const char* name : {"eboot.bin", "sce_discmap.plt", "sce_module/libc.prx", "sce_module/libSceFios2.prx",
@@ -291,6 +332,56 @@ void TestSfoIdentity() {
     CHECK(CheckPackageIdentity(update).state == GameFileState::kValid);
     CHECK(CheckPackageIdentity(update).build == &SupportedBuilds()[2]);
     CHECK(CheckPackageIdentity(update).layer == 1);
+
+    const std::vector<std::pair<std::string, std::string>> europe = {
+        {"TITLE", "Odin Sphere Leifthrasir"}, {"TITLE_ID", "CUSA05262"},
+        {"CONTENT_ID", "EP1063-CUSA05262_00-ODINSPHERELE0000"}, {"CATEGORY", "gd"},
+        {"APP_VER", "01.00"}, {"VERSION", "01.00"},
+    };
+    WriteSfo(sfo, europe);
+    std::ifstream eu_base_file(sfo, std::ios::binary);
+    const std::string eu_base((std::istreambuf_iterator<char>(eu_base_file)), {});
+    CHECK(CheckSfoIdentity(eu_base).state == GameFileState::kValid);
+    CHECK(CheckSfoIdentity(eu_base).build == &SupportedBuilds()[3]);
+    CHECK(CheckPackageIdentity(eu_base).state == GameFileState::kValid);
+    CHECK(CheckPackageIdentity(eu_base).layer == 0);
+
+    auto eu_update = europe;
+    for (auto& [key, value] : eu_update) {
+        if (key == "CATEGORY") value = "gp";
+        if (key == "APP_VER") value = "01.01";
+    }
+    WriteSfo(sfo, eu_update);
+    std::ifstream eu_update_file(sfo, std::ios::binary);
+    const std::string eu_patch((std::istreambuf_iterator<char>(eu_update_file)), {});
+    CHECK(CheckSfoIdentity(eu_patch).state == GameFileState::kValid);
+    CHECK(CheckSfoIdentity(eu_patch).build == &SupportedBuilds()[4]);
+    CHECK(CheckPackageIdentity(eu_patch).state == GameFileState::kValid);
+    CHECK(CheckPackageIdentity(eu_patch).build == &SupportedBuilds()[4]);
+    CHECK(CheckPackageIdentity(eu_patch).layer == 1);
+    CHECK(BaseBuildOf(SupportedBuilds()[4]) == &SupportedBuilds()[3]);
+    CHECK(BaseBuildOf(SupportedBuilds()[3]) == nullptr);
+    CHECK(UpdateBuildOf(SupportedBuilds()[3]) == &SupportedBuilds()[4]);
+
+    auto eu_wrong_version = eu_update;
+    for (auto& [key, value] : eu_wrong_version) {
+        if (key == "APP_VER") value = "01.02";
+    }
+    WriteSfo(sfo, eu_wrong_version);
+    std::ifstream eu_wrong_file(sfo, std::ios::binary);
+    const std::string eu_unsupported((std::istreambuf_iterator<char>(eu_wrong_file)), {});
+    CHECK(CheckPackageIdentity(eu_unsupported).state == GameFileState::kDifferentVersion);
+
+    // The European update names a different TITLE_ID than the USA and Japanese builds ship, so it never matches them.
+    auto eu_on_usa = eu_update;
+    for (auto& [key, value] : eu_on_usa) {
+        if (key == "TITLE_ID") value = "CUSA05083";
+    }
+    WriteSfo(sfo, eu_on_usa);
+    std::ifstream eu_on_usa_file(sfo, std::ios::binary);
+    const std::string foreign_update((std::istreambuf_iterator<char>(eu_on_usa_file)), {});
+    CHECK(CheckPackageIdentity(foreign_update).state == GameFileState::kDifferentVersion);
+    CHECK(CheckPackageIdentity(foreign_update).detail.starts_with("param.sfo CONTENT_ID"));
 }
 
 void TestGameTree() {
@@ -456,6 +547,102 @@ void TestOptionsAndInstall() {
     CHECK(DescribeInstall(InstallStatus::kWrongVersion).text.find("CUSA05083 1.00 USA") != std::string::npos);
     CHECK(DescribeInstall(InstallStatus::kWrongVersion).text.find("CUSA01290 1.02 Japan") != std::string::npos);
     CHECK(DescribeInstall(InstallStatus::kWrongGame).text.find("CUSA01290 1.02 Japan") != std::string::npos);
+}
+
+void TestTextLanguages() {
+    const std::span<const GameBuild> builds = SupportedBuilds();
+    const GameBuild& eu = builds[4];
+    const GameBuild& usa = builds[0];
+    const GameBuild& japan = builds[2];
+
+    const std::span<const TextLanguage> languages = TextLanguagesOf(&eu);
+    CHECK(languages.size() == 5);
+    const char* keys[] = {"english", "french", "german", "spanish", "italian"};
+    const char* names[] = {"English", "French", "German", "Spanish", "Italian"};
+    const int ids[] = {1, 2, 4, 3, 5};
+    for (size_t i = 0; i < languages.size(); ++i) {
+        CHECK(languages[i].key == keys[i]);
+        CHECK(languages[i].name == names[i]);
+        CHECK(languages[i].ps4_id == ids[i]);
+    }
+    CHECK(TextLanguagesOf(&builds[3]).size() == 5);
+    CHECK(TextLanguagesOf(&usa).empty());
+    CHECK(TextLanguagesOf(&japan).empty());
+    CHECK(TextLanguagesOf(&builds[1]).empty());
+    CHECK(TextLanguagesOf(nullptr).empty());
+
+    CHECK(ResolveTextLanguage(&eu, "french").ps4_id == 2);
+    CHECK(ResolveTextLanguage(&eu, "italian").ps4_id == 5);
+    CHECK(ResolveTextLanguage(&eu, "bogus").ps4_id == 1);
+    CHECK(std::string(ResolveTextLanguage(&eu, "").key) == "english");
+    CHECK(ResolveTextLanguage(&usa, "french").ps4_id == 1);
+    CHECK(ResolveTextLanguage(&japan, "english").ps4_id == 1);
+    CHECK(ResolveTextLanguage(nullptr, "spanish").ps4_id == 1);
+
+    CHECK(IsValidSetting(kTextLanguageKey, "english"));
+    CHECK(IsValidSetting(kTextLanguageKey, "italian"));
+    CHECK(!IsValidSetting(kTextLanguageKey, "japanese"));
+    CHECK(!IsValidSetting(kTextLanguageKey, "bogus"));
+
+    const std::filesystem::path dir = TempDir("language");
+    const auto write_image = [&](const GameBuild& build) {
+        std::ofstream(dir / "image.json") << "{\n  \"title_id\": \"" << build.title_id << "\",\n  \"app_ver\": \""
+                                          << FinishedLayer(build).app_ver << "\",\n  \"eboot_sha256\": \""
+                                          << build.eboot_sha256 << "\"\n}\n";
+    };
+    const std::filesystem::path ini = dir / "osl.ini";
+    write_image(eu);
+    std::ofstream(ini) << "text_language = english\n";
+    CHECK(osl_text_language(ini.string().c_str(), dir.string().c_str()) == 1);
+    std::ofstream(ini) << "text_language = german\n";
+    CHECK(osl_text_language(ini.string().c_str(), dir.string().c_str()) == 4);
+    std::ofstream(ini) << "text_language = spanish\n";
+    CHECK(osl_text_language(ini.string().c_str(), dir.string().c_str()) == 3);
+    std::ofstream(ini) << "text_language = klingon\n";
+    CHECK(osl_text_language(ini.string().c_str(), dir.string().c_str()) == 1);
+    std::ofstream(ini) << "render_resolution = 720p\n";
+    CHECK(osl_text_language(ini.string().c_str(), dir.string().c_str()) == 1);
+    write_image(usa);
+    std::ofstream(ini) << "text_language = french\n";
+    CHECK(osl_text_language(ini.string().c_str(), dir.string().c_str()) == 1);
+    write_image(japan);
+    CHECK(osl_text_language(ini.string().c_str(), dir.string().c_str()) == 1);
+    write_image(eu);
+    CHECK(osl_text_language(ini.string().c_str(), dir.string().c_str()) == 2);
+    CHECK(osl_text_language(nullptr, dir.string().c_str()) == 1);
+    CHECK(osl_text_language(ini.string().c_str(), nullptr) == 1);
+
+    LauncherSettings settings(dir / "other.ini");
+    settings.ResetToDefaults();
+    CHECK(settings.Get(kTextLanguageKey, "") == "english");
+    settings.Set(kTextLanguageKey, "italian");
+    CHECK(settings.Save());
+    LauncherSettings reloaded(dir / "other.ini");
+    CHECK(reloaded.Get(kTextLanguageKey, "") == "italian");
+    std::ofstream(dir / "other.ini") << "text_language = klingon\n";
+    LauncherSettings invalid(dir / "other.ini");
+    CHECK(invalid.Get(kTextLanguageKey, "english") == "english");
+    reloaded.ResetToDefaults();
+    CHECK(reloaded.Get(kTextLanguageKey, "") == "english");
+}
+
+void TestVoicePolicy() {
+    for (const ManagedSetting& setting : ManagedSettings()) {
+        std::string key(setting.key);
+        std::transform(key.begin(), key.end(), key.begin(),
+                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        CHECK(key.find("voice") == std::string::npos);
+    }
+    const std::span<const GameBuild> builds = SupportedBuilds();
+    for (const GameBuild& eu : {builds[3], builds[4]}) {
+        const auto has = [&](const char* name) {
+            return std::any_of(eu.data_files.begin(), eu.data_files.end(),
+                               [&](const char* file) { return std::string_view(file) == name; });
+        };
+        CHECK(has("Odin2_BT_UK.CPK"));
+        CHECK(has("Odin2_OR_UK.CPK"));
+        CHECK(has("Odin2_RE_UK.CPK"));
+    }
 }
 
 void TestHash() {
@@ -656,6 +843,8 @@ int main() {
     TestGameTree();
     TestBuildSelection();
     TestSettings();
+    TestTextLanguages();
+    TestVoicePolicy();
     TestKeys();
     TestOptionsAndInstall();
     TestHash();

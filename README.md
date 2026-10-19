@@ -81,7 +81,7 @@ Everything is kept next to the program:
 - **Play**: install or reinstall the game from your `.pkg`, the **Ready to play** status and **Show this launcher**
 - **Display**: display mode, window size, monitor, Aspect Ratio, graphics card, VSync, Presentation, FSR 1 upscaling and RCAS sharpening
 - **Graphics**: Render resolution, SMAA anti-aliasing and anisotropic texture filtering
-- **Gameplay**: frame rate and render resolution in the title, and the in-game frame counter
+- **Gameplay**: Menu & Subtitles language (the European build only), frame rate and render resolution in the title, and the in-game frame counter
 - **Controls**: every keyboard binding and the port hotkeys, with **Reset to defaults**
 - **Trophies**: your local PS4 trophy progress, the trophy list and the Trophy Key setup
 - **About**: the port version, the game, the renderer and the library versions, the game, saves and logs folders, the settings file, **Reset all settings**, and **Diagnostics** with Detailed logging and a button that opens the logs folder
@@ -97,10 +97,20 @@ The Render resolution and Aspect Ratio options change the game's verified intern
 21:9 and 32:9 stretch the gameplay horizontally instead of showing more of the world, and 16:10, 4:3 and
 5:4 squeeze it. The HUD, menus and prerendered videos are not adjusted either.
 
-Xbox button prompts, cheats and a menu-text language selector are not exposed: the USA build contains a single
-English text set, and the Japanese build contains Japanese menus, subtitles and voices. Odin Sphere's prompt atlases and
-gameplay values have not yet been verified for those launcher options. The PlayStation prompts and each build's own
-text are used, and the two regions' assets are never mixed.
+Xbox button prompts and cheats are not exposed: Odin Sphere's prompt atlases and gameplay values have not yet been
+verified for those launcher options. The PlayStation prompts and each build's own text are used, and no region's assets
+are ever mixed.
+
+**Menu & Subtitles** is offered for the European build (CUSA05262) only, whose executable selects its menu and subtitle
+archives from the console's System Language: English, French, German, Spanish or Italian. The setting is stored in
+`user\osl.ini` as `text_language` and is passed to the game as the PS4 System Language. The USA build contains a single
+English text set and the Japanese build Japanese text, so neither shows the control; a language chosen for the European
+build is kept if you switch builds and used again when you return.
+
+**Voice Language** is the game's own setting. The European build ships the Japanese and English voice banks in its
+single `Odin2_BT_UK.CPK` audio container (the per-language `Odin2_BT_*.CPK` files are secondary), and the in-game
+**Options → Voice Language** chooses between them. The launcher does not add a Voice Language option and does not
+change the game's choice; Menu & Subtitles affects text only.
 
 **Detailed logging** (About, Diagnostics) is on by default and keeps the log of every session. Turned off, a run
 still writes its log while it runs, but a normal exit discards it so normal sessions do not accumulate files. A
@@ -111,7 +121,7 @@ folder that holds the logs, creating it first when it does not exist.
 
 1. Install [MSYS2](https://www.msys2.org) with the CLANG64 toolchain. `.\tools\setup.ps1` checks it and prints the `pacman` command for anything missing.
 2. `.\tools\build.ps1` fetches the pinned dependencies (TRG Launcher, Dear ImGui and a few small libraries) and builds `build\cmake\clang64\bin\osl-loader.exe`.
-3. `.\tools\build.ps1 -Run` also starts it. Install the game from the launcher's Play page, as in a release; the development build keeps it in `game\prepared\<build folder>` and the boot image in `build\image\<build folder>` of the repository (`CUSA05083-1.00`, `CUSA01290-1.00` or `CUSA01290-1.02`).
+3. `.\tools\build.ps1 -Run` also starts it. Install the game from the launcher's Play page, as in a release; the development build keeps it in `game\prepared\<build folder>` and the boot image in `build\image\<build folder>` of the repository (`CUSA05083-1.00`, `CUSA01290-1.00`, `CUSA01290-1.02`, `CUSA05262-1.00` or `CUSA05262-1.01`).
 4. `.\tools\test.ps1` builds and runs the focused headless tests (game profile, settings, keys, window fit, GPU tiling). Python is not needed to build, test or play; the optional development scripts in `scripts\` use it (`.\tools\setup.ps1 -InstallPython`).
 
 ### Reference comparison

@@ -105,6 +105,7 @@ constexpr char kAntiAliasingHelp[] =
     "SMAA smooths jagged edges on the finished picture, at a small cost in performance.";
 constexpr char kAnisotropyHelp[] =
     "Sharper textures on floors and walls seen at an angle. Game uses the game's own filtering.";
+constexpr char kTextLanguageHelp[] = "Language used by game menus and subtitles.";
 constexpr char kAspectRatioHelp[] = "Sets the game's target rendering shape and the Window size choices.";
 constexpr char kRestrictedAspectRatioHelp[] =
     "This game build renders at 16:9; the other aspect ratios are not available for it.";
@@ -410,7 +411,7 @@ private:
             return {name, "Resolution, anti-aliasing and texture filtering.", [this](trg::Ui& ui) { PageGraphics(ui); },
                     nullptr};
         case PageId::kGameplay:
-            return {name, "Readouts.", [this](trg::Ui& ui) { PageGameplay(ui); }, nullptr};
+            return {name, "Language and readouts.", [this](trg::Ui& ui) { PageGameplay(ui); }, nullptr};
         case PageId::kControls:
             return {name, "Controller and keyboard.", [this](trg::Ui& ui) { PageControls(ui); }, nullptr};
         case PageId::kTrophies:
@@ -661,6 +662,19 @@ private:
     }
 
     void PageGameplay(trg::Ui& ui) {
+        const std::span<const TextLanguage> available = TextLanguagesOf(build_);
+        if (available.size() > 1) {
+            std::vector<trg::Option> languages;
+            for (const TextLanguage& language : available) {
+                languages.push_back({std::string(language.key), std::string(language.name)});
+            }
+            const std::string saved = settings_.Get(kTextLanguageKey, available.front().key);
+            const std::string_view effective = ResolveTextLanguage(build_, saved).key;
+            if (saved != effective) {
+                settings_.Set(kTextLanguageKey, std::string(effective));
+            }
+            ui.Combo("Menu & Subtitles", kTextLanguageHelp, kTextLanguageKey, available.front().key.data(), languages);
+        }
         ui.Toggle("Frame rate in title", kShowFpsTitleHelp, kShowFpsTitleKey, false, "Off", "On");
         ui.Toggle("Render resolution in title", kShowResolutionTitleHelp, kShowResolutionTitleKey, false, "Off", "On");
         ui.Toggle("Frame counter", kFrameCounterHelp, kShowFrameCounterKey, false, "Hidden", "Shown");

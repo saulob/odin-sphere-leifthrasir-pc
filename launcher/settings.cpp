@@ -1,6 +1,7 @@
 #include "settings.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <deque>
 #include <fstream>
 #include <initializer_list>
@@ -33,6 +34,7 @@ constexpr ManagedSetting kBaseSettings[] = {
     {kGraphicsCardKey, kAutomaticGpu},
     {kAntiAliasingKey, "0"},
     {kAnisotropyKey, "0"},
+    {kTextLanguageKey, "english"},
     {kShowFpsTitleKey, "0"},
     {kShowResolutionTitleKey, "0"},
     {kShowFrameCounterKey, "0"},
@@ -93,6 +95,13 @@ bool IsValidSetting(std::string_view key, std::string_view value) {
     if (key == kAspectRatioKey) {
         return std::any_of(std::begin(osl_aspect_ratios), std::end(osl_aspect_ratios),
                            [&](const OslAspectRatio& aspect) { return value == aspect.key; });
+    }
+    if (key == kTextLanguageKey) {
+        const std::span<const GameBuild> builds = SupportedBuilds();
+        return std::any_of(builds.begin(), builds.end(), [&](const GameBuild& build) {
+            return std::any_of(build.text_languages.begin(), build.text_languages.end(),
+                               [&](const TextLanguage& language) { return value == language.key; });
+        });
     }
     return true;
 }
@@ -216,4 +225,19 @@ extern "C" int osl_detailed_logging(const char* settings_file) {
     }
     const LauncherSettings settings(PathFromUtf8(settings_file));
     return settings.GetBool(kDetailedLoggingKey, true) ? 1 : 0;
+}
+
+extern "C" int osl_text_language(const char* settings_file, const char* image_dir) {
+    using namespace osl;
+    const GameBuild* build = BuildOfImageDir(image_dir);
+    const LauncherSettings settings(PathFromUtf8(settings_file ? settings_file : ""));
+    return ResolveTextLanguage(build, settings.Get(kTextLanguageKey)).ps4_id;
+}
+
+extern "C" void osl_log_gameplay_settings(const char* settings_file, const char* image_dir) {
+    using namespace osl;
+    const GameBuild* build = BuildOfImageDir(image_dir);
+    const LauncherSettings settings(PathFromUtf8(settings_file ? settings_file : ""));
+    const TextLanguage& language = ResolveTextLanguage(build, settings.Get(kTextLanguageKey));
+    std::printf("Gameplay: Menu & Subtitles %.*s\n", static_cast<int>(language.name.size()), language.name.data());
 }

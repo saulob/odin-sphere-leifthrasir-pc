@@ -7,16 +7,16 @@
   Needs Python with the cryptography package (tools\setup.ps1 -InstallPython). tools\build.ps1 then builds the boot
   image. Players and the launcher do not use this: Install game... unpacks the .pkg natively.
 .PARAMETER Title
-  CUSA05083 (USA) or CUSA01290 (Japan). Empty: the title of the packages.
+  CUSA05083 (USA), CUSA01290 (Japan) or CUSA05262 (Europe). Empty: the title of the packages.
 .PARAMETER Version
-  1.00 or 1.02. Empty: the one build the packages complete.
+  1.00, 1.01 or 1.02. Empty: the one build the packages complete.
 .PARAMETER Scope
   core: executables, modules and metadata only (about 25 MB). full: all game data (about 3.3 GB, the CPK archives).
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('', 'CUSA05083', 'CUSA01290')][string]$Title = '',
-    [ValidateSet('', '1.00', '1.02')][string]$Version = '',
+    [ValidateSet('', 'CUSA05083', 'CUSA01290', 'CUSA05262')][string]$Title = '',
+    [ValidateSet('', '1.00', '1.01', '1.02')][string]$Version = '',
     [ValidateSet('core', 'full')][string]$Scope = 'full',
     [string]$GameRoot
 )

@@ -457,6 +457,8 @@ int main(int argc, char **argv) {
     render_resolution=&osl_resolutions[osl_render_resolution(settings_file,paths.image_dir)];
     aspect_ratio=&osl_aspect_ratios[osl_aspect_ratio(settings_file,paths.image_dir)];
     render_target=osl_render_target(render_resolution,aspect_ratio);
+    runtime_set_language(osl_text_language(settings_file,paths.image_dir));
+    osl_log_gameplay_settings(settings_file,paths.image_dir);
     runtime_pad_set_settings(settings_file);
     if (app0) {
         runtime_file_configure(app0, user_dir ? user_dir : "user");

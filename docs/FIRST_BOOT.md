@@ -1,6 +1,6 @@
 # First boot
 
-The project builds and the installed USA 1.00 and Japanese 1.02 games are recognized and prepared.
+The project builds and the installed USA 1.00, Japanese 1.02 and European 1.01 games are recognized and prepared.
 These checks run without a window and without executing game code:
 
 ```powershell
@@ -10,6 +10,8 @@ build\cmake\clang64\bin\osl-loader.exe --check-game game\prepared\CUSA05083-1.00
 build\cmake\clang64\bin\osl-loader.exe build\image\CUSA05083-1.00\boot.bin --app0 game\prepared\CUSA05083-1.00 --cpu-only --check-imports
 build\cmake\clang64\bin\osl-loader.exe --check-game game\prepared\CUSA01290-1.02 build\image\CUSA01290-1.02
 build\cmake\clang64\bin\osl-loader.exe build\image\CUSA01290-1.02\boot.bin --app0 game\prepared\CUSA01290-1.02 --cpu-only --check-imports
+build\cmake\clang64\bin\osl-loader.exe --check-game game\prepared\CUSA05262-1.01 build\image\CUSA05262-1.01
+build\cmake\clang64\bin\osl-loader.exe build\image\CUSA05262-1.01\boot.bin --app0 game\prepared\CUSA05262-1.01 --cpu-only --check-imports
 ```
 
 `--check-imports` prints `Imports: 0 missing` for each supported build: every PS4 import of the
@@ -28,13 +30,14 @@ From the repository, after `tools\build.ps1` has completed:
 `-Run` sets the MSYS2 `PATH`, starts `osl-loader.exe`, and keeps the console attached. The launcher
 opens; the Play page should already say **Ready to play** for the active build. With both releases
 installed, the active build is the newest prepared one; the status names its region and version, for
-example **Ready to play · CUSA05083 1.00 USA** or **CUSA01290 1.02 Japan**. Press **PLAY**. The
+example **Ready to play · CUSA05083 1.00 USA** or **CUSA01290 1.02 Japan** or **CUSA05262 1.01 Europe**. Press **PLAY**. The
 runtime, graphics, audio, controller and UI behavior is tested manually only.
 
 The first manual pass should also check the new parity features: Display's Aspect Ratio and Window
-size choices, Graphics' Render resolution (try 720p, then 1440p, then 4K), the Gameplay readouts,
-the Trophies page, and that the in-game menu (F10 / R3+L2) still opens and saves its settings. Keep
-Render resolution at Native while checking the rest first.
+size choices, Graphics' Render resolution (try 720p, then 1440p, then 4K), the Gameplay readouts and
+(for the European build) the **Menu & Subtitles** language and the game's own Voice Language choice
+(in the in-game Options), the Trophies page, and that the in-game menu (F10 / R3+L2) still
+opens and saves its settings. Keep Render resolution at Native while checking the rest first.
 
 To return the diagnostics, attach the newest log:
 

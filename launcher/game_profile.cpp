@@ -18,6 +18,8 @@ std::string DisplayVersion(std::string_view version) {
 constexpr PackageLayer kUsaLayers[] = {{"01.00", "01.01", false}};
 constexpr PackageLayer kJapanBaseLayers[] = {{"01.00", "01.00", false}};
 constexpr PackageLayer kJapan102Layers[] = {{"01.00", "01.00", false}, {"01.02", "01.00", true}};
+constexpr PackageLayer kEuBaseLayers[] = {{"01.00", "01.00", false}};
+constexpr PackageLayer kEu101Layers[] = {{"01.00", "01.00", false}, {"01.01", "01.00", true}};
 
 // The render size instructions of the USA 1.00 eboot: the three render targets the graphics device creates, the two
 // GPU buffer allocations sized from the same pair, the two viewports the frame setup sets, and the engine's packed
@@ -56,11 +58,55 @@ constexpr OslResolutionSite kJapan102ResolutionSites[] = {
     {0x6b13e2, 2, {0x48, 0xb8}, 0x44f00000, 0, 0x44870000, 1},
 };
 
+constexpr OslResolutionSite kEuBaseResolutionSites[] = {
+    {0x6ad4d8, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad4dd, 1, {0xba}, 1080, 1, 0, 0},
+    {0x6ad609, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad60e, 1, {0xba}, 1080, 1, 0, 0},
+    {0x6ad7c8, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad7cd, 1, {0xba}, 1080, 1, 0, 0},
+    {0x6ad7e5, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad7ea, 1, {0xba}, 1080, 1, 0, 0},
+    {0x6ad7fe, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad803, 1, {0xba}, 1080, 1, 0, 0},
+    {0x6ae0f0, 1, {0xb9}, 1920, 0, 0, 0}, {0x6ae0f5, 2, {0x41, 0xb8}, 1080, 1, 0, 0},
+    {0x6afac2, 1, {0xb9}, 1920, 0, 0, 0}, {0x6afac7, 2, {0x41, 0xb8}, 1080, 1, 0, 0},
+    {0x6b51b2, 2, {0x48, 0xb8}, 0x44f00000, 0, 0x44870000, 1},
+};
+
+constexpr OslResolutionSite kEu101ResolutionSites[] = {
+    {0x6ad688, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad68d, 1, {0xba}, 1080, 1, 0, 0},
+    {0x6ad7b9, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad7be, 1, {0xba}, 1080, 1, 0, 0},
+    {0x6ad978, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad97d, 1, {0xba}, 1080, 1, 0, 0},
+    {0x6ad995, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad99a, 1, {0xba}, 1080, 1, 0, 0},
+    {0x6ad9ae, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad9b3, 1, {0xba}, 1080, 1, 0, 0},
+    {0x6ae2a0, 1, {0xb9}, 1920, 0, 0, 0}, {0x6ae2a5, 2, {0x41, 0xb8}, 1080, 1, 0, 0},
+    {0x6afc72, 1, {0xb9}, 1920, 0, 0, 0}, {0x6afc77, 2, {0x41, 0xb8}, 1080, 1, 0, 0},
+    {0x6b5362, 2, {0x48, 0xb8}, 0x44f00000, 0, 0x44870000, 1},
+};
+
+// The European executable picks its menu and subtitle archives from the system language; these are the languages it
+// maps (UK is its English). The USA and Japanese builds ship one text language each and list none.
+constexpr TextLanguage kEuLanguages[] = {
+    {"english", "English", 1}, {"french", "French", 2}, {"german", "German", 4},
+    {"spanish", "Spanish", 3}, {"italian", "Italian", 5},
+};
+
 constexpr const char* kUsaDataFiles[] = {"Odin2_BT_US.CPK", "Odin2_OR_US.CPK", "Odin2_RE_US.CPK"};
 constexpr const char* kJapanBaseDataFiles[] = {"Odin2_BOOT.CPK", "Odin2_OR.CPK", "Odin2_ORHD.CPK", "Odin2_RE.CPK"};
 constexpr const char* kJapan102DataFiles[] = {"Odin2_BOOT.CPK", "Odin2_OR.CPK", "Odin2_ORHD.CPK", "Odin2_RE.CPK",
                                               "Odin2_PATCH1_OR.CPK", "Odin2_PATCH1_RE.CPK"};
 constexpr const char* kJapan102ExtraFiles[] = {"sce_discmap_patch.plt"};
+
+constexpr const char* kEuBaseDataFiles[] = {
+    "Odin2_BT_DE.CPK", "Odin2_BT_ES.CPK", "Odin2_BT_FR.CPK", "Odin2_BT_IT.CPK", "Odin2_BT_UK.CPK",
+    "Odin2_OR_DE.CPK", "Odin2_OR_ES.CPK", "Odin2_OR_FR.CPK", "Odin2_OR_IT.CPK", "Odin2_OR_UK.CPK",
+    "Odin2_RE_DE.CPK", "Odin2_RE_ES.CPK", "Odin2_RE_FR.CPK", "Odin2_RE_IT.CPK", "Odin2_RE_UK.CPK",
+};
+constexpr const char* kEu101DataFiles[] = {
+    "Odin2_BT_DE.CPK", "Odin2_BT_ES.CPK", "Odin2_BT_FR.CPK", "Odin2_BT_IT.CPK", "Odin2_BT_UK.CPK",
+    "Odin2_OR_DE.CPK", "Odin2_OR_ES.CPK", "Odin2_OR_FR.CPK", "Odin2_OR_IT.CPK", "Odin2_OR_UK.CPK",
+    "Odin2_RE_DE.CPK", "Odin2_RE_ES.CPK", "Odin2_RE_FR.CPK", "Odin2_RE_IT.CPK", "Odin2_RE_UK.CPK",
+    "Odin2_EU_PATCH1_OR_DE.CPK", "Odin2_EU_PATCH1_OR_ES.CPK", "Odin2_EU_PATCH1_OR_FR.CPK", "Odin2_EU_PATCH1_OR_IT.CPK",
+    "Odin2_EU_PATCH1_OR_UK.CPK", "Odin2_EU_PATCH1_RE_DE.CPK", "Odin2_EU_PATCH1_RE_ES.CPK", "Odin2_EU_PATCH1_RE_FR.CPK",
+    "Odin2_EU_PATCH1_RE_IT.CPK", "Odin2_EU_PATCH1_RE_UK.CPK",
+};
+constexpr const char* kEu101ExtraFiles[] = {"sce_discmap_patch.plt"};
 
 constexpr GameBuild kGameBuilds[] = {
     {
@@ -75,6 +121,7 @@ constexpr GameBuild kGameBuilds[] = {
         "USA",
         kUsaLayers,
         kUsaResolutionSites,
+        {},
     },
     {
         "CUSA01290",
@@ -88,6 +135,7 @@ constexpr GameBuild kGameBuilds[] = {
         "Japan",
         kJapanBaseLayers,
         kJapanBaseResolutionSites,
+        {},
     },
     {
         "CUSA01290",
@@ -101,6 +149,35 @@ constexpr GameBuild kGameBuilds[] = {
         "Japan",
         kJapan102Layers,
         kJapan102ResolutionSites,
+        {},
+    },
+    {
+        "CUSA05262",
+        "EP1063-CUSA05262_00-ODINSPHERELE0000",
+        "1.00",
+        "CUSA05262-1.00",
+        "3e6b1741e8a404d0f8fbe10bce93c6887974566f5be09ef1bddc22a00ba29feb",
+        {},
+        kEuBaseDataFiles,
+        "CUSA05262 1.00 Europe",
+        "Europe",
+        kEuBaseLayers,
+        kEuBaseResolutionSites,
+        kEuLanguages,
+    },
+    {
+        "CUSA05262",
+        "EP1063-CUSA05262_00-ODINSPHERELE0000",
+        "1.01",
+        "CUSA05262-1.01",
+        "572bf21e57febee415d739cded5516def9ca81e867ad3184c989367248edcd7e",
+        kEu101ExtraFiles,
+        kEu101DataFiles,
+        "CUSA05262 1.01 Europe",
+        "Europe",
+        kEu101Layers,
+        kEu101ResolutionSites,
+        kEuLanguages,
     },
 };
 
@@ -109,10 +186,26 @@ bool SameLayer(const PackageLayer& a, const PackageLayer& b) {
            a.update == b.update;
 }
 
+constexpr TextLanguage kDefaultLanguage{"english", "English", 1};
+
 } // namespace
 
 std::span<const GameBuild> SupportedBuilds() {
     return kGameBuilds;
+}
+
+std::span<const TextLanguage> TextLanguagesOf(const GameBuild* build) {
+    return build ? build->text_languages : std::span<const TextLanguage>{};
+}
+
+const TextLanguage& ResolveTextLanguage(const GameBuild* build, std::string_view key) {
+    const std::span<const TextLanguage> languages = TextLanguagesOf(build);
+    for (const TextLanguage& language : languages) {
+        if (language.key == key) {
+            return language;
+        }
+    }
+    return languages.empty() ? kDefaultLanguage : languages.front();
 }
 
 const PackageLayer& FinishedLayer(const GameBuild& build) {

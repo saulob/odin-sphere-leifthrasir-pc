@@ -8,8 +8,8 @@ A build is its base package and then its updates (scripts/game_profiles.py). <fo
 for the USA 1.00 build and CUSA01290-1.02 for the Japanese 1.02 build. A package that several builds share (the base) is
 extracted once.
 
-Usage: python scripts/prepare_game.py [--title CUSA05083|CUSA01290] [--version 1.00|1.02] [--scope core|full]
-       [--game-root DIR]
+Usage: python scripts/prepare_game.py [--title CUSA05083|CUSA01290|CUSA05262] [--version 1.00|1.01|1.02]
+       [--scope core|full] [--game-root DIR]
 """
 import argparse
 import hashlib
@@ -105,8 +105,8 @@ def extract(pkg_path, target, only, label):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--game-root', type=Path, default=ROOT / 'game')
-    parser.add_argument('--title', help='title to prepare: CUSA05083 or CUSA01290')
-    parser.add_argument('--version', help='profile version to prepare (1.00 or 1.02)')
+    parser.add_argument('--title', help='title to prepare: CUSA05083, CUSA01290 or CUSA05262')
+    parser.add_argument('--version', help='profile version to prepare (1.00, 1.01 or 1.02)')
     parser.add_argument('--scope', choices=('core', 'full'), default='core',
                         help='core: executables, modules and metadata only; full: all game data')
     args = parser.parse_args()

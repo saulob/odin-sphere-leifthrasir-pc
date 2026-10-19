@@ -53,6 +53,14 @@ int osl_render_resolution(const char *settings_file, const char *image_dir);
  * sites. */
 int osl_aspect_ratio(const char *settings_file, const char *image_dir);
 
+/* The system language the game is told for the text_language in the settings file, among the languages of the build
+ * image_dir was built from: the build's default (English when the build is unknown) when the file or the value is
+ * missing or not one of them. */
+int osl_text_language(const char* settings_file, const char* image_dir);
+
+/* Prints into the run log the Gameplay choices the loader applies, starting with the menus-and-subtitles language. */
+void osl_log_gameplay_settings(const char* settings_file, const char* image_dir);
+
 /* 1 when the settings file keeps the logs of normal sessions (detailed_logging; 1 by default). */
 int osl_detailed_logging(const char *settings_file);
 
