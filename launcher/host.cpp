@@ -103,19 +103,24 @@ bool LauncherHost::Open(const HostOptions& options) {
     ImGui_ImplSDL3_InitForSDLRenderer(window_, renderer_);
     ImGui_ImplSDLRenderer3_Init(renderer_);
 
-    if (!options.hidden) {
-        SDL_ShowWindow(window_);
-        SDL_RaiseWindow(window_);
-    }
-    if (restore && options.restore->maximized) {
-        SDL_MaximizeWindow(window_);
-    }
-    if (restore && options.restore->fullscreen) {
-        SDL_SetWindowFullscreen(window_, true);
-    }
+    hidden_ = options.hidden;
     std::printf("Launcher: window %dx%d at %.2fx display scale, %s renderer\n", width, height, target->scale,
                 SDL_GetRendererName(renderer_));
     return true;
+}
+
+void LauncherHost::Show() {
+    if (!window_ || hidden_) {
+        return;
+    }
+    if (restored_ && restored_->maximized) {
+        SDL_MaximizeWindow(window_);
+    }
+    if (restored_ && restored_->fullscreen) {
+        SDL_SetWindowFullscreen(window_, true);
+    }
+    SDL_ShowWindow(window_);
+    SDL_RaiseWindow(window_);
 }
 
 ImTextureID LauncherHost::CreateTexture(const uint8_t* rgba, int width, int height) {

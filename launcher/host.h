@@ -36,6 +36,9 @@ public:
 
     // False when no window or renderer could be created; nothing is left open then.
     bool Open(const HostOptions& options);
+    // Shows the window once its first frame has been drawn, restoring maximized or fullscreen first. Does nothing when
+    // it was opened hidden.
+    void Show();
     void Close();
 
     // Handles the window's events (F11 switches the launcher's own fullscreen). False once it was closed.
@@ -64,6 +67,7 @@ private:
     std::vector<SDL_Texture*> textures_;
     bool video_ = false;
     bool gamepad_ = false;
+    bool hidden_ = false;
     bool quit_ = false;
 };
 
