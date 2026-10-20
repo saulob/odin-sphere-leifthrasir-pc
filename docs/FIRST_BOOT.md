@@ -36,8 +36,8 @@ runtime, graphics, audio, controller and UI behavior is tested manually only.
 The first manual pass should also check the new parity features: Display's Aspect Ratio and Window
 size choices, Graphics' Render resolution (try 720p, then 1440p, then 4K), the Gameplay readouts and
 (for the European build) the **Menu & Subtitles** language and the game's own Voice Language choice
-(in the in-game Options), the Trophies page, and that the in-game menu (F10 / R3+L2) still
-opens and saves its settings. Keep Render resolution at Native while checking the rest first.
+(in the in-game Options), the Trophies page, and the Controls page's keyboard bindings. Keep Render
+resolution at Native while checking the rest first.
 
 To return the diagnostics, attach the newest log:
 

@@ -29,7 +29,6 @@ const OslKeyInfo osl_key_actions[OSL_KEY_COUNT] = {
     {"key_options", "Options (Start)", SDL_SCANCODE_RETURN},
     {"key_touchpad_left", "Touchpad left (Back)", SDL_SCANCODE_TAB},
     {"key_touchpad_right", "Touchpad right", SDL_SCANCODE_BACKSPACE},
-    {"hotkey_menu", "In-game menu", SDL_SCANCODE_F10},
     {"hotkey_window_mode", "Window mode", SDL_SCANCODE_F11},
 };
 

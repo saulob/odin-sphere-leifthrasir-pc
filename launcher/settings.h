@@ -1,4 +1,4 @@
-// The launcher's view of user\osl.ini, the file the video core reads at start and its in-game menu writes.
+// The launcher's view of user\osl.ini, the file the video core reads at start.
 // The video core reads it the same way (gpu/shim/osl_settings.cpp); booleans are written as 1/0.
 #pragma once
 
@@ -75,7 +75,7 @@ bool IsLauncherPlacementSetting(std::string_view key);
 bool IsValidSetting(std::string_view key, std::string_view value);
 
 // Pending launcher edits over the saved values. Nothing is written until Save() or SaveNow(); lines of the file
-// the launcher does not manage (the in-game menu's keys, comments) are kept as they are.
+// the launcher does not manage (comments and settings the runtime adds) are kept as they are.
 class LauncherSettings final : public trg::SettingsStore {
 public:
     explicit LauncherSettings(std::filesystem::path file);

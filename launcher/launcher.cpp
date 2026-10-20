@@ -118,7 +118,7 @@ constexpr char kShowFpsTitleHelp[] = "Shows the frame rate in the window title: 
 constexpr char kShowResolutionTitleHelp[] =
     "Shows the game's render resolution in the window title: Odin Sphere Leifthrasir | 1920x1080";
 constexpr char kFrameCounterHelp[] = "Shows the frame rate and frame time in a corner of the game.";
-constexpr char kMenuKeyHelp[] = "Opens the port's in-game menu, with the display and graphics options.";
+constexpr char kWindowModeKeyHelp[] = "Switches between Windowed and Borderless Fullscreen while playing.";
 
 std::vector<std::string> ListGpuNames() {
     char names[16][256] = {};
@@ -701,7 +701,7 @@ private:
             }
         }
         if (ui.Section("Port hotkeys", true)) {
-            ui.Help(kMenuKeyHelp);
+            ui.Help(kWindowModeKeyHelp);
             for (int action = OSL_KEY_FIRST_HOTKEY; action < OSL_KEY_COUNT; ++action) {
                 KeyRow(ui, static_cast<OslKeyAction>(action));
             }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// The in-game settings menu (Dear ImGui), drawn by the presenter into the swapchain image after the game frame.
-// Insert (keyboard) or R3+L2 (gamepad) opens it; while it is open the game gets no pad/keyboard input.
+// The runtime UI (Dear ImGui), drawn by the presenter into the swapchain image after the game frame: the loading
+// screen, the frame counter, the game's text dialog and its save list.
 
 #pragma once
 
@@ -11,7 +11,6 @@
 #include "video_core/renderer_vulkan/vk_common.h"
 
 union SDL_Event;
-struct SDL_Window;
 
 namespace Vulkan {
 class Instance;
@@ -22,17 +21,15 @@ namespace OslOverlay {
 /// Present thread, once: the ImGui context and its Vulkan backend.
 void Init(const Vulkan::Instance& instance, vk::Format format, u32 image_count);
 
-/// Window thread, for every SDL event: true when the menu consumed it.
+/// Window thread, for every SDL event: true when the save list consumed it.
 bool HandleEvent(const SDL_Event& event);
-/// Turns SDL text input on while the menu edits a value (window thread, once per poll).
-void UpdateTextInput(SDL_Window* window);
 
 /// Start-up loading screen (pipeline cache warm-up): `total` 0 shows no count.
 void SetLoading(bool active, u32 done, u32 total);
 /// Background cache warm-up: a small corner note while the game runs; `total` 0 hides it.
 void SetBackgroundLoading(u32 done, u32 total);
 
-/// Whether anything is drawn this frame (menu open or frame counter on).
+/// Whether anything is drawn this frame (a dialog, the loading screen or the frame counter).
 bool Visible();
 
 /// Counts a presented game frame (the frame rate in the window title).
@@ -42,10 +39,10 @@ u64 PresentedFrames();
 /// Present thread: draws into `view` (layout ColorAttachmentOptimal).
 void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent);
 
-/// The window's display content scale (DPI): the in-game menu grows with it.
+/// The window's display content scale (DPI): the runtime UI grows with it.
 void SetDisplayScale(float scale);
 
-/// The menu is open or a text entry is shown: the game's input is held neutral.
+/// A game dialog is open: the game's input is held neutral.
 bool CapturesInput();
 
 /// The runtime's buttons (PS4 bits) that move and confirm the save list, polled every frame.

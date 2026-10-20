@@ -199,7 +199,7 @@ void WindowSDL::ToggleBorderless() {
     OslSettings::SaveDisplayMode();
 }
 
-// Window thread. Visible while an overlay needs the mouse or focus is away; otherwise the last
+// Window thread. Visible while a game dialog needs it or focus is away; otherwise the last
 // gameplay input device decides, in Windowed and Borderless alike.
 void WindowSDL::UpdateCursor() {
     const bool focused = (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0;
@@ -257,9 +257,6 @@ bool WindowSDL::PollEvents() {
             SDL_StartTextInput(window);
             UpdateTextTitle();
         }
-    }
-    if (!text_active) {
-        OslOverlay::UpdateTextInput(window);
     }
     if (const int mode = OslSettings::Get().display_mode; mode != display_mode) {
         ApplyDisplayMode(mode);
@@ -322,8 +319,7 @@ bool WindowSDL::PollEvents() {
             break;
         case SDL_EVENT_KEY_DOWN: {
             const bool window_shortcut = event.key.scancode == OslSettings::Get().window_mode_key;
-            const bool host_shortcut = window_shortcut || event.key.scancode == OslSettings::Get().menu_key ||
-                                       event.key.scancode == SDL_SCANCODE_INSERT;
+            const bool host_shortcut = window_shortcut;
             if (window_shortcut && !event.key.repeat) {
                 ToggleBorderless();
             } else if (OslCursor::IsGameplayKey(event.key.repeat, host_shortcut) && !ui) {

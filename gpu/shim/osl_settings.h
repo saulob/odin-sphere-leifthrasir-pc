@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// The video core's view of osl.ini: read once at start, changed live by the in-game menu (osl_overlay.h) and F11.
+// The video core's view of osl.ini: read once at start, changed live by F11.
 // Readers load the atomics every frame.
 
 #pragma once
@@ -12,10 +12,9 @@
 namespace OslSettings {
 
 struct Values {
-    // Frame counter overlay: font size in percent and corner (0 top left, 1 top right, 2 bottom left, 3 bottom right).
+    // Frame counter: font size in percent and corner (0 top left, 1 top right, 2 bottom left, 3 bottom right).
     std::atomic<bool> show_fps{false};
     std::atomic<int> overlay_scale{100}, overlay_corner{1};
-    std::atomic<int> menu_tab{0};
     std::atomic<int> display_mode{0};
     std::atomic<bool> vsync{true};
     std::atomic<int> presentation{0}; ///< OslGraphics::Presentation: letterbox or stretch
@@ -33,8 +32,8 @@ struct Values {
     std::atomic<int> requested_width{0}, requested_height{0};
     std::atomic<int> monitor{1};
     std::atomic<bool> show_fps_title{false}, show_resolution_title{false};
-    // Port hotkeys as SDL scancodes (osl_keys.h): the in-game menu and the window mode switch.
-    std::atomic<int> menu_key{SDL_SCANCODE_F10}, window_mode_key{SDL_SCANCODE_F11};
+    // Port hotkey as an SDL scancode (osl_keys.h): the window mode switch.
+    std::atomic<int> window_mode_key{SDL_SCANCODE_F11};
 };
 
 Values& Get();
@@ -42,11 +41,9 @@ Values& Get();
 /// Reads the file into `values`; a missing file, key or invalid value keeps what `values` holds. False when the
 /// file cannot be read.
 bool Read(const std::string& path, Values& values);
-/// Read() into Get() and the file Save() writes. Once, before the window and the renderer start.
+/// Read() into Get(). Once, before the window and the renderer start.
 void Load(const std::string& path);
-/// Writes the settings the in-game menu changes; every other line of the file is kept.
-bool Save();
-/// Writes the display mode alone (F11).
+/// Writes the display mode alone (F11); every other line of the file is kept.
 bool SaveDisplayMode();
 
 /// One "key = value" line as the launcher's settings file reads it; false for comments and other lines.

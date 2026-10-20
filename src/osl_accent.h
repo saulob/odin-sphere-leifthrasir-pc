@@ -1,4 +1,4 @@
-// The ruby heart tone of Odin Sphere: the launcher, the frame counter and the in-game menu.
+// The ruby heart tone of Odin Sphere: the launcher, the frame counter and the game's dialogs.
 #pragma once
 
 namespace osl {

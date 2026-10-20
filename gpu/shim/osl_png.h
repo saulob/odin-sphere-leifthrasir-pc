@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// PNG pictures for the overlay (save list icons), decoded by libpng to RGBA8.
+// PNG pictures for the runtime UI (save list icons), decoded by libpng to RGBA8.
 
 #pragma once
 

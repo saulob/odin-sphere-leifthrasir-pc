@@ -35,8 +35,8 @@ int oslgpu_choice_begin(const char *title, const char *const *items, const char 
 int oslgpu_choice_poll(void);
 /* The choice list reads PS4 pad button bits from this callback every frame while it is open. */
 void oslgpu_choice_set_input(uint32_t (*buttons)(void));
-/* 1 while the settings menu is open: the game's pad input should be held neutral. */
-int oslgpu_overlay_captures_input(void);
+/* 1 while a game dialog is open: the game's pad input should be held neutral. */
+int oslgpu_ui_captures_input(void);
 #ifdef __cplusplus
 }
 #endif

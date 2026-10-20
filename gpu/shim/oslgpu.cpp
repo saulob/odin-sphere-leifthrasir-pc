@@ -310,7 +310,7 @@ u32 ConsumeWithOverlaysScreenshotRequests() { return 0; }
 ScreenshotRequests ConsumeScreenshotRequests() { return {}; }
 } // namespace VideoCore
 
-extern "C" int oslgpu_overlay_captures_input(void) {
+extern "C" int oslgpu_ui_captures_input(void) {
     return OslOverlay::CapturesInput() ? 1 : 0;
 }
 

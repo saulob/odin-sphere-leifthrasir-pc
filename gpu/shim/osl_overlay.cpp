@@ -15,8 +15,6 @@
 #include <SDL3/SDL.h>
 #include "osl_accent.h"
 #include "osl_settings.h"
-#include "osl_graphics.h"
-#include "common/elf_info.h"
 #include "imgui.h"
 #include "imgui_internal.h" // RegisterUserTexture (save pictures)
 #include "imgui_impl_vulkan.h"
@@ -72,14 +70,10 @@ ImVec4 AccentSubtleColor() {
 
 std::mutex imgui_mutex; // the ImGui context: window thread (input) and present thread
 bool initialized = false;
-std::atomic<bool> menu_open{false};
 std::atomic<float> display_scale{1.0f};
-bool r3_down = false, l2_down = false;
 std::atomic<bool> loading{false};
 std::atomic<u32> loading_done{0}, loading_total{0};
 std::atomic<u32> background_done{0}, background_total{0};
-bool dirty = false; // settings changed while open: saved on close
-int requested_tab = -1; // switch on the next frame (L1/R1, Q/E, menu opened)
 // The game's text dialog (SetTextEntry), guarded by imgui_mutex.
 bool text_entry_active = false;
 std::string text_entry_prompt, text_entry_text;
@@ -100,316 +94,12 @@ float base_scale = 1.0f;
 std::chrono::steady_clock::time_point last_present{};
 float frame_ms_avg = 0.0f;
 
-void SetOpen(bool value) {
-    if (menu_open.exchange(value) == value) {
-        return;
-    }
-    ImGui::GetIO().MouseDrawCursor = value;
-    if (value) {
-        requested_tab = OslSettings::Get().menu_tab;
-    }
-    if (!value && dirty) {
-        dirty = false;
-        OslSettings::Save();
-    }
-}
-
-ImGuiKey KeyFromSdl(SDL_Keycode key) {
-    switch (key) {
-    case SDLK_TAB: return ImGuiKey_Tab;
-    case SDLK_LEFT: return ImGuiKey_LeftArrow;
-    case SDLK_RIGHT: return ImGuiKey_RightArrow;
-    case SDLK_UP: return ImGuiKey_UpArrow;
-    case SDLK_DOWN: return ImGuiKey_DownArrow;
-    case SDLK_PAGEUP: return ImGuiKey_PageUp;
-    case SDLK_PAGEDOWN: return ImGuiKey_PageDown;
-    case SDLK_HOME: return ImGuiKey_Home;
-    case SDLK_END: return ImGuiKey_End;
-    case SDLK_DELETE: return ImGuiKey_Delete;
-    case SDLK_BACKSPACE: return ImGuiKey_Backspace;
-    case SDLK_SPACE: return ImGuiKey_Space;
-    case SDLK_RETURN: return ImGuiKey_Enter;
-    case SDLK_KP_ENTER: return ImGuiKey_KeypadEnter;
-    case SDLK_ESCAPE: return ImGuiKey_Escape;
-    case SDLK_Q: return ImGuiKey_Q;
-    case SDLK_E: return ImGuiKey_E;
-    case SDLK_LCTRL: return ImGuiKey_LeftCtrl;
-    case SDLK_RCTRL: return ImGuiKey_RightCtrl;
-    case SDLK_LSHIFT: return ImGuiKey_LeftShift;
-    case SDLK_RSHIFT: return ImGuiKey_RightShift;
-    case SDLK_LALT: return ImGuiKey_LeftAlt;
-    case SDLK_RALT: return ImGuiKey_RightAlt;
-    default: return ImGuiKey_None;
-    }
-}
-
-ImGuiKey KeyFromGamepad(u8 button) {
-    switch (button) {
-    case SDL_GAMEPAD_BUTTON_SOUTH: return ImGuiKey_GamepadFaceDown;
-    case SDL_GAMEPAD_BUTTON_EAST: return ImGuiKey_GamepadFaceRight;
-    case SDL_GAMEPAD_BUTTON_WEST: return ImGuiKey_GamepadFaceLeft;
-    case SDL_GAMEPAD_BUTTON_NORTH: return ImGuiKey_GamepadFaceUp;
-    case SDL_GAMEPAD_BUTTON_DPAD_UP: return ImGuiKey_GamepadDpadUp;
-    case SDL_GAMEPAD_BUTTON_DPAD_DOWN: return ImGuiKey_GamepadDpadDown;
-    case SDL_GAMEPAD_BUTTON_DPAD_LEFT: return ImGuiKey_GamepadDpadLeft;
-    case SDL_GAMEPAD_BUTTON_DPAD_RIGHT: return ImGuiKey_GamepadDpadRight;
-    case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER: return ImGuiKey_GamepadL1;
-    case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER: return ImGuiKey_GamepadR1;
-    case SDL_GAMEPAD_BUTTON_START: return ImGuiKey_GamepadStart;
-    case SDL_GAMEPAD_BUTTON_BACK: return ImGuiKey_GamepadBack;
-    default: return ImGuiKey_None;
-    }
-}
-
-float PixelDensity(SDL_WindowID id) {
-    SDL_Window* window = SDL_GetWindowFromID(id);
-    const float density = window ? SDL_GetWindowPixelDensity(window) : 1.0f;
-    return density > 0.0f ? density : 1.0f;
-}
-
-// Marks the settings dirty when a widget changed them.
-template <typename T>
-void Store(std::atomic<T>& target, T value, bool changed) {
-    if (changed) {
-        target = value;
-        dirty = true;
-    }
-}
-
-void Checkbox(const char* label, std::atomic<bool>& value) {
-    bool v = value;
-    const bool changed = ImGui::Checkbox(label, &v);
-    Store(value, v, changed);
-}
-
-// A combo over `count` labels storing an index or a value from `values`.
-void Choice(const char* label, std::atomic<int>& target, const char* const* labels, const int* values,
-            int count) {
-    int current = 0;
-    for (int i = 0; i < count; ++i) {
-        if ((values ? values[i] : i) == target.load()) current = i;
-    }
-    if (ImGui::Combo(label, &current, labels, count)) {
-        Store(target, values ? values[current] : current, true);
-    }
-}
-
-// The note for the item under the mouse or the gamepad/keyboard focus, shown in the footer.
-const char* footer_help = nullptr;
-
-void Help(const char* text) {
-    if (text && (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) || ImGui::IsItemFocused())) {
-        footer_help = text;
-    }
-}
-
-// Two-column rows: the name on the left, the control on the right.
-bool BeginRows(const char* id) {
-    if (!ImGui::BeginTable(id, 2, ImGuiTableFlags_SizingStretchProp)) {
-        return false;
-    }
-    ImGui::TableSetupColumn("name", ImGuiTableColumnFlags_WidthStretch, 0.52f);
-    ImGui::TableSetupColumn("value", ImGuiTableColumnFlags_WidthStretch, 0.48f);
-    return true;
-}
-
-void Row(const char* label) {
-    ImGui::TableNextRow();
-    ImGui::TableNextColumn();
-    ImGui::AlignTextToFramePadding();
-    ImGui::TextUnformatted(label);
-    ImGui::TableNextColumn();
-    ImGui::SetNextItemWidth(-FLT_MIN);
-    ImGui::PushID(label);
-}
-
-void CheckRow(const char* label, std::atomic<bool>& value, const char* help = nullptr) {
-    Row(label);
-    Checkbox("##value", value);
-    Help(help);
-    ImGui::PopID();
-}
-
-void ChoiceRow(const char* label, std::atomic<int>& target, const char* const* labels, const int* values,
-               int count, const char* help = nullptr) {
-    Row(label);
-    Choice("##value", target, labels, values, count);
-    Help(help);
-    ImGui::PopID();
-}
-
-void InfoRow(const char* label, const char* text) {
-    Row(label);
-    ImGui::TextDisabled("%s", text);
-    ImGui::PopID();
-}
-
-void SliderRow(const char* label, std::atomic<int>& value, int lo, int hi, const char* format, const char* help) {
-    Row(label);
-    int v = value;
-    if (ImGui::SliderInt("##value", &v, lo, hi, format, ImGuiSliderFlags_AlwaysClamp)) {
-        Store(value, std::clamp(v, lo, hi), true);
-    }
-    Help(help);
-    ImGui::PopID();
-}
-
 // The frame counter's text.
 std::string OverlayText() {
     char text[64];
     std::snprintf(text, sizeof(text), "%.0f FPS  %.1f ms", frame_ms_avg > 0.0f ? 1000.0f / frame_ms_avg : 0.0f,
                   frame_ms_avg);
     return text;
-}
-
-void ImageTab() {
-    namespace G = OslGraphics;
-    auto& s = OslSettings::Get();
-    ImGui::SeparatorText("Display");
-    if (BeginRows("##display")) {
-        ChoiceRow("Display mode", s.display_mode, G::DisplayModeNames.data(), nullptr, G::DisplayModeCount,
-                  "Windowed or borderless fullscreen. The Window mode hotkey (F11 by default) switches while playing.");
-        CheckRow("VSync", s.vsync, "Waits for the monitor: no tearing, a little more input delay.");
-        ImGui::EndTable();
-    }
-    const int iw = s.image_width, ih = s.image_height, ww = s.window_width, wh = s.window_height;
-    const bool upscaling = iw < ww && ih < wh;
-    const bool downscaling = iw > ww || ih > wh;
-    const bool rcas_blocked = s.rcas && !s.rcas_applied;
-    ImGui::SeparatorText("Scaling and sharpening");
-    if (BeginRows("##scaling")) {
-        CheckRow("Upscale with FSR 1", s.fsr1,
-                 "Enlarges the game's image to the window with AMD FidelityFX Super Resolution 1. For more FPS: Render resolution 720p + FSR 1.");
-        ImGui::BeginDisabled(rcas_blocked);
-        CheckRow("Sharpening (RCAS)", s.rcas,
-                 rcas_blocked && downscaling ? "No effect: the game's image is larger than the window."
-                 : rcas_blocked              ? "Needs FSR 1: the game's image is smaller than the window."
-                                             : "Sharpens the final image.");
-        ImGui::EndDisabled();
-        ImGui::BeginDisabled(!s.rcas || rcas_blocked);
-        SliderRow("Sharpening strength", s.rcas_strength, 0, 100, "%d%%", "How strong the sharpening is.");
-        ImGui::EndDisabled();
-        ImGui::EndTable();
-    }
-    ImGui::SeparatorText("Information");
-    if (BeginRows("##image_info")) {
-        char text[96];
-        std::snprintf(text, sizeof(text), "%d x %d", iw, ih);
-        InfoRow("Game image", text);
-        std::snprintf(text, sizeof(text), "%d x %d", ww, wh);
-        InfoRow("Window", text);
-        InfoRow("FSR 1", !s.fsr1 ? "off" : upscaling ? "active" : "no effect (image not smaller than window)");
-        InfoRow("Sharpening", s.rcas_applied ? "applied" : "not applied");
-        ImGui::EndTable();
-    }
-}
-
-void OverlayTab() {
-    auto& s = OslSettings::Get();
-    if (BeginRows("##overlay_on")) {
-        CheckRow("Frame counter", s.show_fps, "Frame rate and frame time in a corner of the screen.");
-        ImGui::EndTable();
-    }
-    ImGui::BeginDisabled(!s.show_fps);
-    ImGui::SeparatorText("Appearance");
-    if (BeginRows("##appearance")) {
-        SliderRow("Font size", s.overlay_scale, 50, 300, "%d%%", "Size of the frame counter text.");
-        static const char* const corners[] = {"Top left", "Top right", "Bottom left", "Bottom right"};
-        ChoiceRow("Corner", s.overlay_corner, corners, nullptr, 4, "Where the frame counter sits.");
-        ImGui::EndTable();
-    }
-    ImGui::EndDisabled();
-    ImGui::SeparatorText("About");
-    if (BeginRows("##about")) {
-        const auto& elf = Common::ElfInfo::Instance();
-        char text[160];
-        std::snprintf(text, sizeof(text), "%.*s v%.*s", int(elf.GameSerial().size()), elf.GameSerial().data(),
-                      int(elf.AppVer().size()), elf.AppVer().data());
-        InfoRow("Game", text);
-        const u32 total = background_total;
-        if (total) {
-            std::snprintf(text, sizeof(text), "loading %u%%", u32(u64(background_done) * 100 / total));
-        } else {
-            std::snprintf(text, sizeof(text), "ready");
-        }
-        InfoRow("Shader cache", text);
-        ImGui::EndTable();
-    }
-}
-
-void Menu() {
-    auto& s = OslSettings::Get();
-    const ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x + viewport->WorkSize.x * 0.5f,
-                                   viewport->WorkPos.y + viewport->WorkSize.y * 0.5f),
-                            ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(std::min(760.0f * base_scale, viewport->WorkSize.x * 0.95f),
-                                    std::min(680.0f * base_scale, viewport->WorkSize.y * 0.9f)),
-                             ImGuiCond_Appearing);
-    bool keep_open = true;
-    static const std::string heading = [] {
-        const std::string_view title = Common::ElfInfo::Instance().Title();
-        return std::string(title.empty() ? "Odin Sphere Leifthrasir" : title) + "  (F10 / R3+L2)";
-    }();
-    if (!ImGui::Begin(heading.c_str(), &keep_open, ImGuiWindowFlags_NoCollapse)) {
-        ImGui::End();
-        return;
-    }
-    footer_help = nullptr;
-    constexpr int TabCount = 2;
-    const ImGuiIO& io = ImGui::GetIO();
-    if (!io.WantTextInput) {
-        const int step = ImGui::IsKeyPressed(ImGuiKey_GamepadR1, false) || ImGui::IsKeyPressed(ImGuiKey_E, false) ? 1
-                         : ImGui::IsKeyPressed(ImGuiKey_GamepadL1, false) || ImGui::IsKeyPressed(ImGuiKey_Q, false)
-                             ? -1
-                             : 0;
-        if (step) {
-            requested_tab = (s.menu_tab + step + TabCount) % TabCount;
-        }
-    }
-    const float footer = ImGui::GetFrameHeightWithSpacing() * 2.0f + ImGui::GetTextLineHeightWithSpacing() * 2.0f;
-    if (ImGui::BeginTabBar("##tabs")) {
-        static const char* const tabs[TabCount] = {"Image", "Overlay"};
-        for (int tab = 0; tab < TabCount; ++tab) {
-            const ImGuiTabItemFlags flags = requested_tab == tab ? ImGuiTabItemFlags_SetSelected : 0;
-            if (!ImGui::BeginTabItem(tabs[tab], nullptr, flags)) {
-                continue;
-            }
-            if (s.menu_tab != tab && requested_tab < 0) {
-                s.menu_tab = tab;
-                dirty = true;
-            }
-            if (ImGui::BeginChild("##body", ImVec2(0, -footer))) {
-                switch (tab) {
-                case 0: ImageTab(); break;
-                default: OverlayTab(); break;
-                }
-            }
-            ImGui::EndChild();
-            ImGui::EndTabItem();
-        }
-        if (requested_tab >= 0) {
-            s.menu_tab = requested_tab;
-            dirty = true;
-            requested_tab = -1;
-        }
-        ImGui::EndTabBar();
-    }
-
-    ImGui::Separator();
-    ImGui::PushTextWrapPos(0.0f);
-    ImGui::TextDisabled("%s", footer_help ? footer_help : "L1 / R1 or Q / E: switch tabs. Settings are saved in osl.ini.");
-    ImGui::PopTextWrapPos();
-    ImGui::NewLine();
-    const float close_width = ImGui::CalcTextSize("Close").x + ImGui::GetStyle().FramePadding.x * 2;
-    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - close_width);
-    if (ImGui::Button("Close")) {
-        keep_open = false;
-    }
-    ImGui::End();
-    if (!keep_open) {
-        SetOpen(false);
-    }
 }
 
 struct FpsBox {
@@ -640,27 +330,11 @@ void Init(const Vulkan::Instance& instance, vk::Format format, u32 image_count) 
         .pColorAttachmentFormats = &color_format,
     };
     if (!ImGui_ImplVulkan_Init(&info)) {
-        std::printf("Overlay: ImGui Vulkan backend init failed\n");
+        std::printf("Runtime UI: ImGui Vulkan backend init failed\n");
         ImGui::DestroyContext();
         return;
     }
     initialized = true;
-    std::printf("Overlay: menu ready (Insert or R3+L2)\n");
-}
-
-void UpdateTextInput(SDL_Window* window) {
-    bool want = false;
-    {
-        std::scoped_lock lock{imgui_mutex};
-        want = initialized && menu_open && ImGui::GetIO().WantTextInput;
-    }
-    if (want != SDL_TextInputActive(window)) {
-        if (want) {
-            SDL_StartTextInput(window);
-        } else {
-            SDL_StopTextInput(window);
-        }
-    }
 }
 
 // imgui_mutex held. The backend frees a texture some frames after its last use.
@@ -792,111 +466,10 @@ void SetChoiceInput(uint32_t (*buttons)()) {
 
 bool HandleEvent(const SDL_Event& event) {
     std::scoped_lock lock{imgui_mutex};
-    if (!initialized) {
+    if (!initialized || !choice_active) {
         return false;
     }
-    if (choice_active && !menu_open) {
-        return HandleChoiceEvent(event);
-    }
-    ImGuiIO& io = ImGui::GetIO();
-    const bool is_open = menu_open;
-    const bool captured = is_open;
-    switch (event.type) {
-    case SDL_EVENT_KEY_DOWN:
-    case SDL_EVENT_KEY_UP: {
-        const bool down = event.type == SDL_EVENT_KEY_DOWN;
-        if (down && !event.key.repeat && (event.key.scancode == OslSettings::Get().menu_key ||
-                                          event.key.key == SDLK_INSERT)) {
-            SetOpen(!is_open);
-            return true;
-        }
-        if (down && !event.key.repeat && is_open && event.key.key == SDLK_ESCAPE) {
-            SetOpen(false);
-            return true;
-        }
-        if (!captured) {
-            return false;
-        }
-        io.AddKeyEvent(ImGuiMod_Ctrl, (event.key.mod & SDL_KMOD_CTRL) != 0);
-        io.AddKeyEvent(ImGuiMod_Shift, (event.key.mod & SDL_KMOD_SHIFT) != 0);
-        io.AddKeyEvent(ImGuiMod_Alt, (event.key.mod & SDL_KMOD_ALT) != 0);
-        if (const ImGuiKey key = KeyFromSdl(event.key.key); key != ImGuiKey_None) {
-            io.AddKeyEvent(key, down);
-        }
-        return true;
-    }
-    case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
-    case SDL_EVENT_GAMEPAD_BUTTON_UP: {
-        const bool down = event.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN;
-        const u8 button = event.gbutton.button;
-        // R3+L2 opens the menu: L3 and R3 alone are game actions.
-        if (button == SDL_GAMEPAD_BUTTON_RIGHT_STICK) {
-            r3_down = down;
-            if (down && l2_down) {
-                SetOpen(!is_open);
-                return true;
-            }
-        }
-        if (!captured) {
-            return false;
-        }
-        if (const ImGuiKey key = KeyFromGamepad(button); key != ImGuiKey_None) {
-            io.AddKeyEvent(key, down);
-        }
-        return true;
-    }
-    case SDL_EVENT_GAMEPAD_AXIS_MOTION: {
-        if (event.gaxis.axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER) {
-            const bool down = event.gaxis.value > 16000;
-            if (down && !l2_down && r3_down) {
-                l2_down = true;
-                SetOpen(!is_open);
-                return true;
-            }
-            l2_down = down;
-        }
-        return false;
-    }
-    case SDL_EVENT_TEXT_INPUT: {
-        // Typed characters (Ctrl+click on a slider, a text field): key events alone erase but
-        // do not type. SDL sends them while text input is on (UpdateTextInput).
-        if (!captured) {
-            return false;
-        }
-        io.AddInputCharactersUTF8(event.text.text);
-        return true;
-    }
-    case SDL_EVENT_MOUSE_MOTION: {
-        if (!captured) {
-            return false;
-        }
-        const float density = PixelDensity(event.motion.windowID);
-        io.AddMousePosEvent(event.motion.x * density, event.motion.y * density);
-        return true;
-    }
-    case SDL_EVENT_MOUSE_BUTTON_DOWN:
-    case SDL_EVENT_MOUSE_BUTTON_UP: {
-        if (!captured) {
-            return false;
-        }
-        const int button = event.button.button == SDL_BUTTON_LEFT    ? 0
-                           : event.button.button == SDL_BUTTON_RIGHT  ? 1
-                           : event.button.button == SDL_BUTTON_MIDDLE ? 2
-                                                                      : -1;
-        if (button >= 0) {
-            io.AddMouseButtonEvent(button, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN);
-        }
-        return true;
-    }
-    case SDL_EVENT_MOUSE_WHEEL:
-        if (!captured) {
-            return false;
-        }
-        io.AddMouseWheelEvent(event.wheel.x, event.wheel.y);
-        return true;
-    default:
-        return false;
-    }
+    return HandleChoiceEvent(event);
 }
 
 void SetBackgroundLoading(u32 done, u32 total) {
@@ -912,7 +485,7 @@ void SetLoading(bool active, u32 done, u32 total) {
 
 bool Visible() {
     const auto& s = OslSettings::Get();
-    return initialized && (loading || background_total || menu_open || text_entry_active || choice_active ||
+    return initialized && (loading || background_total || text_entry_active || choice_active ||
                            choice_retiring || s.show_fps);
 }
 
@@ -921,7 +494,7 @@ void SetDisplayScale(float scale) {
 }
 
 bool CapturesInput() {
-    return menu_open || text_entry_active || choice_active;
+    return text_entry_active || choice_active;
 }
 
 void BeginChoice(const std::string& title, const std::vector<std::string>& items,
@@ -989,19 +562,16 @@ void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent) {
     if (loading) {
         LoadingScreen();
     }
-    if (menu_open) {
-        Menu();
-    }
-    if (OslSettings::Get().show_fps && !menu_open) {
+    if (OslSettings::Get().show_fps) {
         FpsCounter();
     }
-    if (background_total && !loading && !menu_open) {
+    if (background_total && !loading) {
         BackgroundLoading();
     }
     if (text_entry_active) {
         TextEntryBox();
     }
-    if (choice_active && !menu_open) {
+    if (choice_active) {
         ChoiceBox();
     }
     ImGui::Render();

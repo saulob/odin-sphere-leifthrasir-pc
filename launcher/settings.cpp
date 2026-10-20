@@ -51,7 +51,7 @@ constexpr std::string_view kPlacementKeys[] = {kLauncherXKey,         kLauncherY
                                                 kLauncherHeightKey,    kLauncherMaximizedKey, kLauncherFullscreenKey};
 
 constexpr char kFileHeader[] =
-    "# Odin Sphere Leifthrasir user settings (the launcher and the in-game menu write this file).\n"
+    "# Odin Sphere Leifthrasir user settings (the launcher and the game write this file).\n"
     "# Remove a line to use the default.\n";
 
 } // namespace

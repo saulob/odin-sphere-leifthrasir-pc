@@ -19,10 +19,10 @@ namespace OslSettings {
 namespace {
 
 std::filesystem::path file_path;
-std::mutex file_mutex; // the menu (present thread) and F11 (window thread) both write
+std::mutex file_mutex; // F11 (window thread) writes
 
 constexpr const char* FileHeader[] = {
-    "# Odin Sphere Leifthrasir user settings (the launcher and the in-game menu write this file).",
+    "# Odin Sphere Leifthrasir user settings (the launcher and the game write this file).",
     "# Remove a line to use the default.",
 };
 
@@ -55,9 +55,6 @@ void Set(Values& v, const std::string& key, const std::string& value) {
     } else if (key == "overlay_corner") {
         const int corner = ParseInt(value, 1);
         v.overlay_corner = corner >= 0 && corner <= 3 ? corner : 1;
-    } else if (key == "menu_tab") {
-        const int tab = ParseInt(value, 0);
-        v.menu_tab = tab >= 0 && tab <= 1 ? tab : 0;
     } else if (key == "display_mode") {
         v.display_mode = OslGraphics::ParseDisplayMode(value);
     } else if (key == "vsync") {
@@ -86,13 +83,9 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         v.show_fps_title = ParseBool(value, v.show_fps_title);
     } else if (key == "show_resolution_title") {
         v.show_resolution_title = ParseBool(value, v.show_resolution_title);
-    } else if (const int scancode = osl_key_from_name(value.c_str()); scancode != 0) {
-        std::atomic<int>* const hotkeys[] = {&v.menu_key, &v.window_mode_key};
-        for (int i = 0; i < OSL_KEY_COUNT - OSL_KEY_FIRST_HOTKEY; ++i) {
-            if (key == osl_key_actions[OSL_KEY_FIRST_HOTKEY + i].ini_key) {
-                *hotkeys[i] = scancode;
-            }
-        }
+    } else if (const int scancode = osl_key_from_name(value.c_str());
+               scancode != 0 && key == osl_key_actions[OSL_KEY_HOTKEY_WINDOW_MODE].ini_key) {
+        v.window_mode_key = scancode;
     }
 }
 
@@ -137,7 +130,7 @@ bool WriteEntries(const Entries& entries) {
             if (!lines.empty() && !Trim(lines.back()).empty()) {
                 lines.emplace_back();
             }
-            lines.emplace_back("# Set from the in-game menu");
+            lines.emplace_back("# Set from the window mode hotkey");
             header = true;
         }
         lines.push_back(entries[i].first + " = " + entries[i].second);
@@ -237,22 +230,6 @@ void Load(const std::string& path) {
     if (v.anisotropy) {
         std::printf("GPU: texture filtering %dx\n", v.anisotropy.load());
     }
-}
-
-bool Save() {
-    const auto& v = Get();
-    const auto flag = [](bool value) { return std::string(value ? "1" : "0"); };
-    return WriteEntries({
-        {"display_mode", DisplayModeKey()},
-        {"vsync", flag(v.vsync)},
-        {"fsr1", flag(v.fsr1)},
-        {"rcas", flag(v.rcas)},
-        {"rcas_strength", std::to_string(v.rcas_strength.load())},
-        {"show_fps", flag(v.show_fps)},
-        {"overlay_scale", std::to_string(v.overlay_scale.load())},
-        {"overlay_corner", std::to_string(v.overlay_corner.load())},
-        {"menu_tab", std::to_string(v.menu_tab.load())},
-    });
 }
 
 bool SaveDisplayMode() {

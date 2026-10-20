@@ -495,17 +495,39 @@ void TestKeys() {
     for (int i = 0; i < OSL_KEY_COUNT; ++i) {
         CHECK(map.scancode[i] == osl_key_actions[i].default_scancode);
     }
-    CHECK(map.scancode[OSL_KEY_HOTKEY_MENU] != 0);
     CHECK(map.scancode[OSL_KEY_HOTKEY_WINDOW_MODE] != 0);
     CHECK(osl_keys_apply(&map, osl_key_actions[OSL_KEY_CROSS].ini_key, "Q"));
     CHECK(map.scancode[OSL_KEY_CROSS] == SDL_SCANCODE_Q);
     CHECK(!osl_keys_apply(&map, osl_key_actions[OSL_KEY_CROSS].ini_key, "escape"));
     CHECK(!osl_keys_apply(&map, "not_an_action", "Q"));
-    CHECK(osl_keys_apply(&map, osl_key_actions[OSL_KEY_HOTKEY_MENU].ini_key, "f9"));
-    CHECK(map.scancode[OSL_KEY_HOTKEY_MENU] == SDL_SCANCODE_F9);
+    CHECK(osl_keys_apply(&map, osl_key_actions[OSL_KEY_HOTKEY_WINDOW_MODE].ini_key, "f9"));
+    CHECK(map.scancode[OSL_KEY_HOTKEY_WINDOW_MODE] == SDL_SCANCODE_F9);
     char name[32];
     CHECK(std::string(osl_key_name(map.scancode[OSL_KEY_CROSS], name, sizeof(name))) == "q");
     CHECK(!osl_key_bindable(0));
+}
+
+void TestNoRuntimeOverlay() {
+    const std::filesystem::path root(OSL_SOURCE_DIR);
+    const std::string overlay = ReadFile(root / "gpu" / "shim" / "osl_overlay.cpp");
+    CHECK(overlay.find("menu ready") == std::string::npos);
+    CHECK(overlay.find("R3+L2") == std::string::npos);
+    CHECK(overlay.find("SDLK_INSERT") == std::string::npos);
+    CHECK(overlay.find("ImageTab") == std::string::npos);
+    CHECK(overlay.find("OverlayTab") == std::string::npos);
+    CHECK(overlay.find("void Menu()") == std::string::npos);
+    CHECK(overlay.find("menu_open") == std::string::npos);
+    CHECK(overlay.find("menu_key") == std::string::npos);
+    const std::string keys = ReadFile(root / "src" / "osl_keys.c");
+    CHECK(keys.find("hotkey_menu") == std::string::npos);
+    const std::string settings = ReadFile(root / "gpu" / "shim" / "osl_settings.h");
+    CHECK(settings.find("menu_key") == std::string::npos);
+    CHECK(settings.find("menu_tab") == std::string::npos);
+    const std::string renderer = ReadFile(root / "gpu" / "shim" / "osl_settings.cpp");
+    CHECK(renderer.find("key == \"vsync\"") != std::string::npos);
+    CHECK(renderer.find("key == \"fsr1\"") != std::string::npos);
+    CHECK(renderer.find("key == \"rcas\"") != std::string::npos);
+    CHECK(renderer.find("key == \"rcas_strength\"") != std::string::npos);
 }
 
 void TestOptionsAndInstall() {
@@ -846,6 +868,7 @@ int main() {
     TestTextLanguages();
     TestVoicePolicy();
     TestKeys();
+    TestNoRuntimeOverlay();
     TestOptionsAndInstall();
     TestHash();
     TestSettingsReaders();

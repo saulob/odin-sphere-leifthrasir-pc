@@ -26,7 +26,6 @@ that make the first boot debuggable. The USA 1.00 base package (`CUSA05083`) and
 - **Upscaling** (AMD FSR 1) and **sharpening** (AMD RCAS)
 - **SMAA** anti-aliasing and **anisotropic texture filtering** (Game, 2x, 4x, 8x, 16x)
 - Frame rate and render resolution in the window title, and an in-game **frame counter**
-- An in-game settings menu: **F10** on the keyboard, or **R3 + L2** on the controller
 - Xbox controllers without setup, and keyboard support
 - **Local PS4 trophies**, offline on this PC, shown on the launcher's Trophies page
 - Portable `user` and `logs` folders next to the program for settings, saves, the shader cache and logs
@@ -89,8 +88,6 @@ Everything is kept next to the program:
 Hold **Shift** while starting to bring the launcher back after turning **Show this launcher** off.
 
 **Alt+F4** (or the window close button) quits the launcher. **Esc** cancels the keyboard-binding capture and pop-ups; it does not quit. **Ctrl+S** saves the launcher settings without starting the game.
-
-**F10** (or **R3 + L2**) opens the in-game settings menu with the display mode, VSync, FSR 1, sharpening and the frame counter.
 
 The Render resolution and Aspect Ratio options change the game's verified internal render-target sites. Only
 **16:9 Original** is undistorted: the game's 2D scene is still laid out for its original 16:9 canvas, so

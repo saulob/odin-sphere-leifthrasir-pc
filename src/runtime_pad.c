@@ -233,7 +233,7 @@ static void sample_host(int slot, PadData *d) {
     SDL_Gamepad *g=slots[slot].gamepad;
     d->connected=slot_connected(slot);
     d->connected_count=slots[slot].connected_count ? slots[slot].connected_count : d->connected;
-    if (oslgpu_overlay_captures_input()) return; /* settings menu open: neutral input */
+    if (oslgpu_ui_captures_input()) return; /* game dialog open: neutral input */
     const bool *k=slot==0 && SDL_WasInit(SDL_INIT_VIDEO) ? SDL_GetKeyboardState(NULL) : NULL;
     load_button_maps();
     if (g) {
@@ -435,9 +435,9 @@ static void sample_player1_scripts(PadData *d) {
 static void sample(int slot, PadData *d) {
     PadSlot *s=&slots[slot];
     sample_host(slot,d);
-    /* After the menu or the text dialog closes, buttons still held (the Cross that accepted a
-     * name) stay hidden until released: the game would take them as a new press. */
-    if (oslgpu_overlay_captures_input()) { s->hold_after_capture=1; return; }
+    /* After a dialog closes, buttons still held (the Cross that accepted a name) stay hidden until
+     * released: the game would take them as a new press. */
+    if (oslgpu_ui_captures_input()) { s->hold_after_capture=1; return; }
     if (slot==0) sample_player1_scripts(d);
     if (s->hold_after_capture) {
         if (d->buttons) d->buttons=0;

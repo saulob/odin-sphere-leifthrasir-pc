@@ -65,7 +65,6 @@ from the project's GitHub releases page, choose "More info", then
 PLAYING
 -------
 - F11 switches between Windowed and Borderless Fullscreen.
-- F10 (or R3 + L2 on a controller) opens the port's in-game settings menu.
 - Xbox controllers work without setup.
 - The keyboard works too; the launcher's Controls page lists the keys.
 - To open the launcher again after turning it off, hold Shift while starting.

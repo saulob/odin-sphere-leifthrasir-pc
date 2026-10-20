@@ -676,7 +676,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         if (vblank_status.count % (main_port.flip_rate + 1) == 0) {
             const auto request = receive_request();
             if (!request) {
-                // The save list, the menu and the text entry stay live while the game draws nothing.
+                // The save list and the text entry stay live while the game draws nothing.
                 const auto now = std::chrono::steady_clock::now();
                 static auto last_redraw = now;
                 if (main_port.is_open && OslOverlay::CapturesInput() &&

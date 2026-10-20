@@ -671,17 +671,17 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
                                        : MakeImageBlitFit(frame->width, frame->height, extent.width, extent.height);
         cmdbuf.blitImage(frame->image, vk::ImageLayout::eTransferSrcOptimal, swapchain_image,
                          vk::ImageLayout::eTransferDstOptimal, blit, vk::Filter::eLinear);
-        // The settings menu and the frame counter over the frame, at display resolution.
-        const bool overlay = OslOverlay::Visible();
+        // The runtime UI (dialogs, loading note, frame counter) over the frame, at display resolution.
+        const bool ui = OslOverlay::Visible();
         const std::array post_barriers{
             vk::ImageMemoryBarrier{
                 .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
-                .dstAccessMask = overlay ? vk::AccessFlagBits::eColorAttachmentRead |
-                                               vk::AccessFlagBits::eColorAttachmentWrite
-                                         : vk::AccessFlagBits::eNone,
+                .dstAccessMask = ui ? vk::AccessFlagBits::eColorAttachmentRead |
+                                          vk::AccessFlagBits::eColorAttachmentWrite
+                                    : vk::AccessFlagBits::eNone,
                 .oldLayout = vk::ImageLayout::eTransferDstOptimal,
-                .newLayout = overlay ? vk::ImageLayout::eColorAttachmentOptimal
-                                     : vk::ImageLayout::ePresentSrcKHR,
+                .newLayout = ui ? vk::ImageLayout::eColorAttachmentOptimal
+                                : vk::ImageLayout::ePresentSrcKHR,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .image = swapchain_image,
@@ -702,7 +702,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
                                vk::PipelineStageFlagBits::eAllCommands,
                                vk::DependencyFlagBits::eByRegion, {}, {}, post_barriers);
         OslOverlay::LogPresent();
-        if (overlay) {
+        if (ui) {
             OslOverlay::Render(cmdbuf, swapchain.ImageView(), extent);
             const vk::ImageMemoryBarrier to_present{
                 .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
