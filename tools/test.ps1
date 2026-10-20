@@ -1,8 +1,8 @@
 <#
 .SYNOPSIS
   Builds and runs the focused tests: the game profile and the package identity, the settings file, the keyboard
-  bindings, the window fit and the GPU tile layouts. They use synthetic data in a temporary folder: no window,
-  no game files.
+  bindings, the cursor visibility rules, the window fit and the GPU tile layouts. They use synthetic data in a
+  temporary folder: no window, no game files.
 .DESCRIPTION
   Needs the build configured once by tools\build.ps1. The tests are not part of the default build.
 #>
@@ -16,7 +16,7 @@ $buildDir = Join-Path $script:RepoRoot 'build\cmake\clang64'
 if (-not (Test-Path -LiteralPath (Join-Path $buildDir 'build.ninja'))) { Stop-Tool 'Run tools\build.ps1 first: it configures the build.' }
 
 Write-Step 'Building the tests'
-& ninja -C $buildDir osl-tests osl-window-tests osl-tiling-tests osl-trophy-tests
+& ninja -C $buildDir osl-tests osl-window-tests osl-tiling-tests osl-cursor-tests osl-trophy-tests
 if ($LASTEXITCODE -ne 0) { Stop-Tool 'Test build failed' }
 
 Write-Step 'Running the game, settings and keys tests'
@@ -29,6 +29,10 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step 'Running the window fit tests'
 & (Join-Path $buildDir 'bin\osl-window-tests.exe')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+Write-Step 'Running the cursor visibility tests'
+& (Join-Path $buildDir 'bin\osl-cursor-tests.exe')
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step 'Running the tiling tests (GPU tile layouts and addresses)'

@@ -4,10 +4,12 @@
 #include <chrono>
 #include <mutex>
 #include <string>
+#include <unordered_map>
 #include "common/types.h"
 #include "osl_cursor.h"
 
 struct SDL_Window;
+union SDL_Event;
 
 namespace Frontend {
 
@@ -42,11 +44,17 @@ private:
     std::mutex text_mutex;
     bool text_requested{}, text_active{};
     int display_mode = -1; ///< applied OslSettings display mode (window thread)
+    struct PadActivity {
+        OslCursor::ControllerState state;
+        OslCursor::ControllerActivityFilter filter;
+    };
     void ApplyDisplayMode(int mode);
     void ToggleBorderless();
     void UpdateFpsTitle();
     void UpdateCursor();
-    OslCursor::Hider cursor; ///< window thread
+    bool TrackControllerEvent(const SDL_Event& event);
+    std::unordered_map<u32, PadActivity> pad_activity; ///< window thread
+    OslCursor::State cursor; ///< window thread
     void RefreshTitle();
     std::chrono::steady_clock::time_point fps_started{};
     u64 fps_frames = 0;

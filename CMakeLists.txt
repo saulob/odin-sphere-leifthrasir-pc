@@ -125,6 +125,13 @@ target_include_directories(osl-tiling-tests PRIVATE gpu/shim gpu/shadps4 tests s
 target_compile_options(osl-tiling-tests PRIVATE -Wall -Wextra -Werror)
 target_link_libraries(osl-tiling-tests PRIVATE oslgpu)
 
+# Focused tests of the game window's cursor visibility (tools/test.ps1); not part of the default build.
+add_executable(osl-cursor-tests EXCLUDE_FROM_ALL tests/cursor_tests.cpp)
+set_target_properties(osl-cursor-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_include_directories(osl-cursor-tests PRIVATE gpu/shim)
+target_compile_definitions(osl-cursor-tests PRIVATE OSL_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+target_compile_options(osl-cursor-tests PRIVATE -Wall -Wextra -Werror)
+
 # Focused tests of the windowed-mode size and centring arithmetic; not part of the default build.
 add_executable(osl-window-tests EXCLUDE_FROM_ALL tests/window_fit_tests.cpp)
 set_target_properties(osl-window-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
