@@ -51,25 +51,34 @@ $marker = Join-Path $view '.osl_view.json'
 $image = Join-Path $root "build\image\$Version"
 $loadExecExit = 30 # osl-loader: sceSystemServiceLoadExec ended the process
 
-# Rebuilt when the game was installed again or the boot image builder changed.
-function Test-ImageCurrent {
-    $newest = (Get-Item -LiteralPath $marker).LastWriteTime
-    foreach ($source in 'launcher\boot_image.cpp', 'launcher\game_profile.h') {
-        $time = (Get-Item -LiteralPath (Join-Path $root $source)).LastWriteTime
-        if ($time -gt $newest) { $newest = $time }
+$imageStamp = Join-Path $image '.osl_image_inputs'
+
+# What the boot image is made from: the installation and the builder's sources (by content).
+function Get-ImageInputs {
+    $lines = @("installed $((Get-Item -LiteralPath $marker).LastWriteTimeUtc.Ticks)")
+    foreach ($source in 'launcher\boot_image.cpp', 'launcher\boot_image.h', 'launcher\game_files.cpp',
+        'launcher\game_files.h', 'launcher\game_profile.h') {
+        $lines += "$((Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $root $source)).Hash) $source"
     }
+    return ($lines -join "`n")
+}
+
+# Why the boot image must be rebuilt, or $null when it is current.
+function Get-ImageProblem {
     foreach ($name in 'boot.bin', 'image.json') {
-        $file = Join-Path $image $name
-        if (-not (Test-Path -LiteralPath $file) -or (Get-Item -LiteralPath $file).LastWriteTime -lt $newest) { return $false }
+        if (-not (Test-Path -LiteralPath (Join-Path $image $name))) { return "no $name yet" }
     }
-    return $true
+    if (-not (Test-Path -LiteralPath $imageStamp)) { return 'built without a record of its inputs' }
+    if ((Get-Content -LiteralPath $imageStamp -Raw) -cne (Get-ImageInputs)) { return 'the game was installed again or the builder changed' }
+    return $null
 }
 
 $tc = Resolve-Toolchain 'auto'
 $env:PATH = "$($tc.Bin);$env:PATH"
 Write-Step "Toolchain clang64 ($($tc.Bin)), $config"
 
-Sync-GpuDependencies
+$fetched = @(Sync-GpuDependencies)
+if ($fetched.Count -eq 0) { Write-Step 'Pinned sources (gpu\deps.txt): current' }
 
 if ($Clean -and (Test-Path -LiteralPath $buildDir)) {
     Write-Step 'Cleaning build\cmake'
@@ -83,18 +92,25 @@ if (-not $configured) {
     & cmake -S $root -B $buildDir -G Ninja "-DCMAKE_BUILD_TYPE=$config" '-DCMAKE_C_COMPILER=clang'
     if ($LASTEXITCODE -ne 0) { Stop-Tool 'CMake configuration failed' }
 }
-Write-Step 'Building'
+# Ninja re-runs CMake first when a CMake input changed (CMakeLists, gpu\deps.txt, a fetched commit, a patch).
+Write-Step 'Building incrementally'
 & ninja -C $buildDir osl-loader
 if ($LASTEXITCODE -ne 0) { Stop-Tool 'Build failed' }
 if (-not (Test-Path -LiteralPath $loader)) { Stop-Tool "Missing $loader" }
 
+$imageProblem = if (Test-Path -LiteralPath $marker) { Get-ImageProblem } else { $null }
 if (-not (Test-Path -LiteralPath $marker)) {
     Write-Warn 'The game is not installed yet: start the game and use Install game... on the launcher''s Play page.'
 }
-elseif (-not (Test-ImageCurrent)) {
-    Write-Step 'Updating the boot image'
+elseif ($imageProblem) {
+    Write-Step "Updating the boot image ($Version): $imageProblem"
+    if (Test-Path -LiteralPath $imageStamp) { Remove-Item -LiteralPath $imageStamp }
     & $loader --prepare-image $view $image
     if ($LASTEXITCODE -ne 0) { Stop-Tool 'Boot image build failed' }
+    [System.IO.File]::WriteAllText($imageStamp, (Get-ImageInputs), [System.Text.Encoding]::ASCII)
+}
+else {
+    Write-Step "Boot image ($Version): current"
 }
 Write-Host ''
 Write-Host "Built $loader" -ForegroundColor Green

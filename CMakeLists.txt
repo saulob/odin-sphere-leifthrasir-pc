@@ -35,6 +35,9 @@ file(CONFIGURE OUTPUT ${CMAKE_BINARY_DIR}/generated/osl_version.h CONTENT "#defi
 ${CMAKE_MATCH_1},${CMAKE_MATCH_2},${CMAKE_MATCH_3},0\n#define OSL_FILE_VERSION_STRING \
 \"${CMAKE_MATCH_1}.${CMAKE_MATCH_2}.${CMAKE_MATCH_3}.0\"\n#define OSL_VERSION_STRING \"${OSL_PORT_VERSION}\"\n")
 
+include(cmake/OslPinnedSources.cmake)
+osl_pinned_sources()
+
 find_package(SDL3 CONFIG REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(Threads REQUIRED)

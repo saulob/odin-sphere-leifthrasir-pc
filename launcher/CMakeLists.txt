@@ -1,9 +1,6 @@
-# The launcher: TRG Launcher (third_party/trg-launcher, fetched by tools\build.ps1) in a window of its own that is
-# closed before the loader creates the game window.
-set(TRG_DIR ${PROJECT_SOURCE_DIR}/third_party/trg-launcher)
-if (NOT EXISTS ${TRG_DIR}/include/trg/launcher.h)
-    message(FATAL_ERROR "TRG Launcher is missing: run tools\\build.ps1, which fetches it (gpu\\deps.txt).")
-endif()
+# The launcher: TRG Launcher (fetched by tools\build.ps1, built from its copy patched with gpu/patches/trg-launcher)
+# in a window of its own that is closed before the loader creates the game window.
+set(TRG_DIR ${OSL_SOURCE_DIR_trg-launcher})
 set(IMGUI_DIR ${PROJECT_SOURCE_DIR}/gpu/third_party/imgui)
 
 # TRG's settings file and platform helpers do not need Dear ImGui.

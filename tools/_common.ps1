@@ -92,41 +92,22 @@ function Resolve-Toolchain([string]$Requested) {
     Stop-Tool 'MSYS2 CLANG64 toolchain or libraries missing. Run tools\setup.ps1 for what to install.'
 }
 
-# Content fingerprint of a dependency's patch set: empty when it has none.
-function Get-PatchFingerprint($files) {
-    if (-not $files -or $files.Count -eq 0) { return '' }
-    $sha = [System.Security.Cryptography.SHA256]::Create()
-    try {
-        $text = New-Object System.Text.StringBuilder
-        foreach ($file in $files) {
-            $hex = [System.BitConverter]::ToString($sha.ComputeHash([System.IO.File]::ReadAllBytes($file.FullName))).Replace('-', '')
-            [void]$text.Append($file.Name).Append(':').Append($hex).Append("`n")
-        }
-        $hash = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($text.ToString()))
-        return [System.BitConverter]::ToString($hash).Replace('-', '')
-    } finally {
-        $sha.Dispose()
-    }
-}
-
-# Fetches the pinned sources in gpu\deps.txt that are missing, at another commit or with a different patch set, then
-# applies gpu\patches. The stamp holds the commit and, when the dependency is patched, its patch fingerprint.
+# Fetches the pinned sources in gpu\deps.txt that are missing or not at their commit, and returns their paths. A fetched
+# folder stays pristine and holds its commit in .osl_commit; CMake builds the patched copies (cmake\OslPinnedSources.cmake).
 function Sync-GpuDependencies {
     $git = Get-Command git -ErrorAction SilentlyContinue
     if (-not $git) { Stop-Tool 'git is needed to fetch the video core dependencies (gpu\deps.txt).' }
     $gpu = Join-Path $script:RepoRoot 'gpu'
+    $fetched = @()
     foreach ($line in Get-Content -LiteralPath (Join-Path $gpu 'deps.txt')) {
         if ($line -match '^\s*(#|$)') { continue }
         $path, $url, $commit = -split $line
         $dir = Join-Path $gpu $path
         $stamp = Join-Path $dir '.osl_commit'
-        $patch_dir = Join-Path $gpu ('patches\' + (Split-Path $path -Leaf))
-        $patches = @(Get-ChildItem -LiteralPath $patch_dir -Filter '*.patch' -File -ErrorAction SilentlyContinue |
-            Sort-Object Name)
-        $fingerprint = Get-PatchFingerprint $patches
-        $expected = if ($fingerprint) { "$commit`n$fingerprint" } else { $commit }
-        if ((Test-Path -LiteralPath $stamp) -and (Get-Content -LiteralPath $stamp -Raw).Trim() -eq $expected) { continue }
-        Write-Step "Fetching $path ($($commit.Substring(0, 7)))"
+        $recorded = if (Test-Path -LiteralPath $stamp) { (Get-Content -LiteralPath $stamp -Raw).Trim() } else { $null }
+        if ($recorded -eq $commit) { continue }
+        $reason = if ($null -eq $recorded) { 'not fetched yet' } else { 'not the pristine pinned checkout' }
+        Write-Step "Fetching $path ($($commit.Substring(0, 7))): $reason"
         if (Test-Path -LiteralPath $dir) { Remove-Item -LiteralPath $dir -Recurse -Force }
         New-Item -ItemType Directory -Force -Path $dir | Out-Null
         & git -C $dir init --quiet
@@ -137,10 +118,8 @@ function Sync-GpuDependencies {
             & git -C $dir submodule update --quiet --init --recursive --depth 1
             if ($LASTEXITCODE -ne 0) { Stop-Tool "submodules of $path failed" }
         }
-        foreach ($patch in $patches) {
-            & git -C $dir apply $patch.FullName
-            if ($LASTEXITCODE -ne 0) { Stop-Tool "patch $($patch.Name) does not apply to $path" }
-        }
-        [System.IO.File]::WriteAllText($stamp, $expected, [System.Text.Encoding]::ASCII)
+        [System.IO.File]::WriteAllText($stamp, $commit, [System.Text.Encoding]::ASCII)
+        $fetched += $path
     }
+    return $fetched
 }
