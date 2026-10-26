@@ -60,20 +60,66 @@ _Static_assert(sizeof(BatchEntry)==32,"PS4 batch map entry layout");
 /* Region table lock. Lookups (GPU per-draw queries, VirtualQuery, GPU page
  * protection) share it; map/unmap/protect take it exclusively. Both nest: code
  * under the lock may write guest memory, and a GPU-tracked page then faults into
- * runtime_memory_gpu_protect on the same thread. Readers nest because glibc's
- * default rwlock prefers readers; a thread holding it exclusively skips relocking. */
-static pthread_rwlock_t lock=PTHREAD_RWLOCK_INITIALIZER;
+ * runtime_memory_gpu_protect on the same thread, or waits for the GPU thread, which
+ * takes it again. So readers never wait for a writer that only waits: the lock prefers
+ * readers (as glibc's default rwlock; winpthreads' blocks new readers behind a waiting
+ * writer, nested ones included). A thread holding it exclusively skips relocking. */
+#define RW_WRITER 0x80000000u  /* a writer holds the lock */
+#define RW_WAITING 0x40000000u /* a writer waits for the readers to leave */
+static uint32_t rw_state;      /* reader count | RW_WRITER | RW_WAITING */
+static pthread_mutex_t rw_mutex=PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t rw_changed=PTHREAD_COND_INITIALIZER;
+static void rw_read_lock(void) {
+    for (;;) {
+        uint32_t s=__atomic_load_n(&rw_state,__ATOMIC_RELAXED);
+        if (!(s&RW_WRITER)) {
+            if (__atomic_compare_exchange_n(&rw_state,&s,s+1,1,__ATOMIC_ACQUIRE,__ATOMIC_RELAXED)) return;
+            continue;
+        }
+        pthread_mutex_lock(&rw_mutex);
+        while (__atomic_load_n(&rw_state,__ATOMIC_RELAXED)&RW_WRITER) pthread_cond_wait(&rw_changed,&rw_mutex);
+        pthread_mutex_unlock(&rw_mutex);
+    }
+}
+static void rw_read_unlock(void) {
+    if (__atomic_sub_fetch(&rw_state,1,__ATOMIC_RELEASE)==RW_WAITING) {
+        pthread_mutex_lock(&rw_mutex);
+        pthread_cond_broadcast(&rw_changed);
+        pthread_mutex_unlock(&rw_mutex);
+    }
+}
+static void rw_write_lock(void) {
+    pthread_mutex_lock(&rw_mutex);
+    for (;;) {
+        uint32_t s=__atomic_load_n(&rw_state,__ATOMIC_RELAXED);
+        if (!(s&~RW_WAITING)) {
+            if (__atomic_compare_exchange_n(&rw_state,&s,RW_WRITER,0,__ATOMIC_ACQUIRE,__ATOMIC_RELAXED)) break;
+            continue;
+        }
+        /* Readers left before the flag was set: nobody would wake this thread. Otherwise the last
+         * reader's broadcast needs rw_mutex, which this thread holds until it waits. */
+        if (!(__atomic_fetch_or(&rw_state,RW_WAITING,__ATOMIC_RELAXED)&~RW_WAITING)) continue;
+        pthread_cond_wait(&rw_changed,&rw_mutex);
+    }
+    pthread_mutex_unlock(&rw_mutex);
+}
+static void rw_write_unlock(void) {
+    pthread_mutex_lock(&rw_mutex);
+    __atomic_store_n(&rw_state,0,__ATOMIC_RELEASE);
+    pthread_cond_broadcast(&rw_changed);
+    pthread_mutex_unlock(&rw_mutex);
+}
 static __thread unsigned exclusive_depth;
 /* Odd while a writer holds the lock; readers' region caches are valid for one even value. */
 static uint64_t table_generation;
 static void write_lock(void) {
-    if (!exclusive_depth++) { pthread_rwlock_wrlock(&lock); __atomic_add_fetch(&table_generation,1,__ATOMIC_ACQ_REL); }
+    if (!exclusive_depth++) { rw_write_lock(); __atomic_add_fetch(&table_generation,1,__ATOMIC_ACQ_REL); }
 }
 static void write_unlock(void) {
-    if (!--exclusive_depth) { __atomic_add_fetch(&table_generation,1,__ATOMIC_RELEASE); pthread_rwlock_unlock(&lock); }
+    if (!--exclusive_depth) { __atomic_add_fetch(&table_generation,1,__ATOMIC_RELEASE); rw_write_unlock(); }
 }
-static void read_lock(void) { if (!exclusive_depth) pthread_rwlock_rdlock(&lock); }
-static void read_unlock(void) { if (!exclusive_depth) pthread_rwlock_unlock(&lock); }
+static void read_lock(void) { if (!exclusive_depth) rw_read_lock(); }
+static void read_unlock(void) { if (!exclusive_depth) rw_read_unlock(); }
 static Block blocks[LIMIT];
 static Vma *vmas; static size_t vma_count, vma_capacity;
 #ifndef _WIN32
@@ -91,6 +137,16 @@ typedef struct { int kind; uintptr_t address; uint64_t size; } PendingHook;
 static PendingHook *pending; static size_t pending_count, pending_capacity;
 static size_t allocations, maps, flexible_maps, protects, queries;
 static uint64_t live_bytes, flexible_bytes;
+/* A refused request is logged (three times per source line: games probe some sizes on purpose),
+ * so that a crash after it can be explained. */
+static int32_t mem_fail(int32_t code, int line) {
+    static unsigned char reported[2048];
+    if (line>0 && line<2048 && __atomic_load_n(&reported[line],__ATOMIC_RELAXED)<3 &&
+        __atomic_fetch_add(&reported[line],1,__ATOMIC_RELAXED)<3)
+        printf("Runtime: memory request refused (0x%x, runtime_memory.c:%d); direct in use %" PRIu64 " MiB, flexible %" PRIu64 " MiB\n",
+               (unsigned)code,line,live_bytes>>20,flexible_bytes>>20);
+    return code;
+}
 
 static int valid_alignment(uint64_t a) { return a >= PAGE && a <= POOL_SIZE && !(a & (a-1)); }
 static uint64_t align_up(uint64_t n, uint64_t a) { return (n+a-1) & ~(a-1); }
@@ -231,12 +287,39 @@ static int host_protect(uintptr_t address, uint64_t size, int prot) {
 }
 /* Released pages read as zero when reused, like the memfd's punched holes. */
 static void host_discard(uint64_t phys, uint64_t size) { memset(backing_base+phys,0,size); }
+static HANDLE create_section(uint64_t bytes) {
+    return CreateFileMapping2(INVALID_HANDLE_VALUE,NULL,FILE_MAP_ALL_ACCESS,PAGE_EXECUTE_READWRITE,SEC_COMMIT,bytes,NULL,NULL,0);
+}
+/* Near the commit limit Windows refuses one request this large instead of growing a system-managed
+ * page file, but grows it while the charge rises in steps: commit (never touch) 256 MiB blocks up to
+ * the section plus 1 GiB, release them and try again, for about 15 s. */
+static HANDLE create_section_growing_page_file(uint64_t bytes, DWORD error) {
+    HANDLE created=NULL;
+    const ULONGLONG deadline=GetTickCount64()+15000;
+    for (int attempt=0; attempt<30 && !created && GetTickCount64()<deadline; ++attempt) {
+        if (error!=ERROR_COMMITMENT_LIMIT && error!=ERROR_NOT_ENOUGH_MEMORY && error!=ERROR_NO_SYSTEM_RESOURCES) break;
+        if (!attempt) fprintf(stderr,"Runtime: %" PRIu64 " MiB of guest memory refused (error %lu); growing the page file\n",bytes>>20,error);
+        enum { STEP=256u<<20, MAX_STEPS=96 };
+        void *steps[MAX_STEPS];
+        int held=0;
+        for (int failures=0; held<MAX_STEPS && (uint64_t)held*STEP<bytes+(UINT64_C(1)<<30) && failures<8;) {
+            void *p=VirtualAlloc(NULL,STEP,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE);
+            if (p) { steps[held++]=p; failures=0; }
+            else { ++failures; Sleep(100); }
+        }
+        for (int i=0; i<held; ++i) VirtualFree(steps[i],0,MEM_RELEASE);
+        created=create_section(bytes);
+        if (!created) { error=GetLastError(); Sleep(500); }
+    }
+    return created;
+}
 /* Direct memory occupies [0,POOL_SIZE) of the section, flexible memory [POOL_SIZE,+FLEX_SPAN). */
 static int pool(void) {
     if (backing_base) return 0;
     runtime_memory_reserve();
     uint64_t bytes=POOL_SIZE+FLEX_SPAN;
-    section=CreateFileMapping2(INVALID_HANDLE_VALUE,NULL,FILE_MAP_ALL_ACCESS,PAGE_EXECUTE_READWRITE,SEC_COMMIT,bytes,NULL,NULL,0);
+    section=create_section(bytes);
+    if (!section) section=create_section_growing_page_file(bytes,GetLastError());
     if (!section) { fprintf(stderr,"Runtime: cannot create %" PRIu64 " MiB of guest memory (error %lu); is the page file large enough?\n",bytes>>20,GetLastError()); return -1; }
     backing_base=MapViewOfFile3(section,GetCurrentProcess(),NULL,0,bytes,0,PAGE_READWRITE,NULL,0);
     return backing_base ? 0 : -1;
@@ -349,7 +432,8 @@ static int split_at(uintptr_t a) {
     if (i==vma_count || vmas[i].start>=a) return 0;
     Vma right=vmas[i];
     right.start=a;
-    if (right.kind==KIND_DIRECT) right.phys+=a-vmas[i].start;
+    /* Direct and flexible pieces both keep their own backing offset (backing copies, flex_free). */
+    if (right.kind!=KIND_RESERVED) right.phys+=a-vmas[i].start;
     vmas[i].end=a;
     return vma_insert(i+1,right);
 }
@@ -397,15 +481,15 @@ static int32_t place(void **inout, uint64_t size, int prot, int flags, uint64_t 
     uintptr_t address=(uintptr_t)*inout;
     if (flags & MAP_FIXED_FLAG) {
         if (!address || address%PAGE) return INVALID;
-        if ((flags & MAP_NO_OVERWRITE) && overlaps(address,address+size,1)) return NO_MEMORY;
+        if ((flags & MAP_NO_OVERWRITE) && overlaps(address,address+size,1)) return mem_fail(NO_MEMORY,__LINE__);
     } else {
         address=find_free(address,size,alignment);
-        if (!address) return NO_MEMORY;
+        if (!address) return mem_fail(NO_MEMORY,__LINE__);
     }
-    if (host_map(address,size,host_prot(prot),kind==KIND_RESERVED,phys)) return NO_MEMORY;
+    if (host_map(address,size,host_prot(prot),kind==KIND_RESERVED,phys)) return mem_fail(NO_MEMORY,__LINE__);
     void *mapped=(void *)address;
     drop_range(address,address+size);
-    if (vma_insert(vma_index(address),(Vma){address,address+size,kind,prot,type,phys})) return NO_MEMORY;
+    if (vma_insert(vma_index(address),(Vma){address,address+size,kind,prot,type,phys})) return mem_fail(NO_MEMORY,__LINE__);
     if (kind==KIND_FLEXIBLE) flexible_bytes+=size;
     if (kind!=KIND_RESERVED) queue_hook(HOOK_MAP,address,size);
     *inout=mapped;
@@ -440,14 +524,14 @@ static ABI int32_t direct_allocate(int64_t low, int64_t high, uint64_t size,
     if (!out || low < 0 || high < 0 || !size || size % PAGE || !valid_alignment(alignment) || type < 0 || type > 10)
         return INVALID;
     uint64_t end = (uint64_t)high < POOL_SIZE ? (uint64_t)high : POOL_SIZE;
-    if ((uint64_t)low >= end || size > end - (uint64_t)low) return NO_SPACE;
+    if ((uint64_t)low >= end || size > end - (uint64_t)low) return mem_fail(NO_SPACE,__LINE__);
     write_lock();
-    if (pool()) { write_unlock(); return NO_MEMORY; }
+    if (pool()) { write_unlock(); return mem_fail(NO_MEMORY,__LINE__); }
     uint64_t start = align_up((uint64_t)low, alignment);
     int slot = -1;
     for (int i=0; i<LIMIT; ++i) if (!blocks[i].used) { slot=i; break; }
     for (;;) {
-        if (slot<0 || start > end || size > end-start) { write_unlock(); return NO_SPACE; }
+        if (slot<0 || start > end || size > end-start) { write_unlock(); return mem_fail(NO_SPACE,__LINE__); }
         int overlap = 0;
         for (int i=0; i<LIMIT; ++i) {
             Block b = blocks[i];
@@ -544,9 +628,9 @@ static ABI int32_t direct_release(uint64_t start, uint64_t size) {
 }
 static int32_t map_flexible_locked(void **inout, uint64_t size, int prot, int flags) {
     if (!inout || !size || size%PAGE || (prot & ~0x37)) return INVALID;
-    if (flexible_bytes+size>FLEXIBLE_SIZE || pool()) return NO_MEMORY;
+    if (flexible_bytes+size>FLEXIBLE_SIZE || pool()) return mem_fail(NO_MEMORY,__LINE__);
     uint64_t phys=flex_alloc(size);
-    if (phys==UINT64_MAX) return NO_MEMORY;
+    if (phys==UINT64_MAX) return mem_fail(NO_MEMORY,__LINE__);
     int32_t result=place(inout,size,prot,flags,PAGE,KIND_FLEXIBLE,0,phys);
     if (result) flex_free(phys,size); else ++flexible_maps;
     return result;
@@ -580,20 +664,29 @@ static ABI int32_t reserve_range(void **inout, uint64_t size, int flags, uint64_
     if (!inout || !size || size%PAGE || !valid_alignment(alignment)) return INVALID;
     write_lock();
     if ((flags & MAP_FIXED_FLAG) && overlaps((uintptr_t)*inout,(uintptr_t)*inout+size,0)) {
-        write_unlock(); return NO_MEMORY;
+        write_unlock(); return mem_fail(NO_MEMORY,__LINE__);
     }
     int32_t result=place(inout,size,0,flags,alignment,KIND_RESERVED,0,0);
     write_unlock();
     if (!result) printf("Runtime: reserved virtual range %p, size=%" PRIu64 "\n", *inout, size);
     return result;
 }
+/* Every mapping in [start,end) already has this protection (and type, when given). */
+static int unchanged(uintptr_t start, uintptr_t end, int prot, int type) {
+    for (size_t i=vma_index(start); i<vma_count && vmas[i].start<end; ++i)
+        if (vmas[i].prot!=prot || (type>=0 && vmas[i].type!=type)) return 0;
+    return 1;
+}
 static int32_t protect_locked(uintptr_t start, uint64_t size, int prot, int type) {
     uintptr_t end=start+align_up(size,PAGE);
     start&=~(uintptr_t)(PAGE-1);
     if ((prot & ~0x37) || !covered(start,end,0)) return INVALID;
+    /* A protect that changes nothing does nothing, as on the PS4: re-applying it would drop the GPU's
+     * write tracking on the range and invalidate it (a draw-pipe drain and re-uploads). */
+    if (unchanged(start,end,prot,type)) return 0;
     if (host_protect(start,end-start,host_prot(prot))) return INVALID;
     int error; size_t i=carve(start,end,&error);
-    if (error) return NO_MEMORY;
+    if (error) return mem_fail(NO_MEMORY,__LINE__);
     for (; i<vma_count && vmas[i].start<end; ++i) { vmas[i].prot=prot; if (type>=0) vmas[i].type=type; }
     queue_hook(HOOK_INVALIDATE,start,end-start);
     ++protects;
@@ -712,7 +805,7 @@ static ABI int32_t pool_expand(int64_t low, int64_t high, uint64_t size, uint64_
     unsigned char *used=slot>=0 ? calloc(size/PAGE,1) : NULL;
     if (used) pool_chunks[slot].phys=(uint64_t)*out, pool_chunks[slot].pages=size/PAGE, pool_chunks[slot].used=used;
     write_unlock();
-    if (!used) return NO_MEMORY;
+    if (!used) return mem_fail(NO_MEMORY,__LINE__);
     printf("Runtime: memory pool expanded by %" PRIu64 " bytes at 0x%" PRIx64 "\n",size,(uint64_t)*out);
     return 0;
 }
@@ -747,7 +840,7 @@ static ABI int32_t pool_commit(void *address, uint64_t size, int type, int prot,
     for (uint64_t done=0; done<size;) {
         uint64_t phys, pages;
         write_lock();
-        if (!pool_take_locked((size-done)/PAGE,&phys,&pages)) { write_unlock(); return NO_MEMORY; }
+        if (!pool_take_locked((size-done)/PAGE,&phys,&pages)) { write_unlock(); return mem_fail(NO_MEMORY,__LINE__); }
         void *at=(char *)address+done;
         int32_t r=place(&at,pages*PAGE,prot,MAP_FIXED_FLAG,PAGE,KIND_DIRECT,type,phys);
         if (r) pool_give_locked(phys,pages*PAGE);

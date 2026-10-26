@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "osl_toggles.h"
+#include <atomic>
+#include <chrono>
 #include <ranges>
 #include "common/assert.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
@@ -34,8 +36,11 @@ static vk::ImageUsageFlags ImageUsageFlags(const Vulkan::Instance& instance,
             }
             // Always create images with storage flag to avoid needing re-creation in case of e.g
             // compute clears This sacrifices a bit of performance but is less work. ExtendedUsage
-            // flag is also used.
-            usage |= vk::ImageUsageFlagBits::eStorage;
+            // flag is also used. The exception here is for multisample images when storage is not
+            // supported, where even with ExtendedUsage we may get only one supported sample back.
+            if (info.num_samples == 1 || instance.IsMultisampleStorageImageSupported()) {
+                usage |= vk::ImageUsageFlagBits::eStorage;
+            }
         }
     } else {
         // Similarly to above, we specify storage usage. This is typically not supported by
@@ -51,10 +56,10 @@ static vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
     switch (type) {
     case AmdGpu::ImageType::Color1D:
     case AmdGpu::ImageType::Color1DArray:
-        return vk::ImageType::e1D;
     case AmdGpu::ImageType::Color2D:
     case AmdGpu::ImageType::Color2DMsaa:
     case AmdGpu::ImageType::Color2DArray:
+    case AmdGpu::ImageType::Cube:
         return vk::ImageType::e2D;
     case AmdGpu::ImageType::Color3D:
         return vk::ImageType::e3D;
@@ -102,7 +107,7 @@ void UniqueImage::Destroy() {
 void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
     this->image_ci = image_ci;
     ASSERT(!image);
-    const VmaAllocationCreateInfo alloc_ci = {
+    VmaAllocationCreateInfo alloc_ci = {
         .flags = VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT,
         .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
         .requiredFlags = 0,
@@ -114,12 +119,39 @@ void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
     const VkImageCreateInfo image_ci_unsafe = static_cast<VkImageCreateInfo>(image_ci);
     VkImage unsafe_image{};
     VmaAllocationInfo alloc_info{};
+    const auto start = std::chrono::steady_clock::now();
     VkResult result = vmaCreateImage(allocator, &image_ci_unsafe, &alloc_ci, &unsafe_image,
                                      &allocation, &alloc_info);
+    if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+        alloc_ci.flags &= ~VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT;
+        LOG_WARNING(Render_Vulkan, "Allocating image {}x{}x{} over budget",
+                    image_ci.extent.width, image_ci.extent.height, image_ci.extent.depth);
+        result = vmaCreateImage(allocator, &image_ci_unsafe, &alloc_ci, &unsafe_image,
+                                &allocation, &alloc_info);
+    }
+    if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+        // A full card keeps the image in system memory instead of the game ending.
+        alloc_ci.usage = VMA_MEMORY_USAGE_AUTO_PREFER_HOST;
+        LOG_WARNING(Render_Vulkan, "Out of video memory: image {}x{}x{} in system memory",
+                    image_ci.extent.width, image_ci.extent.height, image_ci.extent.depth);
+        result = vmaCreateImage(allocator, &image_ci_unsafe, &alloc_ci, &unsafe_image,
+                                &allocation, &alloc_info);
+    }
     ASSERT_MSG(result == VK_SUCCESS, "Failed allocating image with error {}",
                vk::to_string(vk::Result{result}));
     image = vk::Image{unsafe_image};
     size_bytes = alloc_info.size;
+    // Driver allocation stalls (decides whether image memory needs pooling).
+    const auto elapsed = std::chrono::steady_clock::now() - start;
+    if (elapsed >= std::chrono::milliseconds(4)) {
+        static std::atomic<u32> reported{0};
+        if (reported.fetch_add(1, std::memory_order_relaxed) < 32) {
+            LOG_INFO(Render_Vulkan, "Slow image create: {:.1f} ms for {}x{}x{} {}, {} KiB",
+                     std::chrono::duration<double, std::milli>(elapsed).count(),
+                     image_ci.extent.width, image_ci.extent.height, image_ci.extent.depth,
+                     vk::to_string(image_ci.format), alloc_info.size >> 10);
+        }
+    }
 }
 
 Image::Image(const Vulkan::Instance& instance, Vulkan::Runtime& runtime_,
@@ -233,7 +265,7 @@ ImageView& Image::FindView(const ImageViewInfo& view_info, bool ensure_guest_sam
         const auto view_id = backing->image_view_ids[backing->last_view];
         return (*slot_image_views)[view_id];
     }
-    const auto view_id = slot_image_views->insert(runtime->GetInstance(), view_info, *this);
+    const auto view_id = slot_image_views->Insert(runtime->GetInstance(), view_info, *this);
     backing->image_view_infos.emplace_back(view_info);
     backing->image_view_ids.emplace_back(view_id);
     return (*slot_image_views)[view_id];
@@ -245,11 +277,48 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
     auto& last_state = backing->state;
     auto& subresource_states = backing->subresource_states;
 
+    constexpr auto write_flags = vk::AccessFlagBits2::eTransferWrite |
+                                 vk::AccessFlagBits2::eShaderWrite |
+                                 vk::AccessFlagBits2::eMemoryWrite;
+    constexpr auto any_write = write_flags | vk::AccessFlagBits2::eColorAttachmentWrite |
+                               vk::AccessFlagBits2::eDepthStencilAttachmentWrite;
+    // Whether the stages the last barrier reached (plus reads merged since) cover `wanted`: the
+    // last write is visible there only, and a later write barrier waits on those stages only.
+    const auto stages_cover = [](vk::PipelineStageFlags2 have, vk::PipelineStageFlags2 wanted) {
+        return static_cast<bool>(have & vk::PipelineStageFlagBits2::eAllCommands) ||
+               !(wanted & ~have);
+    };
+    const auto needs_barrier = [&](const State& state) {
+        return state.layout != dst_layout || state.access_mask != dst_mask ||
+               static_cast<bool>(state.access_mask & write_flags) ||
+               !stages_cover(state.pl_stage, dst_stage);
+    };
+    const auto reads_only = [&](const State& state) {
+        return state.layout == dst_layout && !(state.access_mask & any_write) &&
+               !(dst_mask & any_write);
+    };
+    // A read after reads in the same layout needs no barrier when an earlier barrier already made
+    // the image visible to that kind of access in those stages.
+    const auto read_merge = [&](const State& state) {
+        return reads_only(state) && !(dst_mask & ~state.access_mask) &&
+               stages_cover(state.pl_stage, dst_stage);
+    };
+
     const bool needs_partial_transition =
         subres_range &&
         (subres_range->base != SubresourceBase{} || subres_range->extent != info.resources);
     const bool partially_transited = !subresource_states.empty();
 
+    if (needs_partial_transition && !partially_transited &&
+        (!needs_barrier(last_state) || read_merge(last_state))) {
+        // The whole image is in one state that already serves the sub range: splitting it per
+        // subresource would make every later full transition walk all of them.
+        return;
+    }
+
+    bool keep_reads = false;
+    vk::PipelineStageFlags2 skipped_stages{};
+    vk::AccessFlags2 skipped_access{};
     if (needs_partial_transition || partially_transited) {
         if (!partially_transited) {
             subresource_states.resize(info.resources.levels * info.resources.layers);
@@ -277,48 +346,47 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
                 const auto subres_idx = mip * info.resources.layers + layer;
                 ASSERT(subres_idx < subresource_states.size());
                 auto& state = subresource_states[subres_idx];
-
-                constexpr auto write_flags = vk::AccessFlagBits2::eTransferWrite |
-                                             vk::AccessFlagBits2::eShaderWrite |
-                                             vk::AccessFlagBits2::eMemoryWrite;
-                const bool is_write = static_cast<bool>(state.access_mask & write_flags);
-                if (state.layout != dst_layout || state.access_mask != dst_mask || is_write) {
-                    barriers.emplace_back(vk::ImageMemoryBarrier2{
-                        .srcStageMask = state.pl_stage,
-                        .srcAccessMask = state.access_mask,
-                        .dstStageMask = dst_stage,
-                        .dstAccessMask = dst_mask,
-                        .oldLayout = state.layout,
-                        .newLayout = dst_layout,
-                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .image = GetImage(),
-                        .subresourceRange{
-                            .aspectMask = aspect_mask,
-                            .baseMipLevel = mip,
-                            .levelCount = 1,
-                            .baseArrayLayer = layer,
-                            .layerCount = 1,
-                        },
-                    });
-                    state.layout = dst_layout;
-                    state.access_mask = dst_mask;
-                    state.pl_stage = dst_stage;
+                if (!needs_barrier(state) || read_merge(state)) {
+                    skipped_stages |= state.pl_stage;
+                    skipped_access |= state.access_mask;
+                    continue;
                 }
+                barriers.emplace_back(vk::ImageMemoryBarrier2{
+                    .srcStageMask = state.pl_stage,
+                    .srcAccessMask = state.access_mask,
+                    .dstStageMask = dst_stage,
+                    .dstAccessMask = dst_mask,
+                    .oldLayout = state.layout,
+                    .newLayout = dst_layout,
+                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .image = GetImage(),
+                    .subresourceRange{
+                        .aspectMask = aspect_mask,
+                        .baseMipLevel = mip,
+                        .levelCount = 1,
+                        .baseArrayLayer = layer,
+                        .layerCount = 1,
+                    },
+                });
+                state.layout = dst_layout;
+                state.access_mask = dst_mask;
+                state.pl_stage = dst_stage;
             }
         }
 
-        if (!needs_partial_transition) {
+        if (needs_partial_transition) {
+            skipped_stages = {};
+            skipped_access = {};
+        } else {
             subresource_states.clear();
         }
     } else { // Full resource transition
-        constexpr auto write_flags = vk::AccessFlagBits2::eTransferWrite |
-                                     vk::AccessFlagBits2::eShaderWrite |
-                                     vk::AccessFlagBits2::eMemoryWrite;
-        const bool is_write = static_cast<bool>(last_state.access_mask & write_flags);
-        if (last_state.layout == dst_layout && last_state.access_mask == dst_mask && !is_write) {
+        if (!needs_barrier(last_state) || read_merge(last_state)) {
             return;
         }
+        // After a barrier between reads the image stays visible to the reads it already was.
+        keep_reads = reads_only(last_state);
 
         barriers.emplace_back(vk::ImageMemoryBarrier2{
             .srcStageMask = last_state.pl_stage,
@@ -339,10 +407,10 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
             },
         });
     }
-
     last_state.layout = dst_layout;
-    last_state.access_mask = dst_mask;
-    last_state.pl_stage = dst_stage;
+    last_state.access_mask =
+        (keep_reads ? last_state.access_mask | dst_mask : dst_mask) | skipped_access;
+    last_state.pl_stage = dst_stage | skipped_stages;
 }
 
 } // namespace VideoCore

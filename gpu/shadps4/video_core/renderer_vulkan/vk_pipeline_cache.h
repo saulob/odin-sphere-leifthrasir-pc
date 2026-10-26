@@ -80,6 +80,7 @@ struct Program {
 struct DrawIndirectParams {
     u16 vertex_sgpr_offset;
     u32 instance_sgpr_offset;
+    bool is_indirect;
 };
 
 } // namespace Vulkan
@@ -138,10 +139,6 @@ public:
     void Sync();
     void ReportCompilerStats();
 
-    bool LoadComputePipeline(Serialization::Archive& ar);
-    bool LoadGraphicsPipeline(Serialization::Archive& ar);
-    bool LoadPipelineStage(Serialization::Archive& ar, size_t stage);
-
     const GraphicsPipeline* GetGraphicsPipeline(const DrawIndirectParams params = {},
                                                 const PreparedDraw* prepared = nullptr);
 
@@ -185,9 +182,17 @@ private:
     void FinishCompilations();
     void SeedWorkerCaches();
     bool CheckCacheProfile();
+    bool DropCrashedCache();
+    /// osl: what loading one cached pipeline came to; a Stale key is removed from the store.
+    enum class CacheLoad { Loaded, Skipped, Stale };
+    struct CachedPipelineKey;
+    static bool ReadPipelineKey(std::vector<u8>&& blob, CachedPipelineKey& key);
+    CacheLoad LoadComputePipeline(const CachedPipelineKey& key);
+    CacheLoad LoadGraphicsPipeline(const CachedPipelineKey& key);
+    CacheLoad LoadPipelineStage(u64 perm_hash, size_t stage, std::optional<u64> expected_print);
     struct BackgroundWarmup;
     struct WarmStage;
-    void ReadWarmEntry(BackgroundWarmup& warm, std::vector<u8>&& data);
+    void ReadWarmEntry(BackgroundWarmup& warm, std::vector<u8>&& data, const std::string& name);
     bool MergeWarmStage(WarmStage& stage);
     void PumpWarmUp();
     void StopWarmUp();
@@ -235,6 +240,10 @@ private:
     const PreparedDraw* used_prepared = nullptr;
     tsl::robin_map<ComputePipelineKey, std::unique_ptr<ComputePipeline>> compute_pipelines;
     tsl::robin_map<GraphicsPipelineKey, std::unique_ptr<GraphicsPipeline>> graphics_pipelines;
+    /// osl: the previous draw's pipeline and key: a run of draws with one pipeline skips the
+    /// hash and lookup. Reset wherever graphics pipelines are erased.
+    GraphicsPipelineKey last_graphics_key{};
+    const GraphicsPipeline* last_graphics_pipeline = nullptr;
     PipelineSelection sel{}; ///< GPU thread selection state
     ComputePipelineKey compute_key{};
     u32 num_new_pipelines{}; // new pipelines added to the cache since the game start

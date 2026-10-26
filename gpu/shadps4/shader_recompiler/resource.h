@@ -26,6 +26,13 @@ struct SharpFetch {
     static constexpr std::size_t N = sizeof(T) / sizeof(u32);
     static_assert(N <= 8);
 
+    enum class Summary : u8 {
+        SingleLoad, ///< All N dwords load from consecutive flatbuf locations
+        MultiLoad,
+        Invalid, ///< A dword loads from an unknown location
+    };
+
+    Summary summary{Summary::MultiLoad};
     std::array<u32, N> immediates;
     std::array<SharpLocation, N> offsets;
     u8 load_mask;
@@ -35,6 +42,12 @@ struct SharpFetch {
     template <u32 num_dwords = N>
         requires(num_dwords <= N)
     constexpr bool Fetch(const u32* flatbuf, T* out) const {
+        if (summary == Summary::SingleLoad) [[likely]] {
+            std::memcpy(out, flatbuf + offsets[0], num_dwords * sizeof(u32));
+            return true;
+        } else if (summary == Summary::Invalid) [[unlikely]] {
+            return false;
+        }
         u8 mask = load_mask;
         for (u32 i = 0; i < num_dwords; i++) {
             if (offsets[i] == UNKNOWN_LOCATION) {
@@ -56,6 +69,7 @@ enum class SharpFetchPostOp : u8 {
     // For buffers
     BitwiseOrDw1WithImm,
     OffsetByProgramBase,
+    ClearStrideAndBitshiftDw2WithImm,
     // For images,
     ConvertCubeTo2DArray,
     // For samplers
@@ -63,6 +77,7 @@ enum class SharpFetchPostOp : u8 {
     ForceRepeatXyzClamp,
     ForceLastTexelXyClamp,
     ClearAnisoRatioAndThreshold,
+    ForceUnnormalizedCoords,
 };
 
 enum class BufferType : u8 {
@@ -83,6 +98,7 @@ struct BufferResource {
     bool is_formatted{};
     SharpFetchPostOp post_op{};
     u32 post_op_dw1_mask{};
+    u32 post_op_dw2_shift{};
 
     bool IsSpecial() const noexcept {
         return buffer_type != BufferType::Guest;
@@ -95,10 +111,19 @@ struct BufferResource {
         }
         if (post_op == SharpFetchPostOp::BitwiseOrDw1WithImm) {
             reinterpret_cast<u32*>(&buffer)[1] |= post_op_dw1_mask;
+        } else if (post_op == SharpFetchPostOp::ClearStrideAndBitshiftDw2WithImm) {
+            // s_and_b32 dw1, dw1, 0xffff keeps only the high base address bits.
+            reinterpret_cast<u32*>(&buffer)[1] &= 0xffffu;
+            buffer.num_records <<= post_op_dw2_shift;
         } else if (post_op == SharpFetchPostOp::OffsetByProgramBase) {
             buffer.base_address += info.ProgramBase();
         }
         if (!buffer.Valid()) {
+            return AmdGpu::Buffer::Null();
+        }
+        // Bound as null by the rasterizer: specialize and translate it as null too, so that
+        // garbage strides and formats in such slots cannot create new shader variants.
+        if (buffer.num_records != 0 && (buffer.base_address == 0 || buffer.GetSize() == 0)) {
             return AmdGpu::Buffer::Null();
         }
         return buffer;
@@ -135,7 +160,7 @@ struct ImageResource {
             image.type = u64(AmdGpu::ImageType::Color2DArray);
             image.depth = (image.depth + 1) * 6 - 1;
         }
-        if (!image.Valid()) {
+        if (!image.Valid() || image.HasReservedFields()) {
             image = AmdGpu::Image::Null(is_depth);
         } else if (is_depth) {
             const auto data_fmt = image.GetDataFmt();
@@ -194,6 +219,8 @@ struct SamplerResource {
         } else if (post_op == SharpFetchPostOp::ClearAnisoRatioAndThreshold) {
             sampler.max_aniso.Assign(AmdGpu::AnisoRatio::One);
             sampler.aniso_threshold.Assign(0);
+        } else if (post_op == SharpFetchPostOp::ForceUnnormalizedCoords) {
+            sampler.force_unnormalized.Assign(1);
         }
         return sampler;
     }

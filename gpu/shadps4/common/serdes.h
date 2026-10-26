@@ -7,9 +7,18 @@
 #include "common/types.h"
 
 #include <cstddef>
+#include <cstring>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace Serialization {
+
+/// osl: a blob ends before what it describes, or counts more elements than it holds (a damaged
+/// or incompatible cache entry). The cache loaders catch it and drop the entry.
+struct CorruptData : std::runtime_error {
+    CorruptData() : std::runtime_error{"Invalid or corrupted deserialization container"} {}
+};
 
 template <typename T>
 concept Container = requires(T t) {
@@ -42,9 +51,14 @@ struct Archive {
     }
 
     void Advance(size_t size) {
-        ASSERT_MSG(offset + size <= container.size(),
-                   "Invalid or corrupted deserialization container/shader cache");
+        if (size > Remaining()) {
+            throw CorruptData{};
+        }
         offset += size;
+    }
+
+    [[nodiscard]] size_t Remaining() const {
+        return container.size() - offset;
     }
 
     std::vector<u8>&& TakeOff() {
@@ -57,7 +71,7 @@ struct Archive {
     }
 
     Archive() = default;
-    explicit Archive(std::vector<u8>&& v) : container{v} {}
+    explicit Archive(std::vector<u8>&& v) : container{std::move(v)} {}
 
 private:
     u32 offset{};
@@ -105,8 +119,9 @@ struct Writer {
 struct Reader {
     template <typename T>
     void Read(T* ptr, size_t size) {
-        ASSERT_MSG(ar.offset + size <= ar.container.size(),
-                   "Invalid or corrupted deserialization container/shader cache");
+        if (size > ar.Remaining()) {
+            throw CorruptData{};
+        }
         std::memcpy(reinterpret_cast<void*>(ptr), ar.CurrPtr(), size);
         ar.Advance(size);
     }
@@ -121,7 +136,11 @@ struct Reader {
     void Read(auto& v) {
         size_t num_elements{};
         Read(num_elements);
-        for (int i = 0; i < num_elements; ++i) {
+        // Every element takes at least one byte: a larger count is damage, not a huge loop.
+        if (num_elements > ar.Remaining()) {
+            throw CorruptData{};
+        }
+        for (size_t i = 0; i < num_elements; ++i) {
             v.emplace_back();
             Read(v.back());
         }
@@ -130,6 +149,9 @@ struct Reader {
     void Read(std::string& s) {
         size_t length{};
         Read(length);
+        if (length > ar.Remaining()) {
+            throw CorruptData{};
+        }
         s.resize(length);
         Read(s.data(), length);
     }

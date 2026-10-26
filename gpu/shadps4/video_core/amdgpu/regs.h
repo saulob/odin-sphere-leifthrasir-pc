@@ -4,6 +4,8 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
+#include <bit>
 #include <bitset>
 #include <cstring>
 #include <vector>
@@ -199,7 +201,28 @@ union Regs {
 struct RegDirty {
     static constexpr u32 BlockWords = 32;
     static constexpr u32 NumBlocks = Regs::NumRegs / BlockWords;
-    std::bitset<NumBlocks> blocks;
+    /// One bit per block, walked by set bit (libc++'s std::bitset has no fast walk).
+    struct Blocks {
+        std::array<u64, (NumBlocks + 63) / 64> words{};
+
+        void set(u32 block) {
+            words[block / 64] |= u64{1} << (block % 64);
+        }
+        bool test(u32 block) const {
+            return ((words[block / 64] >> (block % 64)) & 1) != 0;
+        }
+        void reset() {
+            words.fill(0);
+        }
+        template <typename Func>
+        void ForEach(Func&& func) const {
+            for (u32 i = 0; i < words.size(); ++i) {
+                for (u64 word = words[i]; word != 0; word &= word - 1) {
+                    func(i * 64 + static_cast<u32>(std::countr_zero(word)));
+                }
+            }
+        }
+    } blocks;
     bool reset = false; ///< ClearState: defaults, then only the blocks marked after it
 
     void Mark(u32 word, u32 count) {
@@ -232,13 +255,11 @@ struct RegDelta {
         reset = dirty.reset;
         blocks.clear();
         words.clear();
-        for (u32 block = 0; block < RegDirty::NumBlocks; ++block) {
-            if (dirty.blocks.test(block)) {
-                blocks.push_back(u16(block));
-                const u32* src = regs.reg_array.data() + block * RegDirty::BlockWords;
-                words.insert(words.end(), src, src + RegDirty::BlockWords);
-            }
-        }
+        dirty.blocks.ForEach([&](u32 block) {
+            blocks.push_back(u16(block));
+            const u32* src = regs.reg_array.data() + block * RegDirty::BlockWords;
+            words.insert(words.end(), src, src + RegDirty::BlockWords);
+        });
     }
     void Apply(Regs& regs) const {
         if (reset) {

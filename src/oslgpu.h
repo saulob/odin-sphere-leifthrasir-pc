@@ -25,6 +25,8 @@ uintptr_t oslgpu_resolve(const char *scoped_nid);
 /* Called first by the loader's fault handler: 1 when a GPU page-tracking fault was handled. */
 int oslgpu_handle_fault(void *context, void *address);
 void oslgpu_dump_guest_writes(void *context);
+/* Fatal fault: marks the pipeline cache when the faulting thread is a pipeline warm-up thread. */
+void oslgpu_note_fatal_fault(void);
 /* Number of symbols registered by the video core (diagnostics). */
 unsigned oslgpu_symbol_count(void);
 /* Keyboard text entry and list selection drawn by the video core; begin returns 0 without a window.

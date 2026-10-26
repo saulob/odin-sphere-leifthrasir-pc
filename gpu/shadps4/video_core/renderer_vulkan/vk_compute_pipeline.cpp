@@ -108,9 +108,15 @@ ComputePipeline::ComputePipeline(const Instance& instance, Scheduler& scheduler,
     };
     auto [pipeline_result, pipe] =
         instance.GetDevice().createComputePipelineUnique(pipeline_cache, compute_pipeline_ci);
-    ASSERT_MSG(pipeline_result == vk::Result::eSuccess, "Failed to create compute pipeline: {}",
-               vk::to_string(pipeline_result));
+    if (pipeline_result != vk::Result::eSuccess) {
+        pipe = CreateRefusedPipelineAgain(
+            [&] { return device.createComputePipelineUnique(nullptr, compute_pipeline_ci); },
+            pipeline_result, "compute pipeline", debug_str);
+    }
     pipeline = std::move(pipe);
+    if (!pipeline) {
+        return; // Failed(): its dispatches are skipped
+    }
     SetObjectName(device, *pipeline, "Compute Pipeline {}", debug_str);
 }
 

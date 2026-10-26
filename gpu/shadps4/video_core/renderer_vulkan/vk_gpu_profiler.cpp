@@ -56,6 +56,7 @@ void GpuProfiler::BeginFrame() {
             cmdbuf.writeTimestamp2(vk::PipelineStageFlagBits2::eAllCommands, pool, query);
         });
         pending[slice] = true;
+        ticks[slice] = scheduler.CurrentTick();
     }
     slice = (slice + 1) % NumSlices;
     // The oldest slice: its frame was submitted four frames ago.
@@ -74,7 +75,9 @@ void GpuProfiler::BeginFrame() {
 void GpuProfiler::Collect(u32 which) {
     const u32 count = used[which];
     std::vector<u64> stamps(count);
-    // Four frames on this is complete unless the GPU lags that far: then wait for it.
+    // Several frames can share one submission (loading screens): the slice's queries may not be
+    // submitted yet and a query wait would never return. Waiting for the tick submits them.
+    scheduler.Wait(ticks[which]);
     const auto result = device.getQueryPoolResults(
         *pool, which * SliceQueries, count, count * sizeof(u64), stamps.data(), sizeof(u64),
         vk::QueryResultFlagBits::e64 | vk::QueryResultFlagBits::eWait);

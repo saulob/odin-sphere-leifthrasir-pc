@@ -864,6 +864,10 @@ public:
     /// integers. Result is undefined if minVal > maxVal.
     Id OpSClamp(Id result_type, Id x, Id min_val, Id max_val);
 
+    /// Result is min(max(x, minVal), maxVal) with the semantics of NMin and NMax: if x is a NaN,
+    /// the result is minVal. Result is undefined if minVal > maxVal.
+    Id OpNClamp(Id result_type, Id x, Id min_val, Id max_val);
+
     /// Computes a * b + c.
     Id OpFma(Id result_type, Id a, Id b, Id c);
 

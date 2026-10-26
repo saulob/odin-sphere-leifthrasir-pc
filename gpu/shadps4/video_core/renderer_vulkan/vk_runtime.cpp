@@ -3,6 +3,7 @@
 
 #include <boost/container/small_vector.hpp>
 #include "osl_toggles.h"
+#include "common/alignment.h"
 #include "video_core/buffer_cache/buffer.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -21,10 +22,10 @@ static vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
     switch (type) {
     case AmdGpu::ImageType::Color1D:
     case AmdGpu::ImageType::Color1DArray:
-        return vk::ImageType::e1D;
     case AmdGpu::ImageType::Color2D:
     case AmdGpu::ImageType::Color2DMsaa:
     case AmdGpu::ImageType::Color2DArray:
+    case AmdGpu::ImageType::Cube:
         return vk::ImageType::e2D;
     case AmdGpu::ImageType::Color3D:
         return vk::ImageType::e3D;
@@ -316,6 +317,7 @@ void Runtime::DownloadImage(VideoCore::Image* src, const VideoCore::Buffer* dst,
 }
 
 void Runtime::CopyImage(VideoCore::Image* src, VideoCore::Image* dst) {
+    const TransferMark mark{*this, "image copy", *dst};
     const u32 num_mips = std::min(src->info.resources.levels, dst->info.resources.levels);
 
     // Format mismatch warning (safe but useful)
@@ -417,9 +419,9 @@ void Runtime::CopyImage(VideoCore::Image* src, VideoCore::Image* dst) {
 
 void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
                                   const VideoCore::Buffer* buffer, u64 offset) {
+    const TransferMark mark{*this, "image copy through buffer", *dst};
     const u32 num_mips = std::min(src->info.resources.levels, dst->info.resources.levels);
     const u32 num_layers = std::min(src->info.resources.layers, dst->info.resources.layers);
-    ASSERT(src->info.resources.layers == dst->info.resources.layers && num_mips == 1);
 
     SetBackingSamples(dst, dst->info.num_samples, false);
     SetBackingSamples(src, src->info.num_samples);
@@ -437,7 +439,20 @@ void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
         .imageOffset = {0, 0, 0},
         .imageExtent = {src->info.size.width, src->info.size.height, src->info.size.depth},
     };
-    const auto copy_size = BufferImageCopySize(buffer_copy, src->info.pixel_format);
+    u64 copy_size = BufferImageCopySize(buffer_copy, src->info.pixel_format);
+    boost::container::small_vector<vk::BufferImageCopy, 8> download_copies;
+    download_copies.push_back(buffer_copy);
+    for (u32 mip = 1; mip < num_mips; ++mip) {
+        auto mip_copy = buffer_copy;
+        mip_copy.bufferOffset = Common::AlignUp(offset + copy_size, 16);
+        mip_copy.imageSubresource.mipLevel = mip;
+        mip_copy.imageExtent = vk::Extent3D{std::max(src->info.size.width >> mip, 1u),
+                                            std::max(src->info.size.height >> mip, 1u),
+                                            std::max(src->info.size.depth >> mip, 1u)};
+        copy_size =
+            mip_copy.bufferOffset - offset + BufferImageCopySize(mip_copy, src->info.pixel_format);
+        download_copies.push_back(mip_copy);
+    }
 
     scheduler.EndRendering();
 
@@ -451,13 +466,15 @@ void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
         FlushBarriers();
     }
 
-    const auto download_copy = buffer_copy;
-    buffer_copy.imageSubresource.aspectMask = dst->aspect_mask & ~vk::ImageAspectFlagBits::eStencil;
+    auto upload_copies = download_copies;
+    for (auto& copy : upload_copies) {
+        copy.imageSubresource.aspectMask = dst->aspect_mask & ~vk::ImageAspectFlagBits::eStencil;
+    }
     scheduler.Record([src_image = src->GetImage(), dst_image = dst->GetImage(),
-                      handle = buffer->Handle(), download_copy,
-                      upload_copy = buffer_copy](vk::CommandBuffer cmdbuf) {
+                      handle = buffer->Handle(), download_copies,
+                      upload_copies](vk::CommandBuffer cmdbuf) {
         cmdbuf.copyImageToBuffer(src_image, vk::ImageLayout::eTransferSrcOptimal, handle,
-                                 download_copy);
+                                 download_copies);
         const vk::MemoryBarrier2 post_copy_barrier = {
             .srcStageMask = vk::PipelineStageFlagBits2::eCopy,
             .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
@@ -470,7 +487,7 @@ void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
             .pMemoryBarriers = &post_copy_barrier,
         });
         cmdbuf.copyBufferToImage(handle, dst_image, vk::ImageLayout::eTransferDstOptimal,
-                                 upload_copy);
+                                 upload_copies);
     });
 
     dst->flags |= (src->flags & VideoCore::ImageFlagBits::GpuModified);
@@ -531,10 +548,12 @@ void Runtime::CopyMip(VideoCore::Image* src, VideoCore::Image* dst, u32 mip, u32
     dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
 }
 
-void Runtime::CopyColorAndDepth(VideoCore::Image* src, VideoCore::Image* dst) {
+bool Runtime::CopyColorAndDepth(VideoCore::Image* src, VideoCore::Image* dst) {
+    const TransferMark mark{*this, "depth/color form copy", *dst};
     if (src->info.num_samples == 1 && dst->info.num_samples == 1) {
-        if (instance.IsMaintenance8Supported() ||
-            src->info.props.is_depth == dst->info.props.is_depth) {
+        if ((instance.IsMaintenance8Supported() ||
+             src->info.props.is_depth == dst->info.props.is_depth) &&
+            src->aspect_mask == dst->aspect_mask) {
             CopyImage(src, dst);
         } else {
             // Perform depth from/to color copy using the intermediate copy buffer.
@@ -543,6 +562,7 @@ void Runtime::CopyColorAndDepth(VideoCore::Image* src, VideoCore::Image* dst) {
                 staging_pool.Request(COPY_BUFFER_SIZE, VideoCore::MemoryType::DeviceLocal);
             CopyImageWithBuffer(src, dst, copy_ref.buffer, copy_ref.offset);
         }
+        return true;
     } else if (src->info.num_samples == 1 && dst->info.num_samples > 1 &&
                dst->info.props.is_depth) {
         // Perform a rendering pass to transfer the channels of source as samples in dest.
@@ -560,13 +580,23 @@ void Runtime::CopyColorAndDepth(VideoCore::Image* src, VideoCore::Image* dst) {
         blit_helper->ReinterpretColorAsMsDepth(
             dst->info.size.width, dst->info.size.height, dst->info.num_samples,
             src->info.pixel_format, dst->info.pixel_format, src->GetImage(), dst->GetImage());
-    } else {
-        LOG_WARNING(Render_Vulkan, "Unimplemented depth overlap copy");
+        return true;
     }
+    static std::atomic<u32> warned{0};
+    if (warned.fetch_add(1, std::memory_order_relaxed) < 3) {
+        LOG_WARNING(Render_Vulkan, "Unimplemented depth overlap copy (later ones are not logged)");
+    }
+    return false;
 }
 
 void Runtime::CopyDepthStencil(VideoCore::Image* src, VideoCore::Image* dst,
+                               vk::ImageAspectFlags aspects,
                                const VideoCore::SubresourceRange& sub_range) {
+    const TransferMark mark{*this, "depth-stencil copy", *dst};
+    const auto aspect_mask = src->aspect_mask & dst->aspect_mask & aspects;
+    if (!aspect_mask) {
+        return;
+    }
     scheduler.EndRendering();
 
     bool needs_flush =
@@ -577,8 +607,6 @@ void Runtime::CopyDepthStencil(VideoCore::Image* src, VideoCore::Image* dst,
     if (needs_flush) {
         FlushBarriers();
     }
-
-    const auto aspect_mask = src->aspect_mask & dst->aspect_mask;
 
     const vk::ImageCopy region = {
         .srcSubresource{
@@ -611,6 +639,7 @@ void Runtime::CopyDepthStencil(VideoCore::Image* src, VideoCore::Image* dst,
 void Runtime::ResolveImage(VideoCore::Image* src, VideoCore::Image* dst,
                            const VideoCore::SubresourceRange& src_range,
                            const VideoCore::SubresourceRange& dst_range) {
+    const TransferMark mark{*this, "image resolve", *dst};
     SetBackingSamples(dst, 1, false);
     scheduler.EndRendering();
 
@@ -679,8 +708,32 @@ void Runtime::ResolveImage(VideoCore::Image* src, VideoCore::Image* dst,
     dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
 }
 
+void Runtime::ClearDepth(VideoCore::Image* dst, const VideoCore::SubresourceRange& range,
+                         float depth) {
+    const TransferMark mark{*this, "depth clear", *dst};
+    scheduler.EndRendering();
+    if (Transit(dst, vk::ImageLayout::eTransferDstOptimal, vk::PipelineStageFlagBits2::eClear,
+                vk::AccessFlagBits2::eTransferWrite, range)) {
+        FlushBarriers();
+    }
+    const vk::ImageSubresourceRange vk_range = {
+        .aspectMask = vk::ImageAspectFlagBits::eDepth,
+        .baseMipLevel = range.base.level,
+        .levelCount = range.extent.levels,
+        .baseArrayLayer = range.base.layer,
+        .layerCount = range.extent.layers,
+    };
+    scheduler.Record([image = dst->GetImage(), depth, vk_range](vk::CommandBuffer cmdbuf) {
+        cmdbuf.clearDepthStencilImage(image, vk::ImageLayout::eTransferDstOptimal,
+                                      vk::ClearDepthStencilValue{depth, 0}, vk_range);
+    });
+    dst->flags |= VideoCore::ImageFlagBits::GpuModified;
+    dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
+}
+
 void Runtime::ClearImage(VideoCore::Image* dst, const VideoCore::SubresourceRange& range,
                          const vk::ClearValue& clear_value) {
+    const TransferMark mark{*this, "image clear", *dst};
     scheduler.EndRendering();
 
     const bool needs_flush =
@@ -807,8 +860,9 @@ void Runtime::AccessBuffer(const VideoCore::Buffer* handle, u64 offset, u64 size
     };
 
     constexpr static vk::AccessFlags2 READ_MASK =
-        vk::AccessFlagBits2::eIndexRead | vk::AccessFlagBits2::eVertexAttributeRead |
-        vk::AccessFlagBits2::eUniformRead | vk::AccessFlagBits2::eShaderRead |
+        vk::AccessFlagBits2::eIndirectCommandRead | vk::AccessFlagBits2::eIndexRead |
+        vk::AccessFlagBits2::eVertexAttributeRead | vk::AccessFlagBits2::eUniformRead |
+        vk::AccessFlagBits2::eShaderRead |
         vk::AccessFlagBits2::eColorAttachmentRead |
         vk::AccessFlagBits2::eDepthStencilAttachmentRead | vk::AccessFlagBits2::eTransferRead |
         vk::AccessFlagBits2::eMemoryRead;

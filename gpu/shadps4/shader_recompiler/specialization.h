@@ -47,7 +47,6 @@ struct ImageSpecialization {
     AmdGpu::ImageType type = AmdGpu::ImageType::Color2D;
     bool is_integer = false;
     bool is_storage = false;
-    bool is_cube = false;
     bool is_srgb = false;
     AmdGpu::CompMapping dst_select{};
     AmdGpu::NumberConversion num_conversion{};
@@ -135,7 +134,6 @@ struct StageSpecialization {
                          spec.type = sharp.GetViewType(desc.is_array);
                          spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
                          spec.is_storage = desc.is_written;
-                         spec.is_cube = sharp.IsCube();
                          if (spec.is_storage) {
                              spec.dst_select = sharp.DstSelect();
                          } else {
@@ -213,11 +211,10 @@ struct StageSpecialization {
             return false;
         }
 
-        // For VS which only generates geometry and doesn't have any inputs, its start
-        // bindings still may change as they depend on previously processed FS. The check below
-        // handles this case and prevents generation of redundant permutations. This is also safe
-        // for other types of shaders with no bindings.
-        if (bitset.none() && other.bitset.none()) {
+        // A stage with no descriptors and no user data (a VS that only generates geometry) does
+        // not depend on its start bindings, which follow the stages bound before it.
+        if (buffers.empty() && images.empty() && samplers.empty() && fmasks.empty() &&
+            info->ud_mask.NumRegs() == 0) {
             return true;
         }
 

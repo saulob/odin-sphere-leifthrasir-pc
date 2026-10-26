@@ -107,6 +107,26 @@ void SetCurrentThreadPriority(ThreadPriority new_priority) {
     SetThreadPriority(handle, windows_priority);
 }
 
+namespace {
+// One timer per thread, reused. High resolution (Windows 10 1803+): a sleep ends on time instead of
+// at the next system timer tick (up to 15.6 ms late); a plain timer before.
+struct ThreadTimer {
+    HANDLE handle;
+    ThreadTimer() {
+        handle = ::CreateWaitableTimerExW(nullptr, nullptr, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
+                                          TIMER_ALL_ACCESS);
+        if (!handle) {
+            handle = ::CreateWaitableTimerExW(nullptr, nullptr, 0, TIMER_ALL_ACCESS);
+        }
+    }
+    ~ThreadTimer() {
+        if (handle) {
+            ::CloseHandle(handle);
+        }
+    }
+};
+} // namespace
+
 bool AccurateSleep(const std::chrono::nanoseconds duration, std::chrono::nanoseconds* remaining,
                    const bool interruptible) {
     const auto begin_sleep = std::chrono::high_resolution_clock::now();
@@ -114,10 +134,15 @@ bool AccurateSleep(const std::chrono::nanoseconds duration, std::chrono::nanosec
     LARGE_INTEGER interval{
         .QuadPart = -1 * (duration.count() / 100u),
     };
-    HANDLE timer = ::CreateWaitableTimer(NULL, TRUE, NULL);
+    thread_local ThreadTimer thread_timer;
+    const bool owned = !thread_timer.handle;
+    HANDLE timer = owned ? ::CreateWaitableTimer(NULL, TRUE, NULL) : thread_timer.handle;
+    // Setting the timer again also clears a reused timer's signaled state.
     SetWaitableTimer(timer, &interval, 0, NULL, NULL, 0);
     const auto ret = WaitForSingleObjectEx(timer, INFINITE, interruptible);
-    ::CloseHandle(timer);
+    if (owned) {
+        ::CloseHandle(timer);
+    }
 
     if (remaining) {
         const auto end_sleep = std::chrono::high_resolution_clock::now();

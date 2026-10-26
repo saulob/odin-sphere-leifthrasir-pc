@@ -25,6 +25,7 @@
 #include "common/assert.h"
 #include "common/thread.h"
 #include "common/types.h"
+#include "osl_copy_pool.h"
 
 namespace Vulkan {
 
@@ -96,6 +97,7 @@ public:
         ReasonSubmissionEnd,
         ReasonDraw,
         ReasonRasterizer,
+        ReasonMemoryWrite,
         NumReasons,
     };
     std::array<u64, NumReasons> drains_by_reason{};
@@ -103,14 +105,19 @@ public:
 
     /// Stage A: waits until stage B has run every committed packet.
     void Drain(u32 reason = ReasonRasterizer) {
-        if (consumed.load(std::memory_order_acquire) == head) {
+        WaitFor(head, reason);
+    }
+
+    /// Stage A: waits until stage B has run every packet before `position`.
+    void WaitFor(u64 position, u32 reason) {
+        if (consumed.load(std::memory_order_acquire) >= position) {
             return;
         }
         ++drains;
         const u32 slot = reason < NumReasons ? reason : ReasonRasterizer;
         ++drains_by_reason[slot];
         const u64 start = __rdtsc();
-        for (u32 spins = 0; consumed.load(std::memory_order_acquire) != head; ++spins) {
+        for (u32 spins = 0; consumed.load(std::memory_order_acquire) < position; ++spins) {
             if (spins < 4096) {
                 __builtin_ia32_pause();
             } else {
@@ -137,7 +144,9 @@ public:
     /// Statistics (stage A): packets, drains that had to wait, cycles waited, cycles stage B
     /// spent running packets.
     u64 packets = 0, drains = 0, drain_cycles = 0;
-    std::atomic<u64> busy_cycles{0};
+    /// Written by stage B after every packet: a cache line apart from stage A's counters above.
+    alignas(64) std::atomic<u64> busy_cycles{0};
+    char busy_cycles_line[56]{};
 
 private:
     struct Header {
@@ -197,6 +206,11 @@ private:
             handler(context, reinterpret_cast<const u8*>(header + 1), header->payload);
             busy_cycles.fetch_add(__rdtsc() - start, std::memory_order_relaxed);
             at += header->size;
+            if (published.load(std::memory_order_acquire) == at) {
+                // Stage A acts on all of this work once the ring reads as consumed, so the
+                // guest copies batched for it must already be running.
+                OslCopyPool::FlushBatch();
+            }
             consumed.store(at, std::memory_order_release);
         }
     }

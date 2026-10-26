@@ -54,6 +54,15 @@ static uint32_t float_bits(int value) {
     return bits;
 }
 
+uint32_t osl_scaled_budget(uint32_t native_bytes, const OslResolution *target) {
+    const uint64_t native_pixels = 1920u * 1080u;
+    const uint64_t step = 2u << 20;
+    const uint64_t pixels = (uint64_t)target->width * (uint64_t)target->height;
+    uint64_t bytes = ((uint64_t)native_bytes * pixels + native_pixels - 1) / native_pixels;
+    bytes = (bytes + step - 1) / step * step;
+    return (uint32_t)(bytes > native_bytes ? bytes : native_bytes);
+}
+
 int osl_apply_resolution(unsigned char *image, uint64_t image_size, const OslResolutionSite *sites, size_t count,
                          const OslResolution *resolution, char *error, size_t error_size) {
     for (size_t i = 0; i < count; ++i) {
@@ -77,6 +86,9 @@ int osl_apply_resolution(unsigned char *image, uint64_t image_size, const OslRes
         if (site->packed_floats) {
             const uint32_t values[2] = {float_bits(resolution->width), float_bits(resolution->height)};
             memcpy(image + site->offset + site->opcode_length, values, sizeof(values));
+        } else if (site->pixel_budget) {
+            const uint32_t value = osl_scaled_budget(site->value, resolution);
+            memcpy(image + site->offset + site->opcode_length, &value, 4);
         } else {
             const uint32_t value = (uint32_t)(site->height ? resolution->height : resolution->width);
             memcpy(image + site->offset + site->opcode_length, &value, 4);

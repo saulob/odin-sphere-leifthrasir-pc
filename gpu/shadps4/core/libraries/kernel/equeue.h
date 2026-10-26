@@ -4,6 +4,7 @@
 #pragma once
 
 #include <condition_variable>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -186,6 +187,7 @@ private:
     std::mutex m_mutex;
     std::vector<EqueueEvent> m_events;
     std::condition_variable m_cond;
+    int m_waiters = 0; ///< threads sleeping on m_cond (guarded by m_mutex)
     std::unordered_map<u64, SmallTimer> m_small_timers;
 };
 

@@ -7,6 +7,10 @@
 #include <queue>
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
+#ifdef _WIN32
+#include <windows.h>
+#endif
+#include "osl_toggles.h"
 #include "common/arch.h"
 #include "common/decoder.h"
 #include "common/io_file.h"
@@ -34,10 +38,28 @@ static const u8* g_srt_codegen_start = nullptr;
 // threads.
 static std::mutex g_srt_codegen_mutex;
 
+namespace {
+static bool SrtWalkerSignalHandler(void* context, void* fault_address);
+}
+
+// osl: the fault handler covers the whole code buffer and is registered by the first walker,
+// generated or loaded from the pipeline cache.
+static void RegisterSrtWalkerFaultHandler() {
+    static std::once_flag once;
+    std::call_once(once, [] {
+        g_srt_codegen_start = g_srt_codegen.getCode();
+        // Call after the memory invalidation handler
+        constexpr u32 priority = 1;
+        Core::Signals::Instance()->RegisterAccessViolationHandler(SrtWalkerSignalHandler,
+                                                                  priority);
+    });
+}
+
 namespace Shader {
 
 PFN_SrtWalker RegisterWalkerCode(const u8* ptr, size_t size) {
     std::scoped_lock lock{g_srt_codegen_mutex};
+    RegisterSrtWalkerFaultHandler();
     const auto func_addr = (PFN_SrtWalker)g_srt_codegen.getCurr();
     g_srt_codegen.db(ptr, size);
     g_srt_codegen.ready();
@@ -81,43 +103,89 @@ static bool SrtWalkerSignalHandler(void* context, void* fault_address) {
     if (code < code_start || code >= code_end) {
         return false; // Not in SRT code range
     }
+    // osl: a walk ahead of the game (draw preparation) may follow a pointer into memory the
+    // game has reused since: it returns to its recovery point, and the GPU thread walks itself.
+    if (runtime_fault_recover) {
+        return false;
+    }
+
+    // osl: one patcher at a time; an instruction another thread patched meanwhile is run again.
+    static std::mutex patch_mutex;
+    std::scoped_lock patch_lock{patch_mutex};
 
     // Patch instruction to zero register
     ZydisDecodedInstruction instruction;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
     ZyanStatus status = Common::Decoder::Instance()->decodeInstruction(instruction, operands,
                                                                        const_cast<void*>(code), 15);
+    if (ZYAN_SUCCESS(status) && instruction.mnemonic == ZYDIS_MNEMONIC_XOR &&
+        operands[0].type == ZYDIS_OPERAND_TYPE_REGISTER &&
+        operands[1].type == ZYDIS_OPERAND_TYPE_REGISTER &&
+        operands[0].reg.value == operands[1].reg.value) {
+        return true;
+    }
 
     ASSERT(ZYAN_SUCCESS(status) && instruction.mnemonic == ZYDIS_MNEMONIC_MOV &&
            operands[0].type == ZYDIS_OPERAND_TYPE_REGISTER &&
            operands[1].type == ZYDIS_OPERAND_TYPE_MEMORY);
 
+#ifdef _WIN32
+    // osl: the patch makes the load read 0 for good, so one walk of a table the game was still
+    // filling would break the shader's resources for the session. The first faults of an
+    // instruction only skip the load (the register reads 0); one that keeps faulting is patched.
+    {
+        static std::unordered_map<const void*, u32> faults;
+        constexpr u32 PatchAfter = 16;
+        CONTEXT* regs = static_cast<EXCEPTION_POINTERS*>(context)->ContextRecord;
+        const auto reg = operands[0].reg.value;
+        if ((reg == ZYDIS_REGISTER_RDI || reg == ZYDIS_REGISTER_R10D) &&
+            ++faults[code] <= PatchAfter) {
+            (reg == ZYDIS_REGISTER_RDI ? regs->Rdi : regs->R10) = 0;
+            regs->Rip += instruction.length;
+            static u32 logged = 0;
+            if (logged++ < 32) {
+                LOG_WARNING(Render_Recompiler, "Skipped SRT walker load at {}, fault address {}",
+                            code, fault_address);
+            }
+            return true;
+        }
+    }
+#endif
+
     size_t len = instruction.length;
     const size_t patch_size = 3;
     u8* code_patch = const_cast<u8*>(reinterpret_cast<const u8*>(code));
+    u8 patch[patch_size];
 
     // We can only encounter rdi or r10d as the first operand in a
     // fault memory access for SRT walker.
     switch (operands[0].reg.value) {
     case ZYDIS_REGISTER_RDI:
         // mov rdi, [rdi + (off_dw << 2)] -> xor rdi, rdi
-        code_patch[0] = 0x48;
-        code_patch[1] = 0x31;
-        code_patch[2] = 0xFF;
+        patch[0] = 0x48;
+        patch[1] = 0x31;
+        patch[2] = 0xFF;
         break;
     case ZYDIS_REGISTER_R10D:
         // mov r10d, [rdi + (off_dw << 2)] -> xor r10d, r10d
-        code_patch[0] = 0x45;
-        code_patch[1] = 0x31;
-        code_patch[2] = 0xD2;
+        patch[0] = 0x45;
+        patch[1] = 0x31;
+        patch[2] = 0xD2;
         break;
     default:
         UNREACHABLE_MSG("Unsupported register for SRT walker patch");
         return false;
     }
 
-    // Fill nops
-    memset(code_patch + patch_size, 0x90, len - patch_size);
+    // osl: other threads may run this code meanwhile. Written from the end, every state in
+    // between is a load into the same register or a register move into it: nops over the
+    // displacement, the ModRM byte (mov reg, reg), the REX prefix, the xor opcode last.
+    for (size_t i = len; i-- > patch_size;) {
+        __atomic_store_n(&code_patch[i], u8{0x90}, __ATOMIC_RELEASE);
+    }
+    for (const size_t i : {size_t{2}, size_t{0}, size_t{1}}) {
+        __atomic_store_n(&code_patch[i], patch[i], __ATOMIC_RELEASE);
+    }
 
     LOG_WARNING(Render_Recompiler, "Patched SRT walker at {}, fault address {}", code,
                 fault_address);
@@ -576,7 +644,11 @@ static inline bool PushPtr(Xbyak::CodeGenerator& c, PassInfo& pass_info, const I
     if (off_dw.IsImmediate()) {
         c.mov(rdi, ptr[rdi + (off_dw.U32() << 2)]);
     } else {
-        ABORT_ON_FAILURE(ComputeOffset(c, r10d, pass_info, off_dw));
+        if (!ComputeOffset(c, r10d, pass_info, off_dw)) {
+            // osl: the walker goes on after a failure; the push above must not stay unpopped.
+            c.pop(rdi);
+            return false;
+        }
         c.shl(r10d, 2);
         c.mov(r10d, r10d);
         c.mov(rdi, ptr[rdi + r10]);
@@ -646,14 +718,7 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     }
     std::scoped_lock lock{g_srt_codegen_mutex};
 
-    // Register the signal handler for SRT walker, if not already registered
-    if (g_srt_codegen_start == nullptr) {
-        g_srt_codegen_start = c.getCurr();
-        auto* signals = Core::Signals::Instance();
-        // Call after the memory invalidation handler
-        constexpr u32 priority = 1;
-        signals->RegisterAccessViolationHandler(SrtWalkerSignalHandler, priority);
-    }
+    RegisterSrtWalkerFaultHandler();
 
     info.srt_info.walker_func = c.getCurr<PFN_SrtWalker>();
     pass_info.dst_off_dw = NUM_USER_DATA_REGS;

@@ -29,7 +29,23 @@
 namespace VideoCore {
 
 static constexpr size_t GDS_BUFFER_SIZE = 64_KB;
+static constexpr size_t NULL_INDEX_BUFFER_SIZE = 16;
 static constexpr size_t STREAM_BUFFER_SIZE = 128_MB;
+
+/// CMask value of a fully expanded color image, per sample count.
+constexpr std::optional<u32> CmaskColorExpandedValue(u32 num_samples) {
+    switch (num_samples) {
+    case 1:
+    case 8:
+        return 0xFFFFFFFFu;
+    case 2:
+        return 0xDDDDDDDDu;
+    case 4:
+        return 0xEEEEEEEEu;
+    default:
+        return std::nullopt;
+    }
+}
 
 static constexpr auto ARENA_USAGE =
     vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst |
@@ -93,6 +109,14 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
         FindMemoryType(instance.GetMemoryProperties(), vk::MemoryPropertyFlagBits::eDeviceLocal,
                        reqs.memoryTypeBits)
             .value();
+    const auto& memory_props = instance.GetMemoryProperties();
+    for (u32 i = 0; i < memory_props.memoryTypeCount; ++i) {
+        const auto flags = memory_props.memoryTypes[i].propertyFlags;
+        if ((reqs.memoryTypeBits & (1u << i)) && !(flags & vk::MemoryPropertyFlagBits::eDeviceLocal)) {
+            spill_memory_type_index = i;
+            break;
+        }
+    }
 
     const u64 bda_pagetable_size =
         (blocks_per_arena_page * num_arena_pages) * sizeof(vk::DeviceAddress);
@@ -101,9 +125,45 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
     bda_pagetable_buffer = std::make_unique<Buffer>(
         instance, 0, bda_pagetable_size, MemoryType::DeviceLocal, "BDA Page Table Buffer");
     runtime.FillBuffer(bda_pagetable_buffer.get(), 0u, bda_pagetable_size, 0u);
+    null_index_buffer = std::make_unique<Buffer>(instance, 0, NULL_INDEX_BUFFER_SIZE,
+                                                 MemoryType::DeviceLocal, "Null Index Buffer");
+    runtime.FillBuffer(null_index_buffer.get(), 0u, NULL_INDEX_BUFFER_SIZE, 0u);
+    Vulkan::SetDeviceAddressDescriber(
+        [this](vk::DeviceAddress address) { return DescribeDeviceAddress(address); });
 }
 
-BufferCache::~BufferCache() = default;
+BufferCache::~BufferCache() {
+    Vulkan::SetDeviceAddressDescriber({});
+}
+
+// Called after the device is lost, possibly while the GPU thread still adds arenas.
+std::string BufferCache::DescribeDeviceAddress(vk::DeviceAddress address) const {
+    std::scoped_lock lock{arenas_mutex};
+    for (const Buffer& arena : arenas) {
+        const vk::DeviceAddress base = arena.DeviceAddressOrZero();
+        if (base == 0 || address < base || address - base >= arena.SizeBytes()) {
+            continue;
+        }
+        const VAddr guest = arena.CpuAddr() + (address - base);
+        const u64 block = guest >> block_shift;
+        bool resident = false;
+        resident_ranges.ForEachInRange(block, block + 1, [&](const Backing&) { resident = true; });
+        return fmt::format("arena {:#x}, guest {:#x}, {}", arena.CpuAddr(), guest,
+                           resident ? "resident" : "not resident");
+    }
+    const std::pair<const Buffer*, std::string_view> named[] = {
+        {&gds_buffer, "GDS buffer"},
+        {bda_pagetable_buffer.get(), "BDA page table"},
+        {null_index_buffer.get(), "null index buffer"},
+    };
+    for (const auto& [buffer, name] : named) {
+        const vk::DeviceAddress base = buffer ? buffer->DeviceAddressOrZero() : 0;
+        if (base != 0 && address >= base && address - base < buffer->SizeBytes()) {
+            return fmt::format("{} + {:#x}", name, address - base);
+        }
+    }
+    return "outside the buffer cache";
+}
 
 void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool assume_locks) {
     memory_tracker->InvalidateRegion(device_addr, size, [this, device_addr, size, assume_locks] {
@@ -205,6 +265,7 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
         copy.dstOffset += download.offset;
     }
     runtime.CopyBuffer(arena, download.buffer, copies);
+    scheduler.RequestHostReadBarrier();
     scheduler.Finish();
 
     download.buffer->Invalidate(download.offset, download.size);
@@ -319,6 +380,7 @@ const Buffer* BufferCache::GetArena(u64 first_block, u64 last_block) {
         if (!first_arena) {
             const u64 base_block = Common::AlignDownPow2<u64>(first_block, blocks_per_arena_page);
             const u64 num_pages = last_page - first_page + 1;
+            std::scoped_lock lock{arenas_mutex};
             const auto* new_arena =
                 &arenas.emplace_back(instance, base_block << block_shift,
                                      num_pages << arena_page_bits, MemoryType::Sparse);
@@ -337,7 +399,10 @@ const Buffer* BufferCache::GetArena(u64 first_block, u64 last_block) {
     const u64 base_block = first_addr >> block_shift;
     const u64 total_size = first_size + last_size;
     const u64 end_block = (first_addr + total_size) >> block_shift;
-    auto* new_arena = &arenas.emplace_back(instance, first_addr, total_size, MemoryType::Sparse);
+    auto* new_arena = [&] {
+        std::scoped_lock lock{arenas_mutex};
+        return &arenas.emplace_back(instance, first_addr, total_size, MemoryType::Sparse);
+    }();
     auto* bind = BindsForArena(new_arena);
     resident_ranges.ForEachInRange(base_block, end_block, [&](const Backing& backing) {
         const u64 start = std::max(base_block, backing.start);
@@ -346,7 +411,7 @@ const Buffer* BufferCache::GetArena(u64 first_block, u64 last_block) {
             .resourceOffset = (start - base_block) << block_shift,
             .size = (end - start) << block_shift,
             .memory = backing.memory,
-            .memoryOffset = backing.offset + ((start - backing.start) << block_shift),
+            .memoryOffset = (backing.offset + start - backing.start) << block_shift,
         });
     });
 
@@ -374,11 +439,26 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
     }
     OslStats::Timer timer{OslStats::t_resident};
 
+    const vk::MemoryAllocateFlagsInfo alloc_flags = {
+        .flags = vk::MemoryAllocateFlagBits::eDeviceAddress,
+    };
     const vk::MemoryAllocateInfo alloc_info = {
+        .pNext = &alloc_flags,
         .allocationSize = resident_blocks << block_shift,
         .memoryTypeIndex = arena_memory_type_index,
     };
-    const auto device_memory = Vulkan::Check(instance.GetDevice().allocateMemory(alloc_info));
+    auto allocated = instance.GetDevice().allocateMemory(alloc_info);
+    if (allocated.result == vk::Result::eErrorOutOfDeviceMemory && spill_memory_type_index != ~0u) {
+        // A full card keeps guest buffer pages in system memory, reached over the bus.
+        static std::atomic<bool> warned{false};
+        if (!warned.exchange(true, std::memory_order_relaxed)) {
+            LOG_WARNING(Render_Vulkan, "Out of video memory: buffer pages in system memory");
+        }
+        vk::MemoryAllocateInfo spill_info = alloc_info;
+        spill_info.memoryTypeIndex = spill_memory_type_index;
+        allocated = instance.GetDevice().allocateMemory(spill_info);
+    }
+    const auto device_memory = Vulkan::Check(allocated);
 
     boost::container::small_vector<vk::BufferCopy, 8> copies;
     const auto staging =
@@ -393,8 +473,11 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
         backing.start = range.start;
         backing.end = range.end;
         backing.memory = device_memory;
-        backing.offset = memory_offset;
-        resident_ranges.Add(backing);
+        backing.offset = memory_offset >> block_shift;
+        {
+            std::scoped_lock lock{arenas_mutex};
+            resident_ranges.Add(backing);
+        }
 
         LOG_INFO(Render, "Making range start={}, end={} resident", backing.start, backing.end);
 
@@ -523,24 +606,31 @@ const Buffer* BufferCache::UploadCopies(const Buffer* arena, std::span<vk::Buffe
 }
 
 bool BufferCache::SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_addr, u32 size) {
-    if (auto type = texture_cache.IsMeta(device_addr)) {
-        if (*type == TextureCache::MetaType::HTile) {
+    if (const auto meta = texture_cache.GetMetaInfo(device_addr)) {
+        if (meta->type == TextureCache::MetaType::HTile) {
             static constexpr u32 ZmaskUncompressed = 0xf;
             runtime.FillBuffer(arena, arena->Offset(device_addr), size, ZmaskUncompressed);
             return true;
-        } else if (*type == TextureCache::MetaType::CMask) {
-            // osl: color images are always fully expanded on the host, so every 4-bit CMask
-            // tile code reads as 0xF (uncompressed: the color in memory is valid). A game reading
-            // CMask through buffers would otherwise treat stale tiles as fast-cleared.
-            runtime.FillBuffer(arena, arena->Offset(device_addr), size, 0xFFFFFFFFu);
-            return true;
+        } else if (meta->type == TextureCache::MetaType::CMask) {
+            // osl: color images are always fully expanded on the host, so every CMask tile reads
+            // as expanded (the color in memory is valid). A game reading CMask through buffers
+            // would otherwise treat stale tiles as fast-cleared.
+            if (const auto expanded = CmaskColorExpandedValue(meta->num_samples)) {
+                runtime.FillBuffer(arena, arena->Offset(device_addr), size, *expanded);
+                return true;
+            }
+            static std::atomic_flag warned;
+            if (!warned.test_and_set()) {
+                LOG_WARNING(Render_Vulkan, "CMask of a {}-sample image left as it is (reported once)",
+                            meta->num_samples);
+            }
         } else {
             // Once per type: a game can read metadata through buffers every frame.
             static std::atomic<u32> warned{0};
-            const u32 bit = 1u << static_cast<u32>(*type);
+            const u32 bit = 1u << static_cast<u32>(meta->type);
             if (!(warned.fetch_or(bit) & bit)) {
                 LOG_WARNING(Render_Vulkan, "Unhandled metadata type {} (reported once)",
-                            magic_enum::enum_name(*type));
+                            magic_enum::enum_name(meta->type));
             }
         }
     }
@@ -628,7 +718,10 @@ void BufferCache::SubmitPendingArenaBinds(Vulkan::SubmitInfo& info) {
     };
 
     info.AddWait(signal_sema, signal_tick);
-    auto submit_result = instance.GetGraphicsQueue().bindSparse(sparse_info);
+    auto submit_result = instance.GetSparseQueue().bindSparse(sparse_info);
+    if (submit_result == vk::Result::eErrorDeviceLost) {
+        instance.ReportDeviceLost();
+    }
     ASSERT_MSG(submit_result != vk::Result::eErrorDeviceLost, "Device lost during submit");
 
     pending_binds.clear();

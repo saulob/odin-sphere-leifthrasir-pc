@@ -99,4 +99,12 @@ void runtime_thread_attach_host(const char *name);
 /* Name of a guest thread handle, or NULL when it is not a live thread. */
 const char *runtime_thread_name(void *handle);
 uint64_t runtime_memory_flexible_available(void);
+/* Windows: in guest functions that keep data below rsp (the System V red zone), accesses that can
+ * fault run with rsp 128 lower, so the exception frame of a GPU page-tracking fault cannot overwrite
+ * that data (runtime_redzone.c). segments: {address, size, flags} triples, flag 1 = executable. */
+uint64_t runtime_redzone_install(unsigned char *image, uint64_t size, const uint64_t *segments, uint64_t count);
+/* After a handled GPU page-tracking fault, before the thread resumes. */
+void runtime_redzone_after_fault(void *context);
+/* 1 when rip is in a red-zone stub; *site (may be null) gets the guest offset it replaces. */
+int runtime_redzone_site(uintptr_t rip, uint64_t *site);
 #endif

@@ -78,14 +78,18 @@ public:
                              const VideoCore::Buffer* buffer, u64 offset);
     void CopyMip(VideoCore::Image* src, VideoCore::Image* dst, u32 mip, u32 slice);
 
-    void CopyColorAndDepth(VideoCore::Image* src, VideoCore::Image* dst);
+    /// False when the two forms cannot be copied between (multisampled): the caller falls back.
+    bool CopyColorAndDepth(VideoCore::Image* src, VideoCore::Image* dst);
 
-    void CopyDepthStencil(VideoCore::Image* src, VideoCore::Image* dst,
+    /// `aspects`: the planes the guest copies (depth, stencil or both).
+    void CopyDepthStencil(VideoCore::Image* src, VideoCore::Image* dst, vk::ImageAspectFlags aspects,
                           const VideoCore::SubresourceRange& sub_range);
 
     void ResolveImage(VideoCore::Image* src, VideoCore::Image* dst,
                       const VideoCore::SubresourceRange& src_range,
                       const VideoCore::SubresourceRange& dst_range);
+    /// Applies a pending fast clear to depth slices before a transfer reads them.
+    void ClearDepth(VideoCore::Image* dst, const VideoCore::SubresourceRange& range, float depth);
     void ClearImage(VideoCore::Image* dst, const VideoCore::SubresourceRange& range,
                     const vk::ClearValue& clear_value);
 

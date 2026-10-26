@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <atomic>
+#include "core/memory.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/texture_cache/sampler.h"
@@ -28,7 +30,20 @@ Sampler::Sampler(const Vulkan::Instance& instance, const AmdGpu::Sampler& sample
         if (border_color == vk::BorderColor::eFloatCustomEXT) {
             const auto border_color_index = sampler.border_color_ptr.Value();
             const auto border_color_buffer = border_color_base.Address<std::array<float, 4>*>();
-            const auto custom_border_color_array = border_color_buffer[border_color_index];
+            auto* const entry = border_color_buffer + border_color_index;
+            std::array<float, 4> custom_border_color_array{0.0f, 0.0f, 0.0f, 1.0f};
+            if (Core::Memory::Instance()->ClampRangeSize(reinterpret_cast<VAddr>(entry),
+                                                         sizeof(*entry)) == sizeof(*entry)) {
+                custom_border_color_array = *entry;
+            } else {
+                static std::atomic_flag warned;
+                if (!warned.test_and_set()) {
+                    LOG_WARNING(Render_Vulkan,
+                                "Custom border color table at {:#x} is not mapped: opaque black "
+                                "(reported once)",
+                                reinterpret_cast<VAddr>(entry));
+                }
+            }
 
             const vk::SamplerCustomBorderColorCreateInfoEXT ret{
                 .customBorderColor =

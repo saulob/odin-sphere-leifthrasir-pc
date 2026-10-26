@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstring>
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/bit_field.h"
@@ -200,6 +201,17 @@ struct Image {
         return (type & 0x8u) != 0;
     }
 
+    /// Reserved swizzles, inverted mip ranges or a rotated tile mode (27-30, not detiled): the
+    /// descriptor is bound as null.
+    bool HasReservedFields() const noexcept {
+        const auto reserved_swizzle = [](u64 sel) { return sel == 2 || sel == 3; };
+        const bool reserved_tiling = tiling_index > u64(TileMode::Thick3DXThick) &&
+                                     tiling_index != u64(TileMode::DisplayLinearGeneral);
+        return reserved_tiling || last_level < base_level || reserved_swizzle(dst_sel_x) ||
+               reserved_swizzle(dst_sel_y) || reserved_swizzle(dst_sel_z) ||
+               reserved_swizzle(dst_sel_w);
+    }
+
     VAddr Address() const {
         return base_address << 8;
     }
@@ -225,10 +237,11 @@ struct Image {
     [[nodiscard]] u32 NumLayers() const noexcept {
         // Depth is the number of layers for Array images.
         u32 slices = depth + 1;
-        if (GetType() == ImageType::Color3D) {
+        const auto image_type = GetType();
+        if (image_type == ImageType::Color3D) {
             // Depth is the actual texture depth for 3D images.
             slices = 1;
-        } else if (IsCube()) {
+        } else if (image_type == ImageType::Cube) {
             // Depth is the number of full cubes for Cube images.
             slices *= 6;
         }
@@ -252,12 +265,8 @@ struct Image {
         return 1;
     }
 
-    bool IsCube() const noexcept {
-        return static_cast<ImageType>(type) == ImageType::Cube;
-    }
-
     ImageType GetType() const noexcept {
-        return IsCube() ? ImageType::Color2DArray : static_cast<ImageType>(type);
+        return static_cast<ImageType>(type);
     }
 
     DataFormat GetDataFmt() const noexcept {
@@ -299,10 +308,8 @@ struct Image {
         if (base_type == ImageType::Color1DArray) {
             return ImageType::Color1D;
         }
-        if (base_type == ImageType::Color2DArray) {
-            return ImageType::Color2D;
-        }
-        if (base_type == ImageType::Color2DMsaa || base_type == ImageType::Color2DMsaaArray) {
+        if (base_type == ImageType::Color2DArray || base_type == ImageType::Color2DMsaa ||
+            base_type == ImageType::Color2DMsaaArray || base_type == ImageType::Cube) {
             return ImageType::Color2D;
         }
         return base_type;
@@ -310,10 +317,6 @@ struct Image {
 
     ImageType GetViewType(const bool is_array) const noexcept {
         const auto base_type = GetType();
-        if (IsCube()) {
-            // Cube needs to remain array type regardless of instruction array specifier.
-            return base_type;
-        }
         if (base_type == ImageType::Color1DArray && !is_array) {
             return ImageType::Color1D;
         }
@@ -458,7 +461,8 @@ struct Sampler {
     }
 
     bool Valid() const {
-        return true;
+        return max_aniso.Value() <= AnisoRatio::Sixteen && filter_mode.Value() <= FilterMode::Max &&
+               mip_filter.Value() <= MipFilter::Linear;
     }
 
     bool operator==(const Sampler& other) const noexcept {

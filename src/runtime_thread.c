@@ -289,6 +289,12 @@ static void set_host_name(const char *name) {
     char host[16]={0};
     memcpy(host,name,strnlen(name,sizeof(host)-1));
     pthread_setname_np(pthread_self(),host);
+#ifdef _WIN32
+    /* winpthreads keeps its own name: the full one for debuggers, profilers and crash dumps. */
+    wchar_t wide[64]={0};
+    MultiByteToWideChar(CP_UTF8,0,name,-1,wide,63);
+    SetThreadDescription(GetCurrentThread(),wide);
+#endif
 }
 #ifdef _WIN32
 #define exit_setjmp(t) osl_setjmp((t)->exit_jump)

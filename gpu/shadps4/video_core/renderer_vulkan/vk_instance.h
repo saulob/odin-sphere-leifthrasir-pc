@@ -3,7 +3,9 @@
 
 #pragma once
 
+#include <functional>
 #include <span>
+#include <string>
 #include <unordered_map>
 
 #include "video_core/renderer_vulkan/vk_platform.h"
@@ -22,6 +24,9 @@ namespace Vulkan {
 
 /// The device meets the renderer's Vulkan version, extension and feature requirements.
 bool IsDeviceUsable(vk::PhysicalDevice physical);
+
+/// Names the resource behind a faulting device address in Instance::ReportDeviceLost.
+void SetDeviceAddressDescriber(std::function<std::string(vk::DeviceAddress)> describer);
 
 class Instance {
 public:
@@ -90,6 +95,11 @@ public:
         return present_queue;
     }
 
+    /// Queue for sparse binds: the graphics queue when its family supports them.
+    vk::Queue GetSparseQueue() const {
+        return sparse_queue;
+    }
+
     TracyVkCtx GetProfilerContext() const {
         return profiler_context;
     }
@@ -127,6 +137,11 @@ public:
     /// Returns true if 8-bit ints are supported in shaders
     bool IsShaderInt8Supported() const {
         return vk12_features.shaderInt8;
+    }
+
+    /// Returns true if VK_KHR_maintenance5 is supported
+    bool IsMaintenance5Supported() const {
+        return maintenance_5;
     }
 
     /// Returns true if VK_KHR_maintenance8 is supported
@@ -243,9 +258,17 @@ public:
         return vk12_features.shaderSharedInt64Atomics;
     }
 
-    /// Returns true if the subgroup size can be set to match guest subgroup size
+    /// Returns true if the subgroup size can be set to match guest subgroup size.
+    /// osl: compute shaders are pinned to 64 lanes; graphics stages only where the driver allows
+    /// it (CanRequireSubgroupSize: AMD's Windows driver allows compute only, RADV also fragment).
     bool IsSubgroupSize64Supported() const {
-        return vk13_features.subgroupSizeControl && vk13_props.maxSubgroupSize >= 64;
+        return vk13_features.subgroupSizeControl && vk13_props.maxSubgroupSize >= 64 &&
+               CanRequireSubgroupSize(vk::ShaderStageFlagBits::eCompute);
+    }
+
+    /// Whether a subgroup size may be required for shaders of this stage.
+    bool CanRequireSubgroupSize(vk::ShaderStageFlagBits stage) const {
+        return bool(vk13_props.requiredSubgroupSizeStages & stage);
     }
 
     /// Returns true when VK_KHR_workgroup_memory_explicit_layout is supported.
@@ -346,9 +369,10 @@ public:
         return properties.limits.nonCoherentAtomSize;
     }
 
-    /// Returns the subgroup size of the selected physical device.
+    /// Returns the subgroup size the recompiler targets: 64 where compute shaders are pinned to
+    /// it (so it matches the pipelines whatever the driver's default), else the default.
     u32 SubgroupSize() const {
-        return vk11_props.subgroupSize;
+        return IsSubgroupSize64Supported() ? 64 : vk11_props.subgroupSize;
     }
 
     /// Returns the maximum size of compute shared memory.
@@ -359,6 +383,16 @@ public:
     /// Returns the maximum sampler LOD bias.
     float MaxSamplerLodBias() const {
         return properties.limits.maxSamplerLodBias;
+    }
+
+    /// Returns the maximum number of image array layers.
+    u32 GetMaxImageArrayLayers() const {
+        return properties.limits.maxImageArrayLayers;
+    }
+
+    /// Returns the maximum number of compute work groups along X in one dispatch.
+    u32 GetMaxComputeWorkGroupCountX() const {
+        return properties.limits.maxComputeWorkGroupCount[0];
     }
 
     /// Returns the maximum sampler anisotropy.
@@ -455,6 +489,11 @@ public:
         return image_view_min_lod;
     }
 
+    /// Returns whether shaderStorageImageMultisample is supported.
+    bool IsMultisampleStorageImageSupported() const {
+        return features.shaderStorageImageMultisample;
+    }
+
     /// Returns whether the device can report memory usage.
     bool CanReportMemoryUsage() const {
         return supports_memory_budget;
@@ -474,6 +513,9 @@ public:
 
     /// Determines if a format is supported for a set of feature flags.
     [[nodiscard]] bool IsFormatSupported(vk::Format format, vk::FormatFeatureFlags2 flags) const;
+
+    /// Logs the driver's report of a lost device (VK_EXT_device_fault) and the heap budgets, once.
+    void ReportDeviceLost() const;
 
 private:
     Instance(const Frontend::WindowSystemInfo&, s32, bool, bool);
@@ -518,6 +560,7 @@ private:
     VmaAllocator allocator{};
     vk::Queue present_queue;
     vk::Queue graphics_queue;
+    vk::Queue sparse_queue;
     std::vector<vk::PhysicalDevice> physical_devices;
     std::vector<std::string> available_extensions;
     std::unordered_map<vk::Format, vk::FormatProperties3> format_properties;
@@ -550,6 +593,9 @@ private:
     bool image_2d_view_of_3d{};
     bool image_view_min_lod{};
     bool shader_clock{};
+    bool device_fault{};
+    bool memory_priority{};
+    bool pageable_device_memory{};
     bool supports_memory_budget{};
     bool supports_block_texel_view{};
     u64 total_memory_budget{};

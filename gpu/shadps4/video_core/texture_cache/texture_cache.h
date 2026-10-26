@@ -151,6 +151,9 @@ public:
     /// Retrieves the depth target with specified properties
     [[nodiscard]] ImageView& FindDepthTarget(ImageId image_id, const ImageDesc& desc);
 
+    /// Links the stencil plane of a depth surface to its depth image.
+    void AssociateStencil(ImageId depth_id, const ImageInfo& depth_info);
+
     /// osl: whether UpdateImage has nothing to do for this image (its fast path).
     [[nodiscard]] bool IsUpToDate(ImageId image_id) const {
         const Image& image = slot_images[image_id];
@@ -220,7 +223,7 @@ public:
 
     /// Retrieves the image with the specified id.
     Image* TryGetImage(ImageId id, u64 uid) {
-        if (!slot_images.is_allocated(id)) return nullptr;
+        if (!slot_images.IsAllocated(id)) return nullptr;
         auto& image = slot_images[id];
         return !uid || image.image_uid == uid ? &image : nullptr;
     }
@@ -240,7 +243,7 @@ public:
         if (!image.depth_id) {
             return {};
         }
-        if (slot_images.is_allocated(image.depth_id)) {
+        if (slot_images.IsAllocated(image.depth_id)) {
             auto& depth_image = slot_images[image.depth_id];
             if (depth_image.image_uid == image.depth_uid &&
                 depth_image.flags & ImageFlagBits::Registered) {
@@ -257,6 +260,31 @@ public:
         FMask,
         HTile,
     };
+
+    struct MetaDataInfo {
+        MetaType type;
+        ImageId owner_id{};
+        u64 owner_uid{};
+        u32 num_samples = 1;
+        s32 clear_mask = -1;
+    };
+
+    /// Returns the metadata registered at the address while its owner image is still registered.
+    std::optional<MetaDataInfo> GetMetaInfo(VAddr address) const {
+        const auto it = surface_metas.find(address);
+        if (it == surface_metas.end()) {
+            return std::nullopt;
+        }
+        const auto& meta = it->second;
+        if (!meta.owner_id || !slot_images.IsAllocated(meta.owner_id)) {
+            return std::nullopt;
+        }
+        const auto& owner = slot_images[meta.owner_id];
+        if (owner.image_uid != meta.owner_uid || False(owner.flags & ImageFlagBits::Registered)) {
+            return std::nullopt;
+        }
+        return meta;
+    }
 
     /// Returns meta type if the specified address is a metadata surface.
     std::optional<MetaType> IsMeta(VAddr address) const {
@@ -307,8 +335,8 @@ public:
     void ForEachImageInRegion(VAddr cpu_addr, size_t size, Func&& func) {
         using FuncReturn = typename std::invoke_result<Func, ImageId, Image&>::type;
         static constexpr bool BOOL_BREAK = std::is_same_v<FuncReturn, bool>;
-        ImageIds images;
-        ForEachPage(cpu_addr, size, [this, &images, cpu_addr, size, func](u64 page) {
+        const u64 first_page = cpu_addr >> Traits::PageBits;
+        ForEachPage(cpu_addr, size, [this, cpu_addr, size, first_page, func](u64 page) {
             const auto it = page_table.find(page);
             if (it == nullptr) {
                 if constexpr (BOOL_BREAK) {
@@ -319,14 +347,13 @@ public:
             }
             for (const ImageId image_id : *it) {
                 Image& image = slot_images[image_id];
-                if (image.flags & ImageFlagBits::Picked) {
+                // Every page of an image lists it: visit it at its first page in the range only.
+                if (page != std::max(first_page, image.info.guest_address >> Traits::PageBits)) {
                     continue;
                 }
                 if (!image.Overlaps(cpu_addr, size)) {
                     continue;
                 }
-                image.flags |= ImageFlagBits::Picked;
-                images.push_back(image_id);
                 if constexpr (BOOL_BREAK) {
                     if (func(image_id, image)) {
                         return true;
@@ -339,8 +366,19 @@ public:
                 return false;
             }
         });
-        for (const ImageId image_id : images) {
-            slot_images[image_id].flags &= ~ImageFlagBits::Picked;
+    }
+
+    template <typename Func>
+    void ForEachImageWithAddress(VAddr address, Func&& func) {
+        const auto it = page_table.find(address >> Traits::PageBits);
+        if (it == nullptr) {
+            return;
+        }
+        for (const ImageId image_id : *it) {
+            Image& image = slot_images[image_id];
+            if (image.info.guest_address == address) {
+                func(image_id, image);
+            }
         }
     }
 
@@ -348,7 +386,7 @@ private:
     /// Iterate over all page indices in a range
     template <typename Func>
     static void ForEachPage(PAddr addr, size_t size, Func&& func) {
-        static constexpr bool RETURNS_BOOL = std::is_same_v<std::invoke_result<Func, u64>, bool>;
+        static constexpr bool RETURNS_BOOL = std::is_same_v<std::invoke_result_t<Func, u64>, bool>;
         const u64 page_end = (addr + size - 1) >> Traits::PageBits;
         for (u64 page = addr >> Traits::PageBits; page <= page_end; ++page) {
             if constexpr (RETURNS_BOOL) {
@@ -384,6 +422,12 @@ private:
 
     /// Unregister image from the page table
     void UnregisterImage(ImageId image);
+
+    /// Registers metadata for an image; an entry of another image or type at the address is
+    /// replaced, the same image's keeps its clear state.
+    void RegisterMeta(VAddr address, MetaDataInfo info);
+    /// Removes the address's metadata if it still belongs to the image.
+    void UnregisterMeta(VAddr address, u64 owner_uid);
 
     /// Track CPU reads and writes for image
     void TrackImage(ImageId image_id);
@@ -422,15 +466,16 @@ private:
     AmdGpu::Liverpool* liverpool;
     BufferCache& buffer_cache;
     PageManager& tracker;
-    BlitHelper blit_helper;
-    TileManager tile_manager;
     Common::SlotVector<Image> slot_images;
     Common::SlotVector<ImageView> slot_image_views;
+    BlitHelper blit_helper;
+    TileManager tile_manager;
     tsl::robin_map<u64, Sampler> samplers;
     std::unordered_set<ImageId> download_images;
     u64 total_used_memory = 0;
     u64 gc_evictions = 0, gc_downloads = 0; ///< osl: pressure report
     std::chrono::steady_clock::time_point gc_report_time{};
+    std::chrono::steady_clock::time_point next_memory_reading{};
     u64 trigger_gc_memory = 0;
     u64 pressure_gc_memory = 0;
     u64 critical_gc_memory = 0;
@@ -481,7 +526,7 @@ private:
     tsl::robin_map<VAddr, AliasState> alias_states;
     std::atomic<u64> alias_generation{};
     [[nodiscard]] bool IsLiveImage(ImageId image_id, u64 image_uid) const {
-        return image_id && slot_images.is_allocated(image_id) &&
+        return image_id && slot_images.IsAllocated(image_id) &&
                slot_images[image_id].image_uid == image_uid;
     }
     template <typename Func>
@@ -510,10 +555,6 @@ private:
     std::atomic<u64> registry_generation{0};
     std::mutex samplers_mutex;
     std::mutex download_images_mutex;
-    struct MetaDataInfo {
-        MetaType type;
-        s32 clear_mask = -1;
-    };
     tsl::robin_map<VAddr, MetaDataInfo> surface_metas;
 };
 

@@ -417,7 +417,7 @@ void DefineEntryPoint(const Info& info, EmitContext& ctx, Id main) {
                                        : spv::ExecutionMode::VertexOrderCw);
         break;
     }
-    case SwStage::Fragment:
+    case SwStage::Fragment: {
         execution_model = spv::ExecutionModel::Fragment;
         if (ctx.profile.lower_left_origin_mode) {
             ctx.AddExecutionMode(main, spv::ExecutionMode::OriginLowerLeft);
@@ -427,10 +427,28 @@ void DefineEntryPoint(const Info& info, EmitContext& ctx, Id main) {
         if (info.has_discard) {
             ctx.AddCapability(spv::Capability::DemoteToHelperInvocation);
         }
-        if (info.stores.GetAny(IR::Attribute::Depth)) {
+        const bool stores_depth = info.stores.GetAny(IR::Attribute::Depth);
+        if (stores_depth) {
             ctx.AddExecutionMode(main, spv::ExecutionMode::DepthReplacing);
         }
+        if (ctx.runtime_info.hw.fs.depth_before_shader) {
+            // Early tests would ignore exported depth/stencil and the discards that emulate clip
+            // distances, so those shaders keep late tests.
+            const bool stores_stencil = info.stores.Get(IR::Attribute::StencilRef) &&
+                                        ctx.profile.supports_shader_stencil_export;
+            if (stores_depth || stores_stencil || ctx.runtime_info.hw.fs.clip_distance_emulation) {
+                static std::once_flag logged;
+                std::call_once(logged, [] {
+                    LOG_WARNING(Render_Recompiler,
+                                "DEPTH_BEFORE_SHADER on a fragment shader that exports depth or "
+                                "stencil or emulates clipping: using late fragment tests");
+                });
+            } else {
+                ctx.AddExecutionMode(main, spv::ExecutionMode::EarlyFragmentTests);
+            }
+        }
         break;
+    }
     case SwStage::Geometry:
         execution_model = spv::ExecutionModel::Geometry;
         ctx.AddExecutionMode(main, GetInputPrimitiveType(ctx.runtime_info.hw.gs.in_primitive));

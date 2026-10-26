@@ -21,63 +21,69 @@ constexpr PackageLayer kJapan102Layers[] = {{"01.00", "01.00", false}, {"01.02",
 constexpr PackageLayer kEuBaseLayers[] = {{"01.00", "01.00", false}};
 constexpr PackageLayer kEu101Layers[] = {{"01.00", "01.00", false}, {"01.01", "01.00", true}};
 
-// The render size instructions of the USA 1.00 eboot: the three render targets the graphics device creates, the two
-// GPU buffer allocations sized from the same pair, the two viewports the frame setup sets, and the engine's packed
-// float screen size that its 2D projection uses. All load the base PS4 1920x1080 pair; the game has no PS4 Pro path.
+// The render size instructions of the USA 1.00 eboot: the size of the render buffer pool its offscreen targets come
+// from, the three offscreen targets the graphics device creates, the two GPU buffer allocations sized from the same
+// pair, the two viewports the frame setup sets, and the engine's packed float screen size that its 2D projection uses.
+// All are sized for the base PS4 1920x1080 target; the game has no PS4 Pro path.
 constexpr OslResolutionSite kUsaResolutionSites[] = {
-    {0x6ac0b8, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ac0bd, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6ac1e9, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ac1ee, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6ac3a8, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ac3ad, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6ac3c5, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ac3ca, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6ac3de, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ac3e3, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6accd0, 1, {0xb9}, 1920, 0, 0, 0}, {0x6accd5, 2, {0x41, 0xb8}, 1080, 1, 0, 0},
-    {0x6ae682, 1, {0xb9}, 1920, 0, 0, 0}, {0x6ae687, 2, {0x41, 0xb8}, 1080, 1, 0, 0},
-    {0x6b3d72, 2, {0x48, 0xb8}, 0x44f00000, 0, 0x44870000, 1},
+    {0x6ab597, 7, {0xc7, 0x84, 0x24, 0xf8, 0x00, 0x00, 0x00}, 0x4000000, 0, 0, 0, 1},
+    {0x6ac0b8, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6ac0bd, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6ac1e9, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6ac1ee, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6ac3a8, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6ac3ad, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6ac3c5, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6ac3ca, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6ac3de, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6ac3e3, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6accd0, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6accd5, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
+    {0x6ae682, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6ae687, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
+    {0x6b3d72, 2, {0x48, 0xb8}, 0x44f00000, 0, 0x44870000, 1, 0},
 };
 
-// The Japanese eboots have the same fifteen instructions in the same functions; only their offsets differ.
+// The Japanese eboots have the same sixteen instructions in the same functions; only their offsets differ.
 constexpr OslResolutionSite kJapanBaseResolutionSites[] = {
-    {0x6a2c78, 1, {0xbe}, 1920, 0, 0, 0}, {0x6a2c7d, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6a2da9, 1, {0xbe}, 1920, 0, 0, 0}, {0x6a2dae, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6a2f68, 1, {0xbe}, 1920, 0, 0, 0}, {0x6a2f6d, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6a2f85, 1, {0xbe}, 1920, 0, 0, 0}, {0x6a2f8a, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6a2f9e, 1, {0xbe}, 1920, 0, 0, 0}, {0x6a2fa3, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6a3890, 1, {0xb9}, 1920, 0, 0, 0}, {0x6a3895, 2, {0x41, 0xb8}, 1080, 1, 0, 0},
-    {0x6a5242, 1, {0xb9}, 1920, 0, 0, 0}, {0x6a5247, 2, {0x41, 0xb8}, 1080, 1, 0, 0},
-    {0x6aa932, 2, {0x48, 0xb8}, 0x44f00000, 0, 0x44870000, 1},
+    {0x6a2157, 7, {0xc7, 0x84, 0x24, 0xf8, 0x00, 0x00, 0x00}, 0x4000000, 0, 0, 0, 1},
+    {0x6a2c78, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6a2c7d, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6a2da9, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6a2dae, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6a2f68, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6a2f6d, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6a2f85, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6a2f8a, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6a2f9e, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6a2fa3, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6a3890, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6a3895, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
+    {0x6a5242, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6a5247, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
+    {0x6aa932, 2, {0x48, 0xb8}, 0x44f00000, 0, 0x44870000, 1, 0},
 };
 
 constexpr OslResolutionSite kJapan102ResolutionSites[] = {
-    {0x6a9728, 1, {0xbe}, 1920, 0, 0, 0}, {0x6a972d, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6a9859, 1, {0xbe}, 1920, 0, 0, 0}, {0x6a985e, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6a9a18, 1, {0xbe}, 1920, 0, 0, 0}, {0x6a9a1d, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6a9a35, 1, {0xbe}, 1920, 0, 0, 0}, {0x6a9a3a, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6a9a4e, 1, {0xbe}, 1920, 0, 0, 0}, {0x6a9a53, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6aa340, 1, {0xb9}, 1920, 0, 0, 0}, {0x6aa345, 2, {0x41, 0xb8}, 1080, 1, 0, 0},
-    {0x6abcf2, 1, {0xb9}, 1920, 0, 0, 0}, {0x6abcf7, 2, {0x41, 0xb8}, 1080, 1, 0, 0},
-    {0x6b13e2, 2, {0x48, 0xb8}, 0x44f00000, 0, 0x44870000, 1},
+    {0x6a8c07, 7, {0xc7, 0x84, 0x24, 0xf8, 0x00, 0x00, 0x00}, 0x4000000, 0, 0, 0, 1},
+    {0x6a9728, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6a972d, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6a9859, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6a985e, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6a9a18, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6a9a1d, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6a9a35, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6a9a3a, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6a9a4e, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6a9a53, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6aa340, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6aa345, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
+    {0x6abcf2, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6abcf7, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
+    {0x6b13e2, 2, {0x48, 0xb8}, 0x44f00000, 0, 0x44870000, 1, 0},
 };
 
 constexpr OslResolutionSite kEuBaseResolutionSites[] = {
-    {0x6ad4d8, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad4dd, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6ad609, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad60e, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6ad7c8, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad7cd, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6ad7e5, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad7ea, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6ad7fe, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad803, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6ae0f0, 1, {0xb9}, 1920, 0, 0, 0}, {0x6ae0f5, 2, {0x41, 0xb8}, 1080, 1, 0, 0},
-    {0x6afac2, 1, {0xb9}, 1920, 0, 0, 0}, {0x6afac7, 2, {0x41, 0xb8}, 1080, 1, 0, 0},
-    {0x6b51b2, 2, {0x48, 0xb8}, 0x44f00000, 0, 0x44870000, 1},
+    {0x6ac9b7, 7, {0xc7, 0x84, 0x24, 0xf8, 0x00, 0x00, 0x00}, 0x4000000, 0, 0, 0, 1},
+    {0x6ad4d8, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6ad4dd, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6ad609, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6ad60e, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6ad7c8, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6ad7cd, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6ad7e5, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6ad7ea, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6ad7fe, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6ad803, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6ae0f0, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6ae0f5, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
+    {0x6afac2, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6afac7, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
+    {0x6b51b2, 2, {0x48, 0xb8}, 0x44f00000, 0, 0x44870000, 1, 0},
 };
 
 constexpr OslResolutionSite kEu101ResolutionSites[] = {
-    {0x6ad688, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad68d, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6ad7b9, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad7be, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6ad978, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad97d, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6ad995, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad99a, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6ad9ae, 1, {0xbe}, 1920, 0, 0, 0}, {0x6ad9b3, 1, {0xba}, 1080, 1, 0, 0},
-    {0x6ae2a0, 1, {0xb9}, 1920, 0, 0, 0}, {0x6ae2a5, 2, {0x41, 0xb8}, 1080, 1, 0, 0},
-    {0x6afc72, 1, {0xb9}, 1920, 0, 0, 0}, {0x6afc77, 2, {0x41, 0xb8}, 1080, 1, 0, 0},
-    {0x6b5362, 2, {0x48, 0xb8}, 0x44f00000, 0, 0x44870000, 1},
+    {0x6acb67, 7, {0xc7, 0x84, 0x24, 0xf8, 0x00, 0x00, 0x00}, 0x4000000, 0, 0, 0, 1},
+    {0x6ad688, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6ad68d, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6ad7b9, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6ad7be, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6ad978, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6ad97d, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6ad995, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6ad99a, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6ad9ae, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6ad9b3, 1, {0xba}, 1080, 1, 0, 0, 0},
+    {0x6ae2a0, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6ae2a5, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
+    {0x6afc72, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6afc77, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
+    {0x6b5362, 2, {0x48, 0xb8}, 0x44f00000, 0, 0x44870000, 1, 0},
 };
 
 // The European executable picks its menu and subtitle archives from the system language; these are the languages it

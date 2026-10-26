@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <limits>
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_semaphore.h"
 
 #include "common/assert.h"
+#include "common/logging/log.h"
 
 namespace Vulkan {
 
-constexpr u64 WAIT_TIMEOUT = std::numeric_limits<u64>::max();
+constexpr u64 WAIT_STEP_NS = 1'000'000'000;
 
 Semaphore::Semaphore(const Instance& instance_) : instance{instance_} {
     const vk::StructureChain semaphore_chain = {
@@ -34,6 +34,9 @@ void Semaphore::Refresh() {
     do {
         this_tick = gpu_tick.load(std::memory_order_acquire);
         auto [counter_result, cntr] = instance.GetDevice().getSemaphoreCounterValue(*semaphore);
+        if (counter_result == vk::Result::eErrorDeviceLost) {
+            instance.ReportDeviceLost();
+        }
         ASSERT_MSG(counter_result == vk::Result::eSuccess,
                    "Failed to get master semaphore value: {}", vk::to_string(counter_result));
         counter = cntr;
@@ -62,7 +65,19 @@ void Semaphore::Wait(u64 tick) {
         .pValues = &tick,
     };
 
-    while (instance.GetDevice().waitSemaphores(&wait_info, WAIT_TIMEOUT) != vk::Result::eSuccess) {
+    for (u32 seconds = 1;; ++seconds) {
+        const vk::Result result = instance.GetDevice().waitSemaphores(&wait_info, WAIT_STEP_NS);
+        if (result == vk::Result::eSuccess) {
+            break;
+        }
+        if (result == vk::Result::eErrorDeviceLost) {
+            instance.ReportDeviceLost();
+            UNREACHABLE_MSG("Device lost while waiting for GPU tick {}", tick);
+        }
+        if (seconds % 5 == 0) {
+            LOG_WARNING(Render_Vulkan, "Waiting {} s for GPU tick {} ({})", seconds, tick,
+                        vk::to_string(result));
+        }
     }
     Refresh();
 }

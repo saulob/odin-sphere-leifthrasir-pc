@@ -17,6 +17,7 @@
 #endif
 #ifdef _WIN32
 #include <windows.h>
+#include <signal.h>
 #else
 #include <sys/mman.h>
 #include <malloc.h>
@@ -111,6 +112,8 @@ static void describe_address(char *out, size_t size, uintptr_t address) {
     HMODULE module=NULL;
     char name[MAX_PATH]="?";
     if (image && address-(uintptr_t)image<0x20000000) { snprintf(out,size,"guest offset 0x%" PRIxPTR,address-(uintptr_t)image); return; }
+    uint64_t site=0;
+    if (runtime_redzone_site(address,&site)) { snprintf(out,size,"guest offset 0x%" PRIx64 " (moved access)",site); return; }
     if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS|GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,(LPCSTR)address,&module) && module) {
         GetModuleFileNameA(module,name,sizeof(name));
         const char *base=strrchr(name,'\\');
@@ -135,7 +138,39 @@ static LONG fatal_exception(EXCEPTION_POINTERS *info) {
         fprintf(stderr,"Fault: exception 0x%08lx at %s (thread %lu)\n",record->ExceptionCode,where,GetCurrentThreadId());
     fprintf(stderr,"  rax=%016llx rbx=%016llx rcx=%016llx rdx=%016llx\n  rsi=%016llx rdi=%016llx rbp=%016llx rsp=%016llx\n",
             c->Rax,c->Rbx,c->Rcx,c->Rdx,c->Rsi,c->Rdi,c->Rbp,c->Rsp);
-    if (gpu_enabled) oslgpu_dump_guest_writes(info);
+    if (gpu_enabled) {
+        oslgpu_note_fatal_fault();
+        oslgpu_dump_guest_writes(info);
+    }
+    /* Host frames from the unwind tables (optimized host code and system libraries keep no frame
+     * pointers). Guest code has none: the walk stops there and the rbp chain below follows it. */
+    {
+        CONTEXT unwound=*c;
+        ULONG_PTR stack_low=0, stack_high=0;
+        GetCurrentThreadStackLimits(&stack_low,&stack_high);
+        for (int depth=0; depth<40; ++depth) {
+            const uintptr_t rip=(uintptr_t)unwound.Rip;
+            const int guest=(image && rip-(uintptr_t)image<0x20000000) || runtime_redzone_site(rip,NULL);
+            if (unwound.Rsp<stack_low || unwound.Rsp>=stack_high) break;
+            if (guest && !depth) break;
+            describe_address(where,sizeof(where),rip);
+            fprintf(stderr,"  host #%d %s\n",depth,where);
+            if (guest) break;
+            DWORD64 module_base=0;
+            PRUNTIME_FUNCTION function=RtlLookupFunctionEntry(unwound.Rip,&module_base,NULL);
+            if (!function) {
+                if (depth) break;
+                /* A leaf function: its return address is on top of the stack. */
+                DWORD64 ret=0; SIZE_T got=0;
+                if (!ReadProcessMemory(GetCurrentProcess(),(void *)(uintptr_t)unwound.Rsp,&ret,sizeof(ret),&got) || got!=sizeof(ret)) break;
+                unwound.Rip=ret; unwound.Rsp+=8;
+                continue;
+            }
+            PVOID handler_data=NULL; DWORD64 establisher=0;
+            RtlVirtualUnwind(UNW_FLAG_NHANDLER,module_base,unwound.Rip,function,&unwound,&handler_data,&establisher,NULL);
+            if (!unwound.Rip) break;
+        }
+    }
     /* Top stack words: after a call through a null pointer [rsp] is the caller's return address. */
     uintptr_t words[8];
     SIZE_T read=0;
@@ -162,8 +197,25 @@ static LONG CALLBACK vectored_fault(EXCEPTION_POINTERS *info) {
     const EXCEPTION_RECORD *record=info->ExceptionRecord;
     DWORD code=record->ExceptionCode;
     if (code==EXCEPTION_ACCESS_VIOLATION && record->NumberParameters>=2) {
-        /* GPU page tracking (write-protected guest pages) is resolved first. */
-        if (gpu_enabled && oslgpu_handle_fault(info,(void *)record->ExceptionInformation[1])) return EXCEPTION_CONTINUE_EXECUTION;
+        /* GPU page tracking (write-protected guest pages) is resolved first, except during a
+         * speculative read: resolving a GPU page can wait for the GPU thread, which may wait for a
+         * lock the reading worker holds. That fault takes the recovery path below. */
+        if (gpu_enabled && !runtime_fault_recover) {
+            /* The GPU handlers may fault on another tracked page a level or two deep; a bug there
+             * would recurse until the stack runs out (a silent freeze). */
+            static __thread int handler_depth;
+            if (handler_depth>=8) {
+                fprintf(stderr,"Fault handler: faulted inside itself %d levels deep\n",handler_depth);
+                return fatal_exception(info);
+            }
+            ++handler_depth;
+            const int handled=oslgpu_handle_fault(info,(void *)record->ExceptionInformation[1]);
+            --handler_depth;
+            if (handled) {
+                runtime_redzone_after_fault(info->ContextRecord);
+                return EXCEPTION_CONTINUE_EXECUTION;
+            }
+        }
         if (runtime_fault_recover) {
             /* A speculative guest memory read (GPU draw preparation) faulted: the thread resumes
              * in osl_longjmp, outside the exception dispatcher, back at its recovery point. */
@@ -193,6 +245,26 @@ static LONG CALLBACK vectored_fault(EXCEPTION_POINTERS *info) {
     return EXCEPTION_CONTINUE_SEARCH;
 }
 static LONG WINAPI unhandled_fault(EXCEPTION_POINTERS *info) { return fatal_exception(info); }
+/* abort() (an uncaught C++ exception, a failed library check), the C runtime's invalid-parameter
+ * check and a pure virtual call end the process with 0xC0000409, which no exception handler sees:
+ * the same report as a crash, from here. */
+static void report_runtime_check(const char *why) {
+    CONTEXT context;
+    EXCEPTION_RECORD record;
+    memset(&context,0,sizeof(context));
+    memset(&record,0,sizeof(record));
+    RtlCaptureContext(&context);
+    record.ExceptionCode=0xC0000409;
+    record.ExceptionAddress=(PVOID)(uintptr_t)context.Rip;
+    EXCEPTION_POINTERS pointers={&record,&context};
+    fprintf(stderr,"Fatal: %s\n",why);
+    fatal_exception(&pointers);
+}
+static void on_abort(int signal_number) {
+    (void)signal_number;
+    report_runtime_check("abort() was called (an uncaught C++ exception or a failed library check)");
+}
+static void on_pure_call(void) { report_runtime_check("a pure virtual function was called"); }
 /* Guest code reads its TCB with `mov rax, gs:[0]` (the boot image builder rewrote fs:[0]); on Windows
  * the displacement becomes the TEB TLS slot that holds the guest TCB (runtime_thread.c). */
 uint32_t runtime_thread_tcb_offset(void);
@@ -211,8 +283,9 @@ static uint64_t patch_tcb_loads(const Segment *segments, uint64_t count) {
 #endif
 #ifndef _WIN32
 static void fault(int sig, siginfo_t *info, void *context) {
-    /* GPU page tracking (write-protected guest pages) is resolved first. */
-    if (gpu_enabled && sig == SIGSEGV && oslgpu_handle_fault(context, info->si_addr)) return;
+    /* GPU page tracking (write-protected guest pages) is resolved first, except during a speculative
+     * read (see vectored_fault). */
+    if (gpu_enabled && sig == SIGSEGV && !runtime_fault_recover && oslgpu_handle_fault(context, info->si_addr)) return;
     /* A speculative guest memory read (runtime_memory.c) failed: resume its recovery point. */
     if ((sig == SIGSEGV || sig == SIGBUS) && runtime_fault_recover) {
         sigjmp_buf *recover = runtime_fault_recover;
@@ -238,7 +311,10 @@ static void fault(int sig, siginfo_t *info, void *context) {
     else
         snprintf(line, sizeof(line), "Fault (signal %d) at RIP %p, address %p\n", sig, (void *)rip, info->si_addr);
     { ssize_t written_=write(2, line, strlen(line)); (void)written_; }
-    if (gpu_enabled) oslgpu_dump_guest_writes(context);
+    if (gpu_enabled) {
+        oslgpu_note_fatal_fault();
+        oslgpu_dump_guest_writes(context);
+    }
     /* Host call chain (frames with unwind info; guest frames end it). */
     void *frames[32];
     int depth = backtrace(frames, 32);
@@ -473,6 +549,8 @@ int main(int argc, char **argv) {
     SYSTEM_INFO system_info; GetSystemInfo(&system_info); page_size = system_info.dwPageSize;
     AddVectoredExceptionHandler(1, vectored_fault);
     SetUnhandledExceptionFilter(unhandled_fault);
+    signal(SIGABRT, on_abort);
+    _set_purecall_handler(on_pure_call);
     if (getenv("OSL_STRICT_HANDLES")) {
         PROCESS_MITIGATION_STRICT_HANDLE_CHECK_POLICY strict={0};
         strict.RaiseExceptionOnInvalidHandleReference=1;
@@ -486,6 +564,8 @@ int main(int argc, char **argv) {
     struct sigaction sa = {0}; sa.sa_sigaction = fault; sa.sa_flags = SA_SIGINFO;
     sigemptyset(&sa.sa_mask);
     sigaction(SIGSEGV, &sa, NULL); sigaction(SIGILL, &sa, NULL); sigaction(SIGBUS, &sa, NULL);
+    sigaction(SIGABRT, &sa, NULL); /* abort(): an uncaught C++ exception or a failed library check */
+    { void *warm[1]; (void)backtrace(warm, 1); } /* loads libgcc_s now, not in the handler */
     Dl_info self_info;
     if (dladdr((void *)main,&self_info)) exe_base=(uintptr_t)self_info.dli_fbase;
     struct sigaction dump = {0}; dump.sa_sigaction = thread_dump; dump.sa_flags = SA_SIGINFO|SA_RESTART;
@@ -659,6 +739,16 @@ int main(int argc, char **argv) {
     printf("OSL: Aspect ratio: %s, render target %dx%d\n",aspect_ratio->name,render_target.width,render_target.height);
 #ifdef _WIN32
     printf("Guest TCB loads redirected to the TEB TLS slot: %" PRIu64 "\n", patch_tcb_loads(segments, ns));
+    /* After every other change to guest code. Only GPU page tracking resumes faulting guest code. */
+    if (gpu_enabled) {
+        uint64_t *triples=calloc(ns*3,sizeof(*triples));
+        if (!triples) fail_running("allocation failed");
+        for (uint64_t i=0;i<ns;++i) {
+            triples[3*i]=segments[i].address; triples[3*i+1]=segments[i].size; triples[3*i+2]=segments[i].flags;
+        }
+        runtime_redzone_install(image,size,triples,ns);
+        free(triples);
+    }
 #endif
     protect(traps, round_page((import_count + 1) * 32), 5);
     protect(image, round_page(size), 0);

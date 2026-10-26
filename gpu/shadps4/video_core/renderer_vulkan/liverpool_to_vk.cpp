@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <atomic>
 #include "common/assert.h"
+#include "common/logging/log.h"
 #include "common/number_utils.h"
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
@@ -785,12 +787,25 @@ vk::Format TrySurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat
 }
 
 vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format) {
-    vk::Format result = surface_format_table[GetSurfaceFormatTableIndex(data_format, num_format)];
-    bool found =
-        result != vk::Format::eUndefined || data_format == AmdGpu::DataFormat::FormatInvalid;
-    ASSERT_MSG(found, "Unknown data_format={} and num_format={}", static_cast<u32>(data_format),
-               static_cast<u32>(num_format));
-    return result;
+    const vk::Format result = TrySurfaceFormat(data_format, num_format);
+    if (result != vk::Format::eUndefined || data_format == AmdGpu::DataFormat::FormatInvalid) {
+        return result;
+    }
+    // Only garbage descriptors carry a pair no hardware has: a stand-in format of the same size
+    // lets the caller reject the description instead of stopping here.
+    static std::atomic<u32> logged{0};
+    if (logged.fetch_add(1, std::memory_order_relaxed) < 16) {
+        LOG_WARNING(Render_Vulkan, "Unknown data_format={} and num_format={}: using a fallback",
+                    static_cast<u32>(data_format), static_cast<u32>(num_format));
+    }
+    for (const auto fallback :
+         {AmdGpu::NumberFormat::Unorm, AmdGpu::NumberFormat::Uint, AmdGpu::NumberFormat::Float}) {
+        if (const auto format = TrySurfaceFormat(data_format, fallback);
+            format != vk::Format::eUndefined) {
+            return format;
+        }
+    }
+    return vk::Format::eR8G8B8A8Unorm;
 }
 
 static constexpr DepthFormatInfo CreateDepthFormatInfo(

@@ -73,6 +73,7 @@ private:
     std::array<std::vector<u64>, NumSlices> keys; ///< label of each timestamp but the last
     std::array<u32, NumSlices> used{};
     std::array<bool, NumSlices> pending{};
+    std::array<u64, NumSlices> ticks{}; ///< submission holding the slice's last timestamp
     std::unordered_map<u64, std::string> described;
     struct Total {
         double ms = 0;

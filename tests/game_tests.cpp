@@ -169,7 +169,7 @@ void TestProfile() {
     CHECK(std::string(build.label) == "CUSA05083 1.00 USA");
     CHECK(std::string(build.region) == "USA");
     CHECK(build.layers.size() == 1);
-    CHECK(build.resolution_sites.size() == 15);
+    CHECK(build.resolution_sites.size() == 16);
     CHECK(std::string(FinishedLayer(build).app_ver) == "01.00");
     CHECK(std::string(FinishedLayer(build).sfo_version) == "01.01");
     CHECK(!FinishedLayer(build).update);
@@ -188,7 +188,7 @@ void TestProfile() {
     CHECK(std::string(japan_base.label) == "CUSA01290 1.00 Japan");
     CHECK(std::string(japan_base.region) == "Japan");
     CHECK(japan_base.layers.size() == 1);
-    CHECK(japan_base.resolution_sites.size() == 15);
+    CHECK(japan_base.resolution_sites.size() == 16);
     CHECK(std::string(FinishedLayer(japan_base).app_ver) == "01.00");
     CHECK(std::string(FinishedLayer(japan_base).sfo_version) == "01.00");
     CHECK(BaseBuildOf(japan_base) == nullptr);
@@ -206,7 +206,7 @@ void TestProfile() {
     CHECK(FinishedLayer(japan).update);
     CHECK(BaseBuildOf(japan) == &japan_base);
     CHECK(UpdateBuildOf(japan) == nullptr);
-    CHECK(japan.resolution_sites.size() == 15);
+    CHECK(japan.resolution_sites.size() == 16);
     CHECK(japan.data_files.size() == 6);
     CHECK(japan.extra_files.size() == 1);
     CHECK(BuildMetadataText(japan) == "APP_VER 1.02 \xC2\xB7 VERSION 1.00");
@@ -224,7 +224,7 @@ void TestProfile() {
     CHECK(eu_base.layers.size() == 1);
     CHECK(eu_base.extra_files.empty());
     CHECK(eu_base.data_files.size() == 15);
-    CHECK(eu_base.resolution_sites.size() == 15);
+    CHECK(eu_base.resolution_sites.size() == 16);
     CHECK(std::string(FinishedLayer(eu_base).app_ver) == "01.00");
     CHECK(std::string(FinishedLayer(eu_base).sfo_version) == "01.00");
     CHECK(BaseBuildOf(eu_base) == nullptr);
@@ -244,7 +244,7 @@ void TestProfile() {
     CHECK(FinishedLayer(eu).update);
     CHECK(BaseBuildOf(eu) == &eu_base);
     CHECK(UpdateBuildOf(eu) == nullptr);
-    CHECK(eu.resolution_sites.size() == 15);
+    CHECK(eu.resolution_sites.size() == 16);
     CHECK(eu.data_files.size() == 25);
     CHECK(eu.extra_files.size() == 1);
     CHECK(BuildMetadataText(eu) == "APP_VER 1.01 \xC2\xB7 VERSION 1.00");
@@ -772,8 +772,9 @@ void TestLogRetention() {
 
 void TestBuildResolutionSites(const GameBuild& build) {
     CHECK(!build.resolution_sites.empty());
-    CHECK(build.resolution_sites.size() == 15);
+    CHECK(build.resolution_sites.size() == 16);
     CHECK(build.resolution_sites.back().packed_floats);
+    CHECK(build.resolution_sites.front().pixel_budget);
     CHECK(!RestrictedToNativeResolution(&build));
 
     size_t image_size = 0;
@@ -811,6 +812,8 @@ void TestBuildResolutionSites(const GameBuild& build) {
             if (site.packed_floats) {
                 CHECK(float_value(immediate(site)) == float(target.width));
                 CHECK(float_value(immediate_high(site)) == float(target.height));
+            } else if (site.pixel_budget) {
+                CHECK(immediate(site) == osl_scaled_budget(site.value, &target));
             } else {
                 CHECK(immediate(site) == static_cast<uint32_t>(site.height ? target.height : target.width));
             }
@@ -856,6 +859,34 @@ void TestResolutionSites() {
     }
 }
 
+// The game's 64 MiB render buffer pool holds three offscreen color+depth targets and the snapshot's color target, all
+// of the render size (sizes from the game's own Gnm surface code).
+void TestRenderBufferBudget() {
+    constexpr uint32_t kNativePool = 0x4000000;
+    struct Target {
+        int width, height;
+        uint64_t color, depth;
+    };
+    const Target targets[] = {
+        {1920, 1080, 8355840, 9437184},   {2560, 1440, 15073280, 15728640}, {3200, 1800, 23756800, 25559040},
+        {3840, 2160, 33423360, 33423360}, {5120, 1440, 30146560, 31457280}, {4384, 1880, 34406400, 35389440},
+    };
+    for (const Target& t : targets) {
+        const OslResolution target{"test", "test", t.width, t.height};
+        const uint32_t pool = osl_scaled_budget(kNativePool, &target);
+        CHECK(pool >= 3 * (t.color + t.depth) + t.color);
+        CHECK(pool % (2u << 20) == 0);
+    }
+    const OslResolution native{"native", "native", 1920, 1080};
+    CHECK(osl_scaled_budget(kNativePool, &native) == kNativePool);
+    const OslResolution wqhd{"1440p", "1440p", 2560, 1440};
+    CHECK(osl_scaled_budget(kNativePool, &wqhd) == 119537664u);
+    const OslResolution smaller[] = {{"720p", "720p", 1280, 720}, {"480p", "480p", 854, 480}};
+    for (const OslResolution& target : smaller) {
+        CHECK(osl_scaled_budget(kNativePool, &target) == kNativePool);
+    }
+}
+
 } // namespace
 
 int main() {
@@ -875,6 +906,7 @@ int main() {
     TestDetailedLogging();
     TestLogsDirectory();
     TestResolutionSites();
+    TestRenderBufferBudget();
     TestLogRetention();
     std::printf("%s (%d checks, %d failures)\n", g_failures ? "FAILED" : "OK", g_checks, g_failures);
     return g_failures ? 1 : 0;

@@ -74,6 +74,7 @@ struct SwVertexRuntimeInfo {
     u16 vertex_sgpr_offset{};
     u16 instance_sgpr_offset{};
     bool tess_emulated_primitive{};
+    bool is_indirect{};
 
     bool operator==(const SwVertexRuntimeInfo& other) const noexcept = default;
 };
@@ -169,9 +170,9 @@ struct HwGeometryRuntimeInfo {
     u64 vs_copy_hash;
 
     bool operator==(const HwGeometryRuntimeInfo& other) const {
-        return num_outputs == other.num_outputs && outputs == other.outputs && num_invocations &&
-               other.num_invocations && output_vertices == other.output_vertices &&
-               in_primitive == other.in_primitive &&
+        return num_outputs == other.num_outputs && outputs == other.outputs &&
+               num_invocations == other.num_invocations &&
+               output_vertices == other.output_vertices && in_primitive == other.in_primitive &&
                std::ranges::equal(out_primitive, other.out_primitive) &&
                vs_copy_hash == other.vs_copy_hash;
     }
@@ -229,6 +230,7 @@ struct HwFragmentRuntimeInfo {
     bool clip_distance_emulation{false};
     /// osl: writes the object motion vector to MotionVectors::Output.
     bool motion_vectors{false};
+    bool depth_before_shader{false};
 
     bool operator==(const HwFragmentRuntimeInfo& other) const noexcept {
         return std::ranges::equal(color_buffers, other.color_buffers) &&
@@ -239,6 +241,7 @@ struct HwFragmentRuntimeInfo {
                dual_source_blending == other.dual_source_blending &&
                clip_distance_emulation == other.clip_distance_emulation &&
                motion_vectors == other.motion_vectors &&
+               depth_before_shader == other.depth_before_shader &&
                std::ranges::equal(inputs.begin(), inputs.begin() + num_inputs, other.inputs.begin(),
                                   other.inputs.begin() + num_inputs);
     }
@@ -250,7 +253,8 @@ struct HwComputeRuntimeInfo {
     std::array<bool, 3> tgid_enable;
 
     bool operator==(const HwComputeRuntimeInfo& other) const noexcept {
-        return workgroup_size == other.workgroup_size && tgid_enable == other.tgid_enable;
+        return workgroup_size == other.workgroup_size && tgid_enable == other.tgid_enable &&
+               shared_memory_size == other.shared_memory_size;
     }
 };
 
@@ -263,15 +267,18 @@ struct RuntimeInfo {
     SwStage sw_stage;
     HwStage hw_stage;
     struct Properties {
-        AmdGpu::FpDenormMode fp_denorm_mode32;
-        AmdGpu::FpDenormMode fp_denorm_mode16_64;
-        AmdGpu::FpRoundMode fp_round_mode32;
-        AmdGpu::FpRoundMode fp_round_mode16_64;
-        u32 num_user_data;
-        u32 num_input_vgprs;
-        u32 num_allocated_vgprs;
+        AmdGpu::FpDenormMode fp_denorm_mode32 : 2;
+        AmdGpu::FpDenormMode fp_denorm_mode16_64 : 2;
+        AmdGpu::FpRoundMode fp_round_mode32 : 2;
+        AmdGpu::FpRoundMode fp_round_mode16_64 : 2;
+        u32 num_allocated_vgprs : 9; // Up to 256
+        u32 num_user_data : 5;
+        u32 num_input_vgprs : 2;
+        u32 dx10_clamp : 1;
+        u32 reserved : 7;
         bool operator==(const Properties&) const noexcept = default;
     } props;
+    static_assert(sizeof(Properties) == sizeof(u32));
     union SwInfo {
         SwVertexRuntimeInfo vs;
         SwTessControlRuntimeInfo tcs;

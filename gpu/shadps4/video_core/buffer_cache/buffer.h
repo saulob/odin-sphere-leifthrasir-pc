@@ -115,6 +115,11 @@ struct Buffer {
         return buffer.bda_addr;
     }
 
+    /// Zero for a buffer without a device address.
+    vk::DeviceAddress DeviceAddressOrZero() const noexcept {
+        return buffer.bda_addr;
+    }
+
     /// Makes host writes in provided range visible to the device.
     void Flush(u64 offset, u64 size);
 

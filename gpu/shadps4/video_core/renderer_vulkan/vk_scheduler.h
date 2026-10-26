@@ -37,6 +37,7 @@ class Instance;
 
 struct RenderAttachment {
     vk::ImageView image_view;
+    vk::Image image; ///< the view's image when known (attachment hazards), else null
     vk::ImageLayout image_layout;
     std::array<u32, 4> clear_value;
     union {
@@ -758,8 +759,7 @@ public:
             return;
         }
         if (!record_chunk->Push(std::forward<Func>(func))) {
-            full_chunks.push_back(std::move(record_chunk));
-            record_chunk = AcquireChunk();
+            full_chunks.push_back(std::exchange(record_chunk, AcquireChunk()));
             const bool pushed = record_chunk->Push(std::forward<Func>(func));
             ASSERT(pushed);
         }
@@ -781,8 +781,7 @@ public:
             bytes = 0; // RecordData() places it out of line; keep room for the command
         }
         if (RecordChunk::Capacity - record_chunk->Size() < bytes + 1024) {
-            full_chunks.push_back(std::move(record_chunk));
-            record_chunk = AcquireChunk();
+            full_chunks.push_back(std::exchange(record_chunk, AcquireChunk()));
         }
     }
 
@@ -878,6 +877,12 @@ public:
         return &work_semaphore;
     }
 
+    /// The CPU will read memory the GPU writes in this submission: it ends with a barrier that
+    /// makes those writes visible to the host (a semaphore or fence wait alone does not).
+    void RequestHostReadBarrier() {
+        host_read_barrier.store(true, std::memory_order_relaxed);
+    }
+
     /// Defers an operation until the gpu has reached the current cpu tick.
     /// Will be run when submitting or calling PopPendingOperations.
     void DeferOperation(Common::UniqueFunction<void>&& func) {
@@ -931,6 +936,8 @@ private:
     std::jthread priority_pending_ops_thread;
     RenderState render_state;
     bool is_rendering = false;
+    bool has_render_state = false; ///< render_state holds the last rendering instance
+    std::atomic<bool> host_read_barrier{false};
     // osl: threaded recording
     std::unique_ptr<RecordChunk> record_chunk;
     std::atomic<std::thread::id> recording_owner{}; // see OwnsRecording()
@@ -941,11 +948,16 @@ private:
     std::deque<std::unique_ptr<RecordChunk>> recorder_queue;
     std::vector<std::unique_ptr<RecordChunk>> free_chunks;
     bool recorder_busy = false;
-    std::atomic<size_t> queued_chunks{0}; ///< recorder_queue.size() for lock-free polling
+    /// recorder_queue.size() for lock-free polling, written by both threads at every hand-off: a
+    /// cache line apart from the flags every Record() reads.
+    alignas(64) std::atomic<size_t> queued_chunks{0};
+    char queued_chunks_line[56]{};
     bool recorder_sleeping = false; ///< waiting on recorder_cv (guarded by recorder_mutex)
     bool direct_mode = false; ///< the command buffer is recorded on the caller's thread
     u64 host_copies_issued = 0;
-    std::atomic<u64> host_copies_done{0};
+    /// Written by the recording thread after each host copy: a cache line of its own.
+    alignas(64) std::atomic<u64> host_copies_done{0};
+    char host_copies_done_line[56]{};
     std::atomic<u64> deferred_signals_issued{0}; ///< by the thread recording (A or B)
     std::shared_ptr<std::atomic<u64>> deferred_signals_done =
         std::make_shared<std::atomic<u64>>(0);

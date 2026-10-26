@@ -1,7 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <atomic>
+#include <chrono>
+#include <cstdio>
 #include <span>
+#include <thread>
 
 #include <boost/container/small_vector.hpp>
 #include <boost/container/static_vector.hpp>
@@ -21,6 +25,46 @@ Pipeline::Pipeline(const Instance& instance_, Scheduler& scheduler_, DescriptorH
       is_compute{is_compute_} {}
 
 Pipeline::~Pipeline() = default;
+
+vk::UniquePipeline CreateRefusedPipelineAgain(
+    const std::function<vk::ResultValue<vk::UniquePipeline>()>& create, vk::Result first,
+    std::string_view what, std::string_view name) {
+    constexpr u32 MaxAttempts = 4;
+    const auto may_pass = [](vk::Result result) {
+        return result == vk::Result::eErrorUnknown ||
+               result == vk::Result::eErrorOutOfHostMemory ||
+               result == vk::Result::eErrorOutOfDeviceMemory ||
+               result == vk::Result::eErrorInitializationFailed;
+    };
+    static std::atomic<u32> reported{0};
+    const auto report = [&](u32 attempts, vk::Result result) {
+        if (reported.fetch_add(1, std::memory_order_relaxed) < 16) {
+            std::printf("GPU: the driver refused %.*s %.*s (%s); %u more attempts: %s\n",
+                        int(what.size()), what.data(), int(name.size()), name.data(),
+                        vk::to_string(first).c_str(), attempts,
+                        result == vk::Result::eSuccess
+                            ? "created"
+                            : ("refused (" + vk::to_string(result) + "), its draws are skipped")
+                                  .c_str());
+        }
+    };
+    vk::Result result = first;
+    u32 attempts = 0;
+    while (attempts < MaxAttempts && (attempts == 0 || may_pass(result))) {
+        if (attempts > 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds{100} * attempts);
+        }
+        ++attempts;
+        auto created = create();
+        result = created.result;
+        if (result == vk::Result::eSuccess) {
+            report(attempts, result);
+            return std::move(created.value);
+        }
+    }
+    report(attempts, result);
+    return {};
+}
 
 
 void Pipeline::BindResources(DescriptorWrites& set_writes,

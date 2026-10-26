@@ -10,3 +10,11 @@ Backported from upstream after b4e7ae7 (2026-10-02), recompiler correctness fixe
   mode (#5126), e518a6515 S_SUBB_U32 SCC wrap (#5031), 282e5c792 S_ADDC_U32 SCC carry-out (#5030),
   fb6367d29 32-bit literals in the high dword of 64-bit floats (#5114), 94e217781 V_BFM_B32 (#5185),
   d1cb90dbb ADDC (#5200), dd43d1cac V_CVT_PK_U8_F32 (#5194), ef08b1e1f V_ALIGNBIT/ALIGNBYTE (#5186).
+Modernized from upstream after b4e7ae7 (up to a808e762, 2026-10), wholly or in part, adapted to this tree:
+  1eab1796a 612713d5f c6fa48c75 2f40f87b5 c6b24ec1c 41c0fca5e 53af37af4 282f64454 caeb240de e0cd957ac f6cd16e85
+  4cbd23ef6 4c7b287f1 c01ae7e6e 1a0f5be8d e754ce62e 3f21ee0be 2338a06f9 259e815af 12927c1b9 d9cf41ba0 5ae2caf31
+  fecfbed09 7e7789875 0f6d1b870 8e23388af 43e4c4703 145932bf5 1ac65aa7a c49529087 7721a1eff 92c7a8843 c09fa46a8
+  7d28d2790 10393d2c3 12c5978f6 c679ce609 63098710d c34ca21f1 14ada48a1 945dbc3cc 69b6041d7 002769610 afde63182
+  30d82c900 e9f2c54c2 443f02245 1c2b8f97a b08fd9bb4 3a9f57265 643c7997a 8bafaa5ac 995e37e4e 23c413338 e6faa2e3b
+  b3d46e96f ab1dd384d 78bedfac4 603cff43d 626f3ace6 e6c79a5fe d3ff0e0cc 08225c2b3 524be7c1d a808e7626
+Also generic fixes adapted from the Uncharted NDC and Driveclub ports. sirit: OpNClamp added (sirit.h, extension.cpp).

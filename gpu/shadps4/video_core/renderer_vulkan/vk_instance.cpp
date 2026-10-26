@@ -2,8 +2,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <atomic>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <mutex>
+#include <thread>
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
@@ -290,7 +294,9 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
         vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT, vk::PhysicalDeviceShaderClockFeaturesKHR,
         vk::PhysicalDevicePipelineBinaryFeaturesKHR,
-        vk::PhysicalDeviceMaintenance5FeaturesKHR>();
+        vk::PhysicalDeviceMaintenance5FeaturesKHR, vk::PhysicalDeviceFaultFeaturesEXT,
+        vk::PhysicalDeviceMemoryPriorityFeaturesEXT,
+        vk::PhysicalDevicePageableDeviceLocalMemoryFeaturesEXT>();
     features = feature_chain.get().features;
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
@@ -370,7 +376,14 @@ bool Instance::CreateDevice() {
     custom_border_color = add_extension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
     depth_clip_control = add_extension(VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME);
     depth_clip_enable = add_extension(VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME);
-    vertex_input_dynamic_state = add_extension(VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME);
+    // osl: Intel's Windows driver draws wrong vertex data with this extension (Arc, HD 630);
+    // vertex input is then built into the pipelines instead.
+    if (driver_id == vk::DriverId::eIntelProprietaryWindows) {
+        LOG_WARNING(Render_Vulkan, "Vertex input dynamic state left off on this Intel driver");
+    } else {
+        vertex_input_dynamic_state =
+            add_extension(VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME);
+    }
     list_restart = add_extension(VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME);
     if (list_restart) {
         list_restart_features =
@@ -434,6 +447,16 @@ bool Instance::CreateDevice() {
         LOG_INFO(Render_Vulkan, "- shaderSubgroupClock: {}",
                  shader_clock_features.shaderSubgroupClock);
     }
+    device_fault = feature_chain.get<vk::PhysicalDeviceFaultFeaturesEXT>().deviceFault &&
+                   add_extension(VK_EXT_DEVICE_FAULT_EXTENSION_NAME);
+    // A full card then moves memory to system RAM (slower) instead of failing allocations.
+    if (feature_chain.get<vk::PhysicalDeviceMemoryPriorityFeaturesEXT>().memoryPriority &&
+        feature_chain.get<vk::PhysicalDevicePageableDeviceLocalMemoryFeaturesEXT>()
+            .pageableDeviceLocalMemory) {
+        memory_priority = add_extension(VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME);
+        pageable_device_memory =
+            memory_priority && add_extension(VK_EXT_PAGEABLE_DEVICE_LOCAL_MEMORY_EXTENSION_NAME);
+    }
     const bool calibrated_timestamps =
         TRACY_GPU_ENABLED ? add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME) : false;
 
@@ -457,20 +480,40 @@ bool Instance::CreateDevice() {
         return false;
     }
 
+    // Some drivers (RADV) leave sparse binding out of the graphics family.
+    u32 sparse_family_index = queue_family_index;
+    if (!(family_properties[queue_family_index].queueFlags & vk::QueueFlagBits::eSparseBinding)) {
+        for (u32 i = 0; i < family_properties.size(); ++i) {
+            if (family_properties[i].queueFlags & vk::QueueFlagBits::eSparseBinding) {
+                sparse_family_index = i;
+                LOG_INFO(Render_Vulkan, "Sparse binds on queue family {}", i);
+                break;
+            }
+        }
+    }
+
     static constexpr std::array queue_priorities = {1.0f};
-    const vk::DeviceQueueCreateInfo queue_info = {
+    std::array<vk::DeviceQueueCreateInfo, 2> queue_infos{};
+    queue_infos[0] = {
         .queueFamilyIndex = queue_family_index,
         .queueCount = static_cast<u32>(queue_priorities.size()),
         .pQueuePriorities = queue_priorities.data(),
     };
+    queue_infos[1] = queue_infos[0];
+    queue_infos[1].queueFamilyIndex = sparse_family_index;
+    const u32 queue_info_count = sparse_family_index == queue_family_index ? 1 : 2;
 
     const auto vk11_features = feature_chain.get<vk::PhysicalDeviceVulkan11Features>();
     vk12_features = feature_chain.get<vk::PhysicalDeviceVulkan12Features>();
     vk13_features = feature_chain.get<vk::PhysicalDeviceVulkan13Features>();
+    LOG_INFO(Render_Vulkan,
+             "Subgroup sizes {} to {} (default {}), requirable in stages {:#x}; shaders target {}",
+             vk13_props.minSubgroupSize, vk13_props.maxSubgroupSize, vk11_props.subgroupSize,
+             u32(VkShaderStageFlags(vk13_props.requiredSubgroupSizeStages)), SubgroupSize());
     vk::StructureChain device_chain = {
         vk::DeviceCreateInfo{
-            .queueCreateInfoCount = 1u,
-            .pQueueCreateInfos = &queue_info,
+            .queueCreateInfoCount = queue_info_count,
+            .pQueueCreateInfos = queue_infos.data(),
             .enabledExtensionCount = static_cast<u32>(enabled_extensions.size()),
             .ppEnabledExtensionNames = enabled_extensions.data(),
         },
@@ -613,6 +656,15 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceShaderClockFeaturesKHR{
             .shaderSubgroupClock = shader_clock_features.shaderSubgroupClock,
         },
+        vk::PhysicalDeviceFaultFeaturesEXT{
+            .deviceFault = true,
+        },
+        vk::PhysicalDeviceMemoryPriorityFeaturesEXT{
+            .memoryPriority = true,
+        },
+        vk::PhysicalDevicePageableDeviceLocalMemoryFeaturesEXT{
+            .pageableDeviceLocalMemory = true,
+        },
     };
 
     if (!custom_border_color) {
@@ -667,6 +719,15 @@ bool Instance::CreateDevice() {
     if (!shader_clock) {
         device_chain.unlink<vk::PhysicalDeviceShaderClockFeaturesKHR>();
     }
+    if (!device_fault) {
+        device_chain.unlink<vk::PhysicalDeviceFaultFeaturesEXT>();
+    }
+    if (!memory_priority) {
+        device_chain.unlink<vk::PhysicalDeviceMemoryPriorityFeaturesEXT>();
+    }
+    if (!pageable_device_memory) {
+        device_chain.unlink<vk::PhysicalDevicePageableDeviceLocalMemoryFeaturesEXT>();
+    }
 
     auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());
     if (device_result != vk::Result::eSuccess) {
@@ -681,6 +742,9 @@ bool Instance::CreateDevice() {
 
     graphics_queue = device->getQueue(queue_family_index, 0);
     present_queue = device->getQueue(queue_family_index, 0);
+    sparse_queue = sparse_family_index == queue_family_index
+                       ? graphics_queue
+                       : device->getQueue(sparse_family_index, 0);
 
     if (calibrated_timestamps) {
         const auto [time_domains_result, time_domains] =
@@ -805,7 +869,7 @@ void Instance::CollectPhysicalMemoryInfo() {
     // Leave at least 8 GB for the system on integrated GPUs.
     const s64 available_memory = static_cast<s64>(total_memory_budget - device_initial_usage);
     total_memory_budget =
-        static_cast<u64>(std::max<s64>(available_memory - 8_GB, static_cast<s64>(local_memory)));
+        static_cast<u64>(std::max<s64>(available_memory - 8_GB, static_cast<s64>(2_GB)));
 }
 
 void Instance::CollectImageFormatInfo() {
@@ -891,6 +955,78 @@ u64 Instance::GetDeviceMemoryBudgetNow() const {
         total_budget += memory_budget_props.heapBudget[heap];
     }
     return total_budget;
+}
+
+namespace {
+std::mutex describer_mutex;
+std::function<std::string(vk::DeviceAddress)> address_describer;
+} // namespace
+
+void SetDeviceAddressDescriber(std::function<std::string(vk::DeviceAddress)> describer) {
+    std::scoped_lock lock{describer_mutex};
+    address_describer = std::move(describer);
+}
+
+void Instance::ReportDeviceLost() const {
+    // 0: not reported, 1: being reported, 2: done. Other threads that see the lost device wait
+    // for the report before they stop the process.
+    static std::atomic<int> report_state{0};
+    int expected = 0;
+    if (!report_state.compare_exchange_strong(expected, 1)) {
+        for (int waited = 0; waited < 500 && report_state.load() != 2; ++waited) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        return;
+    }
+    struct Done {
+        ~Done() {
+            report_state.store(2);
+        }
+    } done;
+    LOG_CRITICAL(Render_Vulkan, "Vulkan device lost: {}, driver {:#x}", GetModelName(),
+                 properties.driverVersion);
+    if (supports_memory_budget) {
+        vk::PhysicalDeviceMemoryBudgetPropertiesEXT budget{};
+        vk::PhysicalDeviceMemoryProperties2 props{.pNext = &budget};
+        physical_device.getMemoryProperties2(&props);
+        for (u32 heap = 0; heap < props.memoryProperties.memoryHeapCount; ++heap) {
+            LOG_CRITICAL(Render_Vulkan, "Heap {}: {} MiB used of {} MiB budget, size {} MiB", heap,
+                         budget.heapUsage[heap] >> 20, budget.heapBudget[heap] >> 20,
+                         props.memoryProperties.memoryHeaps[heap].size >> 20);
+        }
+    }
+    if (!device_fault) {
+        return;
+    }
+    vk::DeviceFaultCountsEXT counts{};
+    if (device->getFaultInfoEXT(&counts, nullptr) != vk::Result::eSuccess) {
+        return;
+    }
+    std::vector<vk::DeviceFaultAddressInfoEXT> addresses(counts.addressInfoCount);
+    std::vector<vk::DeviceFaultVendorInfoEXT> vendor_infos(counts.vendorInfoCount);
+    counts.vendorBinarySize = 0;
+    vk::DeviceFaultInfoEXT info{
+        .pAddressInfos = addresses.data(),
+        .pVendorInfos = vendor_infos.data(),
+    };
+    const vk::Result result = device->getFaultInfoEXT(&counts, &info);
+    if (result != vk::Result::eSuccess && result != vk::Result::eIncomplete) {
+        return;
+    }
+    LOG_CRITICAL(Render_Vulkan, "Device fault: {}", info.description.data());
+    std::scoped_lock lock{describer_mutex};
+    for (u32 i = 0; i < counts.addressInfoCount; ++i) {
+        const auto& address = addresses[i];
+        LOG_CRITICAL(Render_Vulkan, "{} at {:#x} (precision {:#x}) {}",
+                     vk::to_string(address.addressType), address.reportedAddress,
+                     address.addressPrecision,
+                     address_describer ? address_describer(address.reportedAddress) : "");
+    }
+    for (u32 i = 0; i < counts.vendorInfoCount; ++i) {
+        const auto& vendor = vendor_infos[i];
+        LOG_CRITICAL(Render_Vulkan, "Vendor fault {:#x} data {:#x}: {}", vendor.vendorFaultCode,
+                     vendor.vendorFaultData, vendor.description.data());
+    }
 }
 
 vk::FormatFeatureFlags2 Instance::GetFormatFeatureFlags(vk::Format format) const {

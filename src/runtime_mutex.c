@@ -8,7 +8,10 @@
 #include <errno.h>
 #include <time.h>
 typedef struct { int type; } GuestAttr;
-typedef struct { pthread_mutex_t native; } GuestMutex;
+/* The game's libc treats the handle as the PS4 kernel's own mutex object: after scePthreadMutexInit it
+ * sets m_flags |= 0x100 at +0x20 itself (malloc's mutexes). The handle starts with a zeroed block the
+ * size of that object, so such writes reach neither the host mutex nor a neighbouring heap block. */
+typedef struct { unsigned char ps4_object[0x100]; pthread_mutex_t native; } GuestMutex;
 static size_t created, locks, unlocks;
 static int32_t orbis_error(int e) {
     if (!e) return 0;
@@ -48,7 +51,7 @@ static ABI int32_t mutex_init(GuestMutex **out, GuestAttr **attr, const char *na
     if (!out || (attr && !*attr)) return orbis_error(EINVAL);
     int type = attr ? (*attr)->type : 1;
     if (type < 1 || type > 4) return orbis_error(EINVAL);
-    GuestMutex *mutex = malloc(sizeof(*mutex));
+    GuestMutex *mutex = calloc(1, sizeof(*mutex));
     if (!mutex) return orbis_error(ENOMEM);
     pthread_mutexattr_t native_attr;
     int e = pthread_mutexattr_init(&native_attr);

@@ -6,6 +6,8 @@
 #include "osl_copy_pool.h"
 
 #include <deque>
+#include <mutex>
+#include <string>
 #include <boost/container/small_vector.hpp>
 
 #include "common/interval_set.h"
@@ -58,6 +60,11 @@ public:
     /// Returns a pointer to GDS device local buffer.
     [[nodiscard]] const Buffer* GetGdsBuffer() const noexcept {
         return &gds_buffer;
+    }
+
+    /// Zero-filled index buffer bound for draws without index data.
+    [[nodiscard]] const Buffer* GetNullIndexBuffer() const noexcept {
+        return null_index_buffer.get();
     }
 
     /// Retrieves the device local DBA page table buffer.
@@ -144,6 +151,8 @@ private:
 
     bool SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_addr, u32 size);
 
+    std::string DescribeDeviceAddress(vk::DeviceAddress address) const;
+
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
     // osl: texel buffer ranges known not to alias an image, per image registry generation.
@@ -166,12 +175,14 @@ private:
 
     std::unique_ptr<FaultManager> fault_manager;
     std::unique_ptr<Buffer> bda_pagetable_buffer;
+    std::unique_ptr<Buffer> null_index_buffer;
 
     std::array<const Buffer*, MAX_ARENA_PAGES> address_space{};
     u64 arena_page_bits{MAX_ARENA_PAGE_BITS};
     u64 arena_page_size{u64{1} << MAX_ARENA_PAGE_BITS};
     u64 num_arena_pages{u64{1} << (ADDRESS_SPACE_BITS - MAX_ARENA_PAGE_BITS)};
     std::deque<Buffer> arenas;
+    mutable std::mutex arenas_mutex; ///< arenas and resident_ranges growth vs DescribeDeviceAddress
     std::vector<ArenaBinds> pending_binds;
     Vulkan::Semaphore memory_semaphore;
 
@@ -188,6 +199,7 @@ private:
     IntervalList<Backing> resident_ranges;
 
     u32 arena_memory_type_index{};
+    u32 spill_memory_type_index{~0u}; ///< system memory for arena pages when VRAM is full
     u32 block_size{};
     u32 block_shift{};
     u32 blocks_per_arena_page{};

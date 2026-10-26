@@ -245,7 +245,9 @@ GraphicsPipeline::GraphicsPipeline(
             .module = modules[stage],
             .pName = "main",
         });
-    } else if (runtime_infos[u32(Shader::SwStage::Fragment)].hw.fs.clip_distance_emulation) {
+    } else if (preloading
+                   ? !sdata.fragment.empty()
+                   : runtime_infos[u32(Shader::SwStage::Fragment)].hw.fs.clip_distance_emulation) {
         if (!preloading) {
             const auto& vs = runtime_infos[static_cast<u32>(Shader::SwStage::Vertex)].hw.vs;
 
@@ -262,7 +264,11 @@ GraphicsPipeline::GraphicsPipeline(
         .requiredSubgroupSize = 64,
     };
     for (auto& stage : shader_stages) {
-        stage.pNext = instance.IsSubgroupSize64Supported() ? &subgroup_size_ci : nullptr;
+        // osl: only stages the driver lets require a size (AMD: compute, maybe fragment).
+        stage.pNext = instance.IsSubgroupSize64Supported() &&
+                              instance.CanRequireSubgroupSize(stage.stage)
+                          ? &subgroup_size_ci
+                          : nullptr;
     }
 
     const auto depth_format =
@@ -433,9 +439,16 @@ GraphicsPipeline::GraphicsPipeline(
     auto [pipeline_result, pipe] =
         CreateCachedGraphicsPipeline(device, pipeline_cache, pipeline_info, key,
                                      instance.GetPipelineBinaryGlobalKey(), binary_directory);
-    ASSERT_MSG(pipeline_result == vk::Result::eSuccess, "Failed to create graphics pipeline: {}",
-               vk::to_string(pipeline_result));
+    if (pipeline_result != vk::Result::eSuccess) {
+        pipe = CreateRefusedPipelineAgain(
+            [&] { return device.createGraphicsPipelineUnique(nullptr, pipeline_info); },
+            pipeline_result, "graphics pipeline", debug_str);
+    }
     pipeline = std::move(pipe);
+    if (!pipeline) {
+        g_osl_pipeline_total_ns += NsSince(started);
+        return; // Failed(): its draws are skipped
+    }
     SetObjectName(device, *pipeline, "Graphics Pipeline {}", debug_str);
 
     if (needs_square_pass) {
@@ -447,8 +460,16 @@ GraphicsPipeline::GraphicsPipeline(
         auto [square_result, square] =
             CreateCachedGraphicsPipeline(device, pipeline_cache, square_info, key,
                                          instance.GetPipelineBinaryGlobalKey(), binary_directory);
-        ASSERT_MSG(square_result == vk::Result::eSuccess,
-                   "Failed to create the squaring pipeline: {}", vk::to_string(square_result));
+        if (square_result != vk::Result::eSuccess) {
+            square = CreateRefusedPipelineAgain(
+                [&] { return device.createGraphicsPipelineUnique(nullptr, square_info); },
+                square_result, "squaring pipeline", debug_str);
+        }
+        if (!square) {
+            pipeline.reset(); // Failed(): the draws need both
+            g_osl_pipeline_total_ns += NsSince(started);
+            return;
+        }
         square_pipeline = std::move(square);
         SetObjectName(device, *square_pipeline, "Graphics Pipeline {} squaring pass", debug_str);
     }

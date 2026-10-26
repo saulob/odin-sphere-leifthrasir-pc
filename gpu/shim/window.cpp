@@ -1,8 +1,10 @@
 // The game window (SDL3) the Vulkan swapchain presents to.
 #include <chrono>
+#include <condition_variable>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <mutex>
 #include <vector>
 #include <SDL3/SDL.h>
 #include "common/assert.h"
@@ -19,6 +21,33 @@ extern "C" void runtime_log_flush(void);
 
 namespace Frontend {
 namespace {
+
+// Without the input focus SDL drops pad and keyboard input and the mouse is released, so the
+// window thread pumps events less often then (idle CPU); a request for it ends the wait at once.
+std::mutex g_wake_mutex;
+std::condition_variable g_wake_cv;
+bool g_wake = false; ///< guarded by g_wake_mutex
+
+void WakeWindowThread() {
+    {
+        std::scoped_lock lock{g_wake_mutex};
+        g_wake = true;
+    }
+    g_wake_cv.notify_one();
+}
+
+// Window thread, after a pass over the events (the caller adds 2 ms): 8 ms between passes without
+// the focus, 16 ms minimized.
+void IdleInBackground(SDL_Window* window) {
+    const SDL_WindowFlags flags = SDL_GetWindowFlags(window);
+    const bool minimized = (flags & SDL_WINDOW_MINIMIZED) != 0;
+    if ((flags & SDL_WINDOW_INPUT_FOCUS) && !minimized) {
+        return;
+    }
+    std::unique_lock lock{g_wake_mutex};
+    g_wake_cv.wait_for(lock, std::chrono::milliseconds(minimized ? 14 : 6), [] { return g_wake; });
+    g_wake = false;
+}
 
 // No window means no game: say why and exit with an error, not through UNREACHABLE (no crash, no abort).
 [[noreturn]] void ExitNoWindow(const char* what, const char* sdl_error) {
@@ -130,11 +159,14 @@ WindowSDL::~WindowSDL() {
 }
 
 void WindowSDL::BeginTextInput(const std::string& initial, const std::string& prompt) {
-    std::scoped_lock lock{text_mutex};
-    text = initial;
-    text_prompt = prompt;
-    text_state = 0;
-    text_requested = true;
+    {
+        std::scoped_lock lock{text_mutex};
+        text = initial;
+        text_prompt = prompt;
+        text_state = 0;
+        text_requested = true;
+    }
+    WakeWindowThread();
 }
 
 int WindowSDL::PollTextInput(std::string& out) {
@@ -344,6 +376,9 @@ bool WindowSDL::PollEvents() {
         }
     }
     UpdateCursor();
+    if (is_open) {
+        IdleInBackground(window);
+    }
     return is_open;
 }
 

@@ -65,9 +65,11 @@ vk::SurfaceKHR CreateSurface(vk::Instance instance, const Frontend::WindowSDL& e
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
     if (window_info.type == Frontend::WindowSystemType::Windows) {
+        const auto hwnd = static_cast<HWND>(window_info.render_surface);
+        // VUID-VkWin32SurfaceCreateInfoKHR-hinstance-01307: the instance owning the window.
         const vk::Win32SurfaceCreateInfoKHR win32_ci = {
-            .hinstance = nullptr,
-            .hwnd = static_cast<HWND>(window_info.render_surface),
+            .hinstance = reinterpret_cast<HINSTANCE>(GetWindowLongPtrW(hwnd, GWLP_HINSTANCE)),
+            .hwnd = hwnd,
         };
 
         if (instance.createWin32SurfaceKHR(&win32_ci, nullptr, &surface) != vk::Result::eSuccess) {

@@ -114,6 +114,16 @@ public:
     /// Stage A: guest memory the recording thread will write for work handed to it (storage
     /// buffers, DMA, WriteData, fences); constants overlapping it are bound there, not copied here.
     void NotePendingGpuWrite(VAddr address, u64 size);
+    /// Stage A: the task just handed over writes guest memory that pipeline selection may read.
+    void NoteQueuedMemoryWrite() {
+        if (draw_pipe) {
+            last_memory_write = draw_pipe->Head();
+        }
+    }
+    /// The CPU reads GPU-written memory after the next submission (see the scheduler).
+    void RequestHostReadBarrier() {
+        scheduler.RequestHostReadBarrier();
+    }
     /// Before a guest-visible write: fences deferred earlier are written first.
     void WaitDeferredSignals() {
         scheduler.WaitDeferredSignals();
@@ -126,7 +136,7 @@ public:
     bool IsGpuSideThread() const;
     bool IsGpuSideThreadId(u32 tid) const;
     /// A guest write hit a protected page.
-    bool OnWriteFault(VAddr addr, bool assume_locks);
+    bool OnWriteFault(VAddr addr, u64 size, bool assume_locks);
     bool ReadMemory(VAddr addr, u64 size, bool assume_locks = false);
     void ProcessDownloadImages();
     bool IsMapped(VAddr addr, u64 size);
@@ -230,8 +240,10 @@ private:
     const AmdGpu::ComputeProgram& CsRegs() const;
     static void RunDrawPacket(void* rasterizer, const u8* packet, u32 size);
     struct RingBinding;
-    void CollectRingBindings(const Shader::Info& stage, const PreparedDraw* prepared,
+    void CollectRingBindings(const Shader::Info& stage, const PreparedStage* prepared_stage,
                              boost::container::static_vector<RingBinding, Shader::NUM_BUFFERS>& out);
+    const PreparedStage* FindPreparedStage(const Shader::Info& stage,
+                                           const PreparedDraw* prepared) const;
     void PrintPipeStats();
     /// The registers of the draw being recorded: stage B's copy there, else Liverpool's.
     const AmdGpu::Regs& Regs() const;
@@ -289,12 +301,12 @@ private:
     void MarkPass(const GraphicsPipeline* pipeline, const RenderState& state);
     void BindVertexBuffers(const GraphicsPipeline* pipeline,
                            const PreparedDraw* prepared = nullptr);
-    void BindIndexBuffer(u32 index_offset = 0);
+    void BindIndexBuffer(u32 index_offset = 0, bool is_indirect = false);
     /// osl: BindVertexBuffers/BindIndexBuffer in two halves: obtaining the buffers
     /// (vertex_binds, index_bind) and recording the binds.
     void ResolveVertexBuffers(const GraphicsPipeline* pipeline, const PreparedDraw* prepared);
     void EmitVertexBuffers();
-    void ResolveIndexBuffer(u32 index_offset);
+    void ResolveIndexBuffer(u32 index_offset, bool is_indirect = false);
     void EmitIndexBuffer();
 
     void ResetBindings(bool is_compute);
@@ -317,6 +329,7 @@ private:
     Core::MemoryManager* memory;
     boost::icl::interval_set<VAddr> mapped_ranges;
     Common::SharedFirstMutex mapped_ranges_mutex;
+    std::atomic<u64> mapped_generation{1}; ///< changes with mapped_ranges
     PipelineCache pipeline_cache;
     std::unique_ptr<DrawPreparation> draw_prep;
     std::unique_ptr<SceneTargets> scene_targets;
@@ -335,9 +348,9 @@ private:
         const VideoCore::Buffer* buffer;
         u64 offset;
         u32 size;
-        bool is_written;
+        vk::AccessFlags2 access;
     };
-    boost::container::static_vector<BoundBuffer, Shader::NUM_BUFFERS> bound_buffers;
+    boost::container::small_vector<BoundBuffer, Shader::NUM_BUFFERS> bound_buffers;
 
     u32 set_write_index{};
     Pipeline::DescriptorWrites set_writes;
@@ -419,6 +432,7 @@ private:
     struct IndexBind {
         vk::Buffer handle;
         u64 offset;
+        u32 size;
         vk::IndexType type;
     } index_bind{};
     /// The direct draw whose vertex/index buffers BindResources may resolve early.
@@ -475,6 +489,13 @@ private:
     std::vector<PendingWrite> pending_writes;
     VAddr pending_min = ~VAddr{0}, pending_max = 0; ///< bounds of pending_writes
     u32 pending_checks = 0;
+    /// Position of writes noted while their packet is built: not reached until it is committed.
+    static constexpr u64 UnresolvedWrite = ~u64{0};
+    bool noting_packet = false;
+    u64 last_memory_write = 0;
+    void ResolvePendingWrites();
+    void WaitQueuedMemoryWrites();
+    void NoteStageWrites(const Shader::Info& stage, const PreparedStage* prepared_stage);
     u64 proxy_samples = 0; ///< texture bindings that read a scene proxy (statistics)
     bool PendingWriteOverlaps(VAddr address, u64 size);
     /// Stage B: the ring bindings of the stages of the packet being recorded.

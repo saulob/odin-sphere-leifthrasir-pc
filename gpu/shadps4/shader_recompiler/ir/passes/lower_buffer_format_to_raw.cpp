@@ -189,6 +189,56 @@ static void StoreBufferFormat(IR::IREmitter& ir, const IR::Value handle, const I
     }
 }
 
+// Whether Load/StoreBufferFormat can handle the (remapped) format. Others, such as
+// block-compressed formats, 32-bit normalized or 8-bit float, only come from descriptors that
+// hold other data and are lowered like a null buffer.
+static bool IsUsableBufferFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format) {
+    using DF = AmdGpu::DataFormat;
+    using NF = AmdGpu::NumberFormat;
+    switch (data_format) {
+    case DF::Format8:
+    case DF::Format8_8:
+    case DF::Format8_8_8_8:
+    case DF::Format16:
+    case DF::Format16_16:
+    case DF::Format10_11_11:
+    case DF::Format2_10_10_10:
+    case DF::Format16_16_16_16:
+    case DF::Format32:
+    case DF::Format32_32:
+    case DF::Format32_32_32:
+    case DF::Format32_32_32_32:
+        break;
+    default:
+        return false;
+    }
+    switch (num_format) {
+    case NF::Unorm:
+    case NF::Snorm:
+    case NF::Uscaled:
+    case NF::Sscaled:
+    case NF::Uint:
+    case NF::Sint:
+    case NF::Float:
+        break;
+    default:
+        return false;
+    }
+    const bool full_32 = data_format == DF::Format32 || data_format == DF::Format32_32 ||
+                         data_format == DF::Format32_32_32 || data_format == DF::Format32_32_32_32;
+    if (full_32 && num_format != NF::Uint && num_format != NF::Sint && num_format != NF::Float) {
+        return false;
+    }
+    const bool packed_float = data_format == DF::Format10_11_11;
+    const bool is_float = num_format == NF::Float;
+    if (packed_float != is_float &&
+        (packed_float || data_format == DF::Format8 || data_format == DF::Format8_8 ||
+         data_format == DF::Format8_8_8_8 || data_format == DF::Format2_10_10_10)) {
+        return false;
+    }
+    return true;
+}
+
 static void LowerBufferFormatInst(IR::Block& block, IR::Inst& inst, Info& info) {
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     const auto flags = inst.Flags<IR::BufferInstInfo>();
@@ -212,7 +262,11 @@ static void LowerBufferFormatInst(IR::Block& block, IR::Inst& inst, Info& info) 
         .num_components = AmdGpu::NumComponents(data_format),
     };
 
-    if (data_format == AmdGpu::DataFormat::FormatInvalid) {
+    if (!IsUsableBufferFormat(format_info.data_format, format_info.num_format)) {
+        if (data_format != AmdGpu::DataFormat::FormatInvalid) {
+            LOG_WARNING(Render_Recompiler, "Unusable buffer format {} {} in shader {:#x}",
+                        format_info.data_format, format_info.num_format, info.pgm_hash);
+        }
         LOG_WARNING(Render_Recompiler, "Skipping lowering for null buffer sharp");
         if (IsBufferFormatLoad(inst)) {
             inst.ReplaceUsesWithAndRemove(

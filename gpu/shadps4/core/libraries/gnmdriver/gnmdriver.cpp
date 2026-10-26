@@ -1223,7 +1223,7 @@ int PS4_SYSV_ABI sceGnmMapComputeQueue(u32 pipe_id, u32 queue_id, VAddr ring_bas
     }
 
     const auto vqid =
-        liverpool->asc_queues.insert(VAddr(ring_base_addr), read_ptr_addr, ring_size_dw, pipe_id);
+        liverpool->asc_queues.Insert(VAddr(ring_base_addr), read_ptr_addr, ring_size_dw, pipe_id);
     // We need to offset index as `dingDong` assumes it to be from the range [1..64]
     const auto gnm_vqid = vqid.index + 1;
     LOG_INFO(Lib_GnmDriver, "ASC pipe {} queue {} mapped to vqueue {}", pipe_id, queue_id,
@@ -1297,16 +1297,6 @@ s32 PS4_SYSV_ABI sceGnmRegisterResource(void* res_handle, void* owner_handle, co
     LOG_TRACE(Lib_GnmDriver, "called");
     // Not available in retail firmware
     return ORBIS_GNM_ERROR_FAILURE;
-}
-
-int PS4_SYSV_ABI sceGnmRequestFlipAndSubmitDone() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceGnmRequestFlipAndSubmitDoneForWorkload() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceGnmRequestMipStatsReportAndReset() {
@@ -1786,8 +1776,24 @@ int PS4_SYSV_ABI sceGnmSetSpiEnableSqCountersForUnitInstance() {
     return ORBIS_GNM_ERROR_FAILURE;
 }
 
-int PS4_SYSV_ABI sceGnmSetupMipStatsReport() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceGnmSetupMipStatsReport(void* output_buffer, u32 size_in_bytes,
+                                           u8 intervals_between_reports,
+                                           u8 num_reports_before_reset, u32 mip_stats_reset_force) {
+    LOG_DEBUG(Lib_GnmDriver,
+              "output_buffer = {}, size_in_bytes = {:#x}, intervals = {}, num_reports = {}, "
+              "force_reset = {}",
+              output_buffer, size_in_bytes, intervals_between_reports, num_reports_before_reset,
+              mip_stats_reset_force);
+    if (!output_buffer ||
+        (reinterpret_cast<uintptr_t>(output_buffer) & 0xffffff000000003fULL) != 0) {
+        return 0x80000001;
+    }
+    if (size_in_bytes < 0x1040 || (size_in_bytes & 0x7ff) != 0x40) {
+        return 0x80000002;
+    }
+    // No mip statistics are gathered: the report stays empty.
+    std::memset(output_buffer, 0, size_in_bytes);
+    *static_cast<u32*>(output_buffer) = 0x40u;
     return ORBIS_OK;
 }
 
@@ -2367,8 +2373,53 @@ s32 PS4_SYSV_ABI sceGnmSubmitDone() {
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceGnmRequestFlipAndSubmitDoneForWorkload(u64 workload, u32* gpu_addr,
+                                                           u32 gpu_addr_size_in_bytes,
+                                                           u32 vo_handle, u32 buf_idx,
+                                                           u32 flip_mode, s64 flip_arg) {
+    LOG_DEBUG(Lib_GnmDriver, "called [buf = {}]", buf_idx);
+    if (gpu_addr_size_in_bytes < 0x100) {
+        return ORBIS_GNM_ERROR_SUBMISSION_NOT_ENOUGH_RESOURCES;
+    }
+    if (buf_idx == 0xffff'ffffu) {
+        LOG_WARNING(Lib_GnmDriver, "Blank flip requested: submitted without a flip");
+        return sceGnmSubmitDone();
+    }
+
+    std::scoped_lock lk{m_submit_lock};
+    WaitGpuIdle();
+
+    // A PrepareFlip packet, patched into the flip request like a submitted command buffer's.
+    auto* nop = reinterpret_cast<PM4CmdNop*>(gpu_addr);
+    nop->header = PM4Type3Header{PM4ItOpcode::Nop, 0x3e};
+    nop->data_block[0] = PM4CmdNop::PayloadType::PrepareFlip;
+    const s32 patch_result =
+        PatchFlipRequest(gpu_addr, 0x40, vo_handle, buf_idx, flip_mode, flip_arg, nullptr /*unk*/);
+    if (patch_result != ORBIS_OK) {
+        return patch_result;
+    }
+
+    liverpool->SubmitGfx(std::span<const u32>{gpu_addr, 0x40}, {});
+    if (!liverpool->IsGpuIdle()) {
+        submission_lock = true;
+    }
+    liverpool->SubmitDone();
+    send_init_packet = true;
+    ++frames_submitted;
+    DebugState.IncGnmFrameNum();
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceGnmRequestFlipAndSubmitDone(u32* gpu_addr, u32 gpu_addr_size_in_bytes,
+                                                u32 video_out_handle, u32 display_buffer_index,
+                                                u32 flip_mode, s64 flip_arg) {
+    return sceGnmRequestFlipAndSubmitDoneForWorkload(reinterpret_cast<u64>(gpu_addr), gpu_addr,
+                                                     gpu_addr_size_in_bytes, video_out_handle,
+                                                     display_buffer_index, flip_mode, flip_arg);
+}
+
 int PS4_SYSV_ABI sceGnmUnmapComputeQueue(u32 vqid) {
-    liverpool->asc_queues.erase(Common::SlotId{vqid - 1});
+    liverpool->asc_queues.Erase(Common::SlotId{vqid - 1});
     return ORBIS_OK;
 }
 

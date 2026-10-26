@@ -84,6 +84,13 @@ void Swapchain::Create(u32 width_, u32 height_) {
     };
 
     auto [swapchain_result, chain] = instance.GetDevice().createSwapchainKHR(swapchain_info);
+    if (swapchain_result != vk::Result::eSuccess) {
+        LOG_CRITICAL(Render_Vulkan,
+                     "Swapchain {}x{}, {} images, {} {}, {}, transform {}, alpha {} refused",
+                     extent.width, extent.height, image_count, vk::to_string(format.format),
+                     vk::to_string(format.colorSpace), vk::to_string(present_mode),
+                     vk::to_string(transform), vk::to_string(composite_alpha));
+    }
     ASSERT_MSG(swapchain_result == vk::Result::eSuccess, "Failed to create swapchain: {}",
                vk::to_string(swapchain_result));
     swapchain = chain;

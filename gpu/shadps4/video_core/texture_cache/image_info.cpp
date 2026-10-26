@@ -100,17 +100,33 @@ ImageInfo::ImageInfo(const AmdGpu::DepthBuffer& buffer, u32 num_slices, VAddr ht
     meta_info.htile_addr = buffer.z_info.tile_surface_enable ? htile_address : 0;
 
     stencil_addr = write_buffer ? buffer.StencilWriteAddress() : buffer.StencilAddress();
-    stencil_size = pitch * size.height * sizeof(u8);
+    if (props.has_stencil) {
+        if (props.is_tiled) {
+            stencil_size = buffer.GetStencilSliceSize() * resources.layers;
+        } else {
+            std::tie(std::ignore, std::ignore, stencil_size) =
+                ImageSizeLinearAligned(pitch, size.height, 8, num_samples);
+            stencil_size *= resources.layers;
+        }
+    }
 
-    guest_address = write_buffer ? buffer.DepthWriteAddress() : buffer.DepthAddress();
-    if (props.is_tiled) {
-        guest_size = buffer.GetDepthSliceSize() * resources.layers;
-        mips_layout[0] = MipInfo(guest_size, pitch, buffer.Height(), 0);
+    if (buffer.z_info.format != AmdGpu::DepthBuffer::ZFormat::Invalid) {
+        guest_address = write_buffer ? buffer.DepthWriteAddress() : buffer.DepthAddress();
+        if (props.is_tiled) {
+            guest_size = buffer.GetDepthSliceSize() * resources.layers;
+            mips_layout[0] = MipInfo(guest_size, pitch, buffer.Height(), 0);
+        } else {
+            std::tie(std::ignore, std::ignore, guest_size) =
+                ImageSizeLinearAligned(pitch, size.height, num_bits, num_samples);
+            guest_size *= resources.layers;
+            mips_layout[0] = MipInfo(guest_size, pitch, size.height, 0);
+        }
     } else {
-        std::tie(std::ignore, std::ignore, guest_size) =
-            ImageSizeLinearAligned(pitch, size.height, num_bits, num_samples);
-        guest_size *= resources.layers;
-        mips_layout[0] = MipInfo(guest_size, pitch, size.height, 0);
+        guest_address = stencil_addr;
+        guest_size = stencil_size;
+        mips_layout[0] =
+            MipInfo(guest_size, pitch, props.is_tiled ? buffer.Height() : size.height, 0);
+        num_bits = 8;
     }
 }
 
@@ -118,8 +134,13 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
     tile_mode = image.GetTileMode();
     array_mode = AmdGpu::GetArrayMode(tile_mode);
     pixel_format = LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
+    // A depth slot holding a colour format comes from a garbage T#: it gets no size.
+    const bool no_depth_form =
+        desc.is_depth && !LiverpoolToVK::IsPromotableToDepth(pixel_format);
     if (desc.is_depth) {
-        pixel_format = LiverpoolToVK::PromoteFormatToDepth(pixel_format);
+        if (!no_depth_form) {
+            pixel_format = LiverpoolToVK::PromoteFormatToDepth(pixel_format);
+        }
         props.is_depth = true;
     }
     type = image.GetBaseType();
@@ -141,6 +162,9 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
 
     alt_tile = image.alt_tile_mode;
     UpdateSize();
+    if (no_depth_form) {
+        guest_size = 0;
+    }
 }
 
 bool ImageInfo::IsCompatible(const ImageInfo& info) const {
@@ -150,7 +174,10 @@ bool ImageInfo::IsCompatible(const ImageInfo& info) const {
 }
 
 void ImageInfo::UpdateSize() {
+    const u32 thickness = AmdGpu::GetMicroTileThickness(array_mode);
+    const bool macro = AmdGpu::IsMacroTiled(array_mode);
     guest_size = 0;
+    micro_tiled_mips = 0;
     for (s32 mip = 0; mip < resources.levels; ++mip) {
         u32 mip_w = pitch >> mip;
         u32 mip_h = size.height >> mip;
@@ -169,31 +196,34 @@ void ImageInfo::UpdateSize() {
         }
 
         auto& mip_info = mips_layout[mip];
+        u32 mip_thickness = 1;
         if (array_mode == AmdGpu::ArrayMode::ArrayLinearAligned) {
             std::tie(mip_info.pitch, mip_info.height, mip_info.size) =
                 ImageSizeLinearAligned(mip_w, mip_h, num_bits, num_samples);
         } else if (array_mode == AmdGpu::ArrayMode::ArrayLinearGeneral) {
             UNREACHABLE_MSG("Unhandled array mode: ArrayLinearGeneral");
+        } else if (macro &&
+                   IsMacroTiledMip(mip_w, mip_h, num_bits, num_samples, tile_mode, mip, alt_tile)) {
+            mip_thickness = thickness;
+            std::tie(mip_info.pitch, mip_info.height, mip_info.size) =
+                ImageSizeMacroTiled(mip_w, mip_h, num_bits, num_samples, tile_mode, alt_tile);
         } else {
-            // Every tiled array mode (1D/2D/3D, thin/thick/xthick, PRT or not) groups
-            // GetMicroTileThickness() consecutive depth slices per tile; round mip_d up
-            // to a full group so it's counted correctly in mip_info.size below.
-            const u32 thickness = AmdGpu::GetMicroTileThickness(array_mode);
-            mip_d += (-mip_d) & (thickness - 1);
-            if (AmdGpu::IsMacroTiled(array_mode)) {
-                ASSERT(!props.is_block);
-                std::tie(mip_info.pitch, mip_info.height, mip_info.size) = ImageSizeMacroTiled(
-                    mip_w, mip_h, thickness, num_bits, num_samples, tile_mode, mip, alt_tile);
-            } else {
-                std::tie(mip_info.pitch, mip_info.height, mip_info.size) =
-                    ImageSizeMicroTiled(mip_w, mip_h, thickness, num_bits, num_samples);
+            // Mips smaller than a macro tile fall back to micro tiling.
+            mip_thickness = std::min(thickness, 4u);
+            std::tie(mip_info.pitch, mip_info.height, mip_info.size) =
+                ImageSizeMicroTiled(mip_w, mip_h, mip_thickness, num_bits, num_samples);
+            if (macro) {
+                micro_tiled_mips |= 1u << mip;
             }
         }
         if (props.is_block) {
             mip_info.pitch = std::max(mip_info.pitch * 4, 32u);
             mip_info.height = std::max(mip_info.height * 4, 32u);
         }
-        mip_info.size *= mip_d * resources.layers;
+        // Tiled modes group GetMicroTileThickness() consecutive slices per tile.
+        u32 num_slices = mip_d * resources.layers;
+        num_slices += (-num_slices) & (mip_thickness - 1);
+        mip_info.size *= num_slices;
         mip_info.offset = guest_size;
         guest_size += mip_info.size;
     }

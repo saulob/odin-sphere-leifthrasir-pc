@@ -38,11 +38,7 @@ struct VertexAttribute {
 
     AmdGpu::Buffer GetSharp(const Shader::Info& info) const noexcept;
 
-    bool operator==(const VertexAttribute& other) const {
-        return semantic == other.semantic && dest_vgpr == other.dest_vgpr &&
-               num_elements == other.num_elements && sgpr_base == other.sgpr_base &&
-               dword_offset == other.dword_offset && instance_data == other.instance_data;
-    }
+    bool operator==(const VertexAttribute&) const = default;
 };
 
 struct FetchShaderData {

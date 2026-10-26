@@ -8,6 +8,7 @@
 #include "video_core/amdgpu/resource.h"
 #include "video_core/amdgpu/tiling.h"
 #include "video_core/texture_cache/image_info.h"
+#include "video_core/texture_cache/tile.h"
 
 namespace {
 
@@ -247,6 +248,44 @@ void TestAltTileFollowsDescriptor() {
     CHECK(VideoCore::ImageInfo(image, resource).alt_tile);
 }
 
+// Mips of a macro-tiled image smaller than a macro tile are laid out micro tiled, and their sizes and offsets follow.
+void TestMicroTiledMips() {
+    CHECK(AmdGpu::GetArrayMode(TileMode::Thin3DThinPrt) == AmdGpu::ArrayMode::ArrayPrt3DTiledThin1);
+
+    AmdGpu::Image image{};
+    image.width = 255;
+    image.height = 255;
+    image.pitch = 255;
+    image.last_level = 8;
+    image.data_format = u64(AmdGpu::DataFormat::Format8_8_8_8);
+    image.tiling_index = u64(TileMode::Thin2DThin);
+    image.type = u64(AmdGpu::ImageType::Color2D);
+    const VideoCore::ImageInfo info(image, Shader::ImageResource{});
+    CHECK(info.resources.levels == 9);
+    const auto [pitch_align, height_align] = VideoCore::GetMacroTileExtents(TileMode::Thin2DThin, 32, 1, false);
+    uint32_t offset = 0;
+    for (uint32_t mip = 0; mip < 9; ++mip) {
+        const uint32_t extent = 256u >> mip;
+        const bool micro = mip > 0 && (extent < pitch_align || extent < height_align);
+        CHECK(((info.micro_tiled_mips >> mip) & 1) == (micro ? 1u : 0u));
+        if (micro) {
+            CHECK(info.mips_layout[mip].size == std::get<2>(VideoCore::ImageSizeMicroTiled(extent, extent, 1, 32, 1)));
+        }
+        CHECK(info.mips_layout[mip].offset == offset);
+        offset += info.mips_layout[mip].size;
+    }
+    CHECK(info.guest_size == offset);
+    CHECK(info.micro_tiled_mips != 0);
+
+    image.width = 511;
+    image.height = 511;
+    image.pitch = 511;
+    image.last_level = 0;
+    image.data_format = u64(AmdGpu::DataFormat::FormatBc1);
+    const VideoCore::ImageInfo block(image, Shader::ImageResource{});
+    CHECK(block.props.is_block && block.guest_size == 512u * 512u / 2);
+}
+
 } // namespace
 
 int main() {
@@ -255,6 +294,7 @@ int main() {
     TestGameAddresses();
     TestDetileStaysInBounds();
     TestAltTileFollowsDescriptor();
+    TestMicroTiledMips();
     std::printf("%d checks, %d failed\n", g_checks, g_failures);
     return g_failures ? 1 : 0;
 }
