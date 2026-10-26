@@ -63,6 +63,7 @@ set(OSL_RUNTIME_SOURCES
     src/runtime_mutex.c
     src/runtime_pad.c
     src/runtime_platform.c
+    src/runtime_redzone.c
     src/runtime_rtc.c
     src/runtime_rwlock.c
     src/runtime_savedata.c
@@ -127,6 +128,17 @@ target_include_directories(osl-tiling-tests PRIVATE gpu/shim gpu/shadps4 tests s
     gpu/third_party/gcn/include gpu/third_party/half/include gpu/third_party/xbyak)
 target_compile_options(osl-tiling-tests PRIVATE -Wall -Wextra -Werror)
 target_link_libraries(osl-tiling-tests PRIVATE oslgpu)
+
+# Focused tests of the runtime's locks and guest memory table (tools/test.ps1); not part of the default build.
+add_executable(osl-runtime-tests EXCLUDE_FROM_ALL tests/runtime_sync_tests.c src/runtime_rwlock.c src/runtime_mutex.c)
+target_include_directories(osl-runtime-tests PRIVATE src)
+target_compile_options(osl-runtime-tests PRIVATE -Wall -Wextra -Werror)
+if (WIN32)
+    target_compile_definitions(osl-runtime-tests PRIVATE _WIN32_WINNT=0x0A00 NTDDI_VERSION=0x0A000007)
+    target_link_libraries(osl-runtime-tests PRIVATE onecore -pthread)
+else()
+    target_link_libraries(osl-runtime-tests PRIVATE Threads::Threads)
+endif()
 
 # Focused tests of the game window's cursor visibility (tools/test.ps1); not part of the default build.
 add_executable(osl-cursor-tests EXCLUDE_FROM_ALL tests/cursor_tests.cpp)

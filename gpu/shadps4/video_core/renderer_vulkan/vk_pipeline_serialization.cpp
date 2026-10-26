@@ -11,11 +11,16 @@
 #include <shared_mutex>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 #include <fstream>
 #include <map>
 #ifdef _WIN32
 #include <windows.h>
+#else
+#include <fcntl.h>
+#include <unistd.h>
 #endif
+#include "common/hash.h"
 #include "common/serdes.h"
 #include "common/scope_exit.h"
 #include "video_core/renderer_vulkan/vk_pipeline_serialization.h"
@@ -32,9 +37,9 @@
 
 namespace Serialization {
 /* You should increment versions below once corresponding serialization scheme is changed. */
-static constexpr u32 ShaderBinaryVersion = 7u; // osl: interpolated integer fix (Pascal)
-static constexpr u32 ShaderMetaVersion = 8u; // osl: version 7 metas exist in another Info layout
-static constexpr u32 PipelineKeyVersion = 5u; // osl: Info layout (ImageResource::needs_native)
+static constexpr u32 ShaderBinaryVersion = 8u; // osl: recompiler modernization (SPIR-V changes)
+static constexpr u32 ShaderMetaVersion = 9u; // osl: RuntimeInfo, sharp and resource layouts; sealed blobs
+static constexpr u32 PipelineKeyVersion = 6u; // osl: sealed keys with stage hashes and the discard FS
 } // namespace Serialization
 
 namespace Vulkan {
@@ -445,6 +450,193 @@ vk::ResultValue<vk::UniquePipeline> CreateCachedGraphicsPipeline(
     return result;
 }
 
+namespace {
+// osl: integrity of the shader cache. Meta and key blobs start with a tag of the layouts they copy
+// as raw bytes and end with an XXH3 of their contents, so a damaged blob or one of a build with
+// other layouts reads as stale instead of being parsed. A meta records the hash of the SPIR-V
+// saved with it and a graphics key the hash of each stage it was built with (its "stage
+// prints"): a cached pipeline is built only from the binaries it was made of. Stale entries are
+// removed; the game compiles and saves them again when it uses them.
+
+/// Sizes of the structures meta and key blobs copy as raw bytes: a build where one differs reads
+/// the blobs of another as stale, also when a version constant was not raised.
+constexpr u64 BlobLayoutTag() {
+    constexpr std::array sizes = {
+        sizeof(Shader::InfoPersistent),         sizeof(Shader::PersistentSrtInfo),
+        sizeof(Shader::RuntimeInfo),            sizeof(Shader::Backend::Bindings),
+        sizeof(Shader::VsAttribSpecialization), sizeof(Shader::BufferSpecialization),
+        sizeof(Shader::ImageSpecialization),    sizeof(Shader::FMaskSpecialization),
+        sizeof(Shader::SamplerSpecialization),  sizeof(Shader::Gcn::VertexAttribute),
+        sizeof(GraphicsPipelineKey),            sizeof(GraphicsPipeline::SerializationSupport),
+    };
+    u64 tag = 0xcbf29ce484222325ULL;
+    for (const size_t size : sizes) {
+        tag = (tag ^ size) * 0x100000001b3ULL;
+    }
+    return tag;
+}
+
+std::string MetaName(u64 perm_hash) {
+    return fmt::format("{:#018x}", perm_hash);
+}
+
+std::string BinaryName(u64 pgm_hash, size_t perm_idx) {
+    return fmt::format("{:#018x}_{}", pgm_hash, perm_idx);
+}
+
+void SealBlob(std::vector<u8>& blob) {
+    const u64 hash = XXH3_64bits(blob.data(), blob.size());
+    const auto* bytes = reinterpret_cast<const u8*>(&hash);
+    blob.insert(blob.end(), bytes, bytes + sizeof(hash));
+}
+
+/// Checks and strips the hash SealBlob appended.
+bool UnsealBlob(std::vector<u8>& blob) {
+    u64 hash{};
+    if (blob.size() < sizeof(hash)) {
+        return false;
+    }
+    std::memcpy(&hash, blob.data() + blob.size() - sizeof(hash), sizeof(hash));
+    blob.resize(blob.size() - sizeof(hash));
+    return hash == XXH3_64bits(blob.data(), blob.size());
+}
+
+std::atomic<u32> g_stale_entries{0};
+
+void RemoveStale(Storage::BlobType type, const std::string& name, const char* why) {
+    Storage::DataBase::Instance().Remove(type, name);
+    if (g_stale_entries.fetch_add(1, std::memory_order_relaxed) < 16) {
+        std::printf("Pipeline cache: removed %s (%s)\n", name.c_str(), why);
+    }
+}
+
+std::mutex g_print_mutex;
+std::unordered_map<u64, u64> g_saved_binaries; ///< perm hash -> hash of the SPIR-V just saved
+std::unordered_map<u64, u64> g_stage_prints;   ///< perm hash -> hash of the stage in use
+
+u64 TakeBinaryHash(u64 perm_hash) {
+    std::scoped_lock lock{g_print_mutex};
+    const auto it = g_saved_binaries.find(perm_hash);
+    if (it == g_saved_binaries.end()) {
+        return 0;
+    }
+    const u64 hash = it->second;
+    g_saved_binaries.erase(it);
+    return hash;
+}
+
+/// `replace`: a permutation compiled this session; a loaded one does not override it.
+void NoteStagePrint(u64 perm_hash, u64 print, bool replace) {
+    std::scoped_lock lock{g_print_mutex};
+    if (replace) {
+        g_stage_prints[perm_hash] = print;
+    } else {
+        g_stage_prints.try_emplace(perm_hash, print);
+    }
+}
+
+u64 StagePrint(u64 perm_hash) {
+    std::scoped_lock lock{g_print_mutex};
+    const auto it = g_stage_prints.find(perm_hash);
+    return it == g_stage_prints.end() ? 0 : it->second;
+}
+
+/// The background warm-up reads the store while the game saves: a permutation this session
+/// compiled has new files on their way, which a removal queued after them would delete.
+bool CompiledThisSession(u64 perm_hash) {
+    return StagePrint(perm_hash) != 0;
+}
+
+std::unordered_set<std::string> g_saved_keys; ///< pipeline keys saved this session
+
+// The check and the queued removal hold g_print_mutex, which the registrations hold while they
+// queue a stage's first save or a key's save: a removal is never queued after such a save.
+template <typename Remove>
+void UnlessCompiledThisSession(u64 perm_hash, Remove&& remove) {
+    std::scoped_lock lock{g_print_mutex};
+    const auto it = g_stage_prints.find(perm_hash);
+    if (it == g_stage_prints.end() || it->second == 0) {
+        remove();
+    }
+}
+
+void RemoveStaleKey(const std::string& name, const char* why) {
+    std::scoped_lock lock{g_print_mutex};
+    if (!g_saved_keys.contains(name)) {
+        RemoveStale(Storage::BlobType::PipelineKey, name, why);
+    }
+}
+
+void SaveKey(std::string name, std::vector<u8>&& blob) {
+    std::scoped_lock lock{g_print_mutex};
+    g_saved_keys.insert(name);
+    Storage::DataBase::Instance().Save(Storage::BlobType::PipelineKey, name, std::move(blob));
+}
+
+// A compile storm (a shader specialized on garbage resource values) can leave a program with
+// thousands of cached versions that every warm-up would rebuild. Programs with this many are
+// neither loaded nor kept; the versions in use compile again.
+constexpr size_t CrowdedShaderVersions = 100;
+/// Perm hashes of those programs' versions. Filled and read by the thread that reads the store.
+std::unordered_set<u64> g_crowded_stages;
+
+void FindCrowdedShaders() {
+    g_crowded_stages.clear();
+    auto& db = Storage::DataBase::Instance();
+    std::unordered_map<u64, std::vector<size_t>> versions;
+    db.ForEachBlobName(Storage::BlobType::ShaderBinary, [&](const std::string& name) {
+        unsigned long long pgm_hash{};
+        size_t perm_idx{};
+        if (std::sscanf(name.c_str(), "%llx_%zu", &pgm_hash, &perm_idx) == 2) {
+            versions[pgm_hash].push_back(perm_idx);
+        }
+    });
+    for (const auto& [pgm_hash, perm_indices] : versions) {
+        if (perm_indices.size() < CrowdedShaderVersions) {
+            continue;
+        }
+        for (const size_t perm_idx : perm_indices) {
+            const u64 perm_hash = HashCombine(pgm_hash, u64(perm_idx));
+            g_crowded_stages.insert(perm_hash);
+            UnlessCompiledThisSession(perm_hash, [&] {
+                db.Remove(Storage::BlobType::ShaderBinary, BinaryName(pgm_hash, perm_idx));
+                db.Remove(Storage::BlobType::ShaderMeta, MetaName(perm_hash));
+                db.Remove(Storage::BlobType::PipelineKey, fmt::format("c_{:#018x}", perm_hash));
+            });
+        }
+        std::printf("Pipeline cache: shader %#llx has %zu cached versions: not loaded, removed\n",
+                    static_cast<unsigned long long>(pgm_hash), perm_indices.size());
+    }
+}
+
+// A fault on a warm-up thread (a driver crash while it builds a cached pipeline) leaves this
+// mark in the cache folder (oslgpu_note_fatal_fault); the next start clears the cache instead of
+// crashing on the same pipeline again.
+thread_local bool t_warmup_thread = false;
+std::filesystem::path::value_type g_warmup_mark[1024] = {};
+
+/// Arms the mark for this start; true when the previous start crashed in its warm-up.
+bool TakeWarmupMark() {
+    auto& db = Storage::DataBase::Instance();
+    if (!db.ConcurrentReads() || db.Folder().empty()) {
+        return false;
+    }
+    const auto mark = db.Folder() / "warmup-crashed.txt";
+    const auto& path = mark.native();
+    if (path.size() >= std::size(g_warmup_mark)) {
+        return false;
+    }
+    std::ranges::copy(path, g_warmup_mark);
+    g_warmup_mark[path.size()] = 0;
+    std::error_code error;
+    if (!std::filesystem::exists(mark, error)) {
+        return false;
+    }
+    std::filesystem::remove(mark, error);
+    return true;
+}
+} // namespace
+
 // osl: the background warm-up's worker threads. The cache store is read and the shader modules
 // created in order on the calling thread (program_cache and its permutation checks are not
 // thread-safe); only the pipeline objects, the slow part, are built here.
@@ -503,6 +695,7 @@ struct PipelineCache::WarmupPool {
 
 private:
     void Run() {
+        t_warmup_thread = true;
         std::unique_lock lock{mutex};
         while (true) {
             cv.wait(lock, [this] { return closing || !jobs.empty(); });
@@ -546,13 +739,15 @@ void RegisterPipelineData(const ComputePipelineKey& key,
     Serialization::Writer pldata{ar};
 
     pldata.Write(Serialization::PipelineKeyVersion);
+    pldata.Write(BlobLayoutTag());
     pldata.Write(u32{1}); // compute
 
     key.Serialize(ar);
     sdata.Serialize(ar);
 
-    Storage::DataBase::Instance().Save(Storage::BlobType::PipelineKey,
-                                       fmt::format("c_{:#018x}", key.value), ar.TakeOff());
+    auto blob = ar.TakeOff();
+    SealBlob(blob);
+    SaveKey(fmt::format("c_{:#018x}", key.value), std::move(blob));
 }
 
 void RegisterPipelineData(const GraphicsPipelineKey& key, u64 hash,
@@ -565,13 +760,21 @@ void RegisterPipelineData(const GraphicsPipelineKey& key, u64 hash,
     Serialization::Writer pldata{ar};
 
     pldata.Write(Serialization::PipelineKeyVersion);
+    pldata.Write(BlobLayoutTag());
     pldata.Write(u32{0}); // graphics
 
     key.Serialize(ar);
     sdata.Serialize(ar);
 
-    Storage::DataBase::Instance().Save(Storage::BlobType::PipelineKey,
-                                       fmt::format("g_{:#018x}", hash), ar.TakeOff());
+    std::array<u64, MaxShaderStages> prints{};
+    for (u32 i = 0; i < MaxShaderStages; ++i) {
+        prints[i] = key.stage_hashes[i] ? StagePrint(key.stage_hashes[i]) : 0;
+    }
+    pldata.Write(prints.data(), sizeof(prints));
+
+    auto blob = ar.TakeOff();
+    SealBlob(blob);
+    SaveKey(fmt::format("g_{:#018x}", hash), std::move(blob));
 }
 
 void RegisterShaderMeta(const Shader::Info& info,
@@ -586,16 +789,23 @@ void RegisterShaderMeta(const Shader::Info& info,
     Serialization::Writer meta{ar};
 
     meta.Write(Serialization::ShaderMetaVersion);
+    meta.Write(BlobLayoutTag());
     meta.Write(Serialization::ShaderBinaryVersion);
 
     meta.Write(perm_hash);
     meta.Write(perm_idx);
+    // RegisterShaderBinary ran just before for this permutation.
+    const u64 binary_hash = TakeBinaryHash(perm_hash);
+    meta.Write(binary_hash);
+    NoteStagePrint(perm_hash, binary_hash, true);
 
     spec.Serialize(ar);
     info.Serialize(ar);
 
-    Storage::DataBase::Instance().Save(Storage::BlobType::ShaderMeta,
-                                       fmt::format("{:#018x}", perm_hash), ar.TakeOff());
+    auto blob = ar.TakeOff();
+    SealBlob(blob);
+    Storage::DataBase::Instance().Save(Storage::BlobType::ShaderMeta, MetaName(perm_hash),
+                                       std::move(blob));
 }
 
 void RegisterShaderBinary(std::vector<u32>&& spv, u64 pgm_hash, size_t perm_idx) {
@@ -603,19 +813,36 @@ void RegisterShaderBinary(std::vector<u32>&& spv, u64 pgm_hash, size_t perm_idx)
         return;
     }
 
+    const u64 perm_hash = HashCombine(pgm_hash, u64(perm_idx));
+    const u64 binary_hash = XXH3_64bits(spv.data(), spv.size() * sizeof(u32));
+    std::scoped_lock lock{g_print_mutex};
+    g_saved_binaries[perm_hash] = binary_hash;
+    g_stage_prints[perm_hash] = binary_hash;
     Storage::DataBase::Instance().Save(Storage::BlobType::ShaderBinary,
-                                       fmt::format("{:#018x}_{}", pgm_hash, perm_idx),
-                                       std::move(spv));
+                                       BinaryName(pgm_hash, perm_idx), std::move(spv));
 }
 
-bool LoadShaderMeta(Serialization::Archive& ar, Shader::Info& info,
-                    std::optional<Shader::Gcn::FetchShaderData>& fetch_shader_data,
-                    Shader::StageSpecialization& spec, size_t& perm_idx) {
+/// Parses a meta blob. False for one of another version or layout, a damaged one, or one that
+/// is not `perm_hash`'s; Serialization::CorruptData when it ends before its contents do.
+static bool LoadShaderMeta(std::vector<u8>&& blob, u64 perm_hash, Shader::Info& info,
+                           Shader::StageSpecialization& spec,
+                           std::optional<Shader::Gcn::FetchShaderData>& fetch_shader_data,
+                           size_t& perm_idx, u64& binary_hash) {
+    if (!UnsealBlob(blob)) {
+        return false;
+    }
+    Serialization::Archive ar{std::move(blob)};
     Serialization::Reader meta{ar};
 
     u32 meta_version{};
     meta.Read(meta_version);
     if (meta_version != Serialization::ShaderMetaVersion) {
+        return false;
+    }
+
+    u64 layout{};
+    meta.Read(layout);
+    if (layout != BlobLayoutTag()) {
         return false;
     }
 
@@ -628,17 +855,64 @@ bool LoadShaderMeta(Serialization::Archive& ar, Shader::Info& info,
     u64 perm_hash_ar{};
     meta.Read(perm_hash_ar);
     meta.Read(perm_idx);
+    meta.Read(binary_hash);
 
     spec.Deserialize(ar);
     info.Deserialize(ar);
 
+    fetch_shader_data = spec.fetch_shader_data;
+    return perm_hash_ar == perm_hash && HashCombine(info.pgm_hash, u64(perm_idx)) == perm_hash;
+}
+
+/// Reads cached stage `perm_hash`: its meta into `info`, `spec`, `fetch`, `perm_idx` and
+/// `binary_hash`, its SPIR-V into `spv`. A damaged or foreign meta, or a binary that is not the
+/// one its meta was written with, is removed. False when the stage cannot be used; `gone` then
+/// tells that the store no longer holds it, so keys naming it are stale.
+static bool ReadCachedStage(u64 perm_hash, Shader::Info& info, Shader::StageSpecialization& spec,
+                            std::optional<Shader::Gcn::FetchShaderData>& fetch, size_t& perm_idx,
+                            u64& binary_hash, std::vector<u32>& spv, bool& gone) {
+    gone = true;
+    if (g_crowded_stages.contains(perm_hash)) {
+        return false;
+    }
+    auto& db = Storage::DataBase::Instance();
+    const auto meta_name = MetaName(perm_hash);
+    std::vector<u8> blob;
+    db.Load(Storage::BlobType::ShaderMeta, meta_name, blob);
+    if (blob.empty()) {
+        return false;
+    }
+    bool valid = false;
+    try {
+        valid = LoadShaderMeta(std::move(blob), perm_hash, info, spec, fetch, perm_idx,
+                               binary_hash);
+    } catch (const std::exception&) {
+    }
+    if (!valid) {
+        UnlessCompiledThisSession(perm_hash, [&] {
+            RemoveStale(Storage::BlobType::ShaderMeta, meta_name, "damaged or of another build");
+        });
+        return false;
+    }
     // Motion vertex shaders embed session-local buffer device addresses. They must be
     // recompiled for the current allocation, never loaded from a previous process.
     if (info.hw_stage == Shader::HwStage::Vertex && spec.runtime_info.hw.vs.motion_vectors) {
+        gone = false;
         return false;
     }
-
-    fetch_shader_data = spec.fetch_shader_data;
+    const auto binary_name = BinaryName(info.pgm_hash, perm_idx);
+    db.Load(Storage::BlobType::ShaderBinary, binary_name, spv);
+    if (spv.empty()) {
+        return false;
+    }
+    if (XXH3_64bits(spv.data(), spv.size() * sizeof(u32)) != binary_hash) {
+        UnlessCompiledThisSession(perm_hash, [&] {
+            RemoveStale(Storage::BlobType::ShaderMeta, meta_name, "its binary was replaced");
+            db.Remove(Storage::BlobType::ShaderBinary, binary_name);
+        });
+        return false;
+    }
+    gone = false;
     return true;
 }
 
@@ -663,36 +937,72 @@ bool ComputePipeline::SerializationSupport::Deserialize(Serialization::Archive& 
     return true;
 }
 
-bool PipelineCache::LoadComputePipeline(Serialization::Archive& ar) {
-    compute_key.Deserialize(ar);
+/// osl: a pipeline key blob as RegisterPipelineData writes it.
+struct PipelineCache::CachedPipelineKey {
+    bool compute = false;
+    ComputePipelineKey compute_key{};
+    GraphicsPipelineKey graphics_key{};
+    GraphicsPipeline::SerializationSupport sdata{};
+    std::array<u64, MaxShaderStages> prints{}; ///< graphics: the binary hash of each stage
+};
+
+bool PipelineCache::ReadPipelineKey(std::vector<u8>&& blob, CachedPipelineKey& key) {
+    try {
+        if (!UnsealBlob(blob)) {
+            return false;
+        }
+        Serialization::Archive ar{std::move(blob)};
+        Serialization::Reader pldata{ar};
+        u32 version{};
+        pldata.Read(version);
+        if (version != Serialization::PipelineKeyVersion) {
+            return false;
+        }
+        u64 layout{};
+        pldata.Read(layout);
+        if (layout != BlobLayoutTag()) {
+            return false;
+        }
+        u32 is_compute{};
+        pldata.Read(is_compute);
+        key.compute = is_compute != 0;
+        if (key.compute) {
+            ComputePipeline::SerializationSupport sdata{};
+            return key.compute_key.Deserialize(ar) && sdata.Deserialize(ar);
+        }
+        if (!key.graphics_key.Deserialize(ar) || !key.sdata.Deserialize(ar)) {
+            return false;
+        }
+        pldata.Read(key.prints.data(), sizeof(key.prints));
+        return true;
+    } catch (const std::exception&) {
+        return false;
+    }
+}
+
+PipelineCache::CacheLoad PipelineCache::LoadComputePipeline(const CachedPipelineKey& key) {
+    if (compute_pipelines.contains(key.compute_key)) {
+        return CacheLoad::Skipped;
+    }
+    SCOPE_EXIT {
+        sel.infos.fill(nullptr);
+        sel.modules.fill(nullptr);
+        sel.fetch_shader.reset();
+    };
+    const auto stage = LoadPipelineStage(key.compute_key.value, 0, std::nullopt);
+    if (stage != CacheLoad::Loaded) {
+        return stage;
+    }
 
     ComputePipeline::SerializationSupport sdata{};
-    sdata.Deserialize(ar);
-
-    std::vector<u8> meta_blob;
-    Storage::DataBase::Instance().Load(Storage::BlobType::ShaderMeta,
-                                       fmt::format("{:#018x}", compute_key.value), meta_blob);
-    if (meta_blob.empty()) {
-        return false;
+    auto pipeline = std::make_unique<ComputePipeline>(instance, scheduler, desc_heap, profile,
+                                                      *pipeline_cache, key.compute_key,
+                                                      *sel.infos[0], sel.modules[0], sdata, true);
+    if (pipeline->Failed()) {
+        return CacheLoad::Skipped;
     }
-
-    Serialization::Archive meta_ar{std::move(meta_blob)};
-
-    if (!LoadPipelineStage(meta_ar, 0)) {
-        return false;
-    }
-
-    const auto [it, is_new] = compute_pipelines.try_emplace(compute_key);
-    ASSERT(is_new);
-
-    it.value() = std::make_unique<ComputePipeline>(instance, scheduler, desc_heap, profile,
-                                                   *pipeline_cache, compute_key, *sel.infos[0],
-                                                   sel.modules[0], sdata, true);
-
-    sel.infos.fill(nullptr);
-    sel.modules.fill(nullptr);
-
-    return true;
+    compute_pipelines.emplace(key.compute_key, std::move(pipeline));
+    return CacheLoad::Loaded;
 }
 
 void GraphicsPipelineKey::Serialize(Serialization::Archive& ar) const {
@@ -717,6 +1027,7 @@ void GraphicsPipeline::SerializationSupport::Serialize(Serialization::Archive& a
     sdata.Write(multisampling);
     sdata.Write(tcs);
     sdata.Write(tes);
+    sdata.Write(fragment);
 }
 
 bool GraphicsPipeline::SerializationSupport::Deserialize(Serialization::Archive& ar) {
@@ -728,64 +1039,56 @@ bool GraphicsPipeline::SerializationSupport::Deserialize(Serialization::Archive&
     sdata.Read(multisampling);
     sdata.Read(tcs);
     sdata.Read(tes);
+    sdata.Read(fragment);
     return true;
 }
 
-bool PipelineCache::LoadGraphicsPipeline(Serialization::Archive& ar) {
-    sel.graphics_key.Deserialize(ar);
-
-    GraphicsPipeline::SerializationSupport sdata{};
-    sdata.Deserialize(ar);
-
-    for (int stage_idx = 0; stage_idx < MaxShaderStages; ++stage_idx) {
-        const auto& hash = sel.graphics_key.stage_hashes[stage_idx];
+PipelineCache::CacheLoad PipelineCache::LoadGraphicsPipeline(const CachedPipelineKey& key) {
+    if (graphics_pipelines.contains(key.graphics_key)) {
+        return CacheLoad::Skipped;
+    }
+    SCOPE_EXIT {
+        sel.infos.fill(nullptr);
+        sel.modules.fill(nullptr);
+        sel.fetch_shader.reset();
+    };
+    for (u32 stage_idx = 0; stage_idx < MaxShaderStages; ++stage_idx) {
+        const u64 hash = key.graphics_key.stage_hashes[stage_idx];
         if (!hash) {
             continue;
         }
-
-        std::vector<u8> meta_blob;
-        Storage::DataBase::Instance().Load(Storage::BlobType::ShaderMeta,
-                                           fmt::format("{:#018x}", hash), meta_blob);
-        if (meta_blob.empty()) {
-            return false;
-        }
-
-        Serialization::Archive meta_ar{std::move(meta_blob)};
-
-        if (!LoadPipelineStage(meta_ar, stage_idx)) {
-            return false;
+        const auto stage = LoadPipelineStage(hash, stage_idx, key.prints[stage_idx]);
+        if (stage != CacheLoad::Loaded) {
+            return stage;
         }
     }
 
-    const auto [it, is_new] = graphics_pipelines.try_emplace(sel.graphics_key);
-    ASSERT(is_new);
-
-    it.value() = std::make_unique<GraphicsPipeline>(
-        instance, scheduler, desc_heap, profile, sel.graphics_key, *pipeline_cache, sel.infos,
+    auto sdata = key.sdata;
+    auto pipeline = std::make_unique<GraphicsPipeline>(
+        instance, scheduler, desc_heap, profile, key.graphics_key, *pipeline_cache, sel.infos,
         sel.runtime_infos, sel.fetch_shader, sel.modules, sdata, true);
-
-    sel.infos.fill(nullptr);
-    sel.modules.fill(nullptr);
-    sel.fetch_shader.reset();
-
-    return true;
+    if (pipeline->Failed()) {
+        return CacheLoad::Skipped;
+    }
+    graphics_pipelines.emplace(key.graphics_key, std::move(pipeline));
+    return CacheLoad::Loaded;
 }
 
-bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) {
+PipelineCache::CacheLoad PipelineCache::LoadPipelineStage(u64 perm_hash, size_t stage,
+                                                          std::optional<u64> expected_print) {
     auto program = std::make_unique<Program>();
     Shader::StageSpecialization spec{};
     spec.info = &program->info;
+    std::optional<Shader::Gcn::FetchShaderData> fetch;
     size_t perm_idx{};
-    if (!LoadShaderMeta(ar, program->info, sel.fetch_shader, spec, perm_idx)) {
-        return false;
-    }
-
+    u64 binary_hash{};
     std::vector<u32> spv{};
-    Storage::DataBase::Instance().Load(Storage::BlobType::ShaderBinary,
-                                       fmt::format("{:#018x}_{}", program->info.pgm_hash, perm_idx),
-                                       spv);
-    if (spv.empty()) {
-        return false;
+    bool gone = false;
+    if (!ReadCachedStage(perm_hash, program->info, spec, fetch, perm_idx, binary_hash, spv, gone)) {
+        return gone && !CompiledThisSession(perm_hash) ? CacheLoad::Stale : CacheLoad::Skipped;
+    }
+    if (expected_print && *expected_print != binary_hash) {
+        return CacheLoad::Stale; // the key names a stage that was compiled again since
     }
 
     // Permutation hash depends on shader variation index. To prevent collisions, we need insert it
@@ -809,7 +1112,7 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
                             "Cached permutation {} of {}_{:x} conflicts with index {}, skipping "
                             "preload",
                             perm_idx, program->info.hw_stage, program->info.pgm_hash, idx);
-                return false;
+                return CacheLoad::Skipped;
             }
             module = it->module;
         } else {
@@ -817,10 +1120,31 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
         }
     }
     it_pgm.value()->InsertPermut(module, std::move(spec), perm_idx);
+    NoteStagePrint(perm_hash, binary_hash, false);
 
     sel.infos[stage] = &it_pgm.value()->info;
     sel.modules[stage] = module;
+    if (fetch) {
+        sel.fetch_shader = std::move(fetch);
+    }
 
+    return CacheLoad::Loaded;
+}
+
+/// osl: true when the previous start crashed while it built cached pipelines: the cache (this
+/// game's, this GPU's) is cleared and refilled as the game plays.
+bool PipelineCache::DropCrashedCache() {
+    if (!TakeWarmupMark()) {
+        return false;
+    }
+    auto& db = Storage::DataBase::Instance();
+    db.Clear();
+    db.FinishPreload();
+    std::vector<u8> profile_data(sizeof(profile));
+    std::memcpy(profile_data.data(), &profile, sizeof(profile));
+    db.Save(Storage::BlobType::ShaderProfile, "profile", std::move(profile_data));
+    std::printf("Pipeline cache: the last start crashed while cached pipelines were built; the "
+                "cache was cleared\n");
     return true;
 }
 
@@ -829,48 +1153,54 @@ bool PipelineCache::CheckCacheProfile() {
         return false;
     }
 
-    Storage::DataBase::Instance().Open();
+    auto& db = Storage::DataBase::Instance();
+    db.Open();
 
     // Check if cache is compatible
     std::vector<u8> profile_data{};
-    Storage::DataBase::Instance().Load(Storage::BlobType::ShaderProfile, "profile", profile_data);
-    if (profile_data.empty()) {
-        Storage::DataBase::Instance().FinishPreload();
-
-        profile_data.resize(sizeof(profile));
-        std::memcpy(profile_data.data(), &profile, sizeof(profile));
-        Storage::DataBase::Instance().Save(Storage::BlobType::ShaderProfile, "profile",
-                                           std::move(profile_data));
-        return false;
+    db.Load(Storage::BlobType::ShaderProfile, "profile", profile_data);
+    const auto matches = [&](const std::vector<u8>& data) {
+        Shader::Profile stored{};
+        if (data.size() != sizeof(stored)) {
+            return false;
+        }
+        std::memcpy(&stored, data.data(), sizeof(stored));
+        return stored == profile;
+    };
+    if (matches(profile_data)) {
+        return true;
     }
-    if (profile_data.size() != sizeof(Shader::Profile)) {
-        LOG_WARNING(Render, "Pipeline cache profile has unexpected size ({} != {})",
-                    profile_data.size(), sizeof(Shader::Profile));
-    }
-    Shader::Profile cached_profile{};
     if (profile_data.size() == sizeof(Shader::Profile)) {
-        std::memcpy(&cached_profile, profile_data.data(), sizeof(cached_profile));
-    }
-    if (profile_data.size() != sizeof(Shader::Profile) || cached_profile != profile) {
+        // osl: another GPU's cache (the same build) is put aside, and this GPU's own comes back
+        // if one was kept.
+        LOG_WARNING(Render, "Pipeline cache belongs to another GPU: putting it aside");
+        if (db.SwapCache(matches)) {
+            return true;
+        }
+    } else if (!profile_data.empty()) {
         // osl: upstream closed the cache for the session here, so it was never rewritten
         // and every later session compiled every shader again (stutters on each new area).
-        // Start a fresh cache for this build and GPU instead.
-        LOG_WARNING(Render, "Pipeline cache isn't compatible with current system: rebuilding it");
-        Storage::DataBase::Instance().Clear();
-        Storage::DataBase::Instance().FinishPreload();
-        profile_data.resize(sizeof(profile));
-        std::memcpy(profile_data.data(), &profile, sizeof(profile));
-        Storage::DataBase::Instance().Save(Storage::BlobType::ShaderProfile, "profile",
-                                           std::move(profile_data));
-        return false;
+        // Start a fresh cache for this build instead.
+        LOG_WARNING(Render, "Pipeline cache profile has unexpected size ({} != {}): rebuilding it",
+                    profile_data.size(), sizeof(Shader::Profile));
+        db.Clear();
     }
-    return true;
+    db.FinishPreload();
+    profile_data.resize(sizeof(profile));
+    std::memcpy(profile_data.data(), &profile, sizeof(profile));
+    db.Save(Storage::BlobType::ShaderProfile, "profile", std::move(profile_data));
+    return false;
 }
 
 void PipelineCache::WarmUp(const std::function<void(u32, u32)>& progress) {
-    if (!CheckCacheProfile()) {
+    if (!CheckCacheProfile() || DropCrashedCache()) {
         return;
     }
+    t_warmup_thread = true;
+    SCOPE_EXIT {
+        t_warmup_thread = false;
+    };
+    FindCrowdedShaders();
 
     u32 num_pipelines{};
     u32 num_total_pipelines{};
@@ -884,37 +1214,26 @@ void PipelineCache::WarmUp(const std::function<void(u32, u32)>& progress) {
     };
 
     Storage::DataBase::Instance().ForEachBlob(
-        Storage::BlobType::PipelineKey, [&](std::vector<u8>&& data) {
+        Storage::BlobType::PipelineKey, [&](std::vector<u8>&& data, const std::string& name) {
             ++num_total_pipelines;
             report();
 
-            Serialization::Archive ar{std::move(data)};
-            Serialization::Reader pldata{ar};
-
-            u32 version{};
-            pldata.Read(version);
-            if (version != Serialization::PipelineKeyVersion) {
+            CachedPipelineKey key{};
+            if (!ReadPipelineKey(std::move(data), key)) {
+                RemoveStale(Storage::BlobType::PipelineKey, name, "damaged or of another build");
                 return;
             }
-
-            u32 is_compute{};
-            pldata.Read(is_compute);
-
-            bool result{};
-            if (is_compute) {
-                result = LoadComputePipeline(ar);
-            } else {
-                result = LoadGraphicsPipeline(ar);
+            const auto result = key.compute ? LoadComputePipeline(key) : LoadGraphicsPipeline(key);
+            if (result == CacheLoad::Stale) {
+                RemoveStaleKey(name, "a stage was compiled again or is no longer cached");
             }
-
-            if (result) {
-                ++num_pipelines;
-            }
+            num_pipelines += result == CacheLoad::Loaded;
         });
 
-    std::printf("Pipeline warm-up: %u of %u pipelines in %.2f s\n", num_pipelines,
-                num_total_pipelines,
-                std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count());
+    std::printf("Pipeline warm-up: %u of %u pipelines in %.2f s, %u stale entries removed\n",
+                num_pipelines, num_total_pipelines,
+                std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count(),
+                g_stale_entries.load());
     LOG_INFO(Render, "Preloaded {} pipelines", num_pipelines);
     ReportPipelineBinaryCache();
     if (num_total_pipelines > num_pipelines) {
@@ -940,7 +1259,9 @@ struct PipelineCache::WarmStage {
     Shader::StageSpecialization spec{};
     std::optional<Shader::Gcn::FetchShaderData> fetch;
     size_t perm_idx{};
+    u64 binary_hash{}; ///< its stage print
     vk::ShaderModule module{};
+    bool gone = false; ///< no longer in the store
     // GPU thread, from the merge on.
     bool merged = false;
     bool module_kept = false;           ///< the module now belongs to a Program
@@ -993,8 +1314,8 @@ bool PipelineCache::StartBackgroundWarmUp() {
     if (!Storage::DataBase::Instance().ConcurrentReads()) {
         return false;
     }
-    if (!CheckCacheProfile()) {
-        return true; // nothing cached yet
+    if (!CheckCacheProfile() || DropCrashedCache()) {
+        return true; // nothing cached (any more)
     }
     background = new BackgroundWarmup;
     auto& warm = *background;
@@ -1004,52 +1325,51 @@ bool PipelineCache::StartBackgroundWarmUp() {
     // The first job reads the whole store; with one thread the builds queue behind it.
     warm.pool->Push([this, &warm] {
         const auto reader_started = std::chrono::steady_clock::now();
+        SCOPE_EXIT {
+            warm.stages.clear();
+            warm.reader_ns = ElapsedNs(reader_started);
+            warm.reading = false;
+        };
         auto& db = Storage::DataBase::Instance();
+        FindCrowdedShaders();
         warm.total = u32(db.CountBlobs(Storage::BlobType::PipelineKey));
         db.ForEachBlob(
             Storage::BlobType::PipelineKey,
-            [&](std::vector<u8>&& data) { ReadWarmEntry(warm, std::move(data)); },
+            [&](std::vector<u8>&& data, const std::string& name) {
+                ReadWarmEntry(warm, std::move(data), name);
+            },
             [&] { return warm.stopping.load(std::memory_order_relaxed); });
-        warm.stages.clear();
-        warm.reader_ns = ElapsedNs(reader_started);
-        warm.reading = false;
         return true;
     });
     std::printf("Pipeline warm-up: loading in the background (%u threads)\n", warm.threads);
     return true;
 }
 
-void PipelineCache::ReadWarmEntry(BackgroundWarmup& warm, std::vector<u8>&& data) {
+void PipelineCache::ReadWarmEntry(BackgroundWarmup& warm, std::vector<u8>&& data,
+                                  const std::string& name) {
     const auto entry_started = std::chrono::steady_clock::now();
     SCOPE_EXIT { warm.entry_ns += ElapsedNs(entry_started); ++warm.entries; };
     const auto skip = [&] { warm.done.fetch_add(1, std::memory_order_relaxed); };
-    Serialization::Archive ar{std::move(data)};
-    Serialization::Reader pldata{ar};
-    u32 version{};
-    pldata.Read(version);
-    if (version != Serialization::PipelineKeyVersion) {
+    CachedPipelineKey key{};
+    if (!ReadPipelineKey(std::move(data), key)) {
+        RemoveStaleKey(name, "damaged or of another build");
         return skip();
     }
-    u32 is_compute{};
-    pldata.Read(is_compute);
 
     BackgroundWarmup::Entry entry{};
-    entry.compute = is_compute != 0;
+    entry.compute = key.compute;
+    entry.compute_key = key.compute_key;
+    entry.graphics_key = key.graphics_key;
+    entry.sdata = key.sdata;
     std::array<u64, MaxShaderStages> hashes{};
     if (entry.compute) {
-        entry.compute_key.Deserialize(ar);
-        ComputePipeline::SerializationSupport sdata{};
-        sdata.Deserialize(ar);
         hashes[0] = entry.compute_key.value;
     } else {
-        entry.graphics_key.Deserialize(ar);
-        entry.sdata.Deserialize(ar);
         for (u32 i = 0; i < MaxShaderStages; ++i) {
             hashes[i] = entry.graphics_key.stage_hashes[i];
         }
     }
 
-    auto& db = Storage::DataBase::Instance();
     for (u32 i = 0; i < MaxShaderStages; ++i) {
         if (!hashes[i]) {
             continue;
@@ -1062,30 +1382,28 @@ void PipelineCache::ReadWarmEntry(BackgroundWarmup& warm, std::vector<u8>&& data
             stage->spec.info = &stage->program->info;
             const auto io_started = std::chrono::steady_clock::now();
             u64 module_time = 0;
-            std::vector<u8> meta_blob;
-            db.Load(Storage::BlobType::ShaderMeta, fmt::format("{:#018x}", hashes[i]), meta_blob);
-            if (!meta_blob.empty()) {
-                Serialization::Archive meta_ar{std::move(meta_blob)};
-                if (LoadShaderMeta(meta_ar, stage->program->info, stage->fetch, stage->spec,
-                                   stage->perm_idx)) {
-                    std::vector<u32> spv;
-                    db.Load(Storage::BlobType::ShaderBinary,
-                            fmt::format("{:#018x}_{}", stage->program->info.pgm_hash,
-                                        stage->perm_idx),
-                            spv);
-                    if (!spv.empty()) {
-                        const auto module_started = std::chrono::steady_clock::now();
-                        stage->module = CompileSPV(spv, stage->device);
-                        module_time = ElapsedNs(module_started);
-                        warm.module_ns += module_time;
-                        ++warm.modules;
-                    }
-                }
+            std::vector<u32> spv;
+            if (ReadCachedStage(hashes[i], stage->program->info, stage->spec, stage->fetch,
+                                stage->perm_idx, stage->binary_hash, spv, stage->gone)) {
+                const auto module_started = std::chrono::steady_clock::now();
+                stage->module = CompileSPV(spv, stage->device);
+                module_time = ElapsedNs(module_started);
+                warm.module_ns += module_time;
+                ++warm.modules;
             }
             warm.shader_io_ns += ElapsedNs(io_started) - module_time;
             if (!stage->module) {
                 stage->merged = true; // unusable: info stays null
             }
+        }
+        // Only the stages this pipeline was saved with.
+        if (!entry.compute && stage->module && stage->binary_hash != key.prints[i]) {
+            RemoveStaleKey(name, "a stage was compiled again");
+            return skip();
+        }
+        if (stage->gone && !CompiledThisSession(hashes[i])) {
+            RemoveStaleKey(name, "a stage is no longer cached");
+            return skip();
         }
         entry.stages[i] = stage;
     }
@@ -1096,6 +1414,7 @@ void PipelineCache::ReadWarmEntry(BackgroundWarmup& warm, std::vector<u8>&& data
 bool PipelineCache::MergeWarmStage(WarmStage& stage) {
     stage.merged = true;
     const u64 hash = stage.program->info.pgm_hash;
+    NoteStagePrint(HashCombine(hash, u64(stage.perm_idx)), stage.binary_hash, false);
     const auto it_pgm = program_cache.find(hash);
     if (it_pgm == program_cache.end()) {
         Program* program = stage.program.get();
@@ -1193,7 +1512,9 @@ void PipelineCache::PumpWarmUp() {
                 usable = stage.info != nullptr;
                 infos[i] = stage.info;
                 modules[i] = stage.result;
-                fetch = stage.fetch; // the blocking load keeps the last stage's too
+                if (stage.fetch) {
+                    fetch = stage.fetch; // the vertex stage's, as the game's own lookup keeps
+                }
             }
         }
         if (!usable) {
@@ -1214,10 +1535,16 @@ void PipelineCache::PumpWarmUp() {
                 built.compute = std::make_unique<ComputePipeline>(
                     instance, scheduler, desc_heap, profile, *pipeline_cache, compute_key,
                     *infos[0], modules[0], compute_data, true);
+                if (built.compute->Failed()) {
+                    return false; // left for the game to compile
+                }
             } else {
                 built.graphics = std::make_unique<GraphicsPipeline>(
                     instance, scheduler, desc_heap, profile, graphics_key, *pipeline_cache, infos,
                     no_runtime_infos, fetch, modules, sdata, true);
+                if (built.graphics->Failed()) {
+                    return false;
+                }
             }
             warm.built.Push(std::move(built));
             return true;
@@ -1236,9 +1563,11 @@ void PipelineCache::PumpWarmUp() {
     if (warm.reading || !warm.read.Empty() || !warm.pool->Idle() || !warm.built.Empty()) {
         return;
     }
-    std::printf("Pipeline warm-up: %u of %u pipelines in %.2f s in the background (%u threads)\n",
+    std::printf("Pipeline warm-up: %u of %u pipelines in %.2f s in the background (%u threads), "
+                "%u stale entries removed\n",
                 warm.loaded, warm.total.load(),
-                std::chrono::duration<double>(now - warm.started).count(), warm.threads);
+                std::chrono::duration<double>(now - warm.started).count(), warm.threads,
+                g_stale_entries.load());
     LOG_INFO(Render, "Preloaded {} pipelines in the background", warm.loaded);
     ReportPipelineBinaryCache();
     std::printf("Warm-up profile: reader wall %.3f s, entries %.3f s, shader IO/meta %.3f s, "
@@ -1290,6 +1619,29 @@ void PipelineCache::Sync() {
 }
 
 } // namespace Vulkan
+
+// osl: for the fatal fault handler, on the faulting thread, before the process ends. Allocates
+// nothing: the mark's path was prepared when the warm-up started (TakeWarmupMark).
+extern "C" void oslgpu_note_fatal_fault(void) {
+    if (!Vulkan::t_warmup_thread || !Vulkan::g_warmup_mark[0]) {
+        return;
+    }
+#ifdef _WIN32
+    const HANDLE file = CreateFileW(Vulkan::g_warmup_mark, GENERIC_WRITE, 0, nullptr,
+                                    CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (file != INVALID_HANDLE_VALUE) {
+        CloseHandle(file);
+    }
+#else
+    const int file = open(Vulkan::g_warmup_mark, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (file >= 0) {
+        close(file);
+    }
+#endif
+    std::fputs("Pipeline cache: the crash happened while cached pipelines were built; the next "
+               "start clears the cache\n",
+               stderr);
+}
 
 namespace Shader {
 
@@ -1345,7 +1697,12 @@ bool PersistentSrtInfo::Deserialize(Serialization::Archive& ar) {
 
     srt.Read(this, sizeof(*this));
 
+    // osl: the stored pointer is from the process that wrote the blob.
+    walker_func = nullptr;
     if (walker_func_size) {
+        if (walker_func_size > ar.Remaining()) {
+            throw Serialization::CorruptData{};
+        }
         walker_func = RegisterWalkerCode(ar.CurrPtr(), walker_func_size);
         ar.Advance(walker_func_size);
     }

@@ -21,7 +21,7 @@ Write-Step 'Running the patch workflow tests'
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step 'Building the tests'
-& ninja -C $buildDir osl-tests osl-window-tests osl-tiling-tests osl-cursor-tests osl-trophy-tests
+& ninja -C $buildDir osl-tests osl-window-tests osl-tiling-tests osl-cursor-tests osl-trophy-tests osl-runtime-tests
 if ($LASTEXITCODE -ne 0) { Stop-Tool 'Test build failed' }
 
 Write-Step 'Running the game, settings and keys tests'
@@ -38,6 +38,10 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step 'Running the cursor visibility tests'
 & (Join-Path $buildDir 'bin\osl-cursor-tests.exe')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+Write-Step 'Running the runtime lock and guest memory table tests'
+& (Join-Path $buildDir 'bin\osl-runtime-tests.exe')
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step 'Running the tiling tests (GPU tile layouts and addresses)'
