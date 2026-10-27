@@ -7,6 +7,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <string>
@@ -22,6 +24,7 @@
 
 #include "osl_accent.h"
 #include "osl_displays.h"
+#include "osl_png.h"
 #include "osl_resolution.h"
 #include "controller_prompts.h"
 #include "game_files.h"
@@ -141,11 +144,27 @@ trg::Theme LauncherTheme() {
     return theme;
 }
 
-trg::HeaderPainter LauncherHeader() {
-    return trg::headers::Gradient(IM_COL32(10, 12, 24, 255),
-                                  IM_COL32(kAccentSubtleRed, kAccentSubtleGreen, kAccentSubtleBlue, 255),
-                                  IM_COL32(kAccentPressedRed / 2, kAccentPressedGreen / 2, kAccentPressedBlue / 2, 255),
-                                  IM_COL32(6, 8, 14, 255));
+struct HeaderArt {
+    ImTextureID texture{};
+    float aspect = 0.0f;
+};
+
+trg::HeaderPainter LauncherHeader(HeaderArt art) {
+    const trg::HeaderPainter gradient =
+        trg::headers::Gradient(IM_COL32(10, 12, 24, 255),
+                               IM_COL32(kAccentSubtleRed, kAccentSubtleGreen, kAccentSubtleBlue, 255),
+                               IM_COL32(kAccentPressedRed / 2, kAccentPressedGreen / 2, kAccentPressedBlue / 2, 255),
+                               IM_COL32(6, 8, 14, 255));
+    return [gradient, art](const trg::HeaderContext& c) {
+        gradient(c);
+        if (art.texture == ImTextureID{}) {
+            return;
+        }
+        const float height = c.max.y - c.min.y;
+        const float width = height * art.aspect;
+        const ImVec2 top_left(c.max.x - width, c.min.y);
+        c.draw->AddImage(ImTextureRef(art.texture), top_left, c.max);
+    };
 }
 
 __attribute__((format(printf, 1, 2))) void Log(const char* format, ...) {
@@ -155,6 +174,32 @@ __attribute__((format(printf, 1, 2))) void Log(const char* format, ...) {
     std::vprintf(format, args);
     va_end(args);
     std::printf("\n");
+}
+
+// Optional: without it the header keeps its plain gradient.
+HeaderArt LoadHeaderArt(LauncherHost& host) {
+    const char* base = SDL_GetBasePath();
+    if (!base) {
+        return {};
+    }
+    const std::filesystem::path path = PathFromUtf8(base) / "assets" / "launcher" / "header-art.png";
+    std::ifstream in(path, std::ios::binary);
+    if (!in) {
+        Log("header art not found: %s", Utf8(path).c_str());
+        return {};
+    }
+    const std::vector<unsigned char> bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    OslPng::Image image;
+    if (!OslPng::DecodeRgba(bytes.data(), bytes.size(), image)) {
+        Log("header art could not be decoded: %s", Utf8(path).c_str());
+        return {};
+    }
+    const ImTextureID texture = host.CreateTexture(image.rgba.data(), image.width, image.height);
+    if (texture == ImTextureID{}) {
+        Log("header art could not be uploaded: %s", Utf8(path).c_str());
+        return {};
+    }
+    return {texture, float(image.width) / float(image.height)};
 }
 
 const char* StatusTitle(GameFileState state) {
@@ -224,6 +269,7 @@ public:
         Log("controller prompts: %s installed", PromptStyleKey(prompts_installed_));
         placement_ = PlacementTracker(host_.Restored());
         fonts_ = trg::LoadSystemFonts(18.0f);
+        header_art_ = LoadHeaderArt(host_);
         trophy_page_ = std::make_unique<TrophyPage>(host_, UserDir());
         launcher_ = std::make_unique<trg::Launcher>(MakeConfig());
         ApplySavedPrompts();
@@ -393,7 +439,7 @@ private:
             {"PC PORT   \xC2\xB7   ", ""},
             {"BY SAULOB", kAuthorUrl},
         };
-        c.branding.background = LauncherHeader();
+        c.branding.background = LauncherHeader(header_art_);
         c.hints = "Enter  Play     Alt+F4  Quit     Ctrl+S  Save";
         c.note = "Play applies the changes. Save keeps them without starting.";
         for (const PageId page : kPageOrder) {
@@ -918,6 +964,7 @@ private:
     std::vector<Display> displays_;
     std::vector<std::string> gpu_names_;
     trg::Fonts fonts_;
+    HeaderArt header_art_;
     std::unique_ptr<trg::Launcher> launcher_;
     std::unique_ptr<TrophyPage> trophy_page_;
     PlayGate play_;

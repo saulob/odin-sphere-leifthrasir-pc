@@ -1,0 +1,221 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 180" preserveAspectRatio="xMidYMid meet">
+  <style>
+    .deep { fill: #170C2E; }
+    .violet { fill: #5B3FB0; }
+    .purple { fill: #8A63E6; }
+    .blue { fill: #7C8CFF; }
+    .magenta { fill: #C23C9A; }
+    .rose { fill: #D12A78; }
+    .highlight { fill: #E8DEFF; }
+    .ice { fill: #B9D4FF; }
+    .deep-line { fill: none; stroke: #170C2E; }
+    .violet-line { fill: none; stroke: #5B3FB0; }
+    .purple-line { fill: none; stroke: #8A63E6; }
+    .highlight-line { fill: none; stroke: #E8DEFF; }
+    .deep-stop { stop-color: #170C2E; }
+    .violet-stop { stop-color: #5B3FB0; }
+    .purple-stop { stop-color: #8A63E6; }
+    .blue-stop { stop-color: #7C8CFF; }
+    .magenta-stop { stop-color: #C23C9A; }
+    .highlight-stop { stop-color: #E8DEFF; }
+  </style>
+
+  <defs>
+    <radialGradient id="dusk" cx="1400" cy="70" r="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" class="violet-stop" stop-opacity=".16"/>
+      <stop offset=".6" class="violet-stop" stop-opacity=".05"/>
+      <stop offset="1" class="violet-stop" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="warmth" cx="1560" cy="140" r="260" gradientUnits="userSpaceOnUse">
+      <stop offset="0" class="magenta-stop" stop-opacity=".10"/>
+      <stop offset="1" class="magenta-stop" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="moon-glow" cx="1462" cy="54" r="170" gradientUnits="userSpaceOnUse">
+      <stop offset="0" class="highlight-stop" stop-opacity=".20"/>
+      <stop offset=".3" class="purple-stop" stop-opacity=".08"/>
+      <stop offset="1" class="purple-stop" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="moon-face" cx=".38" cy=".34" r=".72">
+      <stop offset="0" class="highlight-stop" stop-opacity=".72"/>
+      <stop offset="1" class="purple-stop" stop-opacity=".50"/>
+    </radialGradient>
+    <radialGradient id="mist">
+      <stop offset="0" class="purple-stop" stop-opacity=".16"/>
+      <stop offset="1" class="purple-stop" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bloom">
+      <stop offset="0" class="highlight-stop" stop-opacity=".34"/>
+      <stop offset=".45" class="blue-stop" stop-opacity=".10"/>
+      <stop offset="1" class="blue-stop" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="filigree" x1="0" y1="0" x2="0" y2="118" gradientUnits="userSpaceOnUse">
+      <stop offset="0" class="highlight-stop" stop-opacity=".05"/>
+      <stop offset=".46" class="highlight-stop" stop-opacity=".42"/>
+      <stop offset="1" class="highlight-stop" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="moon-disc">
+      <circle cx="1462" cy="54" r="27"/>
+    </clipPath>
+
+    <path id="pine" d="M0-100L9-78H5L15-56H9L20-32H12L23 0H-23L-12-32H-20L-9-56H-15L-5-78H-9Z"/>
+    <path id="spire" d="M-7 0V-58L-9-60L0-100L9-60L7-58V0Z"/>
+    <path id="leaf" d="M0 0C6-6 18-6 26 0C18 6 6 6 0 0Z"/>
+    <path id="spark" d="M0-6L1.2-1.2L6 0L1.2 1.2L0 6L-1.2 1.2L-6 0L-1.2-1.2Z"/>
+    <path id="petal" d="M0 0C-5-4-6-12 0-18C6-12 5-4 0 0Z"/>
+    <g id="flower">
+      <use href="#petal"/>
+      <use href="#petal" transform="rotate(72)"/>
+      <use href="#petal" transform="rotate(144)"/>
+      <use href="#petal" transform="rotate(216)"/>
+      <use href="#petal" transform="rotate(288)"/>
+    </g>
+  </defs>
+
+  <g id="sky">
+    <rect width="1600" height="180" fill="url(#dusk)"/>
+    <rect width="1600" height="180" fill="url(#warmth)"/>
+    <rect width="1600" height="180" fill="url(#moon-glow)"/>
+  </g>
+
+  <g id="stars">
+    <g class="highlight">
+      <circle cx="540" cy="16" r=".7" fill-opacity=".08"/>
+      <circle cx="690" cy="26" r=".8" fill-opacity=".10"/>
+      <circle cx="790" cy="12" r=".7" fill-opacity=".10"/>
+      <circle cx="880" cy="40" r=".8" fill-opacity=".12"/>
+      <circle cx="930" cy="118" r=".9" fill-opacity=".14"/>
+      <circle cx="972" cy="22" r="1" fill-opacity=".20"/>
+      <circle cx="1036" cy="64" r="1.1" fill-opacity=".22"/>
+      <circle cx="1074" cy="32" r=".8" fill-opacity=".20"/>
+      <circle cx="1204" cy="74" r="1" fill-opacity=".30"/>
+      <circle cx="1246" cy="20" r=".9" fill-opacity=".28"/>
+      <circle cx="1352" cy="84" r="1.1" fill-opacity=".32"/>
+      <circle cx="1530" cy="62" r=".9" fill-opacity=".30"/>
+      <circle cx="1590" cy="50" r="1" fill-opacity=".34"/>
+    </g>
+    <g class="ice">
+      <circle cx="1098" cy="104" r="1.2" fill-opacity=".24"/>
+      <circle cx="1410" cy="98" r=".9" fill-opacity=".30"/>
+      <circle cx="1504" cy="94" r="1.2" fill-opacity=".38"/>
+    </g>
+    <use href="#spark" transform="translate(1222 30) scale(.8)" class="highlight" fill-opacity=".55"/>
+    <use href="#spark" transform="translate(1398 18) scale(.6)" class="ice" fill-opacity=".50"/>
+    <use href="#spark" transform="translate(1290 24) scale(.45)" class="ice" fill-opacity=".40"/>
+    <use href="#spark" transform="translate(1012 92) scale(.5)" class="purple" fill-opacity=".40"/>
+    <use href="#spark" transform="translate(1562 74) scale(.55)" class="highlight" fill-opacity=".45"/>
+  </g>
+
+  <g id="lunar-arcs">
+    <path d="M1202 204A300 300 0 0 1 1190 -73" class="purple-line" stroke-opacity=".22" stroke-width="1"/>
+    <path d="M1341 124A140 140 0 0 1 1347 -26" class="purple-line" stroke-opacity=".34" stroke-width="1" stroke-dasharray="1 6"/>
+    <path d="M1390 140A112 112 0 0 1 1398 -38" class="highlight-line" stroke-opacity=".22" stroke-width="1.2"/>
+    <path d="M1424 40A40 40 0 0 1 1500 40" class="highlight-line" stroke-opacity=".30" stroke-width="1"/>
+  </g>
+
+  <g id="filigree-node">
+    <path d="M1162 0V118" fill="none" stroke="url(#filigree)" stroke-width="1"/>
+    <path d="M1162 44L1170 54L1162 64L1154 54Z" class="highlight-line" stroke-opacity=".38" stroke-width="1"/>
+    <path d="M1148 54H1152M1172 54H1176" class="highlight-line" stroke-opacity=".30" stroke-width="1"/>
+    <circle cx="1162" cy="86" r="2.4" class="highlight-line" stroke-opacity=".24" stroke-width="1"/>
+    <use href="#spark" transform="translate(1162 54) scale(1.3)" class="highlight" fill-opacity=".75"/>
+  </g>
+
+  <g id="moon">
+    <circle cx="1462" cy="54" r="27" fill="url(#moon-face)"/>
+    <circle cx="1475" cy="47" r="25" class="deep" fill-opacity=".38" clip-path="url(#moon-disc)"/>
+  </g>
+
+  <g id="far-forest" class="violet" opacity=".26">
+    <use href="#pine" transform="translate(990 152) scale(.14)"/>
+    <use href="#pine" transform="translate(1012 152) scale(.2)"/>
+    <use href="#pine" transform="translate(1036 152) scale(.16)"/>
+    <use href="#pine" transform="translate(1062 152) scale(.24)"/>
+    <use href="#pine" transform="translate(1090 152) scale(.18)"/>
+    <use href="#pine" transform="translate(1118 152) scale(.28)"/>
+    <use href="#pine" transform="translate(1146 152) scale(.22)"/>
+    <use href="#pine" transform="translate(1176 152) scale(.3)"/>
+    <use href="#pine" transform="translate(1206 152) scale(.24)"/>
+    <use href="#pine" transform="translate(1452 152) scale(.26)"/>
+    <use href="#pine" transform="translate(1478 152) scale(.32)"/>
+    <use href="#pine" transform="translate(1506 152) scale(.24)"/>
+    <use href="#pine" transform="translate(1532 152) scale(.34)"/>
+    <use href="#pine" transform="translate(1560 152) scale(.28)"/>
+    <use href="#pine" transform="translate(1588 152) scale(.36)"/>
+  </g>
+
+  <ellipse cx="1320" cy="134" rx="270" ry="30" fill="url(#mist)"/>
+
+  <g id="ruins" class="violet" opacity=".36">
+    <path d="M1226 150V130H1240V124H1276V118H1292V124H1322V132H1338V150Z"/>
+    <use href="#spire" transform="translate(1234 150) scale(.9 .55)"/>
+    <use href="#spire" transform="translate(1258 150) scale(1 .85)"/>
+    <use href="#spire" transform="translate(1284 150) scale(1.2 1.02)"/>
+    <use href="#spire" transform="translate(1308 150) scale(.9 .7)"/>
+    <use href="#spire" transform="translate(1330 150) scale(.8 .5)"/>
+    <path d="M1338 132H1440V150H1434V144A8 8 0 0 0 1418 144V150H1410V144A8 8 0 0 0 1394 144V150H1386V144A8 8 0 0 0 1370 144V150H1362V144A8 8 0 0 0 1346 144V150H1338Z"/>
+  </g>
+  <g id="windows" class="rose" fill-opacity=".60">
+    <path d="M1282 106V100L1284 97L1286 100V106Z"/>
+    <path d="M1257 112V107L1258.5 105L1260 107V112Z"/>
+    <path d="M1307 118V113L1308.5 111L1310 113V118Z"/>
+  </g>
+
+  <g id="near-forest" class="deep" opacity=".78">
+    <use href="#pine" transform="translate(1080 172) scale(.32)"/>
+    <use href="#pine" transform="translate(1104 172) scale(.44)"/>
+    <use href="#pine" transform="translate(1130 172) scale(.36)"/>
+    <use href="#pine" transform="translate(1160 172) scale(.5)"/>
+    <use href="#pine" transform="translate(1190 172) scale(.38)"/>
+    <use href="#pine" transform="translate(1420 172) scale(.4)"/>
+    <use href="#pine" transform="translate(1446 172) scale(.55)"/>
+    <use href="#pine" transform="translate(1472 172) scale(.42)"/>
+    <path d="M940 180C1000 172 1060 166 1120 168S1240 160 1300 164S1420 158 1480 162S1560 154 1600 150V180Z"/>
+  </g>
+
+  <g id="ledge">
+    <path d="M1478 180C1490 160 1512 146 1540 140C1560 136 1584 134 1600 132V180Z" class="deep" fill-opacity=".92"/>
+    <g class="violet-line" stroke-opacity=".55" stroke-width="1.2">
+      <path d="M1548 122Q1546 132 1552 142"/>
+      <path d="M1584 108Q1580 122 1590 136"/>
+      <path d="M1516 134Q1514 140 1520 146"/>
+    </g>
+    <g class="violet" fill-opacity=".50">
+      <use href="#leaf" transform="translate(1548 134) rotate(-20) scale(.55)"/>
+      <use href="#leaf" transform="translate(1582 124) rotate(200) scale(.6)"/>
+      <use href="#leaf" transform="translate(1517 141) rotate(195) scale(.45)"/>
+    </g>
+  </g>
+
+  <g id="flowers">
+    <circle cx="1548" cy="122" r="24" fill="url(#bloom)"/>
+    <circle cx="1584" cy="108" r="18" fill="url(#bloom)"/>
+    <use href="#flower" transform="translate(1548 122) scale(.75)" class="highlight" fill-opacity=".55"/>
+    <use href="#flower" transform="translate(1584 108) rotate(20) scale(.6)" class="blue" fill-opacity=".52"/>
+    <use href="#flower" transform="translate(1516 134) rotate(-12) scale(.5)" class="magenta" fill-opacity=".50"/>
+    <circle cx="1548" cy="122" r="2.2" class="rose"/>
+    <circle cx="1584" cy="108" r="1.8" class="ice" fill-opacity=".9"/>
+    <circle cx="1516" cy="134" r="1.5" class="highlight" fill-opacity=".8"/>
+  </g>
+
+  <g id="branch">
+    <path d="M1600 4C1578 10 1556 22 1530 26C1516 28 1504 24 1496 18" class="deep-line" stroke-opacity=".9" stroke-width="2.2"/>
+    <g class="deep" fill-opacity=".9">
+      <use href="#leaf" transform="translate(1586 8) rotate(110) scale(.7)"/>
+      <use href="#leaf" transform="translate(1566 16) rotate(70) scale(.8)"/>
+      <use href="#leaf" transform="translate(1548 22) rotate(120) scale(.7)"/>
+      <use href="#leaf" transform="translate(1530 26) rotate(80) scale(.6)"/>
+      <use href="#leaf" transform="translate(1512 26) rotate(140) scale(.55)"/>
+      <use href="#leaf" transform="translate(1500 20) rotate(200) scale(.5)"/>
+    </g>
+    <use href="#flower" transform="translate(1538 40) scale(.35)" class="highlight" fill-opacity=".45"/>
+    <circle cx="1538" cy="40" r="1.2" class="rose"/>
+  </g>
+
+  <g id="drifting-petals">
+    <use href="#leaf" transform="translate(900 74) rotate(20) scale(.32)" class="rose" fill-opacity=".22"/>
+    <use href="#leaf" transform="translate(968 132) rotate(-30) scale(.28)" class="magenta" fill-opacity=".26"/>
+    <use href="#leaf" transform="translate(1044 104) rotate(40) scale(.34)" class="rose" fill-opacity=".32"/>
+    <use href="#leaf" transform="translate(1112 58) rotate(-15) scale(.3)" class="highlight" fill-opacity=".28"/>
+    <use href="#leaf" transform="translate(1392 72) rotate(30) scale(.3)" class="rose" fill-opacity=".40"/>
+  </g>
+</svg>

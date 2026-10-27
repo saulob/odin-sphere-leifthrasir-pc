@@ -106,6 +106,14 @@ else()
     target_link_libraries(osl-loader PRIVATE osl_launcher oslgpu SDL3::SDL3 Freetype::Freetype Threads::Threads ${CMAKE_DL_LIBS} m)
 endif()
 
+# The launcher reads its header art from <exe dir>/assets/launcher.
+add_custom_command(TARGET osl-loader POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:osl-loader>/assets/launcher"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/assets/launcher/header-art.png"
+        "$<TARGET_FILE_DIR:osl-loader>/assets/launcher/header-art.png"
+    VERBATIM)
+
 # Focused tests of the game profile, the settings file, the keys and the window fit (tools\test.ps1);
 # not part of the default build.
 if (WIN32)
