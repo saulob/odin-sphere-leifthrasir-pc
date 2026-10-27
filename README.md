@@ -4,6 +4,10 @@
 
 ### Odin Sphere Leifthrasir, Vanillaware's PS4 action RPG, running natively on Windows, and experimentally on Linux and Steam Deck, with the TRG launcher and modern PC options
 
+[![Latest release](https://img.shields.io/github/v/release/saulob/odin-sphere-leifthrasir-pc?style=for-the-badge&label=release&color=e0bb32&labelColor=07101f&include_prereleases&cacheSeconds=300)](https://github.com/saulob/odin-sphere-leifthrasir-pc/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/saulob/odin-sphere-leifthrasir-pc/total?style=for-the-badge&color=e0bb32&labelColor=07101f&cacheSeconds=300)](https://github.com/saulob/odin-sphere-leifthrasir-pc/releases)
+![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20experimental%20%7C%20Steam%20Deck%20experimental-00acc1?style=for-the-badge&labelColor=07101f)
+
 <sub>The original PS4 game code runs on the PC with a replacement for the PS4 system libraries and a Vulkan renderer derived from <a href="https://github.com/shadps4-emu/shadPS4">shadPS4</a>. <b>No game files included</b>: bring your own legally obtained Odin Sphere Leifthrasir PS4 package.</sub>
 
 </div>
