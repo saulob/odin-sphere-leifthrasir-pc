@@ -23,6 +23,7 @@
 #include "osl_accent.h"
 #include "osl_displays.h"
 #include "osl_resolution.h"
+#include "controller_prompts.h"
 #include "game_files.h"
 #include "game_install.h"
 #include "host.h"
@@ -32,6 +33,7 @@
 #include "placement.h"
 #include "play_gate.h"
 #include "problem_dialog.h"
+#include "prompts_patch.h"
 #include "settings.h"
 #include "shift_key.h"
 #include "trophy_page.h"
@@ -119,6 +121,7 @@ constexpr char kShowResolutionTitleHelp[] =
     "Shows the game's render resolution in the window title: Odin Sphere Leifthrasir | 1920x1080";
 constexpr char kFrameCounterHelp[] = "Shows the frame rate and frame time in a corner of the game.";
 constexpr char kWindowModeKeyHelp[] = "Switches between Windowed and Borderless Fullscreen while playing.";
+constexpr char kControllerPromptsHelp[] = "The button images shown in the game's prompts.";
 
 std::vector<std::string> ListGpuNames() {
     char names[16][256] = {};
@@ -217,10 +220,13 @@ public:
         }
         displays_ = ListDisplays();
         gpu_names_ = ListGpuNames();
+        prompts_installed_ = InstalledPrompts();
+        Log("controller prompts: %s installed", PromptStyleKey(prompts_installed_));
         placement_ = PlacementTracker(host_.Restored());
         fonts_ = trg::LoadSystemFonts(18.0f);
         trophy_page_ = std::make_unique<TrophyPage>(host_, UserDir());
         launcher_ = std::make_unique<trg::Launcher>(MakeConfig());
+        ApplySavedPrompts();
 
         outcome = Outcome::kRunning;
         host_.BeginFrame();
@@ -267,6 +273,7 @@ private:
     Outcome Frame() {
         TrackPlacement();
         PollInstall();
+        PollPrompts();
         if (play_.starting() && ImGui::GetTime() - play_started_ >= kPlayFeedbackSeconds) {
             return Outcome::kPlay;
         }
@@ -309,7 +316,8 @@ private:
         if (files_ == GameFileState::kValid && !GraphicsUsable()) {
             return;
         }
-        switch (play_.Request(install_.running(), files_ == GameFileState::kValid, [this] { return launcher_->Save(); })) {
+        const bool busy = install_.running() || prompts_.running();
+        switch (play_.Request(busy, files_ == GameFileState::kValid, [this] { return launcher_->Save(); })) {
         case PlayRequest::kStarting:
             play_started_ = ImGui::GetTime();
             launcher_->SetStatus("", 0.0);
@@ -395,6 +403,9 @@ private:
             if (install_.running()) {
                 return trg::PlayCheck{false, "Wait for the installation to finish.", 0};
             }
+            if (prompts_.running()) {
+                return trg::PlayCheck{false, "Wait for the game file changes to finish.", 0};
+            }
             if (files_ == GameFileState::kValid) {
                 return trg::PlayCheck{};
             }
@@ -475,7 +486,7 @@ private:
     }
 
     void BrowseAndInstall() {
-        if (install_.running() || browser_.active()) {
+        if (install_.running() || browser_.active() || prompts_.running()) {
             return;
         }
         if (UseBuiltInChooser()) {
@@ -486,7 +497,7 @@ private:
     }
 
     void StartInstall(const std::string& picked) {
-        if (picked.empty()) {
+        if (picked.empty() || prompts_.running()) {
             return;
         }
         install_failure_.clear();
@@ -539,6 +550,8 @@ private:
                 trophy_page_->Invalidate();
             }
             launcher_->SetStatus(std::string(message.title) + ". " + message.text, 6.0);
+            prompts_installed_ = InstalledPrompts();
+            ApplySavedPrompts();
             return;
         }
         if (outcome->status == InstallStatus::kCancelled) {
@@ -688,6 +701,8 @@ private:
 
     void PageControls(trg::Ui& ui) {
         ui.Info("Controller", "Automatic: Xbox controllers work without setup.");
+        ui.Row("Controller prompts", kControllerPromptsHelp);
+        ControllerPromptsCombo(ui);
         ui.Info("Keyboard", "Always on, together with the controller.");
         if (ui.ConfirmRow("Keyboard defaults", "Puts the keyboard controls and the port hotkeys back to their defaults.",
                           "Reset to defaults", "Put every key back to its default?", "Reset")) {
@@ -719,6 +734,106 @@ private:
         } else {
             ui.SetStatus("That key cannot be used.");
         }
+    }
+
+    PromptStyle InstalledPrompts() const {
+        return files_ == GameFileState::kValid && build_ ? InstalledPromptStyle(paths_.app0, *build_, XboxPromptsPatch())
+                                                         : PromptStyle::kPlayStation;
+    }
+
+    PromptStyle SavedPromptStyle() const {
+        return ParsePromptStyle(settings_.Get(kControllerPromptsKey, kPromptsPlayStation)).value_or(PromptStyle::kPlayStation);
+    }
+
+    // The installed state is the truth here; the setting remembers the choice for a reinstall or another build.
+    void ControllerPromptsCombo(trg::Ui& ui) {
+        if (ui.TaskProgress(prompts_)) {
+            return;
+        }
+        const bool ready = files_ == GameFileState::kValid && build_ && !install_.running();
+        ImGui::BeginDisabled(!ready);
+        const char* shown = ready ? PromptStyleLabel(prompts_installed_) : "Install the game first";
+        if (ImGui::BeginCombo("##controller_prompts", shown)) {
+            for (const PromptStyle style : {PromptStyle::kPlayStation, PromptStyle::kXbox}) {
+                const bool selected = style == prompts_installed_;
+                if (ImGui::Selectable(PromptStyleLabel(style), selected) && !selected) {
+                    StartPrompts(style);
+                }
+                if (selected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
+        ImGui::EndDisabled();
+    }
+
+    // A leftover or partial patch is removed even when PlayStation is selected, so the archives follow the setting.
+    void ApplySavedPrompts() {
+        if (files_ != GameFileState::kValid || !build_) {
+            return;
+        }
+        const PromptStyle style = SavedPromptStyle();
+        if (style != prompts_installed_ || (style == PromptStyle::kPlayStation && AnyPromptPatch(paths_.app0, *build_))) {
+            Log("controller prompts: applying the saved %s", PromptStyleKey(style));
+            StartPrompts(style);
+        }
+    }
+
+    void StartPrompts(PromptStyle style) {
+        if (prompts_.running() || install_.running() || !build_) {
+            return;
+        }
+        prompts_outcome_ = std::make_shared<PromptsResult>();
+        const bool started = prompts_.Start(
+            style == PromptStyle::kXbox ? "Switching to Xbox prompts..." : "Restoring PlayStation prompts...",
+            [outcome = prompts_outcome_, style, app0 = paths_.app0, build = *build_](trg::Task& task) {
+                PatchHooks hooks;
+                hooks.phase = [&task](const char* text) {
+                    task.SetLabel(text);
+                    task.Progress(0, 0);
+                };
+                hooks.progress = [&task](uint64_t done, uint64_t total) {
+                    task.Progress(static_cast<long long>(done), static_cast<long long>(total));
+                    return !task.cancelled();
+                };
+                *outcome = SetPromptStyle(app0, build, style, XboxPromptsPatch(), hooks);
+                if (outcome->ok) {
+                    return std::string();
+                }
+                return std::string(outcome->cancelled ? "Cancelled" : "Could not change the game files");
+            });
+        if (started) {
+            Log("controller prompts: switching to %s", PromptStyleKey(style));
+        }
+    }
+
+    // Runs every frame so a finished change is picked up whichever page is open.
+    void PollPrompts() {
+        if (prompts_.Finish() == trg::Task::State::kIdle) {
+            return;
+        }
+        const std::shared_ptr<PromptsResult> outcome = std::move(prompts_outcome_);
+        if (!outcome) {
+            return;
+        }
+        prompts_installed_ = InstalledPrompts();
+        // A failed change leaves the original prompts, and the setting says so: the next start does not retry it.
+        if (!settings_.SaveNow({{kControllerPromptsKey, PromptStyleKey(prompts_installed_)}})) {
+            Log("could not save the controller prompts setting");
+        }
+        if (outcome->ok) {
+            Log("controller prompts: %s (%s)", PromptStyleKey(prompts_installed_), outcome->detail.c_str());
+            launcher_->SetStatus(std::string("Controller prompts: ") + PromptStyleLabel(prompts_installed_) + ".", 6.0);
+            return;
+        }
+        if (outcome->cancelled) {
+            Log("controller prompts: cancelled (%s)", outcome->detail.c_str());
+            launcher_->SetStatus("Game files unchanged.", 6.0);
+            return;
+        }
+        Log("controller prompts: failed: %s", outcome->detail.c_str());
+        launcher_->SetStatus("Could not change the controller prompts. See the log.", 8.0);
     }
 
     std::filesystem::path UserDir() const { return PathFromUtf8(config_.user_dir ? config_.user_dir : "user"); }
@@ -812,6 +927,9 @@ private:
     double play_started_ = 0.0;
     std::shared_ptr<InstallResult> outcome_;
     trg::Task install_;
+    PromptStyle prompts_installed_ = PromptStyle::kPlayStation;
+    std::shared_ptr<PromptsResult> prompts_outcome_;
+    trg::Task prompts_;
     PackageBrowser browser_;
     std::string install_failure_;
     std::string install_failure_text_;

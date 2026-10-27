@@ -36,6 +36,8 @@ inline constexpr char kShowResolutionTitleKey[] = "show_resolution_title";
 inline constexpr char kShowFrameCounterKey[] = "show_fps";
 // Keeps the run log of normal sessions; crash logs are kept whatever it says.
 inline constexpr char kDetailedLoggingKey[] = "detailed_logging";
+// Which controller's buttons the game's prompts show; the launcher keeps the installed archives in step with it.
+inline constexpr char kControllerPromptsKey[] = "controller_prompts";
 inline constexpr char kLauncherXKey[] = "launcher_x";
 inline constexpr char kLauncherYKey[] = "launcher_y";
 inline constexpr char kLauncherWidthKey[] = "launcher_width";

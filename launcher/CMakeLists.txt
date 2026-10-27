@@ -29,8 +29,8 @@ target_link_libraries(osl_imgui_sdl PUBLIC SDL3::SDL3)
 # Game files (check, PKG unpacking, install, boot image), the trophies (src/trophies), the settings file and the
 # Display options: no window needed (tests link only this).
 find_package(ZLIB REQUIRED)
-add_library(osl_launcher_core STATIC boot_image.cpp file_browser.cpp game_files.cpp game_install.cpp game_profile.cpp
-    options.cpp paths.cpp pkg_extract.cpp resolution.c settings.cpp trophy_content.cpp
+add_library(osl_launcher_core STATIC boot_image.cpp controller_prompts.cpp cpk_patch.cpp file_browser.cpp game_files.cpp
+    game_install.cpp game_profile.cpp options.cpp paths.cpp pkg_extract.cpp resolution.c settings.cpp trophy_content.cpp
     ${PROJECT_SOURCE_DIR}/src/trophies/trophy_data.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trophy_key.cpp
     ${PROJECT_SOURCE_DIR}/src/trophies/trophy_pack.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trophy_runtime.cpp
     ${PROJECT_SOURCE_DIR}/src/trophies/trophy_service.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trophy_store.cpp
@@ -50,7 +50,17 @@ else()
 endif()
 set(OSL_LOG_SOURCES ${OSL_LOG_SOURCE} ${PROJECT_SOURCE_DIR}/src/runtime_session_log.c)
 
-add_library(osl_launcher STATIC host.cpp launcher.cpp package_browser.cpp problem_dialog.cpp shift_key.cpp trophy_page.cpp)
+# The Controller prompts patch (prompts/xbox-prompts.dcpx) as a byte array, prompts_patch.h.
+set(OSL_PROMPTS_PATCH ${CMAKE_CURRENT_SOURCE_DIR}/prompts/xbox-prompts.dcpx)
+set(OSL_PROMPTS_PATCH_SOURCE ${CMAKE_BINARY_DIR}/generated/prompts_patch_data.cpp)
+add_custom_command(OUTPUT ${OSL_PROMPTS_PATCH_SOURCE}
+    COMMAND ${CMAKE_COMMAND} -DINPUT=${OSL_PROMPTS_PATCH} -DOUTPUT=${OSL_PROMPTS_PATCH_SOURCE} -DSYMBOL=kXboxPromptsPatch
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/embed.cmake
+    DEPENDS ${OSL_PROMPTS_PATCH} ${CMAKE_CURRENT_SOURCE_DIR}/embed.cmake
+    COMMENT "Embedding prompts/xbox-prompts.dcpx")
+
+add_library(osl_launcher STATIC host.cpp launcher.cpp package_browser.cpp problem_dialog.cpp shift_key.cpp trophy_page.cpp
+    ${OSL_PROMPTS_PATCH_SOURCE})
 target_compile_definitions(osl_launcher PRIVATE OSL_PORT_VERSION="${OSL_PORT_VERSION}")
 target_include_directories(osl_launcher PRIVATE ${PROJECT_SOURCE_DIR}/gpu/shim)
 target_link_libraries(osl_launcher PUBLIC osl_launcher_core trg_launcher osl_imgui_sdl ${CMAKE_DL_LIBS})

@@ -16,6 +16,8 @@
 
 #include <SDL3/SDL_scancode.h>
 
+#include "controller_prompts.h"
+#include "cpk_patch.h"
 #include "game_files.h"
 #include "game_install.h"
 #include "game_profile.h"
@@ -1006,6 +1008,437 @@ void TestRenderBufferBudget() {
     }
 }
 
+// ---- Controller prompts: block patches on synthetic CPK archives (from Dragon's Crown Pro PC) ----
+
+namespace cpk_test {
+
+namespace fs = std::filesystem;
+
+void Be16(std::string& o, uint32_t v) { o += char(v >> 8); o += char(v); }
+void Be32(std::string& o, uint32_t v) { for (int i = 3; i >= 0; --i) o += char(v >> (8 * i)); }
+void Be64(std::string& o, uint64_t v) { for (int i = 7; i >= 0; --i) o += char(v >> (8 * i)); }
+void Le32(std::string& o, uint32_t v) { for (int i = 0; i < 4; ++i) o += char(v >> (8 * i)); }
+void Le64(std::string& o, uint64_t v) { for (int i = 0; i < 8; ++i) o += char(v >> (8 * i)); }
+
+struct Column {
+    const char* name;
+    int type;    // @UTF type: 2 u16, 4 u32, 6 u64, 0xA string
+    int storage; // 0x50 per row, 0x30 constant
+};
+struct Cell {
+    uint64_t number;
+    std::string text;
+};
+using Row = std::vector<std::pair<std::string, Cell>>;
+
+Cell N(uint64_t n) { return {n, {}}; }
+Cell S(std::string s) { return {0, std::move(s)}; }
+
+// A @UTF table packet, as scripts/prompts/cpk.py's self-test builds it.
+std::string Utf(const std::string& name, const std::vector<Column>& columns, const std::vector<Row>& rows) {
+    std::string strings("<NULL>", 7);
+    const auto intern = [&](const std::string& text) {
+        const uint32_t off = uint32_t(strings.size());
+        strings += text;
+        strings += '\0';
+        return off;
+    };
+    const auto cell = [](const Row& row, const char* key) {
+        for (const auto& [k, v] : row) {
+            if (k == key) return v;
+        }
+        return Cell{};
+    };
+    const uint32_t name_off = intern(name);
+    std::string cols;
+    for (const Column& c : columns) {
+        cols += char(c.storage | c.type);
+        Be32(cols, intern(c.name));
+        if (c.storage == 0x30) {
+            const uint64_t v = cell(rows.at(0), c.name).number;
+            if (c.type == 2) Be16(cols, uint32_t(v)); else if (c.type == 4) Be32(cols, uint32_t(v)); else Be64(cols, v);
+        }
+    }
+    std::string rowbuf;
+    uint32_t row_len = 0;
+    for (const Row& row : rows) {
+        const size_t start = rowbuf.size();
+        for (const Column& c : columns) {
+            if (c.storage != 0x50) continue;
+            const Cell v = cell(row, c.name);
+            if (c.type == 0xA) Be32(rowbuf, intern(v.text));
+            else if (c.type == 2) Be16(rowbuf, uint32_t(v.number));
+            else if (c.type == 4) Be32(rowbuf, uint32_t(v.number));
+            else Be64(rowbuf, v.number);
+        }
+        row_len = uint32_t(rowbuf.size() - start);
+    }
+    const uint32_t rows_off = 32 + uint32_t(cols.size()) - 8;
+    const uint32_t strings_off = rows_off + uint32_t(rowbuf.size());
+    std::string packet("@UTF");
+    Be32(packet, 0);
+    Be32(packet, rows_off);
+    Be32(packet, strings_off);
+    Be32(packet, strings_off + uint32_t(strings.size()));
+    Be32(packet, name_off);
+    Be16(packet, uint32_t(columns.size()));
+    Be16(packet, row_len);
+    Be32(packet, uint32_t(rows.size()));
+    packet += cols + rowbuf + strings;
+    const uint32_t size = uint32_t(packet.size() - 8);
+    for (int i = 0; i < 4; ++i) packet[4 + i] = char(size >> (8 * (3 - i)));
+    return packet;
+}
+
+// CRI's XOR, its own inverse.
+std::string Crypt(std::string packet) {
+    uint32_t m = 0x5F;
+    for (char& b : packet) {
+        b = char(uint8_t(b) ^ uint8_t(m));
+        m = (m * 0x15) & 0xFF;
+    }
+    return packet;
+}
+
+std::string Section(const char* magic, const std::string& packet) {
+    std::string out(magic, 4);
+    Le32(out, 0xFF);
+    Le64(out, packet.size());
+    return out + packet;
+}
+
+// A CRILAYLA block storing `payload` with literal bytes only: the stream is read backwards and writes the output
+// backwards, and the file's first 0x100 bytes are stored raw after it.
+std::string CrilaylaLiterals(const std::string& payload) {
+    std::string out;
+    uint64_t acc = 0;
+    int bits = 0;
+    for (size_t i = payload.size(); i > 0x100; --i) {
+        acc = (acc << 9) | uint8_t(payload[i - 1]);
+        bits += 9;
+        while (bits >= 8) {
+            bits -= 8;
+            out += char(acc >> bits);
+        }
+        acc &= (1u << bits) - 1;
+    }
+    if (bits) out += char(acc << (8 - bits));
+    std::string block("CRILAYLA");
+    Le32(block, uint32_t(payload.size() - 0x100));
+    Le32(block, uint32_t(out.size()));
+    block.append(out.rbegin(), out.rend());
+    return block + payload.substr(0, 0x100);
+}
+
+struct Entry {
+    std::string path;
+    std::string data;
+    bool compressed;
+};
+
+// A CPK with an encrypted header (EnableTocCrc on), an optionally encrypted TOC and 2 KB alignment, as the game's.
+std::string BuildCpk(const std::vector<Entry>& entries, bool encrypt_toc) {
+    const uint64_t toc_offset = 0x800, content_offset = 0x3000, align = 0x800;
+    std::string content;
+    std::vector<Row> rows;
+    for (size_t i = 0; i < entries.size(); ++i) {
+        const std::string stored = entries[i].compressed ? CrilaylaLiterals(entries[i].data) : entries[i].data;
+        while ((content_offset + content.size()) % align) content += '\0';
+        const size_t slash = entries[i].path.rfind('/');
+        rows.push_back({{"DirName", S(slash == std::string::npos ? "" : entries[i].path.substr(0, slash))},
+                        {"FileName", S(entries[i].path.substr(slash == std::string::npos ? 0 : slash + 1))},
+                        {"FileSize", N(stored.size())},
+                        {"ExtractSize", N(entries[i].data.size())},
+                        {"FileOffset", N(content_offset + content.size() - toc_offset)},
+                        {"ID", N(i)},
+                        {"UserString", S("<NULL>")}});
+        content += stored;
+    }
+    std::string toc = Utf("CpkTocInfo",
+                          {{"DirName", 0xA, 0x50}, {"FileName", 0xA, 0x50}, {"FileSize", 4, 0x50}, {"ExtractSize", 4, 0x50},
+                           {"FileOffset", 6, 0x50}, {"ID", 4, 0x50}, {"UserString", 0xA, 0x50}},
+                          rows);
+    if (encrypt_toc) toc = Crypt(toc);
+    const std::string header = Utf("CpkHeader",
+                                   {{"TocOffset", 6, 0x50}, {"ContentOffset", 6, 0x50}, {"Files", 4, 0x50}, {"Align", 2, 0x50},
+                                    {"EnableTocCrc", 2, 0x50}, {"EnableFileCrc", 2, 0x50}, {"Version", 2, 0x30}},
+                                   {{{"TocOffset", N(toc_offset)}, {"ContentOffset", N(content_offset)}, {"Files", N(entries.size())},
+                                     {"Align", N(align)}, {"EnableTocCrc", N(1)}, {"EnableFileCrc", N(0)}, {"Version", N(7)}}});
+    std::string blob = Section("CPK ", Crypt(header));
+    blob.resize(toc_offset, '\0');
+    blob += Section("TOC ", toc);
+    blob.resize(content_offset, '\0');
+    return blob + content;
+}
+
+std::span<const uint8_t> Span(const std::string& s) { return {reinterpret_cast<const uint8_t*>(s.data()), s.size()}; }
+std::string Bytes(const std::vector<uint8_t>& v) { return std::string(v.begin(), v.end()); }
+
+// A DCPX patch turning each `before` into its `after` (same size), as scripts/prompts/make_dcpx.py writes it.
+std::string MakePatch(const std::vector<std::pair<std::string, std::pair<std::string, std::string>>>& targets) {
+    std::string out("DCPX1\0\0\0", 8);
+    Le32(out, uint32_t(targets.size()));
+    for (const auto& [name, versions] : targets) {
+        const auto& [before, after] = versions;
+        std::vector<size_t> runs;
+        for (size_t i = 0; i + 16 <= before.size(); i += 16) {
+            if (before.compare(i, 16, after, i, 16) != 0) runs.push_back(i);
+        }
+        out += char(name.size() & 255);
+        out += char(name.size() >> 8);
+        out += name;
+        Le32(out, uint32_t(before.size()));
+        Le32(out, Crc32(Span(before)));
+        Le32(out, Crc32(Span(after)));
+        Le32(out, uint32_t(runs.size()));
+        for (const size_t off : runs) {
+            Le32(out, uint32_t(off));
+            out += after.substr(off, 16);
+        }
+    }
+    return out;
+}
+
+void WriteAll(const fs::path& path, const std::string& data) {
+    std::ofstream(path, std::ios::binary | std::ios::trunc) << data;
+}
+
+std::string Pattern(size_t size, unsigned seed) {
+    std::string out(size, '\0');
+    for (size_t i = 0; i < size; ++i) out[i] = char((i * seed + i / 64 + seed) & 255);
+    return out;
+}
+
+std::string Painted(std::string data, std::initializer_list<size_t> offsets, char ink) {
+    for (const size_t off : offsets) data.replace(off, 16, 16, ink);
+    return data;
+}
+
+} // namespace cpk_test
+
+void TestControllerPromptsSetting() {
+    CHECK(ParsePromptStyle("xbox") == PromptStyle::kXbox && ParsePromptStyle("playstation") == PromptStyle::kPlayStation);
+    CHECK(!ParsePromptStyle("Xbox") && !ParsePromptStyle(""));
+    CHECK(std::string(PromptStyleKey(PromptStyle::kXbox)) == "xbox" && std::string(PromptStyleLabel(PromptStyle::kPlayStation)) == "PlayStation");
+    CHECK(IsValidSetting(kControllerPromptsKey, "xbox") && IsValidSetting(kControllerPromptsKey, "playstation"));
+    CHECK(!IsValidSetting(kControllerPromptsKey, "nintendo"));
+    bool managed = false;
+    for (const ManagedSetting& setting : ManagedSettings()) {
+        managed |= setting.key == kControllerPromptsKey && setting.default_value == kPromptsPlayStation;
+    }
+    CHECK(managed);
+
+    const std::filesystem::path dir = TempDir("prompts_setting");
+    LauncherSettings fresh(dir / "osl.ini");
+    CHECK(fresh.Get(kControllerPromptsKey, kPromptsPlayStation) == "playstation");
+    CHECK(fresh.SaveNow({{kControllerPromptsKey, kPromptsXbox}}));
+    LauncherSettings reloaded(dir / "osl.ini");
+    CHECK(reloaded.Get(kControllerPromptsKey, kPromptsPlayStation) == "xbox");
+    reloaded.ResetToDefaults();
+    CHECK(reloaded.Get(kControllerPromptsKey, kPromptsPlayStation) == "xbox");
+    std::ofstream(dir / "invalid.ini") << "controller_prompts = nintendo\n";
+    LauncherSettings invalid(dir / "invalid.ini");
+    CHECK(ParsePromptStyle(invalid.Get(kControllerPromptsKey, kPromptsPlayStation)) == PromptStyle::kPlayStation);
+}
+
+// The shipped patch names every copy of the button art the supported builds hold, by its CRC32: the Japanese and USA
+// copies, the European languages' (DE, ES, FR, IT, UK) and the 1.01 update's, in the Classic and Refined archives.
+void TestShippedPromptsPatch() {
+    using namespace cpk_test;
+    const std::string shipped = ReadFile(std::filesystem::path(OSL_SOURCE_DIR) / "launcher" / "prompts" / "xbox-prompts.dcpx");
+    std::string error;
+    const std::optional<BlockPatch> patch = ParseBlockPatch(Span(shipped), &error);
+    CHECK(patch && patch->targets.size() == 30);
+    if (!patch) {
+        return;
+    }
+    const uint32_t interface_copies[] = {0x3fe97430, 0xe47e29e5, 0xec90f204, 0xfd05f64f, 0xff340ee4, 0x97dd55aa,
+                                         0xfe6f717c, 0x7165f61b, 0xdaa34f6f, 0x748043f1, 0x40eb3501, 0x3aa386c2};
+    const uint32_t onmemory_copies[] = {0xef5decc1, 0xb949a3bd, 0x3dca4e69};
+    const auto find = [&](const char* name, uint32_t crc) -> const BlockPatchTarget* {
+        for (const BlockPatchTarget& target : patch->targets) {
+            if (target.name == name && target.crc_before == crc) return &target;
+        }
+        return nullptr;
+    };
+    for (const uint32_t crc : interface_copies) {
+        const BlockPatchTarget* classic = find("Interface.ftx", crc);
+        const BlockPatchTarget* refined = find("GUI/HD_Interface.ftx", crc);
+        CHECK(classic && refined);
+        if (classic && refined) {
+            CHECK(classic->runs.size() > 3000 && classic->runs.size() < 4000);
+            CHECK(classic->crc_after == refined->crc_after && classic->runs.size() == refined->runs.size());
+            CHECK(classic->crc_after != classic->crc_before);
+        }
+    }
+    for (const uint32_t crc : onmemory_copies) {
+        const BlockPatchTarget* classic = find("OnMemory.ftx", crc);
+        CHECK(classic && find("OnMemory/HD_OnMemory.ftx", crc));
+        CHECK(classic && classic->runs.size() > 500 && classic->runs.size() < 1000);
+    }
+    CHECK(!ParseBlockPatch(Span(shipped.substr(0, 100)), &error) && error.find("truncated") != std::string::npos);
+    CHECK(!ParseBlockPatch(Span(std::string("hello")), &error));
+}
+
+void TestControllerPrompts() {
+    using namespace cpk_test;
+    const fs::path base = TempDir("prompts");
+    const fs::path app0 = base / "app0";
+    fs::create_directories(app0);
+
+    // Two languages hold different copies of the same entry names, as the European build's archives do.
+    const std::string de = Pattern(20480, 7), es = Pattern(20480, 11), onmem = Pattern(24576, 13);
+    const std::string de_x = Painted(de, {0x340, 0x1000, 0x4ff0}, 'X'), es_x = Painted(es, {0x340, 0x2000}, 'Y');
+    const std::string onmem_x = Painted(onmem, {0x380, 0x5000}, 'Z');
+    const std::string patch_bytes = MakePatch({{"Interface.ftx", {de, de_x}},
+                                               {"GUI/HD_Interface.ftx", {de, de_x}},
+                                               {"Interface.ftx", {es, es_x}},
+                                               {"GUI/HD_Interface.ftx", {es, es_x}},
+                                               {"OnMemory.ftx", {onmem, onmem_x}}});
+    const std::string other = "BOOT" + std::string(600, '\0');
+    const std::string or_de = BuildCpk({{"Interface.ftx", de, true}, {"OnMemory.ftx", onmem, false}}, true);
+    const std::string re_de = BuildCpk({{"GUI/HD_Interface.ftx", de, false}, {"other/x.bin", other, true}}, false);
+    const std::string or_es = BuildCpk({{"Interface.ftx", es, false}}, true);
+    const std::string bt = BuildCpk({{"other/x.bin", other, false}}, false);
+    const char* const files[] = {"Odin2_BT_DE.CPK", "Odin2_OR_DE.CPK", "Odin2_RE_DE.CPK", "Odin2_OR_ES.CPK"};
+    const auto reset = [&] {
+        for (const char* name : files) {
+            fs::remove(UndoPath(app0 / name));
+        }
+        WriteAll(app0 / "Odin2_BT_DE.CPK", bt);
+        WriteAll(app0 / "Odin2_OR_DE.CPK", or_de);
+        WriteAll(app0 / "Odin2_RE_DE.CPK", re_de);
+        WriteAll(app0 / "Odin2_OR_ES.CPK", or_es);
+    };
+    reset();
+    GameBuild build{};
+    build.label = "test build";
+    build.data_files = files;
+    const auto installed = [&] { return InstalledPromptStyle(app0, build, Span(patch_bytes)); };
+    const auto originals = [&] {
+        return ReadFile(app0 / "Odin2_OR_DE.CPK") == or_de && ReadFile(app0 / "Odin2_RE_DE.CPK") == re_de &&
+               ReadFile(app0 / "Odin2_OR_ES.CPK") == or_es && ReadFile(app0 / "Odin2_BT_DE.CPK") == bt &&
+               !AnyPromptPatch(app0, build);
+    };
+    CHECK(PromptArchives(app0, build, *ParseBlockPatch(Span(patch_bytes))).size() == 3);
+    CHECK(installed() == PromptStyle::kPlayStation && !AnyPromptPatch(app0, build));
+
+    // Reading: header, TOC (encrypted or not), case-insensitive lookup, CRILAYLA.
+    {
+        CpkArchive archive;
+        std::string error;
+        CHECK(archive.Open(app0 / "Odin2_OR_DE.CPK", &error));
+        CHECK(archive.entries().size() == 2 && archive.align() == 0x800 && archive.enable_toc_crc() == 1);
+        CHECK(archive.Find("interface.FTX") && !archive.Find("GUI/HD_Interface.ftx"));
+        CHECK(Bytes(archive.Read(*archive.Find("Interface.ftx"))) == de && archive.Find("Interface.ftx")->size != de.size());
+        CpkArchive not_cpk;
+        WriteAll(base / "text.CPK", "not an archive at all, just text");
+        CHECK(!not_cpk.Open(base / "text.CPK", &error) && !error.empty());
+    }
+
+    // Xbox: each archive gets the patched copy of its own language, the CRC flag cleared, the original data untouched.
+    std::vector<std::string> phases;
+    PatchHooks hooks;
+    hooks.phase = [&phases](const char* text) { phases.emplace_back(text); };
+    PromptsResult r = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch_bytes), hooks);
+    CHECK(r.ok && !r.cancelled);
+    CHECK(installed() == PromptStyle::kXbox);
+    CHECK(!phases.empty() && phases[0] == "Patching Odin2_OR_DE.CPK...");
+    CHECK(ReadFile(app0 / "Odin2_BT_DE.CPK") == bt && !fs::exists(UndoPath(app0 / "Odin2_BT_DE.CPK")));
+    {
+        CpkArchive or_archive, re_archive, es_archive;
+        CHECK(or_archive.Open(app0 / "Odin2_OR_DE.CPK") && or_archive.enable_toc_crc() == 0);
+        CHECK(Bytes(or_archive.Read(*or_archive.Find("Interface.ftx"))) == de_x);
+        CHECK(Bytes(or_archive.Read(*or_archive.Find("OnMemory.ftx"))) == onmem_x);
+        CHECK(or_archive.Find("Interface.ftx")->size == de_x.size() && or_archive.Find("Interface.ftx")->offset >= or_de.size());
+        CHECK(or_archive.Find("Interface.ftx")->offset % 0x800 == 0);
+        CHECK(re_archive.Open(app0 / "Odin2_RE_DE.CPK") && Bytes(re_archive.Read(*re_archive.Find("GUI/HD_Interface.ftx"))) == de_x);
+        CHECK(Bytes(re_archive.Read(*re_archive.Find("other/x.bin"))) == other);
+        CHECK(es_archive.Open(app0 / "Odin2_OR_ES.CPK") && Bytes(es_archive.Read(*es_archive.Find("Interface.ftx"))) == es_x);
+        const std::string now = ReadFile(app0 / "Odin2_OR_DE.CPK");
+        CHECK(now.compare(0x3000, or_de.size() - 0x3000, or_de, 0x3000, std::string::npos) == 0);
+    }
+
+    // Choosing Xbox again changes nothing.
+    const std::string patched_de = ReadFile(app0 / "Odin2_OR_DE.CPK");
+    r = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch_bytes));
+    CHECK(r.ok && r.detail.find("already patched") != std::string::npos && ReadFile(app0 / "Odin2_OR_DE.CPK") == patched_de);
+
+    // PlayStation: byte-identical archives, undo records gone; again: nothing to do.
+    r = SetPromptStyle(app0, build, PromptStyle::kPlayStation, {});
+    CHECK(r.ok && originals() && installed() == PromptStyle::kPlayStation);
+    r = SetPromptStyle(app0, build, PromptStyle::kPlayStation, {});
+    CHECK(r.ok && originals());
+
+    // Several round trips end where they started.
+    for (int i = 0; i < 3; ++i) {
+        CHECK(SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch_bytes)).ok && installed() == PromptStyle::kXbox);
+        CHECK(SetPromptStyle(app0, build, PromptStyle::kPlayStation, {}).ok && originals());
+    }
+
+    // A half-patched install reads as PlayStation; Xbox completes it, PlayStation cleans it up.
+    CHECK(ApplyBlockPatch(app0 / "Odin2_RE_DE.CPK", *ParseBlockPatch(Span(patch_bytes))).ok);
+    CHECK(installed() == PromptStyle::kPlayStation && AnyPromptPatch(app0, build));
+    CHECK(SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch_bytes)).ok && installed() == PromptStyle::kXbox);
+    CHECK(SetPromptStyle(app0, build, PromptStyle::kPlayStation, {}).ok && originals());
+
+    // An interrupted write (undo record written, table of contents not yet) is put back by the next change.
+    {
+        const std::string record_source = ReadFile(app0 / "Odin2_OR_ES.CPK");
+        CHECK(ApplyBlockPatch(app0 / "Odin2_OR_ES.CPK", *ParseBlockPatch(Span(patch_bytes))).ok);
+        const std::string record = ReadFile(UndoPath(app0 / "Odin2_OR_ES.CPK"));
+        WriteAll(app0 / "Odin2_OR_ES.CPK", record_source + std::string(4096, 'j'));
+        WriteAll(UndoPath(app0 / "Odin2_OR_ES.CPK"), record);
+        CHECK(installed() == PromptStyle::kPlayStation);
+        CHECK(SetPromptStyle(app0, build, PromptStyle::kPlayStation, {}).ok && originals());
+    }
+
+    // Cancelling while writing leaves every archive as it was.
+    hooks.phase = nullptr;
+    hooks.progress = [](uint64_t, uint64_t) { return false; };
+    r = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch_bytes), hooks);
+    CHECK(!r.ok && r.cancelled && originals());
+
+    // A copy the patch was not made for is left alone, and Xbox is refused for the whole build.
+    std::string foreign = es;
+    foreign[0x2000] = char(foreign[0x2000] + 1);
+    WriteAll(app0 / "Odin2_OR_ES.CPK", BuildCpk({{"Interface.ftx", foreign, false}}, false));
+    const std::string foreign_es = ReadFile(app0 / "Odin2_OR_ES.CPK");
+    r = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch_bytes));
+    CHECK(!r.ok && r.detail.find("is not the file the patch was made for") != std::string::npos);
+    CHECK(ReadFile(app0 / "Odin2_OR_ES.CPK") == foreign_es && ReadFile(app0 / "Odin2_OR_DE.CPK") == or_de);
+    CHECK(installed() == PromptStyle::kPlayStation && !AnyPromptPatch(app0, build));
+    reset();
+
+    // An unreadable patch is refused before anything is written.
+    r = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(std::string("DCPX1")));
+    CHECK(!r.ok && originals());
+
+    // An archive hard-linked from another folder (the extracted game, the base build of an update) gets a file of
+    // its own before it is patched or restored: the other folder keeps the original.
+    const fs::path source = base / "source";
+    fs::create_directories(source);
+    WriteAll(source / "Odin2_OR_DE.CPK", or_de);
+    fs::remove(app0 / "Odin2_OR_DE.CPK");
+    std::error_code ec;
+    fs::create_hard_link(source / "Odin2_OR_DE.CPK", app0 / "Odin2_OR_DE.CPK", ec);
+    if (!ec) {
+        CHECK(SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch_bytes)).ok && installed() == PromptStyle::kXbox);
+        CHECK(ReadFile(source / "Odin2_OR_DE.CPK") == or_de && fs::hard_link_count(app0 / "Odin2_OR_DE.CPK") == 1);
+
+        // An update laid over the patched base starts from the originals; the base keeps its patch.
+        const fs::path update = base / "update", staged = base / "staged";
+        fs::create_directories(update);
+        WriteAll(update / "Odin2_PATCH.CPK", bt);
+        CHECK(StageUpdate(app0, update, staged).ok());
+        CHECK(ReadFile(staged / "Odin2_OR_DE.CPK") == or_de && ReadFile(staged / "Odin2_RE_DE.CPK") == re_de);
+        CHECK(!fs::exists(UndoPath(staged / "Odin2_OR_DE.CPK")) && fs::exists(staged / "Odin2_PATCH.CPK"));
+        CHECK(installed() == PromptStyle::kXbox);
+        CHECK(SetPromptStyle(app0, build, PromptStyle::kPlayStation, {}).ok);
+        CHECK(ReadFile(app0 / "Odin2_OR_DE.CPK") == or_de && ReadFile(source / "Odin2_OR_DE.CPK") == or_de);
+    }
+}
+
 } // namespace
 
 int main() {
@@ -1028,6 +1461,9 @@ int main() {
     TestPartialClearCoverage();
     TestRenderBufferBudget();
     TestLogRetention();
+    TestControllerPromptsSetting();
+    TestShippedPromptsPatch();
+    TestControllerPrompts();
     std::printf("%s (%d checks, %d failures)\n", g_failures ? "FAILED" : "OK", g_checks, g_failures);
     return g_failures ? 1 : 0;
 }

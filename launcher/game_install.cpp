@@ -21,6 +21,7 @@
 #endif
 
 #include "boot_image.h"
+#include "cpk_patch.h"
 #include "pkg_extract.h"
 #include "utf8.h"
 
@@ -379,6 +380,32 @@ InstallResult LinkTree(const fs::path& from, const fs::path& to) {
     return {};
 }
 
+// The base's Controller prompts patch is not carried into an update: its archives are put back to the originals here
+// (written to files of their own, the base keeps its links), and the saved setting patches the new build after the install.
+InstallResult RevertStagedPatches(const fs::path& staged) {
+    std::error_code ec;
+    std::vector<fs::path> records;
+    for (fs::recursive_directory_iterator it(staged, ec), end; !ec && it != end; it.increment(ec)) {
+        if (it->is_regular_file(ec) && it->path().extension() == ".undo") {
+            records.push_back(it->path());
+        }
+    }
+    if (ec) {
+        return Failure(InstallStatus::kReadFailed, "cannot list " + Utf8(staged) + ": " + ec.message());
+    }
+    for (const fs::path& record : records) {
+        const fs::path archive = fs::path(record).replace_extension();
+        if (!fs::exists(archive, ec)) {
+            fs::remove(record, ec);
+            continue;
+        }
+        if (const PatchResult reverted = RevertBlockPatch(archive); !reverted.ok) {
+            return Failure(InstallStatus::kWriteFailed, "cannot restore the original " + reverted.detail);
+        }
+    }
+    return {};
+}
+
 // Lays the files of an unpacked update over the staged game. A staged file is replaced, never written through: it may
 // be a link into the installed game.
 InstallResult OverlayUpdate(const fs::path& update, const fs::path& staged) {
@@ -575,6 +602,9 @@ InstallResult InstallUpdatePackage(const fs::path& source, Package& package, con
 InstallResult StageUpdate(const fs::path& base_app0, const fs::path& update_dir, const fs::path& staged_app0) {
     if (InstallResult linked = LinkTree(base_app0, staged_app0); !linked.ok()) {
         return linked;
+    }
+    if (InstallResult reverted = RevertStagedPatches(staged_app0); !reverted.ok()) {
+        return reverted;
     }
     return OverlayUpdate(update_dir, staged_app0);
 }

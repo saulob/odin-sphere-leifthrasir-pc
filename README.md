@@ -26,7 +26,7 @@ that make the first boot debuggable. The USA 1.00 base package (`CUSA05083`) and
 - **Upscaling** (AMD FSR 1) and **sharpening** (AMD RCAS)
 - **SMAA** anti-aliasing and **anisotropic texture filtering** (Game, 2x, 4x, 8x, 16x)
 - Frame rate and render resolution in the window title, and an in-game **frame counter**
-- Xbox controllers without setup, and keyboard support
+- Xbox controllers without setup, and keyboard support, with **Xbox button prompts** as an option (PlayStation prompts are the default)
 - **Local PS4 trophies**, offline on this PC, shown on the launcher's Trophies page
 - Portable `user` and `logs` folders next to the program for settings, saves, the shader cache and logs
 
@@ -81,7 +81,7 @@ Everything is kept next to the program:
 - **Display**: display mode, window size, monitor, Aspect Ratio, graphics card, VSync, Presentation, FSR 1 upscaling and RCAS sharpening
 - **Graphics**: Render resolution, SMAA anti-aliasing and anisotropic texture filtering
 - **Gameplay**: Menu & Subtitles language (the European build only), frame rate and render resolution in the title, and the in-game frame counter
-- **Controls**: every keyboard binding and the port hotkeys, with **Reset to defaults**
+- **Controls**: **Controller prompts** (PlayStation or Xbox), every keyboard binding and the port hotkeys, with **Reset to defaults**. Xbox changes the button pictures the game shows (A/B/X/Y, LB/RB, LT/RT, MENU and VIEW) in the port's own copy of the game; the touchpad prompt becomes VIEW. PlayStation puts the originals back. Your `.pkg` file is never changed.
 - **Trophies**: your local PS4 trophy progress, the trophy list and the Trophy Key setup
 - **About**: the port version, the game, the renderer and the library versions, the game, saves and logs folders, the settings file, **Reset all settings**, and **Diagnostics** with Detailed logging and a button that opens the logs folder
 

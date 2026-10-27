@@ -39,6 +39,7 @@ constexpr ManagedSetting kBaseSettings[] = {
     {kShowResolutionTitleKey, "0"},
     {kShowFrameCounterKey, "0"},
     {kDetailedLoggingKey, "1"},
+    {kControllerPromptsKey, "playstation"},
     {kLauncherXKey, ""},
     {kLauncherYKey, ""},
     {kLauncherWidthKey, ""},
@@ -83,6 +84,9 @@ bool IsValidSetting(std::string_view key, std::string_view value) {
     }
     if (key == kAnisotropyKey) {
         return one_of({"0", "2", "4", "8", "16"});
+    }
+    if (key == kControllerPromptsKey) {
+        return one_of({"playstation", "xbox"});
     }
     if (key == kPresentationKey) {
         return std::any_of(std::begin(kPresentationChoices), std::end(kPresentationChoices),
@@ -172,7 +176,8 @@ bool LauncherSettings::SaveNow(const Values& values) {
 
 void LauncherSettings::ResetToDefaults() {
     for (const ManagedSetting& setting : ManagedSettings()) {
-        if (!IsLauncherPlacementSetting(setting.key)) {
+        // The prompts follow the game files, which change (and save the setting) when the choice is made.
+        if (!IsLauncherPlacementSetting(setting.key) && setting.key != kControllerPromptsKey) {
             pending_[std::string(setting.key)] = std::string(setting.default_value);
         }
     }

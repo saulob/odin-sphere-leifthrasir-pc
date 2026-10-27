@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
   Builds and runs the focused tests: the game profile and the package identity, the settings file, the keyboard
-  bindings, the cursor visibility rules, the window fit, the GPU tile layouts and the patch workflow. They use
+  bindings, the controller prompts patch, the cursor visibility rules, the window fit, the GPU tile layouts and the patch workflow. They use
   synthetic data in a temporary folder: no window, no game files.
 .DESCRIPTION
   Needs the build configured once by tools\build.ps1. The tests are not part of the default build.

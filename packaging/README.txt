@@ -67,6 +67,8 @@ PLAYING
 - F11 switches between Windowed and Borderless Fullscreen.
 - Xbox controllers work without setup.
 - The keyboard works too; the launcher's Controls page lists the keys.
+- The Controls page also chooses the button prompts the game shows: PlayStation
+  (the original) or Xbox.
 - To open the launcher again after turning it off, hold Shift while starting.
 
 
