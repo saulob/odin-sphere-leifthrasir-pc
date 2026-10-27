@@ -35,6 +35,7 @@ constexpr ManagedSetting kBaseSettings[] = {
     {kAntiAliasingKey, "0"},
     {kAnisotropyKey, "0"},
     {kTextLanguageKey, "english"},
+    {kSkipIntroKey, "0"},
     {kShowFpsTitleKey, "0"},
     {kShowResolutionTitleKey, "0"},
     {kShowFrameCounterKey, "0"},
@@ -245,4 +246,11 @@ extern "C" void osl_log_gameplay_settings(const char* settings_file, const char*
     const LauncherSettings settings(PathFromUtf8(settings_file ? settings_file : ""));
     const TextLanguage& language = ResolveTextLanguage(build, settings.Get(kTextLanguageKey));
     std::printf("Gameplay: Menu & Subtitles %.*s\n", static_cast<int>(language.name.size()), language.name.data());
+    std::printf("Gameplay: Skip intro %s\n", settings.GetBool(kSkipIntroKey, false) ? "on" : "off");
+}
+
+extern "C" int osl_skip_intro(const char* settings_file) {
+    using namespace osl;
+    const LauncherSettings settings(PathFromUtf8(settings_file ? settings_file : ""));
+    return settings.GetBool(kSkipIntroKey, false) ? 1 : 0;
 }

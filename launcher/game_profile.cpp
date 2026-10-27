@@ -92,6 +92,13 @@ constexpr OslResolutionSite kEu101ResolutionSites[] = {
     {0x6bafad, 2, {0x48, 0xb9}, 0x44f00000, 0, 0x44870000, 1, 0},
 };
 
+// Skip intro: the same code in every build, at these offsets.
+constexpr OslSkipIntroSites kUsaSkipIntro{0x52d, 0x66c36b, 0x1794bd, 0x146bb0, 0x97e8d0};
+constexpr OslSkipIntroSites kJapanBaseSkipIntro{0x51d, 0x6632fb, 0x1781ad, 0x145af0, 0xa6eea0};
+constexpr OslSkipIntroSites kJapan102SkipIntro{0x51d, 0x669c6b, 0x1784bd, 0x145df0, 0xa1b5e0};
+constexpr OslSkipIntroSites kEuBaseSkipIntro{0x52d, 0x66d5bb, 0x17993d, 0x146e80, 0x965780};
+constexpr OslSkipIntroSites kEu101SkipIntro{0x52d, 0x66d770, 0x179a1d, 0x146f60, 0x965950};
+
 // The European executable picks its menu and subtitle archives from the system language; these are the languages it
 // maps (UK is its English). The USA and Japanese builds ship one text language each and list none.
 constexpr TextLanguage kEuLanguages[] = {
@@ -133,6 +140,7 @@ constexpr GameBuild kGameBuilds[] = {
         "USA",
         kUsaLayers,
         kUsaResolutionSites,
+        &kUsaSkipIntro,
         {},
     },
     {
@@ -147,6 +155,7 @@ constexpr GameBuild kGameBuilds[] = {
         "Japan",
         kJapanBaseLayers,
         kJapanBaseResolutionSites,
+        &kJapanBaseSkipIntro,
         {},
     },
     {
@@ -161,6 +170,7 @@ constexpr GameBuild kGameBuilds[] = {
         "Japan",
         kJapan102Layers,
         kJapan102ResolutionSites,
+        &kJapan102SkipIntro,
         {},
     },
     {
@@ -175,6 +185,7 @@ constexpr GameBuild kGameBuilds[] = {
         "Europe",
         kEuBaseLayers,
         kEuBaseResolutionSites,
+        &kEuBaseSkipIntro,
         kEuLanguages,
     },
     {
@@ -189,6 +200,7 @@ constexpr GameBuild kGameBuilds[] = {
         "Europe",
         kEu101Layers,
         kEu101ResolutionSites,
+        &kEu101SkipIntro,
         kEuLanguages,
     },
 };

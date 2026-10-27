@@ -5,6 +5,7 @@
 #include <stddef.h>
 
 #include "osl_resolution.h"
+#include "osl_skip_intro.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,6 +62,9 @@ int osl_text_language(const char* settings_file, const char* image_dir);
 /* Prints into the run log the Gameplay choices the loader applies, starting with the menus-and-subtitles language. */
 void osl_log_gameplay_settings(const char* settings_file, const char* image_dir);
 
+/* 1 when the settings file turns Skip intro on (skip_intro; 0 by default). */
+int osl_skip_intro(const char *settings_file);
+
 /* 1 when the settings file keeps the logs of normal sessions (detailed_logging; 1 by default). */
 int osl_detailed_logging(const char *settings_file);
 
@@ -84,6 +88,7 @@ typedef struct {
     const char *label;
     const OslResolutionSite *resolution_sites;
     size_t resolution_site_count;
+    const OslSkipIntroSites *skip_intro; /* NULL: not available for the build */
 } OslGameBuild;
 
 /* The supported game build a boot image folder was built from (its image.json); 0 when it is not one. */

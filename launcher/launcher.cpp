@@ -115,6 +115,7 @@ constexpr char kAntiAliasingHelp[] =
 constexpr char kAnisotropyHelp[] =
     "Sharper textures on floors and walls seen at an angle. Game uses the game's own filtering.";
 constexpr char kTextLanguageHelp[] = "Language used by game menus and subtitles.";
+constexpr char kSkipIntroHelp[] = "Starts directly at the title screen, skipping the startup notice, logos and intro.";
 constexpr char kAspectRatioHelp[] = "Sets the game's target rendering shape and the Window size choices.";
 constexpr char kRestrictedAspectRatioHelp[] =
     "This game build renders at 16:9; the other aspect ratios are not available for it.";
@@ -820,6 +821,7 @@ private:
             }
             ui.Combo("Menu & Subtitles", kTextLanguageHelp, kTextLanguageKey, available.front().key.data(), languages);
         }
+        ui.Toggle("Skip intro", kSkipIntroHelp, kSkipIntroKey, false, "Off", "On");
         ui.Toggle("Frame rate in title", kShowFpsTitleHelp, kShowFpsTitleKey, false, "Off", "On");
         ui.Toggle("Render resolution in title", kShowResolutionTitleHelp, kShowResolutionTitleKey, false, "Off", "On");
         ui.Toggle("Frame counter", kFrameCounterHelp, kShowFrameCounterKey, false, "Hidden", "Shown");

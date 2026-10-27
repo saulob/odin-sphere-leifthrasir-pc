@@ -95,7 +95,7 @@ Everything is kept next to the program:
 - **Play**: install or reinstall the game from your `.pkg`, the **Ready to play** status and **Show this launcher**
 - **Display**: display mode, window size, monitor, Aspect Ratio, graphics card, VSync, Presentation, FSR 1 upscaling and RCAS sharpening
 - **Graphics**: Render resolution, SMAA anti-aliasing and anisotropic texture filtering
-- **Gameplay**: Menu & Subtitles language (the European build only), frame rate and render resolution in the title, and the in-game frame counter
+- **Gameplay**: Menu & Subtitles language (the European build only), **Skip intro**, frame rate and render resolution in the title, and the in-game frame counter
 - **Controls**: **Controller prompts** (PlayStation or Xbox), every keyboard binding and the port hotkeys, with **Reset to defaults**. Xbox changes the button pictures the game shows (A/B/X/Y, LB/RB, LT/RT, MENU and VIEW) in the port's own copy of the game; the touchpad prompt becomes VIEW. PlayStation puts the originals back. Your `.pkg` file is never changed.
 - **Trophies**: your local PS4 trophy progress, the trophy list and the Trophy Key setup
 - **About**: the port version, the game, the renderer and the library versions, the game, saves and logs folders, the settings file, **Reset all settings**, and **Diagnostics** with Detailed logging and a button that opens the logs folder
@@ -127,6 +127,11 @@ build is kept if you switch builds and used again when you return.
 single `Odin2_BT_UK.CPK` audio container (the per-language `Odin2_BT_*.CPK` files are secondary), and the in-game
 **Options → Voice Language** chooses between them. The launcher does not add a Voice Language option and does not
 change the game's choice; Menu & Subtitles affects text only.
+
+**Skip intro** (Gameplay, Off by default) skips the startup notice and the title intro with its logos, so the game opens
+at the title's PRESS START, in both Refined and Classic mode. It acts once per start of the game: returning to the title,
+switching mode and the title's own demo play as usual. The save data and trophy checks before the title still run. It is
+stored in `user\osl.ini` as `skip_intro`, and it is available for every supported build.
 
 **Detailed logging** (About, Diagnostics) is on by default and keeps the log of every session. The launcher and the
 game write one `odin_sphere_leifthrasir_NNN.log` for the whole run; it records the port version, the operating system,

@@ -1425,6 +1425,218 @@ void TestRenderBufferBudget() {
     }
 }
 
+void TestSkipIntroSetting() {
+    bool managed = false;
+    for (const ManagedSetting& setting : ManagedSettings()) {
+        managed |= setting.key == kSkipIntroKey && setting.default_value == "0";
+    }
+    CHECK(managed);
+
+    const std::filesystem::path dir = TempDir("skip-intro");
+    const std::filesystem::path file = dir / "osl.ini";
+    LauncherSettings defaults(file);
+    defaults.ResetToDefaults();
+    CHECK(defaults.Get(kSkipIntroKey, "") == "0");
+    CHECK(osl_skip_intro(file.string().c_str()) == 0);
+    CHECK(osl_skip_intro(nullptr) == 0);
+
+    {
+        LauncherSettings settings(file);
+        settings.SetBool(kSkipIntroKey, true);
+        CHECK(settings.Save());
+    }
+    CHECK(ReadFile(file).find("skip_intro = 1\n") != std::string::npos);
+    CHECK(osl_skip_intro(file.string().c_str()) == 1);
+    {
+        LauncherSettings settings(file);
+        CHECK(settings.GetBool(kSkipIntroKey, false));
+        settings.ResetToDefaults();
+        CHECK(settings.Save());
+    }
+    CHECK(osl_skip_intro(file.string().c_str()) == 0);
+    std::ofstream(file) << "skip_intro = on\n";
+    CHECK(osl_skip_intro(file.string().c_str()) == 1);
+    std::ofstream(file) << "skip_intro = garbage\n";
+    CHECK(osl_skip_intro(file.string().c_str()) == 0);
+}
+
+void TestSkipIntroWiring() {
+    const std::filesystem::path root(OSL_SOURCE_DIR);
+    const std::string launcher = ReadFile(root / "launcher" / "launcher.cpp");
+    const size_t page = launcher.find("void PageGameplay(trg::Ui& ui) {");
+    const size_t page_end = launcher.find("void PageControls(trg::Ui& ui) {");
+    CHECK(page != std::string::npos && page_end != std::string::npos && page < page_end);
+    const std::string gameplay = launcher.substr(page, page_end - page);
+    const size_t languages = gameplay.find("ui.Combo(\"Menu & Subtitles\"");
+    const size_t skip = gameplay.find("ui.Toggle(\"Skip intro\", kSkipIntroHelp, kSkipIntroKey, false, \"Off\", \"On\");");
+    const size_t frame_rate = gameplay.find("ui.Toggle(\"Frame rate in title\"");
+    CHECK(languages != std::string::npos && skip != std::string::npos && frame_rate != std::string::npos);
+    CHECK(languages < skip && skip < frame_rate);
+    CHECK(launcher.find("kSkipIntroHelp[] = \"Starts directly at the title screen") != std::string::npos);
+
+    // Only an On setting patches, and before the red-zone pass reads the guest code.
+    const std::string loader = ReadFile(root / "src" / "loader.c");
+    const size_t apply = loader.find("if (osl_skip_intro(settings_file)) apply_skip_intro(");
+    const size_t redzone = loader.find("runtime_redzone_install(image,");
+    CHECK(apply != std::string::npos && redzone != std::string::npos && apply < redzone);
+}
+
+// The page that holds the stubs, as the loader maps it: the code's last page.
+uint64_t SkipIntroCodeEnd(const OslSkipIntroSites& sites) {
+    return (uint64_t{sites.stubs} | 0xfff) + 1;
+}
+
+// A build's original code around every Skip intro site, int3 elsewhere and zeros after the code.
+std::vector<unsigned char> SkipIntroImage(const OslSkipIntroSites& sites) {
+    std::vector<unsigned char> image(SkipIntroCodeEnd(sites), 0xcc);
+    const auto install = [&](const OslSkipIntroCode& code, uint32_t site) {
+        for (size_t i = 0; i < code.count; ++i) {
+            image[site - code.site + i] = code.bytes[i] < 0 ? 0 : static_cast<unsigned char>(code.bytes[i]);
+        }
+    };
+    install(osl_skip_intro_notice_code, sites.notice_scene);
+    install(osl_skip_intro_hd_title_code, sites.hd_title_check);
+    install(osl_skip_intro_classic_title_code, sites.classic_title_check);
+    const int32_t call = static_cast<int32_t>(int64_t{sites.classic_button} - int64_t{sites.classic_title_check} - 5);
+    std::memcpy(image.data() + sites.classic_title_check + 1, &call, 4);
+    std::fill(image.begin() + sites.stubs, image.end(), 0);
+    return image;
+}
+
+std::vector<unsigned char> ExpectedSkipIntroStub(uint64_t claim, const std::vector<unsigned char>& jump) {
+    std::vector<unsigned char> stub = {0x57, 0x56, 0x50, 0x48, 0xb8};
+    for (int i = 0; i < 8; ++i) {
+        stub.push_back(static_cast<unsigned char>(claim >> (8 * i)));
+    }
+    stub.insert(stub.end(), {0xff, 0xd0, 0x89, 0xc1, 0x58, 0x5e, 0x5f, 0x85, 0xc9, 0x75});
+    stub.push_back(static_cast<unsigned char>(jump.size()));
+    stub.insert(stub.end(), jump.begin(), jump.end());
+    stub.insert(stub.end(), {0xb8, 0x01, 0x00, 0x00, 0x00, 0xc3});
+    return stub;
+}
+
+int64_t Rel32At(const std::vector<unsigned char>& image, uint64_t at) {
+    int32_t value = 0;
+    std::memcpy(&value, image.data() + at, 4);
+    return value;
+}
+
+void TestBuildSkipIntro(const GameBuild& build) {
+    CHECK(build.skip_intro != nullptr);
+    if (!build.skip_intro) {
+        return;
+    }
+    const OslSkipIntroSites& sites = *build.skip_intro;
+    CHECK(sites.stubs % 16 == 0);
+    CHECK((sites.stubs & 0xfff) != 0 && (sites.stubs & 0xfff) + OSL_SKIP_INTRO_STUB_BYTES <= 0x1000);
+
+    const std::filesystem::path dir = TempDir("skip-intro-build");
+    std::ofstream(dir / "image.json") << "{\n  \"title_id\": \"" << build.title_id << "\",\n  \"app_ver\": \""
+                                      << FinishedLayer(build).app_ver << "\",\n  \"eboot_sha256\": \""
+                                      << build.eboot_sha256 << "\"\n}\n";
+    OslGameBuild loaded{};
+    CHECK(osl_game_build(dir.string().c_str(), &loaded) && loaded.skip_intro == build.skip_intro);
+
+    // The Skip intro sites, their stubs and the render resolution sites share no byte.
+    struct Range {
+        uint64_t begin, end;
+    };
+    const auto window = [](const OslSkipIntroCode& code, uint32_t site) {
+        return Range{site - code.site, site - code.site + code.count};
+    };
+    std::vector<Range> ranges = {window(osl_skip_intro_notice_code, sites.notice_scene),
+                                 window(osl_skip_intro_hd_title_code, sites.hd_title_check),
+                                 window(osl_skip_intro_classic_title_code, sites.classic_title_check),
+                                 {sites.stubs, sites.stubs + OSL_SKIP_INTRO_STUB_BYTES}};
+    for (const OslResolutionSite& site : build.resolution_sites) {
+        ranges.push_back({site.offset, site.offset + site.opcode_length + (site.packed_floats ? 8u : 4u)});
+    }
+    for (size_t i = 0; i < 4; ++i) {
+        for (size_t j = 0; j < ranges.size(); ++j) {
+            CHECK(i == j || ranges[i].end <= ranges[j].begin || ranges[j].end <= ranges[i].begin);
+        }
+    }
+
+    const uint64_t claim = 0x0123456789abcdefull;
+    const uint64_t code_end = SkipIntroCodeEnd(sites);
+    const std::vector<unsigned char> original = SkipIntroImage(sites);
+    std::vector<unsigned char> image = original;
+    char error[320] = "";
+    CHECK(osl_apply_skip_intro(image.data(), code_end, &sites, claim, error, sizeof(error)));
+
+    // The notice task goes from its checks to its last scene; each title's first input check calls a stub that asks
+    // the claim, then answers as a press or makes the original check.
+    CHECK(image[sites.notice_scene] == 0xbe && image[sites.notice_scene + 1] == 3);
+    const uint64_t hd_stub = sites.stubs, classic_stub = sites.stubs + 48;
+    CHECK(image[sites.hd_title_check] == 0xe8 && image[sites.hd_title_check + 5] == 0x90);
+    CHECK(sites.hd_title_check + 5 + Rel32At(image, sites.hd_title_check + 1) == int64_t(hd_stub));
+    CHECK(image[sites.classic_title_check] == 0xe8);
+    CHECK(sites.classic_title_check + 5 + Rel32At(image, sites.classic_title_check + 1) == int64_t(classic_stub));
+    const std::vector<unsigned char> hd = ExpectedSkipIntroStub(claim, {0xff, 0xa0, 0x48, 0x02, 0x00, 0x00});
+    CHECK(std::equal(hd.begin(), hd.end(), image.begin() + hd_stub));
+    std::vector<unsigned char> to_button = {0xe9, 0, 0, 0, 0};
+    const int32_t button = static_cast<int32_t>(int64_t{sites.classic_button} - int64_t(classic_stub + 24 + 5));
+    std::memcpy(to_button.data() + 1, &button, 4);
+    const std::vector<unsigned char> classic = ExpectedSkipIntroStub(claim, to_button);
+    CHECK(std::equal(classic.begin(), classic.end(), image.begin() + classic_stub));
+    const auto patched = [&](uint64_t at) {
+        return at == sites.notice_scene + 1 || (at >= sites.hd_title_check && at < sites.hd_title_check + 6) ||
+               (at > sites.classic_title_check && at < sites.classic_title_check + 5) ||
+               (at >= sites.stubs && at < sites.stubs + OSL_SKIP_INTRO_STUB_BYTES);
+    };
+    bool kept = true;
+    for (uint64_t i = 0; i < image.size(); ++i) {
+        kept = kept && (patched(i) || image[i] == original[i]);
+    }
+    CHECK(kept);
+
+    // A second patch, any other code around a site, another target of the Classic check, used stub space or stub
+    // space past the code's mapping: refused, and nothing is written.
+    const std::vector<unsigned char> once = image;
+    CHECK(!osl_apply_skip_intro(image.data(), code_end, &sites, claim, error, sizeof(error)) && image == once);
+    const auto refused = [&](uint64_t at, unsigned char value, uint64_t end) {
+        std::vector<unsigned char> changed = original;
+        changed[at] = value;
+        char message[320] = "";
+        const bool applied = osl_apply_skip_intro(changed.data(), end, &sites, claim, message, sizeof(message));
+        changed[at] = original[at];
+        return !applied && message[0] != 0 && changed == original;
+    };
+    const auto first = [](const OslSkipIntroCode& code, uint32_t site) { return uint64_t{site} - code.site; };
+    const auto last = [&](const OslSkipIntroCode& code, uint32_t site) { return first(code, site) + code.count - 1; };
+    CHECK(refused(sites.notice_scene + 1, 3, code_end));
+    CHECK(refused(first(osl_skip_intro_notice_code, sites.notice_scene), 0x90, code_end));
+    CHECK(refused(last(osl_skip_intro_notice_code, sites.notice_scene), 0x90, code_end));
+    CHECK(refused(sites.hd_title_check + 2, 0x50, code_end));
+    CHECK(refused(first(osl_skip_intro_hd_title_code, sites.hd_title_check), 0x90, code_end));
+    CHECK(refused(last(osl_skip_intro_hd_title_code, sites.hd_title_check), 0x01, code_end));
+    CHECK(refused(sites.classic_title_check, 0x90, code_end));
+    CHECK(refused(sites.classic_title_check + 1, original[sites.classic_title_check + 1] ^ 1, code_end));
+    CHECK(refused(first(osl_skip_intro_classic_title_code, sites.classic_title_check), 0x90, code_end));
+    CHECK(refused(sites.stubs + 40, 0xcc, code_end));
+    CHECK(refused(sites.stubs, 0, sites.stubs + OSL_SKIP_INTRO_STUB_BYTES - 1));
+}
+
+void TestSkipIntro() {
+    const OslSkipIntroCode& notice = osl_skip_intro_notice_code;
+    CHECK(notice.bytes[notice.site] == 0xbe && notice.bytes[notice.site + 1] == 0x02);
+    const OslSkipIntroCode& hd = osl_skip_intro_hd_title_code;
+    CHECK(hd.bytes[hd.site] == 0xff && hd.bytes[hd.site + 1] == 0x90 && hd.bytes[hd.site + 2] == 0x48 &&
+          hd.bytes[hd.site + 3] == 0x02);
+    const OslSkipIntroCode& classic = osl_skip_intro_classic_title_code;
+    CHECK(classic.bytes[classic.site] == 0xe8 && classic.bytes[classic.site + 1] < 0);
+    for (const GameBuild& build : SupportedBuilds()) {
+        TestBuildSkipIntro(build);
+    }
+
+    // One skip per run: the first title intro after the patch, never a later one.
+    CHECK(osl_skip_intro_claim() == 0);
+    osl_skip_intro_arm();
+    CHECK(osl_skip_intro_claim() == 1);
+    CHECK(osl_skip_intro_claim() == 0);
+    CHECK(osl_skip_intro_claim() == 0);
+}
+
 // ---- Controller prompts: block patches on synthetic CPK archives (from Dragon's Crown Pro PC) ----
 
 namespace cpk_test {
@@ -1878,6 +2090,9 @@ int main() {
     TestResolutionSites();
     TestPartialClearCoverage();
     TestRenderBufferBudget();
+    TestSkipIntroSetting();
+    TestSkipIntroWiring();
+    TestSkipIntro();
     TestLogRetention();
     TestControllerPromptsSetting();
     TestShippedPromptsPatch();

@@ -7,6 +7,7 @@
 #include <string_view>
 
 #include "osl_resolution.h"
+#include "osl_skip_intro.h"
 
 namespace osl {
 
@@ -41,6 +42,7 @@ struct GameBuild {
     const char* region;
     std::span<const PackageLayer> layers; // base package first; the last layer is the finished game
     std::span<const OslResolutionSite> resolution_sites;
+    const OslSkipIntroSites* skip_intro; // nullptr when Skip intro is not available for the build
     std::span<const TextLanguage> text_languages; // the first is the default; empty when the build has only one
 };
 
