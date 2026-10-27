@@ -24,6 +24,7 @@
 #include "launcher_quit.h"
 #include "options.h"
 #include "osl_accent.h"
+#include "osl_graphics.h"
 #include "osl_launcher.h"
 #include "runtime_log.h"
 #include "settings.h"
@@ -443,7 +444,7 @@ void TestSettings() {
     CHECK(settings.Get(kMonitorKey, "") == "1");
     CHECK(settings.Get(kVSyncKey, "") == "1");
     CHECK(settings.Get(kPresentationKey, "") == "letterbox");
-    CHECK(settings.Get(kGraphicsCardKey, "") == "automatic");
+    CHECK(settings.Get(kGraphicsCardKey, "") == "");
     CHECK(settings.Get(kAnisotropyKey, "") == "0");
     CHECK(settings.Get(kAntiAliasingKey, "") == "0");
     CHECK(settings.Get(kUpscaleKey, "") == "0");
@@ -572,6 +573,88 @@ void TestOptionsAndInstall() {
     CHECK(DescribeInstall(InstallStatus::kWrongVersion).text.find("CUSA05083 1.00 USA") != std::string::npos);
     CHECK(DescribeInstall(InstallStatus::kWrongVersion).text.find("CUSA01290 1.02 Japan") != std::string::npos);
     CHECK(DescribeInstall(InstallStatus::kWrongGame).text.find("CUSA01290 1.02 Japan") != std::string::npos);
+}
+
+// Graphics card: the launcher's list (no Automatic row), the card a saved value selects, and the Vulkan device a
+// listed card runs on.
+void TestGraphicsCard() {
+    using OslGraphics::GpuDevice;
+    using OslGraphics::ListGpus;
+    using OslGraphics::ResolveGpu;
+    const std::string nvidia = "NVIDIA GeForce RTX 4070", intel = "Intel(R) UHD Graphics 770";
+
+    // Vulkan enumerates Intel first; the ranking puts the discrete card first, as the game's default did.
+    const std::vector<std::string> names = {intel, nvidia};
+    const std::vector<std::size_t> order = {1, 0};
+    const std::vector<std::string> listed = ListGpus(names, order);
+    CHECK(listed.size() == 2);
+    CHECK(listed == (std::vector<std::string>{nvidia, intel}));
+    CHECK(std::none_of(listed.begin(), listed.end(), [](const std::string& name) {
+        return name.empty() || name == "automatic" || name == "Automatic";
+    }));
+
+    CHECK(ResolveGpu(listed, "") == nvidia);
+    CHECK(ResolveGpu(listed, "auto") == nvidia);
+    CHECK(ResolveGpu(listed, "automatic") == nvidia);
+    CHECK(ResolveGpu(listed, intel) == intel);
+    CHECK(ResolveGpu(listed, nvidia) == nvidia);
+    CHECK(ResolveGpu(listed, "AMD Radeon RX 7800 XT") == nvidia);
+
+    // Each row runs on its own Vulkan device, with no offset from a former Automatic row.
+    CHECK(GpuDevice(names, order, listed[0]) == 1);
+    CHECK(GpuDevice(names, order, listed[1]) == 0);
+    CHECK(names[GpuDevice(names, order, listed[0])] == listed[0]);
+    CHECK(names[GpuDevice(names, order, listed[1])] == listed[1]);
+    CHECK(GpuDevice(names, order, "") == -1);
+    CHECK(GpuDevice(names, order, "automatic") == -1);
+    CHECK(GpuDevice(names, {0, 1}, intel) == 0 && GpuDevice(names, {0, 1}, nvidia) == 1);
+
+    // Unusable devices (empty names) are not listed; a name shared by two devices is listed once, for the better one.
+    CHECK(ListGpus({"", nvidia, ""}, {1, 0, 2}) == (std::vector<std::string>{nvidia}));
+    CHECK(ListGpus({nvidia, nvidia}, {1, 0}) == (std::vector<std::string>{nvidia}));
+    CHECK(GpuDevice({nvidia, nvidia}, {1, 0}, nvidia) == 1);
+
+    const std::vector<std::string> one = ListGpus({nvidia}, {0});
+    CHECK(one.size() == 1);
+    CHECK(ResolveGpu(one, "") == nvidia && ResolveGpu(one, intel) == nvidia);
+    CHECK(GpuDevice({nvidia}, {0}, ResolveGpu(one, "")) == 0);
+
+    CHECK(ListGpus({}, {}).empty());
+    CHECK(ListGpus({"", ""}, {0, 1}).empty());
+    CHECK(ListGpus({nvidia}, {3}).empty());
+    CHECK(ResolveGpu({}, "") == "");
+    CHECK(ResolveGpu({}, nvidia) == "");
+    CHECK(GpuDevice({}, {}, nvidia) == -1);
+
+    // osl.ini: a new file, the retired "automatic", a saved card, a removed card and Reset all select a listed card,
+    // and the selected card is what is written.
+    const std::filesystem::path dir = TempDir("graphics-card");
+    const auto selected = [&](const char* line) {
+        std::ofstream(dir / "osl.ini") << line;
+        LauncherSettings settings(dir / "osl.ini");
+        return ResolveGpu(listed, settings.Get(kGraphicsCardKey));
+    };
+    CHECK(selected("") == nvidia);
+    CHECK(selected("graphics_card = automatic\n") == nvidia);
+    CHECK(selected("graphics_card = auto\n") == nvidia);
+    CHECK(selected("graphics_card = Intel(R) UHD Graphics 770\n") == intel);
+    CHECK(selected("graphics_card = AMD Radeon RX 7800 XT\n") == nvidia);
+
+    std::ofstream(dir / "osl.ini") << "graphics_card = automatic\n";
+    {
+        LauncherSettings settings(dir / "osl.ini");
+        settings.Set(kGraphicsCardKey, ResolveGpu(listed, settings.Get(kGraphicsCardKey)));
+        CHECK(settings.Save());
+    }
+    CHECK(LauncherSettings(dir / "osl.ini").Get(kGraphicsCardKey) == nvidia);
+    {
+        LauncherSettings settings(dir / "osl.ini");
+        settings.Set(kGraphicsCardKey, intel);
+        settings.ResetToDefaults();
+        CHECK(settings.Get(kGraphicsCardKey) == "");
+        settings.Set(kGraphicsCardKey, ResolveGpu(listed, settings.Get(kGraphicsCardKey)));
+        CHECK(settings.Get(kGraphicsCardKey) == nvidia);
+    }
 }
 
 void TestTextLanguages() {
@@ -1448,6 +1531,7 @@ int main() {
     TestGameTree();
     TestBuildSelection();
     TestSettings();
+    TestGraphicsCard();
     TestTextLanguages();
     TestVoicePolicy();
     TestKeys();

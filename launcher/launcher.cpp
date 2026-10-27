@@ -24,6 +24,7 @@
 
 #include "osl_accent.h"
 #include "osl_displays.h"
+#include "osl_graphics.h"
 #include "osl_png.h"
 #include "osl_resolution.h"
 #include "controller_prompts.h"
@@ -97,8 +98,8 @@ constexpr char kShowLauncherHelp[] =
 constexpr char kWindowSizeHelp[] =
     "The game window's size in pixels in Windowed mode. The picture keeps its shape: other window shapes get black bars.";
 constexpr char kGraphicsCardHelp[] =
-    "The graphics card the game runs on. Automatic prefers a discrete card. A card that is no longer there falls back "
-    "to Automatic.";
+    "The graphics card the game runs on. If the selected card is no longer available, the first card in the list is "
+    "used.";
 constexpr char kMonitorHelp[] = "The display the game opens on.";
 constexpr char kVSyncHelp[] = "On prevents tearing. Off allows it, for the lowest latency and G-Sync/FreeSync.";
 constexpr char kPresentationHelp[] =
@@ -268,6 +269,7 @@ public:
         }
         displays_ = ListDisplays();
         gpu_names_ = ListGpuNames();
+        SelectListedGpu();
         prompts_installed_ = InstalledPrompts();
         Log("controller prompts: %s installed", PromptStyleKey(prompts_installed_));
         placement_ = PlacementTracker(host_.Restored());
@@ -755,15 +757,17 @@ private:
         }
     }
 
+    void SelectListedGpu() {
+        const std::string card = OslGraphics::ResolveGpu(gpu_names_, settings_.Get(kGraphicsCardKey));
+        if (!card.empty() && card != settings_.Get(kGraphicsCardKey)) {
+            settings_.Set(kGraphicsCardKey, card);
+        }
+    }
+
     void GraphicsCardCombo() {
-        const std::string current = settings_.Get(kGraphicsCardKey, kAutomaticGpu);
-        const bool listed = current == kAutomaticGpu ||
-                            std::find(gpu_names_.begin(), gpu_names_.end(), current) != gpu_names_.end();
-        const std::string shown = current == kAutomaticGpu ? "Automatic" : listed ? current : current + " (not available)";
-        if (ImGui::BeginCombo("##graphics_card", shown.c_str())) {
-            if (ImGui::Selectable("Automatic", current == kAutomaticGpu) && current != kAutomaticGpu) {
-                settings_.Set(kGraphicsCardKey, kAutomaticGpu);
-            }
+        const std::string current = settings_.Get(kGraphicsCardKey);
+        ImGui::BeginDisabled(gpu_names_.empty());
+        if (ImGui::BeginCombo("##graphics_card", gpu_names_.empty() ? "None found" : current.c_str())) {
             for (const std::string& name : gpu_names_) {
                 if (ImGui::Selectable(name.c_str(), name == current) && name != current) {
                     settings_.Set(kGraphicsCardKey, name);
@@ -771,6 +775,7 @@ private:
             }
             ImGui::EndCombo();
         }
+        ImGui::EndDisabled();
     }
 
     void MonitorCombo() {
@@ -983,6 +988,7 @@ private:
         if (ui.ConfirmRow("Reset settings", "Put the launcher and display settings back to their defaults.",
                           "Reset all settings", "Put every setting back to its default?", "Reset")) {
             settings_.ResetToDefaults();
+            SelectListedGpu();
             launcher_->SetStatus("Settings reset to defaults. Save or press Play to keep them.", 6.0);
             Log("settings reset to defaults (pending)");
         }

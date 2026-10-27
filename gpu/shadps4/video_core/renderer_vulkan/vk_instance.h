@@ -7,6 +7,7 @@
 #include <span>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "video_core/renderer_vulkan/vk_platform.h"
 
@@ -24,6 +25,9 @@ namespace Vulkan {
 
 /// The device meets the renderer's Vulkan version, extension and feature requirements.
 bool IsDeviceUsable(vk::PhysicalDevice physical);
+/// osl: indices into `devices`, best first: usable devices, then discrete GPUs, then the most device memory. The
+/// launcher's Graphics card list and the game's default card both follow it.
+std::vector<std::size_t> RankPhysicalDevices(const std::vector<vk::PhysicalDevice>& devices);
 
 /// Names the resource behind a faulting device address in Instance::ReportDeviceLost.
 void SetDeviceAddressDescriber(std::function<std::string(vk::DeviceAddress)> describer);

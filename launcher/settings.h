@@ -27,7 +27,6 @@ inline constexpr char kNativeResolution[] = "native";
 inline constexpr char kAspectRatioKey[] = "aspect_ratio";
 inline constexpr char kDefaultAspectRatio[] = "16:9";
 inline constexpr char kGraphicsCardKey[] = "graphics_card";
-inline constexpr char kAutomaticGpu[] = "automatic";
 inline constexpr char kAntiAliasingKey[] = "smaa";
 inline constexpr char kAnisotropyKey[] = "anisotropy";
 inline constexpr char kTextLanguageKey[] = "text_language";

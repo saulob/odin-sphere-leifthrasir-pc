@@ -123,6 +123,61 @@ bool IsDeviceUsable(vk::PhysicalDevice physical) {
     return robustness2.robustBufferAccess2 && robustness2.robustImageAccess2 && robustness2.nullDescriptor;
 }
 
+std::vector<std::size_t> RankPhysicalDevices(const std::vector<vk::PhysicalDevice>& devices) {
+    std::vector<std::tuple<size_t, vk::PhysicalDeviceProperties2, vk::PhysicalDeviceMemoryProperties, bool>>
+        properties2{};
+    for (auto const& physical : devices) {
+        properties2.emplace_back(properties2.size(), physical.getProperties2(), physical.getMemoryProperties(),
+                                 IsDeviceUsable(physical));
+    }
+    std::stable_sort(properties2.begin(), properties2.end(), [](const auto& left, const auto& right) {
+        // osl: a device the renderer can use (the launcher's list) before any other.
+        if (std::get<3>(left) != std::get<3>(right)) {
+            return std::get<3>(left);
+        }
+        const vk::PhysicalDeviceProperties& left_prop = std::get<1>(left).properties;
+        const vk::PhysicalDeviceProperties& right_prop = std::get<1>(right).properties;
+        const bool left_supports_api = left_prop.apiVersion >= TargetVulkanApiVersion;
+        const bool right_supports_api = right_prop.apiVersion >= TargetVulkanApiVersion;
+        if (left_supports_api != right_supports_api) {
+            return left_supports_api;
+        }
+
+        const bool left_is_discrete = left_prop.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
+        const bool right_is_discrete = right_prop.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
+        if (left_is_discrete != right_is_discrete) {
+            return left_is_discrete;
+        }
+
+        // Software renderers advertise system memory as device local, so they
+        // would win the memory comparison below against real hardware.
+        const bool left_is_cpu = left_prop.deviceType == vk::PhysicalDeviceType::eCpu;
+        const bool right_is_cpu = right_prop.deviceType == vk::PhysicalDeviceType::eCpu;
+        if (left_is_cpu != right_is_cpu) {
+            return right_is_cpu;
+        }
+
+        constexpr auto get_mem = [](const vk::PhysicalDeviceMemoryProperties& mem) -> size_t {
+            size_t max = 0;
+            for (u32 i = 0; i < mem.memoryHeapCount; i++) {
+                const vk::MemoryHeap& heap = mem.memoryHeaps[i];
+                if (heap.flags & vk::MemoryHeapFlagBits::eDeviceLocal && heap.size > max) {
+                    max = heap.size;
+                }
+            }
+            return max;
+        };
+        size_t left_mem_size = get_mem(std::get<2>(left));
+        size_t right_mem_size = get_mem(std::get<2>(right));
+        return left_mem_size > right_mem_size;
+    });
+    std::vector<std::size_t> order;
+    for (const auto& entry : properties2) {
+        order.push_back(std::get<0>(entry));
+    }
+    return order;
+}
+
 Instance::Instance(s32 index, bool validation)
     : Instance(Frontend::WindowSystemInfo{}, index, validation, false) {}
 
@@ -138,82 +193,28 @@ Instance::Instance(const Frontend::WindowSystemInfo& window_info, s32 physical_d
     LOG_INFO(Render_Vulkan, "Found {} physical devices", num_physical_devices);
 
     if (physical_device_index < 0) {
+        const std::vector<std::size_t> order = RankPhysicalDevices(physical_devices);
+        std::vector<std::string> names;
+        for (const auto& physical : physical_devices) {
+            names.push_back(IsDeviceUsable(physical) ? std::string(physical.getProperties().deviceName.data()) : "");
+        }
         const std::string& requested = OslSettings::Get().graphics_card;
-        if (requested.empty()) {
-            std::printf("GPU: selection Automatic\n");
-        } else {
-            std::vector<std::string> names;
-            for (const auto& physical : physical_devices) {
-                names.push_back(IsDeviceUsable(physical) ? std::string(physical.getProperties().deviceName.data()) : "");
+        const std::string card = OslGraphics::ResolveGpu(OslGraphics::ListGpus(names, order), requested);
+        if (!card.empty()) {
+            if (!requested.empty() && requested != card) {
+                std::printf("GPU: %s is not available\n", requested.c_str());
             }
-            const int found = OslGraphics::FindGpuByName(names, requested);
-            if (found >= 0) {
-                std::printf("GPU: requested %s\n", requested.c_str());
-                physical_device_index = found;
-            } else {
-                std::printf("GPU: requested device %s unavailable, falling back to Automatic\n", requested.c_str());
-            }
+            std::printf("GPU: selection %s\n", card.c_str());
+            physical_device_index = OslGraphics::GpuDevice(names, order, card);
+        }
+        if (physical_device_index < 0) {
+            physical_device_index = static_cast<s32>(order[0]);
         }
     }
-    if (physical_device_index < 0) {
-        std::vector<std::tuple<size_t, vk::PhysicalDeviceProperties2,
-                               vk::PhysicalDeviceMemoryProperties, bool>>
-            properties2{};
-        for (auto const& physical : physical_devices) {
-            properties2.emplace_back(properties2.size(), physical.getProperties2(),
-                                     physical.getMemoryProperties(), IsDeviceUsable(physical));
-        }
-        std::sort(properties2.begin(), properties2.end(), [](const auto& left, const auto& right) {
-            // osl: a device the renderer can use (the launcher's list) before any other.
-            if (std::get<3>(left) != std::get<3>(right)) {
-                return std::get<3>(left);
-            }
-            const vk::PhysicalDeviceProperties& left_prop = std::get<1>(left).properties;
-            const vk::PhysicalDeviceProperties& right_prop = std::get<1>(right).properties;
-            const bool left_supports_api = left_prop.apiVersion >= TargetVulkanApiVersion;
-            const bool right_supports_api = right_prop.apiVersion >= TargetVulkanApiVersion;
-            if (left_supports_api != right_supports_api) {
-                return left_supports_api;
-            }
-
-            const bool left_is_discrete =
-                left_prop.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
-            const bool right_is_discrete =
-                right_prop.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
-            if (left_is_discrete != right_is_discrete) {
-                return left_is_discrete;
-            }
-
-            // Software renderers advertise system memory as device local, so they
-            // would win the memory comparison below against real hardware.
-            const bool left_is_cpu = left_prop.deviceType == vk::PhysicalDeviceType::eCpu;
-            const bool right_is_cpu = right_prop.deviceType == vk::PhysicalDeviceType::eCpu;
-            if (left_is_cpu != right_is_cpu) {
-                return right_is_cpu;
-            }
-
-            constexpr auto get_mem = [](const vk::PhysicalDeviceMemoryProperties& mem) -> size_t {
-                size_t max = 0;
-                for (u32 i = 0; i < mem.memoryHeapCount; i++) {
-                    const vk::MemoryHeap& heap = mem.memoryHeaps[i];
-                    if (heap.flags & vk::MemoryHeapFlagBits::eDeviceLocal && heap.size > max) {
-                        max = heap.size;
-                    }
-                }
-                return max;
-            };
-            size_t left_mem_size = get_mem(std::get<2>(left));
-            size_t right_mem_size = get_mem(std::get<2>(right));
-            return left_mem_size > right_mem_size;
-        });
-        physical_device = physical_devices[std::get<0>(properties2[0])];
-    } else {
-        ASSERT_MSG(physical_device_index < num_physical_devices,
-                   "Invalid physical device index {} provided when only {} devices exist",
-                   physical_device_index, num_physical_devices);
-
-        physical_device = physical_devices[physical_device_index];
-    }
+    ASSERT_MSG(physical_device_index < num_physical_devices,
+               "Invalid physical device index {} provided when only {} devices exist",
+               physical_device_index, num_physical_devices);
+    physical_device = physical_devices[physical_device_index];
 
     available_extensions = GetSupportedExtensions(physical_device);
     format_properties = GetFormatProperties(physical_device);

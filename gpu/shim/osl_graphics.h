@@ -2,7 +2,9 @@
 // Graphics options as osl.ini stores them, shared by the launcher, the window and the renderer.
 #pragma once
 
+#include <algorithm>
 #include <array>
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -41,12 +43,30 @@ inline constexpr std::array<int, 5> Anisotropy = {0, 2, 4, 8, 16};
 inline int ParseAnisotropy(int value) {
     return IndexOf(Anisotropy, value, -1) >= 0 ? value : 0;
 }
-/// Index of the device named `request` among `names` (an unusable device has an empty name); -1 for
-/// Automatic, an empty request or a name that is not there.
-inline int FindGpuByName(const std::vector<std::string>& names, std::string_view request) {
-    if (request.empty() || request == "automatic") return -1;
-    for (std::size_t i = 0; i < names.size(); ++i) {
-        if (!names[i].empty() && names[i] == request) return int(i);
+/// The Graphics card list: `names` (one per Vulkan device, empty for a device the renderer cannot use) taken in
+/// `order`, best device first, each name once.
+inline std::vector<std::string> ListGpus(const std::vector<std::string>& names, const std::vector<std::size_t>& order) {
+    std::vector<std::string> listed;
+    for (const std::size_t device : order) {
+        if (device < names.size() && !names[device].empty() &&
+            std::find(listed.begin(), listed.end(), names[device]) == listed.end()) {
+            listed.push_back(names[device]);
+        }
+    }
+    return listed;
+}
+/// The listed card named `request`, else the first listed card (no choice, the retired "automatic" or a card that is
+/// no longer there). Empty only when nothing is listed.
+inline std::string ResolveGpu(const std::vector<std::string>& listed, std::string_view request) {
+    if (listed.empty()) return {};
+    const auto found = std::find(listed.begin(), listed.end(), request);
+    return found != listed.end() ? *found : listed.front();
+}
+/// The Vulkan device a listed card runs on: the first in `order` with that name; -1 for none.
+inline int GpuDevice(const std::vector<std::string>& names, const std::vector<std::size_t>& order,
+                     std::string_view card) {
+    for (const std::size_t device : order) {
+        if (device < names.size() && !card.empty() && names[device] == card) return int(device);
     }
     return -1;
 }

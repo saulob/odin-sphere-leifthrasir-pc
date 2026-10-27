@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// The launcher's list of Vulkan devices the renderer can use (the Graphics card row), and the check that Vulkan can run
-// the renderer at all.
+// The launcher's list of Vulkan devices the renderer can use, best first (the Graphics card row), and the check that
+// Vulkan can run the renderer at all.
 
 #include <algorithm>
 #include <cstdio>
-#include <cstring>
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include <fmt/format.h>
 
 #include "common/types.h"
+#include "osl_graphics.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
@@ -103,7 +104,7 @@ extern "C" int osl_gpu_names(char (*names)[256], int max) {
         return 0;
     }
 #endif
-    int count = 0;
+    std::vector<std::string> listed;
     {
         auto instance = CreateInstance(Frontend::WindowSystemType::Headless, false, false);
         if (!instance) {
@@ -113,20 +114,19 @@ extern "C" int osl_gpu_names(char (*names)[256], int max) {
         if (result != vk::Result::eSuccess) {
             return 0;
         }
+        std::vector<std::string> device_names;
         for (const auto& device : devices) {
-            if (count == max || !IsDeviceUsable(device)) {
-                continue;
-            }
-            const auto properties = device.getProperties();
-            const char* name = properties.deviceName.data();
-            bool known = false;
-            for (int i = 0; i < count; ++i) {
-                known |= !std::strcmp(names[i], name);
-            }
-            if (!known) {
-                std::snprintf(names[count++], 256, "%s", name);
-            }
+            device_names.push_back(IsDeviceUsable(device) ? std::string(device.getProperties().deviceName.data())
+                                                          : std::string());
         }
+        listed = OslGraphics::ListGpus(device_names, RankPhysicalDevices(devices));
+    }
+    int count = 0;
+    for (const std::string& name : listed) {
+        if (count == max) {
+            break;
+        }
+        std::snprintf(names[count++], 256, "%s", name.c_str());
     }
     return count;
 }

@@ -31,7 +31,7 @@ constexpr ManagedSetting kBaseSettings[] = {
     {kSharpenStrengthKey, "75"},
     {kRenderResolutionKey, kNativeResolution},
     {kAspectRatioKey, kDefaultAspectRatio},
-    {kGraphicsCardKey, kAutomaticGpu},
+    {kGraphicsCardKey, ""},
     {kAntiAliasingKey, "0"},
     {kAnisotropyKey, "0"},
     {kTextLanguageKey, "english"},
