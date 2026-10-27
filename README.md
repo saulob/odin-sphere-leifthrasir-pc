@@ -12,6 +12,8 @@
 
 </div>
 
+<img width="1437" height="855" alt="2026-10-27_19-08" src="https://github.com/user-attachments/assets/fce77149-c2cd-401f-a8ed-4aefcd698928" />
+
 ## Status
 
 **v0.1.0 is the first public release.** The loader and runtime map and run the game's own x86-64 code, with the
@@ -169,6 +171,10 @@ change the game's choice; Menu & Subtitles affects text only.
 at the title's PRESS START, in both Refined and Classic mode. It acts once per start of the game: returning to the title,
 switching mode and the title's own demo play as usual. The save data and trophy checks before the title still run. It is
 stored in `user\osl.ini` as `skip_intro`, and it is available for every supported build.
+
+## Screenshots
+
+<img width="1441" height="853" alt="2026-10-27_19-11" src="https://github.com/user-attachments/assets/5a94903d-2680-4679-9098-6cb0cb305b8b" />
 
 ## Controls
 
