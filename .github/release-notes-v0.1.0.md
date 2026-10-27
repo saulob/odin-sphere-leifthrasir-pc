@@ -133,11 +133,14 @@ from the `logs` folder next to the program (next to the AppImage on Linux), and 
 `hang_NNN.txt`, with a line about what you were doing. On Linux, please also give your distribution, your GPU and its
 driver.
 
-<!--
-Antivirus scans: add only after the uploads have been scanned, with the links and the results as reported, followed by:
-VirusTotal results can change as antivirus engines update, and a clean scan is not a security guarantee. Compare your
-download with the SHA-256 checksums below.
--->
+## Antivirus checks
+
+Both release downloads were checked with VirusTotal before publication and had no detections at release preparation time:
+
+- **Windows ZIP:** [VirusTotal report](https://www.virustotal.com/gui/file/c984e55d595372491eaa7ec86bb3b97a4ce708b1812dd578790a2231d100aea7)
+- **Linux AppImage:** [VirusTotal report](https://www.virustotal.com/gui/file/f879f2991872d91f459e2c4baa689777be5e1ca8decb800e62ed2d68e638f403)
+
+VirusTotal results can change as antivirus engines update, and a clean scan is not a security guarantee. Verify downloaded files against the published SHA-256 checksums.
 
 ## Checksums
 SHA-256 files are published with the release for both downloads: `OdinSphereLeifthrasirPC-v0.1.0-windows-x64.sha256`
