@@ -21,6 +21,9 @@ struct Paths {
     std::filesystem::path logs_dir;
 };
 
+// True for build\cmake\<toolchain>\bin of a repository checkout: a development build, not a release folder.
+bool IsBuildTreeExecutableDir(const std::filesystem::path& exe_dir);
+
 // Explicit paths win. The rest are next to the executable: game\prepared\<build>, game\image\<build>, user and logs; or,
 // for an executable in build\cmake\<toolchain>\bin, the repository's game\prepared\<build>, build\image\<build>, user
 // and build\logs. <build> is the active build's folder (ActiveBuildPaths).

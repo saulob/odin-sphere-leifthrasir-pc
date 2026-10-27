@@ -31,10 +31,8 @@ struct Defaults {
 };
 
 Defaults DefaultsFor(const fs::path& exe_dir) {
-    const fs::path build = exe_dir.parent_path().parent_path().parent_path();
-    const bool in_build_tree = exe_dir.filename() == "bin" && exe_dir.parent_path().parent_path().filename() == "cmake" &&
-                               build.filename() == "build";
-    if (in_build_tree) {
+    if (IsBuildTreeExecutableDir(exe_dir)) {
+        const fs::path build = exe_dir.parent_path().parent_path().parent_path();
         const fs::path root = build.parent_path();
         return {{root / "game" / "prepared", build / "image"}, root / "user", build / "logs"};
     }
@@ -55,6 +53,12 @@ bool Copy(char (&out)[4096], const fs::path& path) {
 }
 
 } // namespace
+
+bool IsBuildTreeExecutableDir(const fs::path& exe_dir) {
+    const fs::path build = exe_dir.parent_path().parent_path().parent_path();
+    return exe_dir.filename() == "bin" && exe_dir.parent_path().parent_path().filename() == "cmake" &&
+           build.filename() == "build";
+}
 
 Paths ResolvePaths(const PathRequest& request, const fs::path& exe_dir) {
     const Defaults defaults = DefaultsFor(exe_dir);

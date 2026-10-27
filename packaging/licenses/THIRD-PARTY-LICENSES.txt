@@ -51,3 +51,88 @@ LLVM compiler-rt builtins   Apache-2.0 WITH LLVM-exception                      
 TRG Launcher 1.1.0 (https://github.com/TekRantGaming/trg-launcher, b384a28c712c9320eea8f9d50639dec49981b6c1)
   The launcher's windowing, pages and settings file. Neither the pinned revision nor the upstream repository
   states a licence, so the right to redistribute it is not established.
+
+
+========================================================================
+trg-updater.exe (the launcher's update helper)
+========================================================================
+
+This project's own code (GPL-2.0-or-later), linked statically with LLVM libc++ (Apache-2.0 WITH LLVM-exception,
+licenses\libc++) and winpthreads (MIT AND BSD-3-Clause-Clear, licenses\libwinpthread). The launcher reads update
+ZIP archives with the miniz listed above.
+
+
+========================================================================
+DLLs next to osl-loader.exe (MSYS2 CLANG64)
+========================================================================
+
+SDL3                        Zlib                                                                 licenses\SDL3
+FreeType                    FTL (FreeType licence; offered as FTL or GPL-2.0-or-later)           licenses\freetype
+libpng                      libpng licence                                                       licenses\libpng
+Zydis                       MIT                                                                  licenses\zydis
+xxHash                      BSD-2-Clause                                                         licenses\xxhash
+libc++                      Apache-2.0 WITH LLVM-exception                                       licenses\libc++
+winpthreads                 MIT AND BSD-3-Clause-Clear                                           licenses\libwinpthread
+zlib                        Zlib                                                                 licenses\zlib
+bzip2                       bzip2 licence                                                        licenses\bzip2
+HarfBuzz                    MIT ("Old MIT")                                                      licenses\harfbuzz
+Brotli                      MIT                                                                  licenses\brotli
+Graphite2                   MIT (offered as LGPL-2.1+, MPL-2.0, GPL-2.0+ or MIT)                 licenses\graphite2
+PCRE2                       BSD-3-Clause WITH PCRE2-exception                                    licenses\pcre2
+GLib                        LGPL-2.1-or-later                                                    licenses\glib2
+libintl (gettext)           LGPL-2.1-or-later                                                    licenses\gettext-runtime
+libiconv                    LGPL-2.1-or-later                                                    licenses\libiconv
+
+FreeType loads HarfBuzz, which brings Graphite2, GLib, libintl, libiconv, PCRE2 and Brotli with it. GLib, libintl
+and libiconv are LGPL libraries, dynamically linked and replaceable; their source packages are listed in
+licenses\MSYS2-PACKAGES.txt. vulkan-1.dll comes with the graphics driver and is not part of the package.
+
+
+========================================================================
+AMD GCN register headers (gpu/third_party/gcn/include/gcn)
+========================================================================
+
+Copyright (c) 2014-2021 Advanced Micro Devices, Inc. All Rights Reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+========================================================================
+AMD FidelityFX Super Resolution 1 (ffx_a.h, ffx_fsr1.h)
+========================================================================
+
+Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files(the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions :
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.

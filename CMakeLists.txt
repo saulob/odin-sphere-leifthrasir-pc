@@ -106,6 +106,11 @@ else()
     target_link_libraries(osl-loader PRIVATE osl_launcher oslgpu SDL3::SDL3 Freetype::Freetype Threads::Threads ${CMAKE_DL_LIBS} m)
 endif()
 
+# A release folder holds the update helper next to the program (launcher/CMakeLists.txt).
+if (WIN32)
+    add_dependencies(osl-loader trg-updater)
+endif()
+
 # The launcher reads its header art from <exe dir>/assets/launcher.
 add_custom_command(TARGET osl-loader POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:osl-loader>/assets/launcher"

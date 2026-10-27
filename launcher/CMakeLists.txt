@@ -3,12 +3,12 @@
 set(TRG_DIR ${OSL_SOURCE_DIR_trg-launcher})
 set(IMGUI_DIR ${PROJECT_SOURCE_DIR}/gpu/third_party/imgui)
 
-# TRG's settings file and platform helpers do not need Dear ImGui.
-add_library(trg_core STATIC ${TRG_DIR}/src/settings.cpp ${TRG_DIR}/src/platform.cpp)
+# TRG's settings file, platform helpers and HTTPS downloads do not need Dear ImGui.
+add_library(trg_core STATIC ${TRG_DIR}/src/settings.cpp ${TRG_DIR}/src/platform.cpp ${TRG_DIR}/src/download.cpp)
 target_include_directories(trg_core PUBLIC ${TRG_DIR}/include)
 target_compile_definitions(trg_core PRIVATE _CRT_SECURE_NO_WARNINGS)
 if (WIN32)
-    target_link_libraries(trg_core PRIVATE shell32 ole32 comdlg32)
+    target_link_libraries(trg_core PRIVATE shell32 ole32 comdlg32 winhttp)
 else()
     target_link_libraries(trg_core PRIVATE Threads::Threads)
 endif()
@@ -59,15 +59,62 @@ add_custom_command(OUTPUT ${OSL_PROMPTS_PATCH_SOURCE}
     DEPENDS ${OSL_PROMPTS_PATCH} ${CMAKE_CURRENT_SOURCE_DIR}/embed.cmake
     COMMENT "Embedding prompts/xbox-prompts.dcpx")
 
+# The launcher's self-update from GitHub releases (update_config.cpp, updater/).
+set(OSL_UPDATER_SOURCES updater/github_release.cpp updater/json.cpp updater/sha256.cpp updater/update_controller.cpp
+    updater/update_job.cpp updater/update_paths.cpp updater/update_platform.cpp updater/update_zip.cpp updater/version.cpp)
+
 add_library(osl_launcher STATIC host.cpp launcher.cpp package_browser.cpp problem_dialog.cpp shift_key.cpp trophy_page.cpp
-    ${OSL_PROMPTS_PATCH_SOURCE})
+    update_config.cpp ${OSL_UPDATER_SOURCES} updater/update_ui.cpp ${OSL_PROMPTS_PATCH_SOURCE})
 target_compile_definitions(osl_launcher PRIVATE OSL_PORT_VERSION="${OSL_PORT_VERSION}")
 target_include_directories(osl_launcher PRIVATE ${PROJECT_SOURCE_DIR}/gpu/shim)
-target_link_libraries(osl_launcher PUBLIC osl_launcher_core trg_launcher osl_imgui_sdl ${CMAKE_DL_LIBS})
+target_link_libraries(osl_launcher PUBLIC osl_launcher_core trg_launcher osl_imgui_sdl miniz ${CMAKE_DL_LIBS})
+
+# Windows: the helper that replaces the program after the launcher exits. It runs alone from a temporary folder,
+# so it is linked statically and imports only Windows' own DLLs (checked by tools\package.ps1 and the helper tests).
+if (WIN32)
+    set(OSL_UPDATER_HELPER_SOURCES updater/helper_main.cpp updater/install_transaction.cpp updater/sha256.cpp
+        updater/update_job.cpp updater/update_paths.cpp updater/update_platform.cpp)
+    add_executable(trg-updater WIN32 ${OSL_UPDATER_HELPER_SOURCES})
+    target_include_directories(trg-updater PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_compile_definitions(trg-updater PRIVATE OSL_UPDATER_HELPER_BUILD=1)
+    target_compile_options(trg-updater PRIVATE -Wall -Wextra)
+    target_link_libraries(trg-updater PRIVATE shell32)
+    target_link_options(trg-updater PRIVATE -static)
+    set_target_properties(trg-updater PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+endif()
 
 set_target_properties(osl_launcher_core osl_launcher PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
 target_compile_options(osl_launcher_core PRIVATE -Wall -Wextra)
 target_compile_options(osl_launcher PRIVATE -Wall -Wextra)
+
+# Focused updater tests (tools\test.ps1): versions, release JSON, checksums, ZIP safety, protected paths, the install
+# transaction, rollback and the update configuration; no network. Not part of the default build.
+add_executable(osl-update-tests EXCLUDE_FROM_ALL ../tests/update_tests.cpp update_config.cpp ${OSL_UPDATER_SOURCES}
+    updater/install_transaction.cpp)
+target_compile_definitions(osl-update-tests PRIVATE OSL_UPDATER_HELPER_BUILD=1 OSL_PORT_VERSION="${OSL_PORT_VERSION}"
+    OSL_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+target_link_libraries(osl-update-tests PRIVATE osl_launcher_core miniz)
+set_target_properties(osl-update-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_compile_options(osl-update-tests PRIVATE -Wall -Wextra)
+
+# The real trg-updater.exe run alone from a temporary folder: imports, parent wait, replacement, restart quoting,
+# test variable removal and rollback. The marker stands in for the launcher it waits for and restarts.
+if (WIN32)
+    add_executable(osl-update-restart-marker EXCLUDE_FROM_ALL WIN32 ../tests/update_restart_marker.cpp)
+    target_link_libraries(osl-update-restart-marker PRIVATE shell32)
+    target_link_options(osl-update-restart-marker PRIVATE -static)
+    set_target_properties(osl-update-restart-marker PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS OFF)
+    target_compile_options(osl-update-restart-marker PRIVATE -Wall -Wextra)
+
+    add_executable(osl-update-helper-tests EXCLUDE_FROM_ALL ../tests/update_helper_tests.cpp)
+    target_compile_definitions(osl-update-helper-tests PRIVATE OSL_UPDATER_EXE="$<TARGET_FILE:trg-updater>"
+        OSL_MARKER_EXE="$<TARGET_FILE:osl-update-restart-marker>")
+    target_link_libraries(osl-update-helper-tests PRIVATE shell32)
+    add_dependencies(osl-update-helper-tests trg-updater osl-update-restart-marker)
+    set_target_properties(osl-update-helper-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+    target_compile_options(osl-update-helper-tests PRIVATE -Wall -Wextra)
+endif()
 
 # Focused tests of the local trophies (tools\test.ps1); not part of the default build.
 find_package(PNG REQUIRED)

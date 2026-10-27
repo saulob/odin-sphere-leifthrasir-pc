@@ -40,6 +40,9 @@
 #include "settings.h"
 #include "shift_key.h"
 #include "trophy_page.h"
+#include "update_config.h"
+#include "updater/update_platform.h"
+#include "updater/update_ui.h"
 #include "utf8.h"
 
 #ifndef OSL_PORT_VERSION
@@ -272,6 +275,8 @@ public:
         header_art_ = LoadHeaderArt(host_);
         trophy_page_ = std::make_unique<TrophyPage>(host_, UserDir());
         launcher_ = std::make_unique<trg::Launcher>(MakeConfig());
+        updater_ = std::make_unique<trg::update::UpdateController>(MakeUpdateConfig(InstallDir(), OSL_PORT_VERSION));
+        updater_->StartCheck();
         ApplySavedPrompts();
 
         outcome = Outcome::kRunning;
@@ -308,6 +313,13 @@ public:
             host_.EndFrame(LauncherTheme().bg, shot.empty() ? nullptr : shot.c_str());
         }
         SavePlacement(placement_.Flush());
+        if (updater_) {
+            updater_->Cancel();
+            if (updater_->Busy()) {
+                // A network call in flight is abandoned, not joined: the launcher must not wait for GitHub.
+                updater_.release();
+            }
+        }
         launcher_.reset();
         trophy_page_.reset();
         host_.Close();
@@ -320,6 +332,7 @@ private:
         TrackPlacement();
         PollInstall();
         PollPrompts();
+        updater_->Poll();
         if (play_.starting() && ImGui::GetTime() - play_started_ >= kPlayFeedbackSeconds) {
             return Outcome::kPlay;
         }
@@ -331,6 +344,11 @@ private:
         ImGui::BeginDisabled(play_.starting());
         const trg::Result result = launcher_->Frame();
         ImGui::EndDisabled();
+        if (result == trg::Result::kNone && !play_.starting() &&
+            HandleUpdateAction(trg::update::DrawUpdateBanner(updater_->snapshot(), launcher_->config().theme, fonts_,
+                                                             HeaderTextRight()))) {
+            return Outcome::kQuit;
+        }
         if (const std::optional<std::filesystem::path> picked = browser_.Draw(fonts_.regular, fonts_.size, LauncherTheme())) {
             StartInstall(Utf8(*picked));
         }
@@ -351,6 +369,63 @@ private:
             break;
         }
         return Outcome::kRunning;
+    }
+
+    static std::filesystem::path InstallDir() {
+        const std::filesystem::path executable = trg::update::CurrentExecutablePath();
+        return executable.has_parent_path() ? executable.parent_path() : std::filesystem::current_path();
+    }
+
+    // Where TRG's header text ends (Launcher::DrawHeader's layout), so the update banner leaves it uncovered.
+    float HeaderTextRight() const {
+        ImGui::PushFont(fonts_.regular, fonts_.size);
+        const float s = ImGui::GetFontSize() / fonts_.size;
+        ImGui::PopFont();
+        const trg::Branding& branding = launcher_->config().branding;
+        const float header = std::clamp(ImGui::GetMainViewport()->Size.y * 0.2f, 120 * s, 190 * s);
+        const float title_size = std::clamp(header * 0.27f, 30 * s, 46 * s);
+        ImFont* bold = fonts_.bold ? fonts_.bold : fonts_.semibold ? fonts_.semibold : fonts_.regular;
+        ImFont* semibold = fonts_.semibold ? fonts_.semibold : bold;
+        float subtitle = 0.0f;
+        for (const trg::SubtitleSegment& segment : branding.subtitle_segments) {
+            subtitle += semibold->CalcTextSizeA(16 * s, FLT_MAX, 0.0f, segment.text.c_str()).x;
+        }
+        const float title = bold->CalcTextSizeA(title_size, FLT_MAX, 0.0f, branding.title.c_str()).x;
+        return 30 * s + std::max(title, subtitle) + 26 * s;
+    }
+
+    // True when the update helper was started and the launcher must quit so it can replace the program.
+    bool HandleUpdateAction(trg::update::UpdateUiAction action) {
+        switch (action) {
+        case trg::update::UpdateUiAction::kDownload:
+            updater_->StartDownload();
+            return false;
+        case trg::update::UpdateUiAction::kRetry:
+            if (!updater_->RetryNeedsInstall()) {
+                updater_->Retry();
+                return false;
+            }
+            return ReadyToInstallUpdate() && updater_->Retry();
+        case trg::update::UpdateUiAction::kRestart:
+            return ReadyToInstallUpdate() && updater_->BeginInstall();
+        case trg::update::UpdateUiAction::kNone:
+            return false;
+        }
+        return false;
+    }
+
+    // The game files and the settings are settled before the helper replaces the program.
+    bool ReadyToInstallUpdate() {
+        if (install_.running() || prompts_.running()) {
+            launcher_->SetStatus("Wait for the game file changes to finish.", 5.0);
+            return false;
+        }
+        if (!launcher_->Save()) {
+            return false;
+        }
+        SavePlacement(placement_.Flush());
+        Log("settings saved, installing the update");
+        return true;
     }
 
     // PLAY saves the settings once here, then starts the transition. A failed save keeps the launcher open.
@@ -437,6 +512,7 @@ private:
         c.branding.subtitle_color = kAccent;
         c.branding.subtitle_segments = {
             {"PC PORT   \xC2\xB7   ", ""},
+            {"v" OSL_PORT_VERSION "   \xC2\xB7   ", ""},
             {"BY SAULOB", kAuthorUrl},
         };
         c.branding.background = LauncherHeader(header_art_);
@@ -967,6 +1043,7 @@ private:
     HeaderArt header_art_;
     std::unique_ptr<trg::Launcher> launcher_;
     std::unique_ptr<TrophyPage> trophy_page_;
+    std::unique_ptr<trg::update::UpdateController> updater_;
     PlayGate play_;
     ProblemDialog problem_;
     PlacementTracker placement_;

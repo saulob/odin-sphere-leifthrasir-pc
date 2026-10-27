@@ -72,6 +72,17 @@ PLAYING
 - To open the launcher again after turning it off, hold Shift while starting.
 
 
+UPDATES
+-------
+When the launcher opens, it asks GitHub once whether a newer release of this
+port exists. If one does, the top right of the launcher shows it, with a link
+to the release notes and UPDATE NOW. The update is downloaded, its SHA-256
+checksum is verified, and the launcher restarts with the new version. Only the
+port's own files are replaced: the game files, saves, settings, trophies and
+logs are kept. If something goes wrong, the previous version is put back.
+Without an internet connection the launcher simply starts as usual.
+
+
 WHERE THINGS ARE
 ----------------
 - Game files:     the "game" folder next to osl-loader.exe

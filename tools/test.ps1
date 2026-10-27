@@ -1,7 +1,8 @@
 <#
 .SYNOPSIS
   Builds and runs the focused tests: the game profile and the package identity, the settings file, the keyboard
-  bindings, the controller prompts patch, the cursor visibility rules, the window fit, the GPU tile layouts and the patch workflow. They use
+  bindings, the controller prompts patch, the cursor visibility rules, the window fit, the GPU tile layouts, the patch workflow and the
+  launcher self-update (versions, release JSON, checksums, ZIP safety, the install transaction and the real update helper). They use
   synthetic data in a temporary folder: no window, no game files.
 .DESCRIPTION
   Needs the build configured once by tools\build.ps1. The tests are not part of the default build.
@@ -21,7 +22,7 @@ Write-Step 'Running the patch workflow tests'
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step 'Building the tests'
-& ninja -C $buildDir osl-tests osl-window-tests osl-tiling-tests osl-cursor-tests osl-trophy-tests osl-runtime-tests
+& ninja -C $buildDir osl-tests osl-window-tests osl-tiling-tests osl-cursor-tests osl-trophy-tests osl-runtime-tests osl-update-tests osl-update-helper-tests
 if ($LASTEXITCODE -ne 0) { Stop-Tool 'Test build failed' }
 
 Write-Step 'Running the game, settings and keys tests'
@@ -46,4 +47,12 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step 'Running the tiling tests (GPU tile layouts and addresses)'
 & (Join-Path $buildDir 'bin\osl-tiling-tests.exe')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+Write-Step 'Running the updater tests'
+& (Join-Path $buildDir 'bin\osl-update-tests.exe')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+Write-Step 'Running the update helper tests (trg-updater.exe alone in a temporary folder)'
+& (Join-Path $buildDir 'bin\osl-update-helper-tests.exe')
 exit $LASTEXITCODE

@@ -29,6 +29,7 @@ that make the first boot debuggable. The USA 1.00 base package (`CUSA05083`) and
 - Xbox controllers without setup, and keyboard support, with **Xbox button prompts** as an option (PlayStation prompts are the default)
 - **Local PS4 trophies**, offline on this PC, shown on the launcher's Trophies page
 - Portable `user` and `logs` folders next to the program for settings, saves, the shader cache and logs
+- **Launcher updates**: a newer GitHub release is offered in the launcher's header and installed with one click, SHA-256 verified, keeping your game files, saves and settings
 
 ## What you need
 
@@ -85,6 +86,11 @@ Everything is kept next to the program:
 - **Trophies**: your local PS4 trophy progress, the trophy list and the Trophy Key setup
 - **About**: the port version, the game, the renderer and the library versions, the game, saves and logs folders, the settings file, **Reset all settings**, and **Diagnostics** with Detailed logging and a button that opens the logs folder
 
+**Updates**: when the launcher opens it asks GitHub once, in the background, for the latest release. A newer one is shown
+at the top right of the header with its release notes and **UPDATE NOW**; the launcher downloads it, checks its SHA-256
+checksum, replaces only the port's own files and restarts. The game files, `user` and `logs` are never touched, and a
+failed update puts the previous version back. Without a connection, or while there is no release, nothing is shown.
+
 Hold **Shift** while starting to bring the launcher back after turning **Show this launcher** off.
 
 **Alt+F4** (or the window close button) quits the launcher. **Esc** cancels the keyboard-binding capture and pop-ups; it does not quit. **Ctrl+S** saves the launcher settings without starting the game.
@@ -119,7 +125,8 @@ folder that holds the logs, creating it first when it does not exist.
 1. Install [MSYS2](https://www.msys2.org) with the CLANG64 toolchain. `.\tools\setup.ps1` checks it and prints the `pacman` command for anything missing.
 2. `.\tools\build.ps1` fetches the pinned dependencies (TRG Launcher, Dear ImGui and a few small libraries) and builds `build\cmake\clang64\bin\osl-loader.exe`.
 3. `.\tools\build.ps1 -Run` also starts it. Install the game from the launcher's Play page, as in a release; the development build keeps it in `game\prepared\<build folder>` and the boot image in `build\image\<build folder>` of the repository (`CUSA05083-1.00`, `CUSA01290-1.00`, `CUSA01290-1.02`, `CUSA05262-1.00` or `CUSA05262-1.01`).
-4. `.\tools\test.ps1` builds and runs the focused headless tests (game profile, settings, keys, window fit, GPU tiling, patch workflow). Python is not needed to build, test or play; the optional development scripts in `scripts\` use it (`.\tools\setup.ps1 -InstallPython`).
+4. `.\tools\test.ps1` builds and runs the focused headless tests (game profile, settings, keys, window fit, GPU tiling, patch workflow, updater and update helper). Python is not needed to build, test or play; the optional development scripts in `scripts\` use it (`.\tools\setup.ps1 -InstallPython`).
+5. `.\tools\package.ps1` packages `dist\OdinSphereLeifthrasir-v<version>-windows-x64.zip` and its `.sha256` file, the layout the launcher's updater installs; `.\tools\test-release-check.ps1` then checks that the release check refuses player files, game data and leftovers. Nothing is published.
 
 ### What rebuilds
 
