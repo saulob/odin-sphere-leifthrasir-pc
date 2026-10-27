@@ -4,6 +4,7 @@
 #include <array>
 #include <cctype>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -169,7 +170,7 @@ void TestProfile() {
     CHECK(std::string(build.label) == "CUSA05083 1.00 USA");
     CHECK(std::string(build.region) == "USA");
     CHECK(build.layers.size() == 1);
-    CHECK(build.resolution_sites.size() == 16);
+    CHECK(build.resolution_sites.size() == 17);
     CHECK(std::string(FinishedLayer(build).app_ver) == "01.00");
     CHECK(std::string(FinishedLayer(build).sfo_version) == "01.01");
     CHECK(!FinishedLayer(build).update);
@@ -188,7 +189,7 @@ void TestProfile() {
     CHECK(std::string(japan_base.label) == "CUSA01290 1.00 Japan");
     CHECK(std::string(japan_base.region) == "Japan");
     CHECK(japan_base.layers.size() == 1);
-    CHECK(japan_base.resolution_sites.size() == 16);
+    CHECK(japan_base.resolution_sites.size() == 17);
     CHECK(std::string(FinishedLayer(japan_base).app_ver) == "01.00");
     CHECK(std::string(FinishedLayer(japan_base).sfo_version) == "01.00");
     CHECK(BaseBuildOf(japan_base) == nullptr);
@@ -206,7 +207,7 @@ void TestProfile() {
     CHECK(FinishedLayer(japan).update);
     CHECK(BaseBuildOf(japan) == &japan_base);
     CHECK(UpdateBuildOf(japan) == nullptr);
-    CHECK(japan.resolution_sites.size() == 16);
+    CHECK(japan.resolution_sites.size() == 17);
     CHECK(japan.data_files.size() == 6);
     CHECK(japan.extra_files.size() == 1);
     CHECK(BuildMetadataText(japan) == "APP_VER 1.02 \xC2\xB7 VERSION 1.00");
@@ -224,7 +225,7 @@ void TestProfile() {
     CHECK(eu_base.layers.size() == 1);
     CHECK(eu_base.extra_files.empty());
     CHECK(eu_base.data_files.size() == 15);
-    CHECK(eu_base.resolution_sites.size() == 16);
+    CHECK(eu_base.resolution_sites.size() == 17);
     CHECK(std::string(FinishedLayer(eu_base).app_ver) == "01.00");
     CHECK(std::string(FinishedLayer(eu_base).sfo_version) == "01.00");
     CHECK(BaseBuildOf(eu_base) == nullptr);
@@ -244,7 +245,7 @@ void TestProfile() {
     CHECK(FinishedLayer(eu).update);
     CHECK(BaseBuildOf(eu) == &eu_base);
     CHECK(UpdateBuildOf(eu) == nullptr);
-    CHECK(eu.resolution_sites.size() == 16);
+    CHECK(eu.resolution_sites.size() == 17);
     CHECK(eu.data_files.size() == 25);
     CHECK(eu.extra_files.size() == 1);
     CHECK(BuildMetadataText(eu) == "APP_VER 1.01 \xC2\xB7 VERSION 1.00");
@@ -772,8 +773,10 @@ void TestLogRetention() {
 
 void TestBuildResolutionSites(const GameBuild& build) {
     CHECK(!build.resolution_sites.empty());
-    CHECK(build.resolution_sites.size() == 16);
+    CHECK(build.resolution_sites.size() == 17);
     CHECK(build.resolution_sites.back().packed_floats);
+    CHECK(std::count_if(build.resolution_sites.begin(), build.resolution_sites.end(),
+                        [](const OslResolutionSite& site) { return site.packed_floats; }) == 2);
     CHECK(build.resolution_sites.front().pixel_budget);
     CHECK(!RestrictedToNativeResolution(&build));
 
@@ -859,6 +862,122 @@ void TestResolutionSites() {
     }
 }
 
+struct PixelSpan {
+    int x0, y0, x1, y1; ///< pixel centres inside [x0, x1) x [y0, y1)
+};
+
+// Pixels whose centres lie inside a rectangle given in render-target pixels.
+PixelSpan PixelsInside(float x0, float y0, float x1, float y1) {
+    const auto first = [](float edge) { return int(std::ceil(edge - 0.5f)); };
+    return {first(x0), first(y0), first(x1), first(y1)};
+}
+
+// The game's partial clear: its quad's corners, in render-target pixels, divided by the screen size of its clear
+// constant and clamped to [0, 1], over a viewport covering the whole target.
+PixelSpan ClearedPixels(float x0, float y0, float x1, float y1, float screen_w, float screen_h, int width,
+                        int height) {
+    const auto to_target = [](float p, float screen, int extent) {
+        return std::clamp(p / screen, 0.0f, 1.0f) * float(extent);
+    };
+    return PixelsInside(to_target(x0, screen_w, width), to_target(y0, screen_h, height),
+                        to_target(x1, screen_w, width), to_target(y1, screen_h, height));
+}
+
+// A reused offscreen target: each scene clears the rectangle it composes, draws into it and later samples exactly
+// that rectangle. Returns the pixels of that rectangle still holding an earlier scene's content.
+struct ReusedTarget {
+    int width, height;
+    std::vector<uint8_t> owner; ///< the scene that last wrote each pixel; 1 is content older than every scene
+
+    ReusedTarget(int w, int h) : width{w}, height{h}, owner(size_t(w) * h, 1) {}
+
+    long Scene(uint8_t scene, const float (&native_rect)[4], float screen_w, float screen_h) {
+        const float sx = float(width) / 1920.0f, sy = float(height) / 1080.0f;
+        const float x0 = native_rect[0] * sx, y0 = native_rect[1] * sy;
+        const float x1 = native_rect[2] * sx, y1 = native_rect[3] * sy;
+        const PixelSpan cleared = ClearedPixels(x0, y0, x1, y1, screen_w, screen_h, width, height);
+        for (int y = std::max(cleared.y0, 0); y < std::min(cleared.y1, height); ++y) {
+            for (int x = std::max(cleared.x0, 0); x < std::min(cleared.x1, width); ++x) {
+                owner[size_t(y) * width + x] = 0;
+            }
+        }
+        const PixelSpan sampled = PixelsInside(x0, y0, x1, y1);
+        long stale = 0;
+        for (int y = std::max(sampled.y0, 0); y < std::min(sampled.y1, height); ++y) {
+            for (int x = std::max(sampled.x0, 0); x < std::min(sampled.x1, width); ++x) {
+                uint8_t& pixel = owner[size_t(y) * width + x];
+                stale += pixel != 0 && pixel != scene;
+                pixel = scene;
+            }
+        }
+        return stale;
+    }
+};
+
+const OslResolutionSite& ClearScreenSite(const GameBuild& build) {
+    return build.resolution_sites.back();
+}
+
+// The clear constant as the patch leaves it for a target, read back from a synthetic image.
+std::array<float, 2> PatchedClearScreen(const GameBuild& build, const OslResolution& target) {
+    const OslResolutionSite& site = ClearScreenSite(build);
+    std::vector<unsigned char> image;
+    for (const OslResolutionSite& s : build.resolution_sites) {
+        image.resize(std::max<size_t>(image.size(), s.offset + s.opcode_length + (s.packed_floats ? 8 : 4)));
+    }
+    for (const OslResolutionSite& s : build.resolution_sites) {
+        std::memcpy(image.data() + s.offset, s.opcode, s.opcode_length);
+        std::memcpy(image.data() + s.offset + s.opcode_length, &s.value, 4);
+        if (s.packed_floats) {
+            std::memcpy(image.data() + s.offset + s.opcode_length + 4, &s.value_high, 4);
+        }
+    }
+    char error[320] = "";
+    if (target.width != 1920 || target.height != 1080) {
+        CHECK(osl_apply_resolution(image.data(), image.size(), build.resolution_sites.data(),
+                                   build.resolution_sites.size(), &target, error, sizeof(error)));
+    }
+    std::array<float, 2> screen{};
+    std::memcpy(screen.data(), image.data() + site.offset + site.opcode_length, 8);
+    return screen;
+}
+
+// Scenes reusing one offscreen target (title, ATLUS logo, a corner panel) compose only what they cleared: no pixel
+// of an earlier scene survives in what a later one samples, at any render size, up to the four edges.
+void TestPartialClearCoverage() {
+    const GameBuild& build = SupportedBuilds().back();
+    const OslResolutionSite& site = ClearScreenSite(build);
+    CHECK(site.opcode_length == 2 && site.opcode[0] == 0x48 && site.opcode[1] == 0xb9);
+    const float title[4] = {0, 0, 1920, 1080};
+    const float logo[4] = {388, 356, 1524, 731};
+    const float panel[4] = {100, 50, 700, 400};
+    const std::pair<int, int> aspects[] = {{0, 0}, {2, 0}, {3, 0}, {5, 0}, {3, 2}};
+    for (const auto& [resolution, aspect] : aspects) {
+        const OslResolution target = osl_render_target(&osl_resolutions[resolution], &osl_aspect_ratios[aspect]);
+        const auto [screen_w, screen_h] = PatchedClearScreen(build, target);
+        CHECK(screen_w == float(target.width) && screen_h == float(target.height));
+        ReusedTarget rt(target.width, target.height);
+        CHECK(rt.Scene(2, title, screen_w, screen_h) == 0);
+        CHECK(rt.owner.front() == 2 && rt.owner.back() == 2);
+        CHECK(rt.owner[size_t(target.width) - 1] == 2 && rt.owner[size_t(target.height - 1) * target.width] == 2);
+        CHECK(rt.Scene(3, logo, screen_w, screen_h) == 0);
+        CHECK(rt.Scene(4, panel, screen_w, screen_h) == 0);
+        CHECK(rt.Scene(5, title, screen_w, screen_h) == 0);
+    }
+
+    // Left at 1920x1080 the clear quad grows with the target from the top left corner: native is unaffected, a
+    // 1440p logo scene samples title pixels above and left of what it cleared.
+    ReusedTarget native(1920, 1080);
+    CHECK(native.Scene(2, title, 1920, 1080) == 0);
+    CHECK(native.Scene(3, logo, 1920, 1080) == 0);
+    ReusedTarget wqhd(2560, 1440);
+    CHECK(wqhd.Scene(2, title, 1920, 1080) == 0);
+    CHECK(wqhd.Scene(3, logo, 1920, 1080) > 0);
+    const PixelSpan unpatched = ClearedPixels(388 * 4 / 3.0f, 356 * 4 / 3.0f, 1524 * 4 / 3.0f, 731 * 4 / 3.0f, 1920,
+                                              1080, 2560, 1440);
+    CHECK(unpatched.x0 == 690 && unpatched.y0 == 633);
+}
+
 // The game's 64 MiB render buffer pool holds three offscreen color+depth targets and the snapshot's color target, all
 // of the render size (sizes from the game's own Gnm surface code).
 void TestRenderBufferBudget() {
@@ -906,6 +1025,7 @@ int main() {
     TestDetailedLogging();
     TestLogsDirectory();
     TestResolutionSites();
+    TestPartialClearCoverage();
     TestRenderBufferBudget();
     TestLogRetention();
     std::printf("%s (%d checks, %d failures)\n", g_failures ? "FAILED" : "OK", g_checks, g_failures);

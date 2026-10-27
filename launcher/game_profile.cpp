@@ -23,8 +23,9 @@ constexpr PackageLayer kEu101Layers[] = {{"01.00", "01.00", false}, {"01.01", "0
 
 // The render size instructions of the USA 1.00 eboot: the size of the render buffer pool its offscreen targets come
 // from, the three offscreen targets the graphics device creates, the two GPU buffer allocations sized from the same
-// pair, the two viewports the frame setup sets, and the engine's packed float screen size that its 2D projection uses.
-// All are sized for the base PS4 1920x1080 target; the game has no PS4 Pro path.
+// pair, the two viewports the frame setup sets, and the engine's packed float screen size: the one its 2D projection
+// uses and the one its partial clears divide their render-target pixel positions by. All are sized for the base PS4
+// 1920x1080 target; the game has no PS4 Pro path.
 constexpr OslResolutionSite kUsaResolutionSites[] = {
     {0x6ab597, 7, {0xc7, 0x84, 0x24, 0xf8, 0x00, 0x00, 0x00}, 0x4000000, 0, 0, 0, 1},
     {0x6ac0b8, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6ac0bd, 1, {0xba}, 1080, 1, 0, 0, 0},
@@ -35,9 +36,10 @@ constexpr OslResolutionSite kUsaResolutionSites[] = {
     {0x6accd0, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6accd5, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
     {0x6ae682, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6ae687, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
     {0x6b3d72, 2, {0x48, 0xb8}, 0x44f00000, 0, 0x44870000, 1, 0},
+    {0x6b994d, 2, {0x48, 0xb9}, 0x44f00000, 0, 0x44870000, 1, 0},
 };
 
-// The Japanese eboots have the same sixteen instructions in the same functions; only their offsets differ.
+// The Japanese eboots have the same seventeen instructions in the same functions; only their offsets differ.
 constexpr OslResolutionSite kJapanBaseResolutionSites[] = {
     {0x6a2157, 7, {0xc7, 0x84, 0x24, 0xf8, 0x00, 0x00, 0x00}, 0x4000000, 0, 0, 0, 1},
     {0x6a2c78, 1, {0xbe}, 1920, 0, 0, 0, 0}, {0x6a2c7d, 1, {0xba}, 1080, 1, 0, 0, 0},
@@ -48,6 +50,7 @@ constexpr OslResolutionSite kJapanBaseResolutionSites[] = {
     {0x6a3890, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6a3895, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
     {0x6a5242, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6a5247, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
     {0x6aa932, 2, {0x48, 0xb8}, 0x44f00000, 0, 0x44870000, 1, 0},
+    {0x6b050d, 2, {0x48, 0xb9}, 0x44f00000, 0, 0x44870000, 1, 0},
 };
 
 constexpr OslResolutionSite kJapan102ResolutionSites[] = {
@@ -60,6 +63,7 @@ constexpr OslResolutionSite kJapan102ResolutionSites[] = {
     {0x6aa340, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6aa345, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
     {0x6abcf2, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6abcf7, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
     {0x6b13e2, 2, {0x48, 0xb8}, 0x44f00000, 0, 0x44870000, 1, 0},
+    {0x6b6fbd, 2, {0x48, 0xb9}, 0x44f00000, 0, 0x44870000, 1, 0},
 };
 
 constexpr OslResolutionSite kEuBaseResolutionSites[] = {
@@ -72,6 +76,7 @@ constexpr OslResolutionSite kEuBaseResolutionSites[] = {
     {0x6ae0f0, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6ae0f5, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
     {0x6afac2, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6afac7, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
     {0x6b51b2, 2, {0x48, 0xb8}, 0x44f00000, 0, 0x44870000, 1, 0},
+    {0x6badfd, 2, {0x48, 0xb9}, 0x44f00000, 0, 0x44870000, 1, 0},
 };
 
 constexpr OslResolutionSite kEu101ResolutionSites[] = {
@@ -84,6 +89,7 @@ constexpr OslResolutionSite kEu101ResolutionSites[] = {
     {0x6ae2a0, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6ae2a5, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
     {0x6afc72, 1, {0xb9}, 1920, 0, 0, 0, 0}, {0x6afc77, 2, {0x41, 0xb8}, 1080, 1, 0, 0, 0},
     {0x6b5362, 2, {0x48, 0xb8}, 0x44f00000, 0, 0x44870000, 1, 0},
+    {0x6bafad, 2, {0x48, 0xb9}, 0x44f00000, 0, 0x44870000, 1, 0},
 };
 
 // The European executable picks its menu and subtitle archives from the system language; these are the languages it
