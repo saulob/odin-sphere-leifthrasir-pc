@@ -40,8 +40,9 @@ REQUIREMENTS
 
 INSTALL
 -------
-1. Extract the ZIP anywhere you can write to (not "Program Files").
-2. Run odin_sphere_leifthrasir.exe. The launcher opens.
+1. Extract the ZIP anywhere you can write to (not "Program Files"). It
+   contains one folder, OdinSphereLeifthrasirPC-v@VERSION@-windows-x64.
+2. Run odin_sphere_leifthrasir.exe from that folder. The launcher opens.
 3. On the Play page, click "Install game...".
 4. Select your Odin Sphere Leifthrasir .pkg file.
 5. Wait while the launcher checks the package and unpacks it into the "game"
@@ -90,7 +91,8 @@ WHERE THINGS ARE
 ----------------
 - Game files:     the "game" folder next to odin_sphere_leifthrasir.exe
 - Logs:           the "logs" folder next to odin_sphere_leifthrasir.exe,
-                  one numbered log per run (the newest 50 are kept)
+                  one numbered log per run (the newest 50 are kept), and
+                  hang_NNN.txt when the game froze without crashing
 - Settings:       user\osl.ini
 - Saves:          user\savedata\
 - Trophies:       user\trophy\

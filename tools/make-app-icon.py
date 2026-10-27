@@ -232,6 +232,17 @@ def write_png(path, size, rows):
                      chunk(b'IEND', b''))
 
 
+# A 32-bit BGRA bitmap frame, bottom-up, with its AND mask: the usual icon format below 256px.
+def dib_frame(size, rows):
+    pixels, mask = b'', b''
+    for row in reversed(rows):
+        pixels += b''.join(bytes((row[i + 2], row[i + 1], row[i], row[i + 3])) for i in range(0, size * 4, 4))
+        bits = ''.join('1' if row[i + 3] == 0 else '0' for i in range(0, size * 4, 4)).ljust((size + 31) // 32 * 32, '0')
+        mask += int(bits, 2).to_bytes(len(bits) // 8, 'big')
+    header = struct.pack('<IiiHHIIiiII', 40, size, size * 2, 1, 32, 0, len(pixels) + len(mask), 0, 0, 0, 0)
+    return header + pixels + mask
+
+
 def main():
     accent = launcher_accent()
     pressed = launcher_pressed()
@@ -246,8 +257,9 @@ def main():
     payloads = []
     for size in SIZES:
         path = OUT / f'app-icon-{size}.png'
-        write_png(path, size, render(size, view, layers, accent, pressed))
-        payloads.append((size, path.read_bytes()))
+        rows = render(size, view, layers, accent, pressed)
+        write_png(path, size, rows)
+        payloads.append((size, path.read_bytes() if size == 256 else dib_frame(size, rows)))
     entries, offset = [], 6 + 16 * len(payloads)
     for size, data in payloads:
         entries.append(struct.pack('<BBBBHHII', size if size < 256 else 0, size if size < 256 else 0, 0, 0, 1, 32,

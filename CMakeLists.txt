@@ -111,6 +111,17 @@ if (WIN32)
     add_dependencies(odin_sphere_leifthrasir trg-updater)
 endif()
 
+# Windows Release: ThinLTO across the program and the project libraries it is linked from, with the LTO backend at
+# -O3 like the compile. Without debug information the program has no use for a COFF symbol table or a build id.
+if (WIN32)
+    foreach(target odin_sphere_leifthrasir oslgpu osl_launcher osl_launcher_core trg_launcher trg_core osl_imgui_sdl osl_keys)
+        target_compile_options(${target} PRIVATE "$<$<AND:$<CONFIG:Release>,$<COMPILE_LANGUAGE:C,CXX>>:-flto=thin>")
+    endforeach()
+    set(OSL_RELEASE_LINK -flto=thin -Wl,--lto-O3 "-Wl,--thinlto-cache-dir=${CMAKE_BINARY_DIR}/lto-cache" -Wl,--strip-all
+        -Wl,--build-id=none)
+    target_link_options(odin_sphere_leifthrasir PRIVATE "$<$<CONFIG:Release>:${OSL_RELEASE_LINK}>")
+endif()
+
 # The launcher reads its header art from <exe dir>/assets/launcher.
 add_custom_command(TARGET odin_sphere_leifthrasir POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:odin_sphere_leifthrasir>/assets/launcher"

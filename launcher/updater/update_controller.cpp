@@ -332,6 +332,13 @@ void UpdateController::StartDownload() {
     return;
   }
 
+  const std::string package_root =
+      config_.package_root ? config_.package_root(release_->version) : std::string();
+  if (config_.package_kind == UpdatePackageKind::kZip && package_root.empty()) {
+    Fail("The updater has no package folder name for this build.", RetryKind::kCheck, false);
+    return;
+  }
+
   std::string error;
   if (!MakeWorkspace(error)) {
     Fail(error, RetryKind::kDownload, false);
@@ -339,6 +346,7 @@ void UpdateController::StartDownload() {
   }
   download_path_ = workspace_ / ("update" + DownloadExtension(asset_->name));
   staging_path_ = workspace_ / "staging";
+  staging_content_path_ = staging_path_ / PathFromUtf8(package_root);
   backup_path_ = workspace_ / "backup";
   manifest_path_ = workspace_ / "manifest.txt";
   worker_phase_ = 0;
@@ -356,7 +364,8 @@ void UpdateController::StartDownload() {
   const std::filesystem::path manifest_path = manifest_path_;
 
   const bool started = task_.Start("Downloading update...", [this, config, asset, checksum_asset, download_path,
-                                                               staging_path, manifest_path](trg::Task& task) {
+                                                               staging_path, package_root,
+                                                               manifest_path](trg::Task& task) {
     std::string expected;
     if (config.sha256_override && !config.sha256_override->empty()) {
       if (!IsValidSha256(*config.sha256_override)) {
@@ -399,10 +408,14 @@ void UpdateController::StartDownload() {
       if (!ExtractZip(download_path, staging_path, limits, error)) {
         return error;
       }
-      if (!ValidateStaging(staging_path, config.required_staged_files, error)) {
+      std::filesystem::path content_root;
+      if (!ResolveStagingRoot(staging_path, package_root, config.required_staged_files, content_root, error)) {
         return error;
       }
-      const std::vector<std::string> files = ListStagingFiles(staging_path, error);
+      if (!ValidateStaging(content_root, config.required_staged_files, error)) {
+        return error;
+      }
+      const std::vector<std::string> files = ListStagingFiles(content_root, error);
       if (!error.empty()) {
         return error;
       }
@@ -486,7 +499,7 @@ bool UpdateController::BeginInstall() {
     UpdateJob job;
     job.parent_pid = CurrentProcessId();
     job.install_dir = config_.install_dir;
-    job.staging_dir = staging_path_;
+    job.staging_dir = staging_content_path_;
     job.backup_dir = backup_path_;
     job.manifest_file = manifest_path_;
     job.restart_executable = config_.restart_executable;
@@ -620,6 +633,7 @@ void UpdateController::CleanupWorkspace() {
   workspace_.clear();
   download_path_.clear();
   staging_path_.clear();
+  staging_content_path_.clear();
   backup_path_.clear();
   manifest_path_.clear();
   cleanup_.path.clear();

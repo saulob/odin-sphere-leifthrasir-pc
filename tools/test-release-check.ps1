@@ -3,12 +3,12 @@
   Checks that tools\package.ps1 -VerifyOnly accepts the staged release folder and refuses it once it holds the
   player's files, game data, logs, hang reports, crash dumps, symbols, build or Python leftovers, sources, test
   programs, updater leftovers, debugging tools, development markers, stale names or local paths, or lacks the update
-  helper, a DLL, the licences, the header art or the program's version resource. Nothing is built, launched or
-  published.
+  helper, a DLL, the licences, the header art or the program's version resource, or when its trg-updater.exe is not
+  the stripped tools\build-updater.ps1 build. Nothing is built, launched or published.
 .DESCRIPTION
-  Needs the staged folder of tools\package.ps1 (dist\OdinSphereLeifthrasir-v<version>-windows-x64). Each case is a
+  Needs the staged folder of tools\package.ps1 (dist\OdinSphereLeifthrasirPC-v<version>-windows-x64). Each case is a
   copy made of hard links in build\release-check-tests; a file a case changes is replaced, never written through
-  its link, so the staged folder stays as it was.
+  its link, so the staged folder stays as it was. A case whose source file does not exist here is skipped.
 #>
 [CmdletBinding()]
 param()
@@ -18,13 +18,13 @@ param()
 $root = $script:RepoRoot
 $cmake = Get-Content -LiteralPath (Join-Path $root 'CMakeLists.txt') -Raw
 if ($cmake -notmatch '(?m)^set\(OSL_PORT_VERSION "([0-9]+\.[0-9]+\.[0-9]+)"\)') { Stop-Tool 'OSL_PORT_VERSION not found in CMakeLists.txt' }
-$release = Join-Path $root "dist\OdinSphereLeifthrasir-v$($Matches[1])-windows-x64"
+$release = Join-Path $root "dist\OdinSphereLeifthrasirPC-v$($Matches[1])-windows-x64"
 if (-not (Test-Path -LiteralPath (Join-Path $release 'odin_sphere_leifthrasir.exe'))) { Stop-Tool "Run tools\package.ps1 first: $release is missing" }
 $checker = Join-Path $PSScriptRoot 'package.ps1'
 $casesRoot = Join-Path $root 'build\release-check-tests'
 
-# Each case: an Item added (a trailing \ makes a folder) with optional Text, Bytes or a release file it links From, or
-# a release file Missing.
+# Each case: an Item added (a trailing \ makes a folder) with optional Text, Bytes, a release file it links From or a
+# file it copies FromPath, or a release file Missing.
 $Cases = [ordered]@{
     'fresh extraction'          = @{}
     'settings'                  = @{ Item = 'user\osl.ini' }
@@ -39,15 +39,26 @@ $Cases = [ordered]@{
     'game package'              = @{ Item = 'UP0177-CUSA05083.pkg' }
     'package by content'        = @{ Item = 'licenses\notes.txt'; Bytes = [byte[]](0x7F, 0x43, 0x4E, 0x54, 0, 0, 0, 0) }
     'loader pdb'                = @{ Item = 'odin_sphere_leifthrasir.pdb' }
+    'updater pdb'               = @{ Item = 'trg-updater.pdb' }
     'debug file'                = @{ Item = 'trg-updater.debug' }
+    'debug file in licenses'    = @{ Item = 'licenses\trg-updater.debug' }
     'updater workspace'         = @{ Item = 'trg-update-1234-5678\job.txt' }
+    'updater staging'           = @{ Item = 'staging\odin_sphere_leifthrasir.exe'; From = 'odin_sphere_leifthrasir.exe' }
+    'development helper'        = @{ Item = 'trg-updater.exe'; FromPath = (Join-Path $root 'build\cmake\clang64\bin\trg-updater.exe') }
+    'development program'       = @{ Item = 'odin_sphere_leifthrasir.exe'; FromPath = (Join-Path $root 'build\cmake\clang64\bin\odin_sphere_leifthrasir.exe') }
+    'backup file'               = @{ Item = 'licenses\THIRD-PARTY-LICENSES.txt.bak' }
+    'save file'                 = @{ Item = 'licenses\slot.sav' }
     'renderdoc'                 = @{ Item = 'renderdoc.dll' }
     'vulkan layer'              = @{ Item = 'VkLayer_khronos_validation.json' }
     'vulkan loader'             = @{ Item = 'vulkan-1.dll' }
     'program in licenses'       = @{ Item = 'licenses\tool.exe' }
     'DEBUG_SAULO marker'        = @{ Item = 'README.txt'; Text = 'DEBUG_SAULO' }
     'repository path'           = @{ Item = 'licenses\notes.txt'; Text = $root }
+    'repository path UTF-16'    = @{ Item = 'licenses\notes.txt'; Bytes = [Text.Encoding]::Unicode.GetBytes("x$root") }
     'user profile path'         = @{ Item = 'licenses\notes.txt'; Text = $env:USERPROFILE }
+    'users folder'              = @{ Item = 'licenses\notes.txt'; Text = 'C:\Users\someone\odin' }
+    'users folder UTF-16'       = @{ Item = 'licenses\notes.txt'; Bytes = [Text.Encoding]::Unicode.GetBytes('C:\Users\someone') }
+    'VisualStudio path'         = @{ Item = 'licenses\notes.txt'; Text = 'S:\VisualStudio\repos' }
     'Decomp path'               = @{ Item = 'licenses\notes.txt'; Text = 'S:\Decomp\odin' }
     'crash dump'                = @{ Item = 'odin_sphere_leifthrasir.dmp' }
     'hang report'               = @{ Item = 'licenses\hang_001.txt' }
@@ -79,10 +90,16 @@ function New-LinkedCopy([string]$Source, [string]$Target) {
 }
 
 $failures = 0
+$skipped = 0
 $powershell = (Get-Process -Id $PID).Path
 try {
     foreach ($case in $Cases.Keys) {
         $spec = $Cases[$case]
+        if ($spec['FromPath'] -and -not (Test-Path -LiteralPath $spec['FromPath'] -PathType Leaf)) {
+            Write-Warn "$case skipped: $($spec['FromPath']) does not exist"
+            $skipped++
+            continue
+        }
         $stage = Join-Path $casesRoot ($case -replace '\W', '_')
         if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
         New-LinkedCopy $release $stage
@@ -95,12 +112,13 @@ try {
                 New-Item -ItemType Directory -Force (Split-Path $target) | Out-Null
                 if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Force }
                 if ($spec['From']) { New-Item -ItemType HardLink -Path $target -Target (Join-Path $release $spec['From']) | Out-Null }
+                elseif ($spec['FromPath']) { Copy-Item -LiteralPath $spec['FromPath'] $target }
                 elseif ($spec['Bytes']) { [IO.File]::WriteAllBytes($target, $spec['Bytes']) }
                 elseif ($spec['Text']) { [IO.File]::WriteAllText($target, $spec['Text']) }
                 else { [IO.File]::WriteAllText($target, 'placeholder') }
             }
         }
-        & $powershell -NoProfile -ExecutionPolicy Bypass -File $checker -VerifyOnly $stage *> $null
+        & $powershell -NoProfile -File $checker -VerifyOnly $stage *> $null
         $accepted = $LASTEXITCODE -eq 0
         $expected = $spec.Count -eq 0
         if ($accepted -ne $expected) {
@@ -112,5 +130,5 @@ try {
 } finally {
     Remove-Item -LiteralPath $casesRoot -Recurse -Force -ErrorAction SilentlyContinue
 }
-Write-Host "$($Cases.Count) release check cases, $failures failures"
+Write-Host "$($Cases.Count - $skipped) release check cases, $failures failures, $skipped skipped"
 if ($failures) { exit 1 }

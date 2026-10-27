@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Builds odin_sphere_leifthrasir on Linux x86_64 incrementally (Clang, CMake + Ninja): the Linux counterpart of
-# tools/build.ps1. The one build configuration, RelWithDebInfo, is what is tested and what an AppImage contains.
+# tools/build.ps1. Development builds are RelWithDebInfo; --release builds CMake's Release configuration in its own
+# folder, the one tools/package-linux.sh packages.
 #
-#   tools/build.sh            build build/cmake/linux/bin/odin_sphere_leifthrasir
-#   tools/build.sh --clean    delete build/cmake/linux first
-#   tools/build.sh --test     also build and run the focused tests
+#   tools/build.sh             build build/cmake/linux/bin/odin_sphere_leifthrasir
+#   tools/build.sh --release   build build/cmake/linux-release/bin/odin_sphere_leifthrasir (Release)
+#   tools/build.sh --clean     delete the configuration's build folder first
+#   tools/build.sh --test      also build and run the focused tests
 #
 # Missing tools or libraries are listed; packaging/linux/ci-deps.sh installs them on Ubuntu 20.04 (the release baseline).
 set -euo pipefail
@@ -14,9 +16,10 @@ config=RelWithDebInfo
 clean=0 test=0
 while (($#)); do
     case $1 in
+        --release) build_dir=$root/build/cmake/linux-release config=Release ;;
         --clean) clean=1 ;;
         --test) test=1 ;;
-        -h|--help) sed -n '2,9p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,11p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown option: $1" >&2; exit 2 ;;
     esac
     shift
@@ -63,7 +66,7 @@ while read -r path url commit; do
     printf '%s' "$commit" > "$dir/.osl_commit"
 done < "$root/gpu/deps.txt"
 
-((clean)) && { step 'Cleaning build/cmake/linux'; rm -rf "$build_dir"; }
+((clean)) && { step "Cleaning ${build_dir#"$root"/}"; rm -rf "$build_dir"; }
 if ! grep -qs "CMAKE_BUILD_TYPE:STRING=$config" "$build_dir/CMakeCache.txt" || [[ ! -f $build_dir/build.ninja ]]; then
     step 'Configuring'
     cmake -S "$root" -B "$build_dir" -G Ninja -DCMAKE_BUILD_TYPE=$config \

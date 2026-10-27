@@ -45,20 +45,24 @@ void Log(std::string_view text) { std::printf("Updater: %.*s\n", static_cast<int
 
 } // namespace
 
+std::string WindowsPackageRoot(const trg::update::SemanticVersion& version) {
+    return std::string(trg::update::kReleaseName) + "-v" + version.CoreString() + "-windows-x64";
+}
+
 std::string WindowsPackageName(const trg::update::SemanticVersion& version) {
-    return "OdinSphereLeifthrasir-v" + version.CoreString() + "-windows-x64.zip";
+    return WindowsPackageRoot(version) + ".zip";
 }
 
 std::string WindowsChecksumName(const trg::update::SemanticVersion& version) {
-    return "OdinSphereLeifthrasir-v" + version.CoreString() + "-windows-x64.sha256";
+    return WindowsPackageRoot(version) + ".sha256";
 }
 
 std::string LinuxPackageName(const trg::update::SemanticVersion& version) {
-    return "OdinSphereLeifthrasir-v" + version.CoreString() + "-x86_64.AppImage";
+    return std::string(trg::update::kReleaseName) + "-v" + version.CoreString() + "-x86_64.AppImage";
 }
 
 std::string LinuxChecksumName(const trg::update::SemanticVersion& version) {
-    return "OdinSphereLeifthrasir-v" + version.CoreString() + "-x86_64.AppImage.sha256";
+    return std::string(trg::update::kReleaseName) + "-v" + version.CoreString() + "-x86_64.sha256";
 }
 
 std::vector<std::string> UpdateRestartArguments(std::vector<std::string> arguments) {
@@ -84,6 +88,7 @@ trg::update::UpdateConfig MakeUpdateConfig(const std::filesystem::path& install_
     config.package_kind = UpdatePackageKind::kZip;
     config.asset_name = WindowsPackageName;
     config.checksum_asset_name = WindowsChecksumName;
+    config.package_root = WindowsPackageRoot;
     config.restart_executable = install_dir / kGameExecutable;
     config.required_staged_files = {kGameExecutable, kUpdaterExecutable};
     if (IsBuildTreeExecutableDir(install_dir)) {

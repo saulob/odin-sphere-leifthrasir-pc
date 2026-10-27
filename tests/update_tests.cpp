@@ -176,10 +176,10 @@ void TestReleases() {
     if (release) {
         CHECK(release->version.CoreString() == "0.2.0");
         CHECK(IsInstallableRelease(*release));
-        const ReleaseAsset* asset = FindAsset(*release, "OdinSphereLeifthrasir-v0.2.0-windows-x64.zip");
+        const ReleaseAsset* asset = FindAsset(*release, "OdinSphereLeifthrasirPC-v0.2.0-windows-x64.zip");
         CHECK(asset && asset->size == 1234 && asset->sha256() == std::string(64, 'a'));
-        CHECK(!FindAsset(*release, "OdinSphereLeifthrasir-v0.2.1-windows-x64.zip"));
-        CHECK(!FindAsset(*release, "OdinSphereLeifthrasir-v0.2.0-windows-x64.sha256"));
+        CHECK(!FindAsset(*release, "OdinSphereLeifthrasirPC-v0.2.1-windows-x64.zip"));
+        CHECK(!FindAsset(*release, "OdinSphereLeifthrasirPC-v0.2.0-windows-x64.sha256"));
     }
     const std::optional<Release> draft = ParseRelease(ReleaseJson("v0.2.0", true));
     CHECK(draft && !IsInstallableRelease(*draft));
@@ -207,12 +207,12 @@ void TestChecksums() {
     CHECK(ParseSha256Digest("sha256:abc") == std::nullopt);
     CHECK(ParseSha256Digest("md5:" + std::string(32, 'a')) == std::nullopt);
     CHECK(ParseSha256Digest("SHA256:" + std::string(64, 'A')) == std::string(64, 'a'));
-    CHECK(ParseSha256File(std::string(64, 'B') + "  OdinSphereLeifthrasir-v0.2.0-windows-x64.zip\n") ==
+    CHECK(ParseSha256File(std::string(64, 'B') + "  OdinSphereLeifthrasirPC-v0.2.0-windows-x64.zip\n") ==
           std::string(64, 'b'));
     CHECK(ParseSha256File("not-a-hash  file.zip") == std::nullopt);
 
     // The .sha256 asset is trusted only when its own published digest matches its content.
-    const std::string checksum_file = std::string(64, 'c') + "  OdinSphereLeifthrasir-v0.2.0-windows-x64.zip\n";
+    const std::string checksum_file = std::string(64, 'c') + "  OdinSphereLeifthrasirPC-v0.2.0-windows-x64.zip\n";
     ReleaseAsset checksum_asset;
     std::string error;
     CHECK(TrustedChecksum(checksum_file, checksum_asset, error) == std::string(64, 'c'));
@@ -261,7 +261,7 @@ void TestPaths() {
                                "cache/x", "screenshots/a.png", "OdinSphere.pkg", "UP0177-CUSA05083.PKG",
                                "sce_sys/param.sfo", "Odin2_BT_UK.CPK", "crash.dmp", "odin_sphere_leifthrasir.pdb",
                                "odin_sphere_leifthrasir.debug", "update.zip",
-                               "OdinSphereLeifthrasir-v0.1.0-x86_64.AppImage", "osl.ini.bak", "x.tmp", "download.part"}) {
+                               "OdinSphereLeifthrasirPC-v0.1.0-x86_64.AppImage", "osl.ini.bak", "x.tmp", "download.part"}) {
         if (!IsProtectedRelativePath(player)) {
             std::printf("  not protected: %s\n", player);
         }
@@ -275,20 +275,34 @@ void TestPaths() {
     }
 }
 
+constexpr char kPackageRoot[] = "OdinSphereLeifthrasirPC-v0.2.0-windows-x64";
+const std::vector<std::string> kRequiredFiles = {"odin_sphere_leifthrasir.exe", "trg-updater.exe"};
+
+std::vector<std::pair<std::string, std::string>> InRoot(const std::string& root,
+                                                        std::vector<std::pair<std::string, std::string>> entries) {
+    for (auto& entry : entries) {
+        entry.first = root + "/" + entry.first;
+    }
+    return entries;
+}
+
 void TestZip() {
     std::printf("ZIP extraction and staging\n");
     TempDir temp("zip");
     const std::filesystem::path archive = temp.path / "release.zip";
-    WriteFile(archive, MakeZip({{"odin_sphere_leifthrasir.exe", "PUBLIC_RELEASE"},
-                                {"trg-updater.exe", "helper"},
-                                {"assets/launcher/header-art.png", "art"},
-                                {"licenses/THIRD-PARTY-LICENSES.txt", "licences"}}));
-    const std::filesystem::path staging = temp.path / "staging";
+    WriteFile(archive, MakeZip(InRoot(kPackageRoot, {{"odin_sphere_leifthrasir.exe", "PUBLIC_RELEASE"},
+                                                     {"trg-updater.exe", "helper"},
+                                                     {"assets/launcher/header-art.png", "art"},
+                                                     {"licenses/THIRD-PARTY-LICENSES.txt", "licences"}})));
+    const std::filesystem::path extracted = temp.path / "extracted";
     std::string error;
-    CHECK(ExtractZip(archive, staging, {}, error));
+    CHECK(ExtractZip(archive, extracted, {}, error));
+    std::filesystem::path staging;
+    CHECK(ResolveStagingRoot(extracted, kPackageRoot, kRequiredFiles, staging, error));
+    CHECK(staging == extracted / kPackageRoot);
     CHECK(ReadFile(staging / "odin_sphere_leifthrasir.exe") == "PUBLIC_RELEASE");
     CHECK(ReadFile(staging / "assets" / "launcher" / "header-art.png") == "art");
-    CHECK(ValidateStaging(staging, {"odin_sphere_leifthrasir.exe", "trg-updater.exe"}, error));
+    CHECK(ValidateStaging(staging, kRequiredFiles, error));
     std::vector<std::string> files;
     for (const std::string& file : ListStagingFiles(staging, error)) {
         std::string normalized;
@@ -349,6 +363,54 @@ void TestZip() {
     CHECK(!ExtractZip(archive, temp.path / "few", few, error));
     WriteFile(temp.path / "garbage.zip", "not a zip");
     CHECK(!ExtractZip(temp.path / "garbage.zip", temp.path / "garbage", {}, error));
+}
+
+void TestPackageRoot() {
+    std::printf("only the contents of the package's one folder are installed\n");
+    TempDir temp("package root");
+    const std::vector<std::pair<std::string, std::string>> release = {{"odin_sphere_leifthrasir.exe", "program"},
+                                                                      {"trg-updater.exe", "helper"},
+                                                                      {"README.txt", "readme"}};
+    int index = 0;
+    const auto resolves = [&](const std::vector<std::pair<std::string, std::string>>& entries, std::string_view root) {
+        const std::filesystem::path case_dir = temp.path / std::to_string(++index);
+        WriteFile(case_dir / "package.zip", MakeZip(entries));
+        std::string error;
+        if (!ExtractZip(case_dir / "package.zip", case_dir / "staging", {}, error)) {
+            return false;
+        }
+        std::filesystem::path content;
+        const bool resolved = ResolveStagingRoot(case_dir / "staging", root, kRequiredFiles, content, error);
+        CHECK(resolved == !content.empty());
+        CHECK(resolved || !error.empty());
+        return resolved;
+    };
+
+    CHECK(resolves(InRoot(kPackageRoot, release), kPackageRoot));
+    CHECK(!resolves(release, kPackageRoot));
+    CHECK(!resolves(InRoot("OdinSphereLeifthrasirPC-v0.1.0-windows-x64", release), kPackageRoot));
+    CHECK(!resolves(InRoot("odinsphereleifthrasirpc-v0.2.0-windows-x64", release), kPackageRoot));
+    std::vector<std::pair<std::string, std::string>> with_loose = InRoot(kPackageRoot, release);
+    with_loose.emplace_back("odin_sphere_leifthrasir.exe", "loose");
+    CHECK(!resolves(with_loose, kPackageRoot));
+    std::vector<std::pair<std::string, std::string>> two_folders = InRoot(kPackageRoot, release);
+    two_folders.emplace_back("extra/README.txt", "other");
+    CHECK(!resolves(two_folders, kPackageRoot));
+    CHECK(!resolves(InRoot(kPackageRoot, {{"odin_sphere_leifthrasir.exe", "program"}}), kPackageRoot));
+    CHECK(!resolves(InRoot(std::string(kPackageRoot) + "/inner", release), kPackageRoot));
+    CHECK(!resolves({{kPackageRoot, "a file, not a folder"}}, kPackageRoot));
+    for (const char* root : {"", ".", "..", "a/b", "C:x"}) {
+        CHECK(!resolves(InRoot(kPackageRoot, release), root));
+    }
+
+    for (const std::string& name : {std::string(kPackageRoot) + "/../evil", std::string(kPackageRoot) + "/user/osl.ini",
+                                    std::string(kPackageRoot) + "/game/prepared/CUSA05083-1.00/eboot.bin",
+                                    std::string(kPackageRoot) + "/logs/a.log"}) {
+        std::vector<std::pair<std::string, std::string>> entries = InRoot(kPackageRoot, release);
+        entries.emplace_back(name, "payload");
+        CHECK(!resolves(entries, kPackageRoot));
+    }
+    CHECK(!std::filesystem::exists(temp.path / "evil"));
 }
 
 void TestJobs() {
@@ -563,7 +625,7 @@ void TestUpdateCheck() {
     const UpdateSnapshot available = state_for(ReleaseJson("v0.2.0"), "0.1.0");
     CHECK(available.state == UpdateState::kAvailable && ShowsUpdateBanner(available));
     CHECK(available.latest_version == "0.2.0" && available.current_version == "0.1.0");
-    CHECK(available.asset_name == "OdinSphereLeifthrasir-v0.2.0-windows-x64.zip");
+    CHECK(available.asset_name == "OdinSphereLeifthrasirPC-v0.2.0-windows-x64.zip");
     CHECK(available.release_url == "https://github.com/saulob/odin-sphere-leifthrasir-pc/releases/tag/v0.2.0");
 
     // An invalid local version disables the check instead of offering anything.
@@ -594,10 +656,12 @@ void TestSameVersionDeveloperTransaction() {
 void TestConfig() {
     std::printf("update configuration\n");
     const SemanticVersion version = *ParseVersion("0.2.0");
-    CHECK(osl::WindowsPackageName(version) == "OdinSphereLeifthrasir-v0.2.0-windows-x64.zip");
-    CHECK(osl::WindowsChecksumName(version) == "OdinSphereLeifthrasir-v0.2.0-windows-x64.sha256");
-    CHECK(osl::LinuxPackageName(version) == "OdinSphereLeifthrasir-v0.2.0-x86_64.AppImage");
-    CHECK(osl::LinuxChecksumName(version) == "OdinSphereLeifthrasir-v0.2.0-x86_64.AppImage.sha256");
+    CHECK(osl::WindowsPackageName(version) == "OdinSphereLeifthrasirPC-v0.2.0-windows-x64.zip");
+    CHECK(osl::WindowsChecksumName(version) == "OdinSphereLeifthrasirPC-v0.2.0-windows-x64.sha256");
+    CHECK(osl::LinuxPackageName(version) == "OdinSphereLeifthrasirPC-v0.2.0-x86_64.AppImage");
+    CHECK(osl::LinuxChecksumName(version) == "OdinSphereLeifthrasirPC-v0.2.0-x86_64.sha256");
+    CHECK(osl::WindowsPackageRoot(version) == "OdinSphereLeifthrasirPC-v0.2.0-windows-x64");
+    CHECK(osl::WindowsPackageRoot(version) == kPackageRoot);
     CHECK(std::string(osl::kReleasesUrl) == "https://api.github.com/repos/saulob/odin-sphere-leifthrasir-pc/releases/latest");
     CHECK(std::string(osl::kGameExecutable) == "odin_sphere_leifthrasir.exe");
 
@@ -626,8 +690,9 @@ void TestConfig() {
     WriteFile(old_layout / "trg-updater.exe", "helper");
     std::string error;
     CHECK(!ValidateStaging(old_layout, config.required_staged_files, error));
-    CHECK(config.asset_name(version) == "OdinSphereLeifthrasir-v0.2.0-windows-x64.zip");
-    CHECK(config.checksum_asset_name(version) == "OdinSphereLeifthrasir-v0.2.0-windows-x64.sha256");
+    CHECK(config.asset_name(version) == "OdinSphereLeifthrasirPC-v0.2.0-windows-x64.zip");
+    CHECK(config.checksum_asset_name(version) == "OdinSphereLeifthrasirPC-v0.2.0-windows-x64.sha256");
+    CHECK(config.package_root && config.package_root(version) == kPackageRoot);
     const std::filesystem::path build_tree = temp.path / "repo" / "build" / "cmake" / "clang64" / "bin";
     WriteFile(build_tree / "trg-updater.exe", "helper");
     CHECK(!osl::MakeUpdateConfig(build_tree, "0.1.0").install_supported);
@@ -665,8 +730,10 @@ void TestVersionSource() {
     const std::string cmake = ReadFile(std::filesystem::path(OSL_SOURCE_DIR) / "CMakeLists.txt");
     CHECK(cmake.find(std::string("set(OSL_PORT_VERSION \"") + OSL_PORT_VERSION + "\")") != std::string::npos);
     const std::string package = ReadFile(std::filesystem::path(OSL_SOURCE_DIR) / "tools" / "package.ps1");
-    CHECK(package.find("OdinSphereLeifthrasir-v$version-windows-x64") != std::string::npos);
+    CHECK(package.find("$name = \"" + std::string(kReleaseName) + "-v$version-windows-x64\"") != std::string::npos);
     CHECK(package.find("set\\(OSL_PORT_VERSION") != std::string::npos);
+    CHECK(package.find("build-updater.ps1") != std::string::npos);
+    CHECK(package.find("\"$name/\"") != std::string::npos);
     CHECK(package.find("trg-updater.exe") != std::string::npos);
     CHECK(package.find("$RootFiles = @('odin_sphere_leifthrasir.exe', 'trg-updater.exe'") != std::string::npos);
     CHECK(package.find("'osl-loader', 'osl.loader'") != std::string::npos);
@@ -675,9 +742,20 @@ void TestVersionSource() {
     CHECK(package.find("CMAKE_BUILD_TYPE:STRING=Release'") != std::string::npos);
     CHECK(package.find("RelWithDebInfo") == std::string::npos);
     const std::string linux_package = ReadFile(std::filesystem::path(OSL_SOURCE_DIR) / "tools" / "package-linux.sh");
-    CHECK(linux_package.find("name=OdinSphereLeifthrasir-v$version-x86_64\n") != std::string::npos);
+    CHECK(linux_package.find("name=" + std::string(kReleaseName) + "-v$version-x86_64\n") != std::string::npos);
+    CHECK(linux_package.find("-linux-") == std::string::npos);
     CHECK(linux_package.find("s/^set\\(OSL_PORT_VERSION ") != std::string::npos);
-    CHECK(linux_package.find("sha256sum \"$name.AppImage\" > \"$name.AppImage.sha256\"") != std::string::npos);
+    CHECK(linux_package.find("sha256sum \"$name.AppImage\" > \"$name.sha256\"") != std::string::npos);
+    CHECK(linux_package.find("CMAKE_BUILD_TYPE:STRING=Release'") != std::string::npos);
+    CHECK(linux_package.find("RelWithDebInfo") == std::string::npos);
+    const std::string release_linux = ReadFile(std::filesystem::path(OSL_SOURCE_DIR) / "tools" / "package-release-linux.sh");
+    CHECK(release_linux.find("dist/" + std::string(kReleaseName) + "-v*-x86_64.AppImage") != std::string::npos);
+    const std::string helper_build = ReadFile(std::filesystem::path(OSL_SOURCE_DIR) / "tools" / "build-updater.ps1");
+    for (const char* flag : {"'-O2', '-g', '-DNDEBUG'", "'-mwindows', '-static'", "--only-keep-debug", "--strip-debug",
+                             "--add-gnu-debuglink=trg-updater.debug", "'-DOSL_UPDATER_HELPER_BUILD=1'"}) {
+        CHECK(helper_build.find(flag) != std::string::npos);
+    }
+    CHECK(helper_build.find("-flto") == std::string::npos);
     CHECK(linux_package.find("max_glibc=2.31\n") != std::string::npos);
     CHECK(linux_package.find("program=odin_sphere_leifthrasir\n") != std::string::npos);
     CHECK(linux_package.find("patchelf --force-rpath --set-rpath '$ORIGIN/../lib'") != std::string::npos);
@@ -695,7 +773,7 @@ void TestVersionSource() {
 void TestAppImageTarget() {
     std::printf("only the AppImage the program was started from is replaced\n");
     TempDir temp("appimage");
-    const std::filesystem::path appimage = temp.path / "OdinSphereLeifthrasir-v0.1.0-x86_64.AppImage";
+    const std::filesystem::path appimage = temp.path / "OdinSphereLeifthrasirPC-v0.1.0-x86_64.AppImage";
     WriteFile(appimage, "appimage");
     const std::filesystem::path mount = temp.path / "mount";
     const std::filesystem::path program = mount / "usr" / "bin" / "odin_sphere_leifthrasir";
@@ -708,23 +786,36 @@ void TestAppImageTarget() {
     CHECK(!IsRunningAppImage(appimage, mount, temp.path / "build" / "odin_sphere_leifthrasir"));
     WriteFile(temp.path / "Other-v1.0.0-x86_64.AppImage", "other");
     CHECK(!IsRunningAppImage(temp.path / "Other-v1.0.0-x86_64.AppImage", mount, program));
-    WriteFile(temp.path / "OdinSphereLeifthrasir-vx-x86_64.AppImage", "other");
-    CHECK(!IsRunningAppImage(temp.path / "OdinSphereLeifthrasir-vx-x86_64.AppImage", mount, program));
-    WriteFile(mount / "OdinSphereLeifthrasir-v0.1.0-x86_64.AppImage", "inside");
-    CHECK(!IsRunningAppImage(mount / "OdinSphereLeifthrasir-v0.1.0-x86_64.AppImage", mount, program));
+    WriteFile(temp.path / "OdinSphereLeifthrasirPC-vx-x86_64.AppImage", "other");
+    CHECK(!IsRunningAppImage(temp.path / "OdinSphereLeifthrasirPC-vx-x86_64.AppImage", mount, program));
+    WriteFile(temp.path / "OdinSphereLeifthrasirPC-v0.1.0-linux-x86_64.AppImage", "old name");
+    CHECK(!IsRunningAppImage(temp.path / "OdinSphereLeifthrasirPC-v0.1.0-linux-x86_64.AppImage", mount, program));
+    WriteFile(temp.path / "OdinSphereLeifthrasir-v0.1.0-x86_64.AppImage", "old name");
+    CHECK(!IsRunningAppImage(temp.path / "OdinSphereLeifthrasir-v0.1.0-x86_64.AppImage", mount, program));
+    WriteFile(mount / "OdinSphereLeifthrasirPC-v0.1.0-x86_64.AppImage", "inside");
+    CHECK(!IsRunningAppImage(mount / "OdinSphereLeifthrasirPC-v0.1.0-x86_64.AppImage", mount, program));
     CHECK(!IsRunningAppImage({}, mount, program));
 }
 
 // The release ZIP through the updater's own extraction and staging rules: what an installed release will accept.
 int CheckPackage(const std::filesystem::path& zip) {
+    const SemanticVersion version = *ParseVersion(OSL_PORT_VERSION);
+    if (zip.filename() != osl::WindowsPackageName(version)) {
+        std::printf("The updater looks for %s, not %s\n", osl::WindowsPackageName(version).c_str(),
+                    zip.filename().string().c_str());
+        return 1;
+    }
     TempDir temp("package");
+    const std::vector<std::string> required = {osl::kGameExecutable, osl::kUpdaterExecutable};
     std::string error;
+    std::filesystem::path content;
     if (!ExtractZip(zip, temp.path / "staging", {}, error) ||
-        !ValidateStaging(temp.path / "staging", {osl::kGameExecutable, osl::kUpdaterExecutable}, error)) {
+        !ResolveStagingRoot(temp.path / "staging", osl::WindowsPackageRoot(version), required, content, error) ||
+        !ValidateStaging(content, required, error)) {
         std::printf("The updater would refuse %s: %s\n", zip.string().c_str(), error.c_str());
         return 1;
     }
-    const std::vector<std::string> files = ListStagingFiles(temp.path / "staging", error);
+    const std::vector<std::string> files = ListStagingFiles(content, error);
     if (!error.empty() || files.empty()) {
         std::printf("The updater would refuse %s: %s\n", zip.string().c_str(), error.c_str());
         return 1;
@@ -745,6 +836,7 @@ int main(int argc, char** argv) {
     TestChecksums();
     TestPaths();
     TestZip();
+    TestPackageRoot();
     TestJobs();
     TestInstallTransaction();
     TestRollback();

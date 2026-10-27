@@ -5,7 +5,8 @@
   launcher self-update (versions, release JSON, checksums, ZIP safety, the install transaction and the real update helper). They use
   synthetic data in a temporary folder: no window, no game files.
 .DESCRIPTION
-  Needs the build configured once by tools\build.ps1. The tests are not part of the default build.
+  Needs the build configured once by tools\build.ps1. The tests are not part of the default build. The update helper
+  tests also run against the release CLANG64 trg-updater.exe when tools\build-updater.ps1 has made one.
 #>
 [CmdletBinding()]
 param()
@@ -55,4 +56,11 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step 'Running the update helper tests (trg-updater.exe alone in a temporary folder)'
 & (Join-Path $buildDir 'bin\osl-update-helper-tests.exe')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+$releaseUpdater = Join-Path $script:RepoRoot 'build\cmake\clang64-release\trg-updater-clang64\trg-updater.exe'
+if (Test-Path -LiteralPath $releaseUpdater) {
+    Write-Step "Running the update helper tests against the release CLANG64 build ($releaseUpdater)"
+    & (Join-Path $buildDir 'bin\osl-update-helper-tests.exe') $releaseUpdater
+}
 exit $LASTEXITCODE

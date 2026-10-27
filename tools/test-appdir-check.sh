@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Checks that tools/package-linux.sh --verify accepts a clean synthetic AppDir and refuses it once it holds game data,
-# the player's files, logs, debug files, development markers, local paths, system libraries, an ELF that needs a newer
-# glibc than the baseline, or lacks a required file. The fixture programs are tiny C files compiled here; nothing of the
+# the player's files, logs, debug files, development markers, local paths (also as UTF-16), system libraries, links,
+# files outside the allowed places, an ELF that needs a newer glibc than the baseline, or lacks a required file. The fixture programs are tiny C files compiled here; nothing of the
 # project is built, packaged or started. Needs cc, readelf and ldd.
 set -euo pipefail
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
@@ -64,8 +64,8 @@ contaminate() { # case dir
         'hang report') echo 'x' > "$dir/usr/share/doc/$doc/hang_001.txt" ;;
         'game files') mkdir -p "$dir/game/prepared/CUSA05083-1.00" && echo 'x' > "$dir/game/prepared/CUSA05083-1.00/eboot.bin" ;;
         'game package') echo 'x' > "$dir/UP0177-CUSA05083.pkg" ;;
-        'package by content') printf '\x7fCNT\0\0\0\0' > "$dir/usr/share/doc/$doc/notes" ;;
-        'SELF by content') printf '\x4f\x15\x3d\x1d\0\0\0\0' > "$dir/usr/bin/module" ;;
+        'package by content') printf '\x7fCNT\0\0\0\0' > "$dir/usr/share/licenses/$doc/notes" ;;
+        'SELF by content') printf '\x4f\x15\x3d\x1d\0\0\0\0' > "$dir/usr/share/licenses/$doc/module" ;;
         'debug file') echo 'x' > "$dir/usr/bin/odin_sphere_leifthrasir.debug" ;;
         'pdb') echo 'x' > "$dir/usr/bin/odin_sphere_leifthrasir.pdb" ;;
         'object file') echo 'x' > "$dir/usr/lib/loader.o" ;;
@@ -73,7 +73,13 @@ contaminate() { # case dir
         'source file') echo 'x' > "$dir/usr/bin/loader.c" ;;
         'python cache') mkdir -p "$dir/usr/bin/__pycache__" ;;
         'build folder') mkdir -p "$dir/usr/bin/CMakeFiles" ;;
-        'nested AppImage') echo 'x' > "$dir/usr/bin/OdinSphereLeifthrasir-v0.1.0-x86_64.AppImage" ;;
+        'nested AppImage') echo 'x' > "$dir/usr/bin/OdinSphereLeifthrasirPC-v0.1.0-x86_64.AppImage" ;;
+        'unexpected file') echo 'x' > "$dir/usr/bin/notes.txt" ;;
+        'symbolic link') ln -s /usr/lib/x86_64-linux-gnu/libz.so.1 "$dir/usr/lib/libextra.so.1" ;;
+        'updater leftover') echo 'x' > "$dir/odin.trg-update-1-0.backup" ;;
+        'crash dump') echo 'x' > "$dir/usr/share/doc/$doc/odin_sphere_leifthrasir.dmp" ;;
+        'UTF-16 repository path') printf '%s' "$root" | sed 's/./&\x00/g' > "$dir/usr/share/licenses/$doc/notes" ;;
+        'Windows user folder') echo 'C:\Users\someone' >> "$dir/usr/share/licenses/$doc/LICENSE.txt" ;;
         'Windows program') printf 'MZ\x90\0' > "$dir/usr/bin/trg-updater" ;;
         renderdoc) cp "$work/libfixture.so" "$dir/usr/lib/librenderdoc.so" ;;
         'vulkan layer') mkdir -p "$dir/usr/share/vulkan/implicit_layer.d" && echo '{}' > "$dir/usr/share/vulkan/implicit_layer.d/VkLayer_x.json" ;;
@@ -98,7 +104,8 @@ contaminate() { # case dir
 }
 cases=(settings 'save data' trophies 'trophy key' 'shader cache' log 'hang report' 'game files' 'game package' 'package by content'
        'SELF by content' 'debug file' pdb 'object file' 'static library' 'source file' 'python cache' 'build folder'
-       'nested AppImage' 'Windows program' renderdoc 'vulkan layer' 'vulkan loader' glibc 'newer glibc'
+       'nested AppImage' 'unexpected file' 'symbolic link' 'updater leftover' 'crash dump' 'UTF-16 repository path'
+       'Windows user folder' 'Windows program' renderdoc 'vulkan layer' 'vulkan loader' glibc 'newer glibc'
        'debug sections' 'absolute RPATH' 'RUNPATH instead of RPATH' 'unresolved library' 'DEBUG_SAULO marker'
        'repository path' 'home path' 'obsolete program name' 'missing AppRun' 'missing program'
        'missing Linux licences' 'missing header art' 'program not executable')

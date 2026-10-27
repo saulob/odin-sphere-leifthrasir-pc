@@ -7,6 +7,9 @@
 
 namespace trg::update {
 
+// Every release file is named <kReleaseName>-v<version>-...; tools/package.ps1 and tools/package-linux.sh use the same.
+inline constexpr char kReleaseName[] = "OdinSphereLeifthrasirPC";
+
 std::string Utf8Path(const std::filesystem::path& path);
 std::filesystem::path PathFromUtf8(std::string_view text);
 

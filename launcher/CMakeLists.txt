@@ -72,6 +72,7 @@ target_link_libraries(osl_launcher PUBLIC osl_launcher_core trg_launcher osl_img
 
 # Windows: the helper that replaces the program after the launcher exits. It runs alone from a temporary folder,
 # so it is linked statically and imports only Windows' own DLLs (checked by tools\package.ps1 and the helper tests).
+# Release packages ship tools\build-updater.ps1's build of these sources instead of this target.
 if (WIN32)
     set(OSL_UPDATER_HELPER_SOURCES updater/helper_main.cpp updater/install_transaction.cpp updater/sha256.cpp
         updater/update_job.cpp updater/update_paths.cpp updater/update_platform.cpp)

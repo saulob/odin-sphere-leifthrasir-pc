@@ -185,6 +185,43 @@ bool ExtractZip(const std::filesystem::path& archive, const std::filesystem::pat
   return true;
 }
 
+bool ResolveStagingRoot(const std::filesystem::path& staging, std::string_view root_name,
+                        const std::vector<std::string>& required_files, std::filesystem::path& root,
+                        std::string& error) {
+  error.clear();
+  root.clear();
+  std::string normalized_root;
+  if (!NormalizeRelativePath(root_name, normalized_root) || normalized_root.empty() ||
+      normalized_root.find('/') != std::string::npos) {
+    error = "The updater has no valid package folder name.";
+    return false;
+  }
+  const std::string layout = "The update archive must hold one folder, " + normalized_root + ", and nothing else.";
+  std::error_code ec;
+  std::vector<std::filesystem::path> entries;
+  for (std::filesystem::directory_iterator it(staging, ec), end; !ec && it != end; it.increment(ec)) {
+    entries.push_back(it->path());
+  }
+  if (ec) {
+    error = "Cannot read the update staging folder.";
+    return false;
+  }
+  if (entries.size() != 1 || Utf8Path(entries.front().filename()) != normalized_root ||
+      !std::filesystem::is_directory(std::filesystem::symlink_status(entries.front(), ec))) {
+    error = layout;
+    return false;
+  }
+  for (const std::string& required : required_files) {
+    std::string normalized;
+    if (!NormalizeRelativePath(required, normalized) || !IsRegularFile(entries.front() / PathFromUtf8(normalized))) {
+      error = "The update does not contain " + required + ".";
+      return false;
+    }
+  }
+  root = entries.front();
+  return true;
+}
+
 bool ValidateStaging(const std::filesystem::path& staging, const std::vector<std::string>& required_files,
                      std::string& error) {
   error.clear();

@@ -1,25 +1,30 @@
 #!/usr/bin/env bash
-# Packages the tested Linux build as dist/OdinSphereLeifthrasir-v<version>-x86_64.AppImage and its .AppImage.sha256.
+# Packages the Linux Release build as dist/OdinSphereLeifthrasirPC-v<version>-x86_64.AppImage and its .sha256.
 # Local only: nothing is published, tagged or uploaded. The Linux counterpart of tools/package.ps1.
 #
-#   tools/package-linux.sh                build with tools/build.sh, then package
-#   tools/package-linux.sh --skip-build   package the existing build/cmake/linux/bin/odin_sphere_leifthrasir
-#   tools/package-linux.sh --out-dir DIR  write the AppImage, its .sha256 and the symbols to DIR instead of dist/
-#   tools/package-linux.sh --verify DIR   only check an existing AppDir
+#   tools/package-linux.sh                  build with tools/build.sh --release, then package
+#   tools/package-linux.sh --clean          clean Release build first
+#   tools/package-linux.sh --skip-build     package the existing build/cmake/linux-release/bin/odin_sphere_leifthrasir
+#   tools/package-linux.sh --out-dir DIR    write the AppImage, its .sha256 and the symbols to DIR instead of dist/
+#   tools/package-linux.sh --verify DIR     only check an existing AppDir
+#   tools/package-linux.sh --verify-only FILE   only check a finished AppImage (runtime, then its extracted contents)
 #
-# Needs patchelf, binutils, curl, git and dpkg (licence texts come from the packages of the bundled libraries). Build
-# on Ubuntu 20.04 (packaging/linux/ci-deps.sh): no shipped ELF may need a newer glibc than 2.31. GPU drivers, the
-# Vulkan loader, X11/Wayland, audio and glibc always come from the player's system. The patched AppImage runtime is
-# built by tools/build-appimage-runtime.sh, which needs root or passwordless sudo (docs/LINUX.md).
+# The program's debug information goes to <out dir>/<name>-symbols/, which is not packaged. Needs patchelf, binutils,
+# curl, git and dpkg (licence texts come from the packages of the bundled libraries). Build on Ubuntu 20.04
+# (packaging/linux/ci-deps.sh): no shipped ELF may need a newer glibc than 2.31. GPU drivers, the Vulkan loader,
+# X11/Wayland, audio and glibc always come from the player's system. The patched AppImage runtime is built by
+# tools/build-appimage-runtime.sh, which needs root or passwordless sudo (docs/LINUX.md).
 set -euo pipefail
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
-skip_build=0 verify_dir= out_dir=
+skip_build=0 clean=0 verify_dir= verify_file= out_dir=
 while (($#)); do
     case $1 in
         --skip-build) skip_build=1 ;;
+        --clean) clean=1 ;;
         --out-dir) out_dir=${2:?--out-dir needs a folder}; shift ;;
         --verify) verify_dir=$(cd -- "${2:?--verify needs a folder}" && pwd) || exit 2; shift ;;
-        -h|--help) sed -n '2,13p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        --verify-only) verify_file=$(realpath -- "${2:?--verify-only needs an AppImage}") || exit 2; shift ;;
+        -h|--help) sed -n '2,16p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown option: $1" >&2; exit 2 ;;
     esac
     shift
@@ -44,8 +49,22 @@ excluded='^(ld-linux.*|libc|libm|libdl|librt|libpthread|libresolv|libutil|libnsl
 # Fallback copies, used only when the system's are older than the build's (packaging/linux/AppRun).
 compat_libs='^(libstdc\+\+|libgcc_s)\.so'
 
-forbidden_names='^(game|user|logs|cache|build|prepared|extracted|image|savedata|trophy|download0|temp0|shader|screenshots|sce_sys|sce_module|eboot\.bin|param\.sfo|osl\.ini|keys\.json|boot\.bin|content\.bin|image\.json|imports\.json|symbols|__pycache__|CMakeFiles|hang_[0-9]+\.txt)$'
+forbidden_names='^(game|user|logs|cache|build|prepared|extracted|image|savedata|trophy|download0|temp0|shader|screenshots|sce_sys|sce_module|eboot\.bin|param\.sfo|osl\.ini|keys\.json|boot\.bin|content\.bin|image\.json|imports\.json|symbols|__pycache__|CMakeFiles|hang_[0-9]+\.txt|core)$'
 forbidden_patterns='\.(pkg|pdb|debug|log|dmp|ini|bin|self|sprx|prx|elf|cpk|sfo|json|trp|spv|pipeline_cache|o|obj|a|lib|tmp|bak|part|sav|py|pyc|ps1|c|cpp|h|hpp|exe|dll|AppImage)$'
+
+# The only places a file may be: anything else in the AppDir is refused.
+allowed_path() { # relative path of a file or link
+    case $1 in
+        AppRun | "$app.desktop" | "$app.png" | .DirIcon | "usr/bin/$program" | usr/bin/assets/launcher/header-art.png | \
+        "usr/share/applications/$app.desktop" | "usr/share/icons/hicolor/256x256/apps/$app.png" | \
+        "usr/share/doc/$doc_name/README.txt" | "usr/share/licenses/$doc_name/"*) return 0 ;;
+        usr/lib/compat/*) [[ $1 =~ ^usr/lib/compat/(libstdc\+\+|libgcc_s)\.so[.0-9]*$ ]] ;;
+        usr/lib/*) [[ $1 =~ ^usr/lib/[A-Za-z0-9_+.-]+\.so[.0-9]*$ ]] ;;
+        *) return 1 ;;
+    esac
+}
+# The bytes of a text as UTF-16LE, as a grep -P pattern.
+utf16_pattern() { printf '%s' "$1" | od -An -tx1 | tr -d ' \n' | sed 's/../\\x&\\x00/g'; }
 
 newer_than() { [[ $1 != "$2" && $(printf '%s\n' "$1" "$2" | sort -V | tail -1) == "$1" ]]; }
 magic() { head -c 4 -- "$1" | od -An -tx1 | tr -d ' \n'; }
@@ -67,8 +86,9 @@ check_elf() { # label base file
     if [[ -n $newest ]] && newer_than "$newest" "$max_glibc"; then
         problem "$label $rel needs glibc $newest, newer than the $max_glibc baseline (build on Ubuntu 20.04)"
     fi
+    if [[ -n $newest ]] && { [[ -z $glibc_max ]] || newer_than "$newest" "$glibc_max"; }; then glibc_max=$newest; fi
     sections=$(readelf -S -W -- "$file" 2>/dev/null || true)
-    grep -qE '\.(z?debug_info|debug_line|gnu_debugdata)\b' <<<"$sections" && problem "debug information in $rel"
+    grep -qE '\s\.(z?debug_[a-z_]+|gnu_debugdata)\s' <<<"$sections" && problem "debug sections in $rel"
     dynamic=$(readelf -d -W -- "$file" 2>/dev/null || true)
     grep -qiE 'NEEDED.*(renderdoc|VkLayer)' <<<"$dynamic" && problem "$rel links RenderDoc or a Vulkan layer"
     # Only $ORIGIN-relative search paths: an absolute one would load libraries from the build machine's folders.
@@ -78,19 +98,26 @@ check_elf() { # label base file
 }
 
 check_appdir() { # dir [the AppImage file, whose runtime is an ELF too]
-    local dir=$1 problems=0 item rel name needle needles elves=() leaf missing dynamic
+    local dir=$1 problems=0 item rel name needle needles i patterns=() elves=() leaf missing dynamic
+    glibc_max=
     problem() { echo "  $*" >&2; problems=$((problems + 1)); }
-    needles=("$root" "${HOME:-/nonexistent-home}" VisualStudio 'S:\Decomp' 'S:/Decomp' DEBUG_SAULO referencias-ps4
-             osl-loader osl.loader dragons_crown DragonsCrown)
+    needles=("$root" "${HOME:-/nonexistent-home}" VisualStudio 'S:\Decomp' 'S:/Decomp' 'C:\Users\' 'C:/Users/'
+             DEBUG_SAULO referencias-ps4 osl-loader osl.loader dragons_crown DragonsCrown)
+    for needle in "${needles[@]}"; do patterns+=("$(utf16_pattern "$needle")"); done
     while IFS= read -r -d '' item; do
         rel=${item#"$dir"/}
         name=$(basename -- "$item")
         [[ $name =~ $forbidden_names ]] && problem "forbidden name: $rel"
         [[ $name =~ $excluded ]] && problem "the player's system provides this library: $rel"
         [[ ${name,,} == *renderdoc* || ${name,,} == *vklayer* || $name == *_layer.d ]] && problem "RenderDoc or Vulkan layer file: $rel"
+        [[ $name == *trg-update-* ]] && problem "updater leftover: $rel"
         if [[ $rel != usr/share/licenses/* && $rel != usr/share/doc/* && -f $item && $name =~ $forbidden_patterns ]]; then
             problem "forbidden file type: $rel"
         fi
+        if [[ ! -d $item || -L $item ]]; then
+            allowed_path "$rel" || problem "unexpected file: $rel"
+        fi
+        [[ -L $item && $rel != .DirIcon ]] && problem "symbolic link: $rel"
         [[ -f $item && ! -L $item ]] || continue
         case $(magic "$item") in
             7f434e54) problem "PS4 package: $rel" ;;
@@ -101,6 +128,9 @@ check_appdir() { # dir [the AppImage file, whose runtime is an ELF too]
         esac
         for needle in "${needles[@]}"; do
             grep -a -q -i -F -- "$needle" "$item" && { problem "local path, development marker or stale name '$needle' in $rel"; break; }
+        done
+        for i in "${!patterns[@]}"; do
+            LC_ALL=C grep -a -q -P -- "${patterns[$i]}" "$item" && { problem "UTF-16 local path or marker '${needles[$i]}' in $rel"; break; }
         done
     done < <(find "$dir" -mindepth 1 -print0)
     for leaf in AppRun "$app.desktop" "$app.png" .DirIcon "usr/bin/$program" usr/bin/assets/launcher/header-art.png \
@@ -123,11 +153,23 @@ check_appdir() { # dir [the AppImage file, whose runtime is an ELF too]
     for item in "${elves[@]}"; do check_elf 'the AppDir:' "$dir" "$item"; done
     (($# < 2)) || check_elf 'the AppImage runtime:' "$(dirname -- "$2")" "$2"
     ((problems == 0)) || die "release check failed ($problems problem(s))"
-    echo 'AppDir is clean'
+    echo "AppDir is clean (newest glibc needed: ${glibc_max:-none})"
 }
 
 if [[ -n $verify_dir ]]; then
     check_appdir "$verify_dir"
+    exit 0
+fi
+if [[ -n $verify_file ]]; then
+    [[ -f $verify_file ]] || die "Missing $verify_file"
+    bash "$root/tools/build-appimage-runtime.sh" --check "$verify_file"
+    verify_work=$(mktemp -d)
+    trap 'rm -rf "$verify_work"' EXIT
+    cp -- "$verify_file" "$verify_work/verify.AppImage"
+    chmod 755 "$verify_work/verify.AppImage"
+    (cd "$verify_work" && ./verify.AppImage --appimage-extract >/dev/null)
+    check_appdir "$verify_work/squashfs-root" "$verify_file"
+    echo "Verified $verify_file"
     exit 0
 fi
 
@@ -141,8 +183,8 @@ newer_than "$host_glibc" "$max_glibc" &&
 
 version=$(sed -nE 's/^set\(OSL_PORT_VERSION "([0-9]+\.[0-9]+\.[0-9]+)"\)$/\1/p' CMakeLists.txt)
 [[ -n $version ]] || die 'OSL_PORT_VERSION not found in CMakeLists.txt'
-name=OdinSphereLeifthrasir-v$version-x86_64
-build_dir=$root/build/cmake/linux
+name=OdinSphereLeifthrasirPC-v$version-x86_64
+build_dir=$root/build/cmake/linux-release
 loader=$build_dir/bin/$program
 dist=${out_dir:-$root/dist}
 work=$root/build/appimage
@@ -150,16 +192,19 @@ appdir=$work/AppDir
 symbols=$dist/$name-symbols
 
 step "Odin Sphere Leifthrasir PC $version - Linux AppImage (local only)"
-((skip_build)) || "$root/tools/build.sh"
+if ((!skip_build)); then
+    build_args=(--release)
+    ((clean)) && build_args+=(--clean)
+    "$root/tools/build.sh" "${build_args[@]}"
+fi
 [[ -x $loader ]] || die "Missing $loader (run without --skip-build)"
-# tools/build.sh's one configuration (-O2 -g -DNDEBUG); the debug information is split off below.
-grep -qs 'CMAKE_BUILD_TYPE:STRING=RelWithDebInfo' "$build_dir/CMakeCache.txt" ||
-    die "$build_dir is not the RelWithDebInfo build of tools/build.sh (run without --skip-build)"
+grep -qsx 'CMAKE_BUILD_TYPE:STRING=Release' "$build_dir/CMakeCache.txt" ||
+    die "$build_dir is not the Release build of tools/build.sh --release (run without --skip-build)"
 
-rm -rf "$appdir"
+rm -rf "$appdir" "$symbols"
 mkdir -p "$dist" "$symbols" "$appdir/usr/bin" "$appdir/usr/lib/compat" "$appdir/usr/share/licenses/$doc_name" \
          "$appdir/usr/share/doc/$doc_name" "$appdir/usr/share/applications" "$appdir/usr/share/icons/hicolor/256x256/apps"
-rm -f "$dist/$name.AppImage" "$dist/$name.AppImage.sha256"
+rm -f "$dist/$name.AppImage" "$dist/$name.sha256"
 
 step "Staging $program without debug information"
 objcopy --only-keep-debug "$loader" "$symbols/$program.debug"
@@ -197,7 +242,9 @@ for lib in "$appdir"/usr/lib/*.so*; do
     patchelf --set-rpath '$ORIGIN' "$lib"
 done
 strip --strip-unneeded "$appdir"/usr/lib/compat/*.so* 2>/dev/null || true
-# DT_RPATH (not RUNPATH) is inherited by the libraries' own dependencies and wins over LD_LIBRARY_PATH.
+# DT_RPATH (not RUNPATH) is inherited by the libraries' own dependencies and wins over LD_LIBRARY_PATH. The build's
+# RUNPATH is removed first: patchelf would otherwise keep its tag.
+patchelf --remove-rpath "$appdir/usr/bin/$program"
 patchelf --force-rpath --set-rpath '$ORIGIN/../lib' "$appdir/usr/bin/$program"
 echo "Bundled: $(cd "$appdir/usr/lib" && ls -- *.so* | tr '\n' ' ')"
 echo "Fallback: $(cd "$appdir/usr/lib/compat" && ls -- *.so* 2>/dev/null | tr '\n' ' ')"
@@ -291,11 +338,19 @@ rm -rf "$work/written"
 mkdir -p "$work/written"
 (cd "$work/written" && "$dist/$name.AppImage.new" --appimage-extract >/dev/null)
 check_appdir "$work/written/squashfs-root" "$dist/$name.AppImage.new"
+written=$(cd "$work/written/squashfs-root" && find . ! -type d | LC_ALL=C sort)
+[[ $written == "$(cd "$appdir" && find . ! -type d | LC_ALL=C sort)" ]] || die 'the AppImage does not hold exactly the staged files'
+while read -r file; do
+    [[ -L $appdir/$file ]] && continue
+    cmp -s -- "$appdir/$file" "$work/written/squashfs-root/$file" || die "$file in the AppImage differs from the staged file"
+done <<<"$written"
 rm -rf "$work/written"
 mv -f "$dist/$name.AppImage.new" "$dist/$name.AppImage"
-(cd "$dist" && sha256sum "$name.AppImage" > "$name.AppImage.sha256")
+(cd "$dist" && sha256sum "$name.AppImage" > "$name.sha256")
 
 printf '\nAPPIMAGE READY (nothing was published)\n'
 printf '  AppImage: %s (%s)\n' "$dist/$name.AppImage" "$(du -h "$dist/$name.AppImage" | cut -f1)"
-printf '  SHA-256:  %s\n' "$(cut -d' ' -f1 "$dist/$name.AppImage.sha256")"
+printf '  SHA-256:  %s\n' "$(cut -d' ' -f1 "$dist/$name.sha256")"
+printf '  Checksum: %s\n' "$dist/$name.sha256"
+printf '  glibc:    newest version needed %s (baseline %s)\n' "${glibc_max:-none}" "$max_glibc"
 printf '  Symbols:  %s (not in the package)\n' "$symbols/$program.debug"

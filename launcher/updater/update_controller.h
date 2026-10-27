@@ -37,6 +37,8 @@ struct UpdateConfig {
   UpdatePackageKind package_kind = UpdatePackageKind::kZip;
   std::function<std::string(const SemanticVersion&)> asset_name;
   std::function<std::string(const SemanticVersion&)> checksum_asset_name;
+  // The one folder a ZIP package holds (ResolveStagingRoot).
+  std::function<std::string(const SemanticVersion&)> package_root;
   std::filesystem::path install_dir;
   std::filesystem::path appimage_path;
   std::filesystem::path restart_executable;
@@ -119,6 +121,7 @@ class UpdateController {
   std::filesystem::path workspace_;
   std::filesystem::path download_path_;
   std::filesystem::path staging_path_;
+  std::filesystem::path staging_content_path_;
   std::filesystem::path backup_path_;
   std::filesystem::path manifest_path_;
   std::atomic<int> worker_phase_{0};

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace trg::update {
@@ -18,6 +19,12 @@ bool IsSymlinkZipEntry(std::uint32_t external_attributes);
 
 bool ExtractZip(const std::filesystem::path& archive, const std::filesystem::path& destination,
                 const ZipLimits& limits, std::string& error);
+
+// The extracted package must hold one folder named root_name and nothing else; root is that folder, whose
+// contents are installed.
+bool ResolveStagingRoot(const std::filesystem::path& staging, std::string_view root_name,
+                        const std::vector<std::string>& required_files, std::filesystem::path& root,
+                        std::string& error);
 
 bool ValidateStaging(const std::filesystem::path& staging, const std::vector<std::string>& required_files,
                      std::string& error);

@@ -160,10 +160,20 @@ void TestBranding() {
         const uint32_t bytes = Little32(ico, entry + 8);
         const uint32_t offset = Little32(ico, entry + 12);
         CHECK(offset + bytes <= ico.size());
-        CHECK(ico.compare(offset, 8, "\x89PNG\r\n\x1a\n") == 0);
-        CHECK(ico.compare(offset + 12, 4, "IHDR") == 0);
-        CHECK(Big32(ico, offset + 16) == static_cast<uint32_t>(sizes[i]));
-        CHECK(Big32(ico, offset + 20) == static_cast<uint32_t>(sizes[i]));
+        if (sizes[i] == 256) {
+            CHECK(ico.compare(offset, 8, "\x89PNG\r\n\x1a\n") == 0);
+            CHECK(ico.compare(offset + 12, 4, "IHDR") == 0);
+            CHECK(Big32(ico, offset + 16) == static_cast<uint32_t>(sizes[i]));
+            CHECK(Big32(ico, offset + 20) == static_cast<uint32_t>(sizes[i]));
+        } else {
+            // BITMAPINFOHEADER: the height counts the colour rows and the AND mask.
+            const uint32_t mask_row = (static_cast<uint32_t>(sizes[i]) + 31) / 32 * 4;
+            CHECK(Little32(ico, offset) == 40);
+            CHECK(Little32(ico, offset + 4) == static_cast<uint32_t>(sizes[i]));
+            CHECK(Little32(ico, offset + 8) == static_cast<uint32_t>(sizes[i]) * 2);
+            CHECK((static_cast<unsigned char>(ico[offset + 14]) | static_cast<unsigned char>(ico[offset + 15]) << 8) == 32);
+            CHECK(bytes == 40 + static_cast<uint32_t>(sizes[i]) * (static_cast<uint32_t>(sizes[i]) * 4 + mask_row));
+        }
     }
 }
 

@@ -47,6 +47,7 @@ tsl robin-map               MIT                                                 
 Vulkan Memory Allocator     MIT                                                                  licenses\VulkanMemoryAllocator
 Vulkan headers              Apache-2.0 OR MIT                                                    licenses\vulkan-headers
 LLVM compiler-rt builtins   Apache-2.0 WITH LLVM-exception                                       licenses\compiler-rt
+MinGW-w64 runtime           ZPL-2.1; most files public domain (start-up code in every program)   licenses\crt
 
 TRG Launcher 1.1.0 (https://github.com/TekRantGaming/trg-launcher, b384a28c712c9320eea8f9d50639dec49981b6c1)
   The launcher's windowing, pages and settings file. MIT License. Copyright (c) 2026 TekRantGaming.
@@ -78,9 +79,10 @@ SOFTWARE.
 trg-updater.exe (the launcher's update helper)
 ========================================================================
 
-This project's own code (GPL-2.0-or-later), linked statically with LLVM libc++ (Apache-2.0 WITH LLVM-exception,
-licenses\libc++) and winpthreads (MIT AND BSD-3-Clause-Clear, licenses\libwinpthread). The launcher reads update
-ZIP archives with the miniz listed above.
+This project's own code (GPL-2.0-or-later), built with MSYS2 CLANG64 and linked statically with LLVM libc++ and
+libunwind (Apache-2.0 WITH LLVM-exception, licenses\libc++ and licenses\libunwind), the compiler-rt builtins and
+MinGW-w64 runtime listed above, and winpthreads (MIT AND BSD-3-Clause-Clear, licenses\libwinpthread). The launcher
+reads update ZIP archives with the miniz listed above.
 
 
 ========================================================================

@@ -237,7 +237,7 @@ bool IsSystemLibrary(std::string name) {
         return true;
     }
     for (const char* system : {"kernel32.dll", "shell32.dll", "user32.dll", "advapi32.dll", "ntdll.dll", "shlwapi.dll",
-                               "ole32.dll", "bcrypt.dll", "msvcrt.dll"}) {
+                               "ole32.dll", "bcrypt.dll"}) {
         if (name == system) {
             return true;
         }
@@ -245,10 +245,12 @@ bool IsSystemLibrary(std::string name) {
     return false;
 }
 
+// As the launcher stages a release: the contents of the ZIP's one folder.
 struct Layout {
     explicit Layout(const std::filesystem::path& root, const std::string& name)
         : workspace(root / (name + " workspace")), install(root / (name + " install dir")),
-          staging(workspace / "staging"), backup(workspace / "backup"), manifest(workspace / "manifest.txt"),
+          staging(workspace / "staging" / "OdinSphereLeifthrasirPC-v0.2.0-windows-x64"), backup(workspace / "backup"),
+          manifest(workspace / "manifest.txt"),
           job(workspace / "job.txt"), log(workspace / "trg-updater.log") {}
 
     std::filesystem::path workspace, install, staging, backup, manifest, job, log;

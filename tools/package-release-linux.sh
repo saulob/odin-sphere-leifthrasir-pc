@@ -45,20 +45,20 @@ rsync -rl --checksum --no-times --delete --chmod=D755,F644 "${excludes[@]}" "$so
 chmod +x "$mirror"/tools/*.sh "$mirror"/packaging/linux/*.sh "$mirror"/packaging/linux/AppRun
 
 cd "$mirror"
-((clean)) && rm -rf build/cmake/linux
 rm -rf dist
 args=()
+((clean)) && args+=(--clean)
 ((skip_build)) && args+=(--skip-build)
 bash tools/package-linux.sh "${args[@]}"
 
 step "Copying the AppImage into $source/dist"
 mkdir -p "$source/dist"
 shopt -s nullglob
-images=(dist/OdinSphereLeifthrasir-v*-x86_64.AppImage)
+images=(dist/OdinSphereLeifthrasirPC-v*-x86_64.AppImage)
 ((${#images[@]} == 1)) || die "Expected one AppImage in $mirror/dist, found ${#images[@]}"
 name=$(basename -- "${images[0]}" .AppImage)
-rm -rf "$source/dist/$name.AppImage" "$source/dist/$name.AppImage.sha256" "$source/dist/$name-symbols"
-cp -- "dist/$name.AppImage" "dist/$name.AppImage.sha256" "$source/dist/"
+rm -rf "$source/dist/$name.AppImage" "$source/dist/$name.sha256" "$source/dist/$name-symbols"
+cp -- "dist/$name.AppImage" "dist/$name.sha256" "$source/dist/"
 cp -r -- "dist/$name-symbols" "$source/dist/"
-(cd "$source/dist" && sha256sum -c "$name.AppImage.sha256")
+(cd "$source/dist" && sha256sum -c "$name.sha256")
 printf '\nLinux AppImage: %s\n' "$source/dist/$name.AppImage"

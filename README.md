@@ -2,7 +2,7 @@
 
 # Odin Sphere Leifthrasir - PC Port
 
-### Odin Sphere Leifthrasir, Vanillaware's PS4 action RPG, running natively on Windows, with the TRG launcher
+### Odin Sphere Leifthrasir, Vanillaware's PS4 action RPG, running natively on Windows, and experimentally on Linux and Steam Deck, with the TRG launcher and modern PC options
 
 <sub>The original PS4 game code runs on the PC with a replacement for the PS4 system libraries and a Vulkan renderer derived from <a href="https://github.com/shadps4-emu/shadPS4">shadPS4</a>. <b>No game files included</b>: bring your own legally obtained Odin Sphere Leifthrasir PS4 package.</sub>
 
@@ -10,33 +10,55 @@
 
 ## Status
 
-This repository is the foundation of the port: the loader and runtime that map and run the game's own
-x86-64 code, the shadPS4-derived Vulkan video core, the launcher and installer, and the diagnostics
-that make the first boot debuggable. The USA 1.00 base package (`CUSA05083`), the Japanese release
-(`CUSA01290` base 1.00 plus its 1.02 update) and the European release (`CUSA05262` base 1.00 plus its 1.01 update)
-are supported; any other version is refused.
+**v0.1.0 is the first public release.** The loader and runtime map and run the game's own x86-64 code, with the
+shadPS4-derived Vulkan video core, the launcher and installer, local trophies, the self-updater and the diagnostics.
+The USA 1.00 base package (`CUSA05083`), the Japanese release (`CUSA01290` base 1.00 plus its 1.02 update) and the
+European release (`CUSA05262` base 1.00 plus its 1.01 update) are supported; any other version is refused.
+
+Windows is the supported platform. The native Linux build, shipped as an AppImage, is **experimental**: it is built and
+checked by scripts, but it has not yet been tested on real Linux PCs or a Steam Deck.
 
 ## Features
 
-- **Native PC port**: the game's own x86-64 code runs directly on the PC. It is not an emulator.
-- **TRG launcher** that installs the game directly from your own `.pkg` file and remembers its window position
-- **Windowed** and **Borderless Fullscreen**, switched with **F11** while playing, with window size and monitor selection
+- **Native PC port**: the game's own x86-64 code runs directly on the PC. It is not an emulator, and on Linux it does
+  not use Wine or Proton.
+- **TRG launcher** that installs the game from your own `.pkg` file, with **Reinstall game...** to repair it
+
+### Display
+- **Windowed** and **Borderless Fullscreen**, switched with **F11** while playing
+- **Window size** and **monitor** selection for the game; the launcher remembers its own window placement
 - **Aspect Ratio**: 16:9 Original, 16:10, 21:9 Ultrawide, 32:9 Super Ultrawide, 4:3 and 5:4
-- **Render resolution** from 480p to 4K, separate from the window size
-- **Graphics card selection**, **VSync**, **Presentation** (letterbox or stretch)
-- **Upscaling** (AMD FSR 1) and **sharpening** (AMD RCAS)
+- **Graphics card selection**, **VSync** and **Presentation** (letterbox or stretch)
+- **Upscaling** (AMD FidelityFX Super Resolution 1) and **sharpening** (AMD RCAS)
+
+### Graphics
+- **Render resolution** from 480p through native 1080p, 1440p and 1800p to 4K, separate from the window size
 - **SMAA** anti-aliasing and **anisotropic texture filtering** (Game, 2x, 4x, 8x, 16x)
-- Frame rate and render resolution in the window title, and an in-game **frame counter**
-- Xbox controllers without setup, and keyboard support, with **Xbox button prompts** as an option (PlayStation prompts are the default)
-- **Local PS4 trophies**, offline on this PC, shown on the launcher's Trophies page
-- Portable `user` and `logs` folders next to the program for settings, saves, the shader cache and logs
-- **Launcher updates**: a newer GitHub release is offered in the launcher's header and installed with one click, SHA-256 verified, keeping your game files, saves and settings
+
+### Gameplay
+- **Skip intro**: start at the title's PRESS START, without the startup notice, logos and intro
+- **Menu & Subtitles** language for the European build (English, French, German, Spanish, Italian)
+- Frame rate and render resolution in the window title, and an in-game **frame counter** with the frame time
+
+### Controls
+- Xbox controllers without setup, and keyboard play with every binding changeable
+- **Controller prompts**: the game's PlayStation button pictures (the default) or **Xbox** prompts
+
+### Your data
+- **Local PS4 trophies**, offline on this PC, listed on the launcher's Trophies page
+- **Portable**: settings, saves, trophies, the shader cache and logs stay in `user` and `logs` next to the program
+- **Updates**: a newer GitHub release is offered in the launcher and installed with one click, SHA-256 verified,
+  keeping your game files, saves and settings
+- **Diagnostics**: one log per run, a `CRASH REPORT` section in that log after a crash, and on Windows a
+  `hang_NNN.txt` report when the game freezes
 
 ## What you need
 
-- Windows 10 (version 1903 or newer) or Windows 11, 64-bit
+- **Windows**: Windows 10 (version 1903 or newer) or Windows 11, 64-bit, **or**
+- **Linux / Steam Deck** (experimental): 64-bit x86 Linux with glibc 2.31 or newer (such as Ubuntu 20.04 or later), a
+  Vulkan loader, and an X11 or Wayland desktop
 - A graphics card and driver with **Vulkan 1.3**, `VK_EXT_robustness2`, `VK_KHR_push_descriptor` and `VK_EXT_vertex_attribute_divisor`
-- **Your own legally obtained Odin Sphere Leifthrasir package**: a decrypted PS4 `.pkg` of the supported build, and about 4 GB of free space
+- **Your own legally obtained Odin Sphere Leifthrasir package**: a decrypted PS4 `.pkg` of a supported build, and about 4 GB of free space
 
 | | |
 | --- | --- |
@@ -54,8 +76,14 @@ with the same Title ID and Content ID. A package encrypted for a PS4 console can
 
 ## Installing
 
-1. Build the port (see below) or extract a release anywhere you can write to.
-2. Run **odin_sphere_leifthrasir.exe**. The launcher opens.
+**No game files are included** in the release, and the port does not download the game.
+
+### Windows
+
+1. Download **OdinSphereLeifthrasirPC-v0.1.0-windows-x64.zip** from the
+   [latest release](https://github.com/saulob/odin-sphere-leifthrasir-pc/releases/latest) and extract it anywhere you
+   can write to (not `Program Files`). It contains one folder, `OdinSphereLeifthrasirPC-v0.1.0-windows-x64`.
+2. Run **odin_sphere_leifthrasir.exe** from that folder. The launcher opens.
 3. On the **Play** page click **Install game...** and select your own Odin Sphere Leifthrasir `.pkg` file.
 4. Wait until **Ready to play** appears. The package is unpacked on your PC into the `game` folder next to the program
    (about 3.3 GB). The `.pkg` file is only read, and you can delete it afterwards.
@@ -63,22 +91,31 @@ with the same Title ID and Content ID. A package encrypted for a PS4 console can
    same way. The update is laid over the base and becomes the active build.
 6. Press **PLAY**.
 
-**No game files are included** in the release, and the port does not download the game.
+**Reinstall game...** on the Play page repairs the game files and keeps your settings and saves.
 
-On Windows, SmartScreen may warn the first time the program starts, because releases are not digitally signed. If you
-downloaded it from this project's GitHub releases page, choose **More info**, then **Run anyway**.
+### Linux and Steam Deck (experimental)
 
-### Linux (experimental)
+1. Download **OdinSphereLeifthrasirPC-v0.1.0-x86_64.AppImage**, put it in a folder you can write to and make it
+   executable (right-click > **Properties** > **Permissions** > **Is executable**, or `chmod +x`).
+2. Run it and install your own `.pkg` from the **Play** page, as on Windows. `game`, `user` and `logs` are kept next to
+   the AppImage.
+3. On a Steam Deck, do this in **Desktop Mode**, then add the AppImage with **Games > Add a Non-Steam Game to My
+   Library** and play it from **Game Mode**.
 
-The Linux release is one AppImage, `OdinSphereLeifthrasir-v<version>-x86_64.AppImage`, for 64-bit Linux with glibc 2.31
-(Ubuntu 20.04) or newer and a Vulkan 1.3 driver. Put it in a folder you can write to, make it executable and run it:
-`game`, `user` and `logs` are kept next to it. It mounts itself with FUSE and unpacks itself automatically when FUSE is
-not available. The Linux build is new and has not yet been tested on many systems; how it is built and checked is in
-[docs/LINUX.md](docs/LINUX.md).
+The AppImage mounts itself with FUSE, and when it cannot it unpacks itself into a private temporary folder, runs from
+there and removes the folder afterwards. It needs glibc 2.31 or newer: it is built on Ubuntu 20.04, and no file in it
+needs anything newer. Graphics drivers, the Vulkan loader, X11/Wayland and audio come from your system. The build, its
+checks and the differences from Windows are in [docs/LINUX.md](docs/LINUX.md).
+
+### Windows SmartScreen
+
+Windows may warn the first time the program starts, because releases are not digitally signed. If you downloaded it from
+this project's GitHub releases page, choose **More info**, then **Run anyway**. Each release lists the SHA-256 of its
+downloads; compare yours with it.
 
 ### Saves and settings
 
-Everything is kept next to the program:
+Everything is kept next to the program (next to the AppImage on Linux):
 
 | Folder | Contents |
 | --- | --- |
@@ -100,12 +137,8 @@ Everything is kept next to the program:
 - **Trophies**: your local PS4 trophy progress, the trophy list and the Trophy Key setup
 - **About**: the port version, the game, the renderer and the library versions, the game, saves and logs folders, the settings file, **Reset all settings**, and **Diagnostics** with Detailed logging and a button that opens the logs folder
 
-**Updates**: when the launcher opens it asks GitHub once, in the background, for the latest release. A newer one is shown
-at the top right of the header with its release notes and **UPDATE NOW**; the launcher downloads it, checks its SHA-256
-checksum, replaces only the port's own files and restarts. The game files, `user` and `logs` are never touched, and a
-failed update puts the previous version back. Without a connection, or while there is no release, nothing is shown.
-
-Hold **Shift** while starting to bring the launcher back after turning **Show this launcher** off.
+Hold **Shift** while starting to bring the launcher back after turning **Show this launcher** off. On Linux, Shift works
+in X11 sessions; anywhere, starting with `--launcher` (or the desktop entry's **Show launcher** action) does the same.
 
 **Alt+F4** (or the window close button) quits the launcher. **Esc** cancels the keyboard-binding capture and pop-ups; it does not quit. **Ctrl+S** saves the launcher settings without starting the game.
 
@@ -133,6 +166,32 @@ at the title's PRESS START, in both Refined and Classic mode. It acts once per s
 switching mode and the title's own demo play as usual. The save data and trophy checks before the title still run. It is
 stored in `user\osl.ini` as `skip_intro`, and it is available for every supported build.
 
+## Controls
+
+- **F11** switches between Windowed and Borderless Fullscreen while playing; the key can be changed on the Controls page.
+- Xbox controllers work without setup (on Linux through SDL's gamepad support).
+- The keyboard plays too: the Controls page lists every binding, and **Reset to defaults** restores them.
+- **Controller prompts** chooses the button pictures the game shows: PlayStation (the original) or Xbox.
+
+## Trophies
+
+Trophies are local and offline: unlocks are kept in `user\trophy\` on this PC, nothing is sent anywhere, and the
+launcher's **Trophies** page lists your progress with the trophy list and icons unpacked from your own game.
+
+## Updates
+
+When the launcher opens it asks GitHub once, in the background, for the latest release. A newer one is shown at the top
+right of the header with its release notes and **UPDATE NOW**; the launcher downloads it, checks its SHA-256 checksum,
+replaces only the port's own files and restarts. The game files, `user` and `logs` are never touched, and a failed
+update puts the previous version back. Without a connection, or while there is no release, nothing is shown.
+
+- **Windows**: the release ZIP's one folder is unpacked into a temporary workspace, and the small helper
+  `trg-updater.exe`, run from that workspace, waits for the launcher to close, backs up and replaces the program files,
+  rolls them back if anything fails, and starts the new version with the launcher shown.
+- **Linux**: the AppImage you started (not a mounted or unpacked copy) is replaced next to itself and started again.
+
+## Logs, crash reports and freezes
+
 **Detailed logging** (About, Diagnostics) is on by default and keeps the log of every session. The launcher and the
 game write one `odin_sphere_leifthrasir_NNN.log` for the whole run; it records the port version, the operating system,
 the processor, the game build and the graphics and display settings, and nothing per frame. Turned off, a
@@ -145,7 +204,7 @@ creating it first when it does not exist.
 On Windows, a freeze that is not a crash writes `logs\hang_NNN.txt`: the port version, the game build, and a short stack
 (module and offset, or guest offset) for every thread. The run's log gets one line naming the file. It is written when
 the game window stops answering for 5 seconds, or when no frame is presented for 15 seconds while the game is in front
-and not minimized. The game keeps running, and a session writes at most three such files.
+and not minimized. The game keeps running, and a session writes at most three such files. Linux writes no freeze report.
 
 ## Building it yourself
 
@@ -153,8 +212,11 @@ and not minimized. The game keeps running, and a session writes at most three su
 2. `.\tools\build.ps1` fetches the pinned dependencies (TRG Launcher, Dear ImGui and a few small libraries) and builds `build\cmake\clang64\bin\odin_sphere_leifthrasir.exe`.
 3. `.\tools\build.ps1 -Run` also starts it. Install the game from the launcher's Play page, as in a release; the development build keeps it in `game\prepared\<build folder>` and the boot image in `build\image\<build folder>` of the repository (`CUSA05083-1.00`, `CUSA01290-1.00`, `CUSA01290-1.02`, `CUSA05262-1.00` or `CUSA05262-1.01`).
 4. `.\tools\test.ps1` builds and runs the focused headless tests (game profile, settings, keys, window fit, GPU tiling, patch workflow, updater and update helper). Python is not needed to build, test or play; the optional development scripts in `scripts\` use it (`.\tools\setup.ps1 -InstallPython`).
-5. `.\tools\package.ps1` builds the Release configuration (`.\tools\build.ps1 -Release`, in `build\cmake\clang64-release`) and packages `dist\OdinSphereLeifthrasir-v<version>-windows-x64.zip` and its `.sha256` file, the layout the launcher's updater installs; `.\tools\test-release-check.ps1` then checks that the release check refuses player files, game data and leftovers. Nothing is published.
-6. Linux: `tools/build.sh` builds on Linux x86_64, and `tools/package-linux.sh` packages `dist/OdinSphereLeifthrasir-v<version>-x86_64.AppImage` and its `.AppImage.sha256` on Ubuntu 20.04 (in WSL2 from this Windows checkout: `tools/package-release-linux.sh`). See [docs/LINUX.md](docs/LINUX.md).
+5. `.\tools\package.ps1` builds the Release configuration (`.\tools\build.ps1 -Release`, in `build\cmake\clang64-release`: `-O3` with ThinLTO across the program and its own libraries, without a symbol table or build id) and the release update helper (`.\tools\build-updater.ps1`: MSYS2 CLANG64 clang++ and LLD, static, only Windows system DLLs, its debug information split into `trg-updater.debug`), then packages `dist\OdinSphereLeifthrasirPC-v<version>-windows-x64.zip`, which holds one folder of that name, and its `.sha256` file. The ZIP is extracted again, compared file by file with the staging folder and scanned, checked with the updater's own rules, and the update helper tests run against the packaged `trg-updater.exe`; `trg-updater.debug` goes to `dist\OdinSphereLeifthrasirPC-v<version>-windows-x64-symbols\`, outside the ZIP. `.\tools\package.ps1 -VerifyOnly <ZIP>` checks a finished ZIP, and `.\tools\test-release-check.ps1` checks that the release check refuses player files, game data, symbols, local paths and leftovers. Nothing is published.
+6. Linux: `tools/build.sh` builds on Linux x86_64 (`--release` for the Release configuration in `build/cmake/linux-release`), and `tools/package-linux.sh` packages `dist/OdinSphereLeifthrasirPC-v<version>-x86_64.AppImage` and its `.sha256` on Ubuntu 20.04 (in WSL2 from this Windows checkout: `tools/package-release-linux.sh`); `--verify-only <AppImage>` checks a finished one. See [docs/LINUX.md](docs/LINUX.md).
+
+The version is `OSL_PORT_VERSION` in `CMakeLists.txt`, the only place it is written: the program's version resource, the
+launcher, the logs, the updater and the release file names all come from it.
 
 ### What rebuilds
 

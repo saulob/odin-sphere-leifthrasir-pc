@@ -14,6 +14,8 @@ inline constexpr char kReleasesUrl[] = "https://api.github.com/repos/saulob/odin
 inline constexpr char kGameExecutable[] = "odin_sphere_leifthrasir.exe";
 inline constexpr char kUpdaterExecutable[] = "trg-updater.exe";
 
+// The ZIP holds exactly one folder with this name, and the release files inside it.
+std::string WindowsPackageRoot(const trg::update::SemanticVersion& version);
 std::string WindowsPackageName(const trg::update::SemanticVersion& version);
 std::string WindowsChecksumName(const trg::update::SemanticVersion& version);
 std::string LinuxPackageName(const trg::update::SemanticVersion& version);

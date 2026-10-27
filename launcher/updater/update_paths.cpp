@@ -270,13 +270,13 @@ bool IsRunningAppImage(const std::filesystem::path& appimage, const std::filesys
     return false;
   }
   const std::string name = file.filename().string();
-  constexpr std::string_view kPrefix = "OdinSphereLeifthrasir-v";
+  const std::string prefix = std::string(kReleaseName) + "-v";
   constexpr std::string_view kSuffix = "-x86_64.AppImage";
-  if (name.size() <= kPrefix.size() + kSuffix.size() || !std::string_view(name).starts_with(kPrefix) ||
+  if (name.size() <= prefix.size() + kSuffix.size() || !std::string_view(name).starts_with(prefix) ||
       !std::string_view(name).ends_with(kSuffix)) {
     return false;
   }
-  const std::string version = name.substr(kPrefix.size(), name.size() - kPrefix.size() - kSuffix.size());
+  const std::string version = name.substr(prefix.size(), name.size() - prefix.size() - kSuffix.size());
   if (!std::all_of(version.begin(), version.end(), [](char c) { return c == '.' || (c >= '0' && c <= '9'); })) {
     return false;
   }
