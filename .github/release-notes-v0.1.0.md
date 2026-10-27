@@ -1,6 +1,4 @@
-# Odin Sphere Leifthrasir PC v0.1.0
-
-First public release.
+# Odin Sphere Leifthrasir PC v0.1.0 — First public release
 
 Odin Sphere Leifthrasir for PlayStation 4 as a native PC port: the game's own x86-64 code runs directly on the PC, with
 a replacement for the PS4 system libraries and a Vulkan renderer derived from shadPS4. It runs natively on Windows, and
@@ -147,5 +145,5 @@ and `OdinSphereLeifthrasirPC-v0.1.0-x86_64.sha256`.
 
 | File | SHA-256 |
 | --- | --- |
-| `OdinSphereLeifthrasirPC-v0.1.0-windows-x64.zip` | `56138b54ae34f05b0c30950f118d0595d2f08424878c06dcb320cfd86e06f448` |
-| `OdinSphereLeifthrasirPC-v0.1.0-x86_64.AppImage` | `13fdc5ccb53b602c9f923932d7f0f72177187adc96f8645a9a137e789246a157` |
+| `OdinSphereLeifthrasirPC-v0.1.0-windows-x64.zip` | `c984e55d595372491eaa7ec86bb3b97a4ce708b1812dd578790a2231d100aea7` |
+| `OdinSphereLeifthrasirPC-v0.1.0-x86_64.AppImage` | `f879f2991872d91f459e2c4baa689777be5e1ca8decb800e62ed2d68e638f403` |

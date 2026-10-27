@@ -459,7 +459,7 @@ Write-Step 'Running the update helper tests against the packaged trg-updater.exe
 if ($LASTEXITCODE -ne 0) { Stop-Tool 'The packaged trg-updater.exe failed the update helper tests' }
 
 $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
-Write-Text $shaFile "$hash  $name.zip`n"
+[IO.File]::WriteAllText($shaFile, "$hash  $name.zip`n", (New-Object Text.UTF8Encoding $false))
 
 function Format-Size([long]$Bytes) { '{0:N1} MB' -f ($Bytes / 1MB) }
 $dllBytes = ($dlls.Values | ForEach-Object { (Get-Item -LiteralPath $_).Length } | Measure-Object -Sum).Sum
