@@ -22,5 +22,11 @@
       "link": "https://github.com/saulob"
     }
   ],
-  "notes": "Public native Windows release with an experimental Linux/Steam Deck AppImage. Supports the USA 1.00 base package (CUSA05083), the Japanese base (CUSA01290 1.00) with its 1.02 update and the European base (CUSA05262 1.00) with its 1.01 update. Includes the TRG launcher and package installer, render resolutions up to 4K, ultrawide aspect ratios, FSR 1 and RCAS, SMAA, GPU selection, Xbox controller prompts, local trophies, Skip intro, a self-updater and portable user data. No game files are included."
+  "notes": "Public native Windows release with an experimental Linux/Steam Deck AppImage. Supports the USA 1.00 base package (CUSA05083), the Japanese base (CUSA01290 1.00) with its 1.02 update and the European base (CUSA05262 1.00) with its 1.01 update. Includes the TRG launcher and package installer, render resolutions up to 4K, ultrawide aspect ratios, FSR 1 and RCAS, SMAA, GPU selection, Xbox controller prompts, local trophies, Skip intro, a self-updater and portable user data. No game files are included.",
+  "links": [
+    {
+      "label": "Reddit announcement",
+      "url": "https://www.reddit.com/r/recomps/comments/1xh6pjl/odin_sphere_leifthrasir_native_pc_port_released/"
+    }
+  ]
 }
