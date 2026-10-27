@@ -84,8 +84,8 @@ trg::update::UpdateConfig MakeUpdateConfig(const std::filesystem::path& install_
     config.package_kind = UpdatePackageKind::kZip;
     config.asset_name = WindowsPackageName;
     config.checksum_asset_name = WindowsChecksumName;
-    config.restart_executable = install_dir / kLoaderExecutable;
-    config.required_staged_files = {kLoaderExecutable, kUpdaterExecutable};
+    config.restart_executable = install_dir / kGameExecutable;
+    config.required_staged_files = {kGameExecutable, kUpdaterExecutable};
     if (IsBuildTreeExecutableDir(install_dir)) {
         config.install_unsupported_reason = "This development build is not updated automatically. Use a release package.";
     } else if (!trg::update::IsRegularFile(install_dir / kUpdaterExecutable)) {

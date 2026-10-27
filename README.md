@@ -52,7 +52,7 @@ the same Title ID and Content ID. A package encrypted for a PS4 console cannot b
 ## Installing
 
 1. Build the port (see below) or extract a release anywhere you can write to.
-2. Run **osl-loader.exe**. The launcher opens.
+2. Run **odin_sphere_leifthrasir.exe**. The launcher opens.
 3. On the **Play** page click **Install game...** and select your own Odin Sphere Leifthrasir `.pkg` file.
 4. Wait until **Ready to play** appears. The package is unpacked on your PC into the `game` folder next to the program
    (about 3.3 GB). The `.pkg` file is only read, and you can delete it afterwards.
@@ -123,7 +123,7 @@ folder that holds the logs, creating it first when it does not exist.
 ## Building it yourself
 
 1. Install [MSYS2](https://www.msys2.org) with the CLANG64 toolchain. `.\tools\setup.ps1` checks it and prints the `pacman` command for anything missing.
-2. `.\tools\build.ps1` fetches the pinned dependencies (TRG Launcher, Dear ImGui and a few small libraries) and builds `build\cmake\clang64\bin\osl-loader.exe`.
+2. `.\tools\build.ps1` fetches the pinned dependencies (TRG Launcher, Dear ImGui and a few small libraries) and builds `build\cmake\clang64\bin\odin_sphere_leifthrasir.exe`.
 3. `.\tools\build.ps1 -Run` also starts it. Install the game from the launcher's Play page, as in a release; the development build keeps it in `game\prepared\<build folder>` and the boot image in `build\image\<build folder>` of the repository (`CUSA05083-1.00`, `CUSA01290-1.00`, `CUSA01290-1.02`, `CUSA05262-1.00` or `CUSA05262-1.01`).
 4. `.\tools\test.ps1` builds and runs the focused headless tests (game profile, settings, keys, window fit, GPU tiling, patch workflow, updater and update helper). Python is not needed to build, test or play; the optional development scripts in `scripts\` use it (`.\tools\setup.ps1 -InstallPython`).
 5. `.\tools\package.ps1` packages `dist\OdinSphereLeifthrasir-v<version>-windows-x64.zip` and its `.sha256` file, the layout the launcher's updater installs; `.\tools\test-release-check.ps1` then checks that the release check refuses player files, game data and leftovers. Nothing is published.

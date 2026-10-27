@@ -238,11 +238,13 @@ void TestChecksums() {
 
 void TestPaths() {
     std::printf("path safety and protected Odin files\n");
-    for (const char* safe : {"osl-loader.exe", "trg-updater.exe", "SDL3.dll", "assets/launcher/header-art.png",
-                             "./osl-loader.exe", "licenses/THIRD-PARTY-LICENSES.txt"}) {
+    for (const char* safe : {"odin_sphere_leifthrasir.exe", "trg-updater.exe", "SDL3.dll",
+                             "assets/launcher/header-art.png", "./odin_sphere_leifthrasir.exe",
+                             "licenses/THIRD-PARTY-LICENSES.txt"}) {
         CHECK(IsSafeRelativePath(safe));
     }
-    for (const char* unsafe : {"../osl-loader.exe", "/absolute", "\\absolute", "C:/osl-loader.exe", "C:osl-loader.exe",
+    for (const char* unsafe : {"../odin_sphere_leifthrasir.exe", "/absolute", "\\absolute",
+                               "C:/odin_sphere_leifthrasir.exe", "C:odin_sphere_leifthrasir.exe",
                                "\\\\server\\share\\x", "a//b", "a/./../b", "a\\..\\b", "con", "aux.txt", "lpt1",
                                "a/b.", "a/b ", "a|b", "a\x01" "b"}) {
         CHECK(!IsSafeRelativePath(unsafe));
@@ -257,16 +259,17 @@ void TestPaths() {
                                "user/savedata/CUSA05083/SAVEDATA00/data", "user/trophy/CUSA05083/progress_user.txt",
                                "user/keys.json", "user/cache/CUSA05083/shader", "logs/odin_sphere_leifthrasir_001.log",
                                "cache/x", "screenshots/a.png", "OdinSphere.pkg", "UP0177-CUSA05083.PKG",
-                               "sce_sys/param.sfo", "Odin2_BT_UK.CPK", "crash.dmp", "osl-loader.pdb",
-                               "osl-loader.debug", "update.zip", "OdinSphereLeifthrasir-v0.1.0-x86_64.AppImage",
-                               "osl.ini.bak", "x.tmp", "download.part"}) {
+                               "sce_sys/param.sfo", "Odin2_BT_UK.CPK", "crash.dmp", "odin_sphere_leifthrasir.pdb",
+                               "odin_sphere_leifthrasir.debug", "update.zip",
+                               "OdinSphereLeifthrasir-v0.1.0-x86_64.AppImage", "osl.ini.bak", "x.tmp", "download.part"}) {
         if (!IsProtectedRelativePath(player)) {
             std::printf("  not protected: %s\n", player);
         }
         CHECK(IsProtectedRelativePath(player));
     }
-    for (const char* release : {"osl-loader.exe", "trg-updater.exe", "SDL3.dll", "libc++.dll", "README.txt",
-                                "LICENSE.txt", "assets/launcher/header-art.png", "licenses/THIRD-PARTY-LICENSES.txt",
+    for (const char* release : {"odin_sphere_leifthrasir.exe", "trg-updater.exe", "SDL3.dll", "libc++.dll",
+                                "README.txt", "LICENSE.txt", "assets/launcher/header-art.png",
+                                "licenses/THIRD-PARTY-LICENSES.txt",
                                 "licenses/MSYS2-PACKAGES.txt", "licenses/shadPS4/LICENSE", "licenses/NotoSansTC/LICENSE-NotoSansTC.txt"}) {
         CHECK(!IsProtectedRelativePath(release));
     }
@@ -276,16 +279,16 @@ void TestZip() {
     std::printf("ZIP extraction and staging\n");
     TempDir temp("zip");
     const std::filesystem::path archive = temp.path / "release.zip";
-    WriteFile(archive, MakeZip({{"osl-loader.exe", "PUBLIC_RELEASE"},
+    WriteFile(archive, MakeZip({{"odin_sphere_leifthrasir.exe", "PUBLIC_RELEASE"},
                                 {"trg-updater.exe", "helper"},
                                 {"assets/launcher/header-art.png", "art"},
                                 {"licenses/THIRD-PARTY-LICENSES.txt", "licences"}}));
     const std::filesystem::path staging = temp.path / "staging";
     std::string error;
     CHECK(ExtractZip(archive, staging, {}, error));
-    CHECK(ReadFile(staging / "osl-loader.exe") == "PUBLIC_RELEASE");
+    CHECK(ReadFile(staging / "odin_sphere_leifthrasir.exe") == "PUBLIC_RELEASE");
     CHECK(ReadFile(staging / "assets" / "launcher" / "header-art.png") == "art");
-    CHECK(ValidateStaging(staging, {"osl-loader.exe", "trg-updater.exe"}, error));
+    CHECK(ValidateStaging(staging, {"odin_sphere_leifthrasir.exe", "trg-updater.exe"}, error));
     std::vector<std::string> files;
     for (const std::string& file : ListStagingFiles(staging, error)) {
         std::string normalized;
@@ -293,11 +296,11 @@ void TestZip() {
         files.push_back(normalized);
     }
     CHECK(files == std::vector<std::string>({"assets/launcher/header-art.png", "licenses/THIRD-PARTY-LICENSES.txt",
-                                             "osl-loader.exe", "trg-updater.exe"}));
-    CHECK(!ValidateStaging(staging, {"osl-loader.exe", "missing.exe"}, error));
+                                             "odin_sphere_leifthrasir.exe", "trg-updater.exe"}));
+    CHECK(!ValidateStaging(staging, {"odin_sphere_leifthrasir.exe", "missing.exe"}, error));
     for (const char* leftover : {"user/osl.ini", "game/prepared/CUSA05083-1.00/eboot.bin", "logs/a.log"}) {
         WriteFile(staging / leftover, "player");
-        CHECK(!ValidateStaging(staging, {"osl-loader.exe"}, error));
+        CHECK(!ValidateStaging(staging, {"odin_sphere_leifthrasir.exe"}, error));
         std::filesystem::remove(staging / leftover);
     }
 
@@ -307,7 +310,7 @@ void TestZip() {
         "user/savedata/x", "logs/a.log", "OdinSphere.pkg", "sce_sys/param.sfo"};
     int rejected = 0;
     for (const std::string& name : unsafe_names) {
-        const std::string bytes = MakeZip({{"osl-loader.exe", "ok"}, {name, "payload"}});
+        const std::string bytes = MakeZip({{"odin_sphere_leifthrasir.exe", "ok"}, {name, "payload"}});
         CHECK(!bytes.empty());
         WriteFile(temp.path / "unsafe.zip", bytes);
         const std::filesystem::path unsafe_staging = temp.path / "unsafe staging";
@@ -322,10 +325,12 @@ void TestZip() {
     CHECK(rejected == static_cast<int>(unsafe_names.size()));
 
 #ifdef _WIN32
-    WriteFile(temp.path / "duplicate.zip", MakeZip({{"osl-loader.exe", "a"}, {"OSL-LOADER.EXE", "b"}}));
+    WriteFile(temp.path / "duplicate.zip",
+              MakeZip({{"odin_sphere_leifthrasir.exe", "a"}, {"ODIN_SPHERE_LEIFTHRASIR.EXE", "b"}}));
     CHECK(!ExtractZip(temp.path / "duplicate.zip", temp.path / "duplicate", {}, error));
 #endif
-    WriteFile(temp.path / "twice.zip", MakeZip({{"osl-loader.exe", "a"}, {"./osl-loader.exe", "b"}}));
+    WriteFile(temp.path / "twice.zip",
+              MakeZip({{"odin_sphere_leifthrasir.exe", "a"}, {"./odin_sphere_leifthrasir.exe", "b"}}));
     CHECK(!ExtractZip(temp.path / "twice.zip", temp.path / "twice", {}, error));
 
     CHECK(IsSymlinkZipEntry(0120000u << 16));
@@ -334,7 +339,7 @@ void TestZip() {
 
     ZipLimits small;
     small.max_total_bytes = 8;
-    WriteFile(temp.path / "large.zip", MakeZip({{"osl-loader.exe", std::string(64, 'x')}}));
+    WriteFile(temp.path / "large.zip", MakeZip({{"odin_sphere_leifthrasir.exe", std::string(64, 'x')}}));
     CHECK(!ExtractZip(temp.path / "large.zip", temp.path / "large", small, error));
     ZipLimits tiny_archive;
     tiny_archive.max_archive_bytes = 16;
@@ -355,12 +360,12 @@ void TestJobs() {
     job.staging_dir = temp.path / "workspace" / "staging";
     job.backup_dir = temp.path / "workspace" / "backup";
     job.manifest_file = temp.path / "workspace" / "manifest.txt";
-    job.restart_executable = job.install_dir / "osl-loader.exe";
+    job.restart_executable = job.install_dir / "odin_sphere_leifthrasir.exe";
     job.log_file = temp.path / "workspace" / "trg-updater.log";
     job.restart_arguments = {"--user", "C:\\with space\\", "", "--launcher"};
     std::filesystem::create_directories(job.install_dir);
     std::filesystem::create_directories(job.staging_dir);
-    WriteFile(job.manifest_file, "osl-loader.exe\n");
+    WriteFile(job.manifest_file, "odin_sphere_leifthrasir.exe\n");
 
     std::string error;
     const std::filesystem::path file = temp.path / "workspace" / "job.txt";
@@ -375,7 +380,7 @@ void TestJobs() {
     std::filesystem::create_directories(inside.staging_dir);
     CHECK(!ValidateInstallJob(inside, error));
     UpdateJob outside = job;
-    outside.restart_executable = temp.path / "osl-loader.exe";
+    outside.restart_executable = temp.path / "odin_sphere_leifthrasir.exe";
     CHECK(!ValidateInstallJob(outside, error));
     UpdateJob newline = job;
     newline.restart_arguments = {"bad\nargument"};
@@ -388,7 +393,7 @@ struct Installation {
     explicit Installation(const std::filesystem::path& root)
         : install(root / "installed"), staging(root / "workspace" / "staging"), backup(root / "workspace" / "backup"),
           manifest(root / "workspace" / "manifest.txt") {
-        WriteFile(install / "osl-loader.exe", "DEVELOPMENT_BUILD");
+        WriteFile(install / "odin_sphere_leifthrasir.exe", "DEVELOPMENT_BUILD");
         WriteFile(install / "trg-updater.exe", "old helper");
         WriteFile(install / "SDL3.dll", "old sdl");
         for (const auto& [relative, content] : player_files) {
@@ -398,11 +403,11 @@ struct Installation {
     }
 
     void Stage() const {
-        WriteFile(staging / "osl-loader.exe", "PUBLIC_RELEASE");
+        WriteFile(staging / "odin_sphere_leifthrasir.exe", "PUBLIC_RELEASE");
         WriteFile(staging / "trg-updater.exe", "new helper");
         WriteFile(staging / "SDL3.dll", "new sdl");
         WriteFile(staging / "assets" / "launcher" / "header-art.png", "new art");
-        WriteFile(manifest, "assets/launcher/header-art.png\nosl-loader.exe\nSDL3.dll\ntrg-updater.exe\n");
+        WriteFile(manifest, "assets/launcher/header-art.png\nodin_sphere_leifthrasir.exe\nSDL3.dll\ntrg-updater.exe\n");
     }
 
     UpdateJob Job() const {
@@ -412,7 +417,7 @@ struct Installation {
         job.staging_dir = staging;
         job.backup_dir = backup;
         job.manifest_file = manifest;
-        job.restart_executable = install / "osl-loader.exe";
+        job.restart_executable = install / "odin_sphere_leifthrasir.exe";
         job.log_file = manifest.parent_path() / "trg-updater.log";
         return job;
     }
@@ -446,7 +451,7 @@ void TestInstallTransaction() {
     options.log = [&log](std::string_view text) { log += std::string(text) + "\n"; };
     const InstallOutcome outcome = InstallFiles(installation.Job(), options, false);
     CHECK(outcome.status == InstallStatus::kSuccess);
-    CHECK(ReadFile(installation.install / "osl-loader.exe") == "PUBLIC_RELEASE");
+    CHECK(ReadFile(installation.install / "odin_sphere_leifthrasir.exe") == "PUBLIC_RELEASE");
     CHECK(ReadFile(installation.install / "trg-updater.exe") == "new helper");
     CHECK(ReadFile(installation.install / "SDL3.dll") == "new sdl");
     CHECK(ReadFile(installation.install / "assets" / "launcher" / "header-art.png") == "new art");
@@ -461,9 +466,9 @@ void TestInstallTransaction() {
     const Installation guarded(protected_temp.path);
     guarded.Stage();
     WriteFile(guarded.staging / "user" / "osl.ini", "release defaults");
-    WriteFile(guarded.manifest, "osl-loader.exe\nuser/osl.ini\n");
+    WriteFile(guarded.manifest, "odin_sphere_leifthrasir.exe\nuser/osl.ini\n");
     CHECK(InstallFiles(guarded.Job(), {}, false).status == InstallStatus::kInvalidJob);
-    CHECK(ReadFile(guarded.install / "osl-loader.exe") == "DEVELOPMENT_BUILD");
+    CHECK(ReadFile(guarded.install / "odin_sphere_leifthrasir.exe") == "DEVELOPMENT_BUILD");
     guarded.CheckPlayerFiles();
 
     WriteFile(guarded.manifest, "SDL3.dll\n");
@@ -489,7 +494,7 @@ void TestRollback() {
     failing.log = [&log](std::string_view text) { log += std::string(text) + "\n"; };
     const InstallOutcome outcome = InstallFiles(installation.Job(), failing, false);
     CHECK(outcome.status == InstallStatus::kInstallFailedRolledBack);
-    CHECK(ReadFile(installation.install / "osl-loader.exe") == "DEVELOPMENT_BUILD");
+    CHECK(ReadFile(installation.install / "odin_sphere_leifthrasir.exe") == "DEVELOPMENT_BUILD");
     CHECK(ReadFile(installation.install / "trg-updater.exe") == "old helper");
     CHECK(ReadFile(installation.install / "SDL3.dll") == "old sdl");
     CHECK(!std::filesystem::exists(installation.install / "assets" / "launcher" / "header-art.png"));
@@ -582,7 +587,7 @@ void TestSameVersionDeveloperTransaction() {
     const Installation installation(temp.path / "files");
     installation.Stage();
     CHECK(InstallFiles(installation.Job(), {}, false).status == InstallStatus::kSuccess);
-    CHECK(ReadFile(installation.install / "osl-loader.exe") == "PUBLIC_RELEASE");
+    CHECK(ReadFile(installation.install / "odin_sphere_leifthrasir.exe") == "PUBLIC_RELEASE");
     installation.CheckPlayerFiles();
 }
 
@@ -594,6 +599,7 @@ void TestConfig() {
     CHECK(osl::LinuxPackageName(version) == "OdinSphereLeifthrasir-v0.2.0-x86_64.AppImage");
     CHECK(osl::LinuxChecksumName(version) == "OdinSphereLeifthrasir-v0.2.0-x86_64.sha256");
     CHECK(std::string(osl::kReleasesUrl) == "https://api.github.com/repos/saulob/odin-sphere-leifthrasir-pc/releases/latest");
+    CHECK(std::string(osl::kGameExecutable) == "odin_sphere_leifthrasir.exe");
 
     CHECK(osl::UpdateRestartArguments({}) == std::vector<std::string>({"--launcher"}));
     CHECK(osl::UpdateRestartArguments({"--osl-skip-launcher", "--user", "D:\\Odin data\\user", "--launcher",
@@ -604,7 +610,7 @@ void TestConfig() {
 
     TempDir temp("config");
     const std::filesystem::path release = temp.path / "Odin Sphere Leifthrasir PC";
-    WriteFile(release / "osl-loader.exe", "program");
+    WriteFile(release / "odin_sphere_leifthrasir.exe", "program");
     UpdateConfig without_helper = osl::MakeUpdateConfig(release, "0.1.0");
 #ifdef _WIN32
     CHECK(!without_helper.install_supported && !without_helper.install_unsupported_reason.empty());
@@ -612,8 +618,14 @@ void TestConfig() {
     const UpdateConfig config = osl::MakeUpdateConfig(release, "0.1.0");
     CHECK(config.install_supported);
     CHECK(config.package_kind == UpdatePackageKind::kZip);
-    CHECK(config.restart_executable == release / "osl-loader.exe");
-    CHECK(config.required_staged_files == std::vector<std::string>({"osl-loader.exe", "trg-updater.exe"}));
+    CHECK(config.restart_executable == release / "odin_sphere_leifthrasir.exe");
+    CHECK(config.required_staged_files ==
+          std::vector<std::string>({"odin_sphere_leifthrasir.exe", "trg-updater.exe"}));
+    const std::filesystem::path old_layout = temp.path / "old layout";
+    WriteFile(old_layout / "osl-loader.exe", "program");
+    WriteFile(old_layout / "trg-updater.exe", "helper");
+    std::string error;
+    CHECK(!ValidateStaging(old_layout, config.required_staged_files, error));
     CHECK(config.asset_name(version) == "OdinSphereLeifthrasir-v0.2.0-windows-x64.zip");
     CHECK(config.checksum_asset_name(version) == "OdinSphereLeifthrasir-v0.2.0-windows-x64.sha256");
     const std::filesystem::path build_tree = temp.path / "repo" / "build" / "cmake" / "clang64" / "bin";
@@ -656,6 +668,12 @@ void TestVersionSource() {
     CHECK(package.find("OdinSphereLeifthrasir-v$version-windows-x64") != std::string::npos);
     CHECK(package.find("set\\(OSL_PORT_VERSION") != std::string::npos);
     CHECK(package.find("trg-updater.exe") != std::string::npos);
+    CHECK(package.find("$RootFiles = @('odin_sphere_leifthrasir.exe', 'trg-updater.exe'") != std::string::npos);
+    for (const char* source : {"CMakeLists.txt", "tools/build.ps1", "tools/package.ps1", "launcher/update_config.h",
+                               "src/odin_sphere_leifthrasir.rc", "packaging/README.txt"}) {
+        const std::string text = ReadFile(std::filesystem::path(OSL_SOURCE_DIR) / source);
+        CHECK(!text.empty() && text.find("osl-loader") == std::string::npos);
+    }
     const std::string launcher = ReadFile(std::filesystem::path(OSL_SOURCE_DIR) / "launcher" / "launcher.cpp");
     CHECK(launcher.find("{\"v\" OSL_PORT_VERSION \"   \\xC2\\xB7   \", \"\"}") != std::string::npos);
 }
@@ -666,14 +684,14 @@ void TestAppImageTarget() {
     const std::filesystem::path appimage = temp.path / "OdinSphereLeifthrasir-v0.1.0-x86_64.AppImage";
     WriteFile(appimage, "appimage");
     const std::filesystem::path mount = temp.path / "mount";
-    const std::filesystem::path program = mount / "usr" / "bin" / "osl-loader";
+    const std::filesystem::path program = mount / "usr" / "bin" / "odin_sphere_leifthrasir";
     WriteFile(program, "program");
     CHECK(IsRunningAppImage(appimage, mount, program));
     const std::filesystem::path extracted = temp.path / "squashfs-root";
-    WriteFile(extracted / "usr" / "bin" / "osl-loader", "program");
-    CHECK(IsRunningAppImage(appimage, extracted, extracted / "usr" / "bin" / "osl-loader"));
-    WriteFile(temp.path / "build" / "osl-loader", "program");
-    CHECK(!IsRunningAppImage(appimage, mount, temp.path / "build" / "osl-loader"));
+    WriteFile(extracted / "usr" / "bin" / "odin_sphere_leifthrasir", "program");
+    CHECK(IsRunningAppImage(appimage, extracted, extracted / "usr" / "bin" / "odin_sphere_leifthrasir"));
+    WriteFile(temp.path / "build" / "odin_sphere_leifthrasir", "program");
+    CHECK(!IsRunningAppImage(appimage, mount, temp.path / "build" / "odin_sphere_leifthrasir"));
     WriteFile(temp.path / "Other-v1.0.0-x86_64.AppImage", "other");
     CHECK(!IsRunningAppImage(temp.path / "Other-v1.0.0-x86_64.AppImage", mount, program));
     WriteFile(temp.path / "OdinSphereLeifthrasir-vx-x86_64.AppImage", "other");
@@ -688,7 +706,7 @@ int CheckPackage(const std::filesystem::path& zip) {
     TempDir temp("package");
     std::string error;
     if (!ExtractZip(zip, temp.path / "staging", {}, error) ||
-        !ValidateStaging(temp.path / "staging", {osl::kLoaderExecutable, osl::kUpdaterExecutable}, error)) {
+        !ValidateStaging(temp.path / "staging", {osl::kGameExecutable, osl::kUpdaterExecutable}, error)) {
         std::printf("The updater would refuse %s: %s\n", zip.string().c_str(), error.c_str());
         return 1;
     }

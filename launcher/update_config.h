@@ -11,7 +11,7 @@
 namespace osl {
 
 inline constexpr char kReleasesUrl[] = "https://api.github.com/repos/saulob/odin-sphere-leifthrasir-pc/releases/latest";
-inline constexpr char kLoaderExecutable[] = "osl-loader.exe";
+inline constexpr char kGameExecutable[] = "odin_sphere_leifthrasir.exe";
 inline constexpr char kUpdaterExecutable[] = "trg-updater.exe";
 
 std::string WindowsPackageName(const trg::update::SemanticVersion& version);

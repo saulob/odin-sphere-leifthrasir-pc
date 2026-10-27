@@ -38,7 +38,7 @@ REQUIREMENTS
 INSTALL
 -------
 1. Extract the ZIP anywhere you can write to (not "Program Files").
-2. Run osl-loader.exe. The launcher opens.
+2. Run odin_sphere_leifthrasir.exe. The launcher opens.
 3. On the Play page, click "Install game...".
 4. Select your Odin Sphere Leifthrasir .pkg file.
 5. Wait while the launcher checks the package and unpacks it into the "game"
@@ -56,9 +56,9 @@ previous one is left as it was.
 
 WINDOWS SMARTSCREEN
 -------------------
-The first time you run osl-loader.exe, Windows SmartScreen may show a warning,
-because the program is not digitally signed. If you downloaded the release
-from the project's GitHub releases page, choose "More info", then
+The first time you run odin_sphere_leifthrasir.exe, Windows SmartScreen may
+show a warning, because the program is not digitally signed. If you downloaded
+the release from the project's GitHub releases page, choose "More info", then
 "Run anyway".
 
 
@@ -85,8 +85,9 @@ Without an internet connection the launcher simply starts as usual.
 
 WHERE THINGS ARE
 ----------------
-- Game files:     the "game" folder next to osl-loader.exe
-- Logs:           the "logs" folder next to osl-loader.exe, one numbered log per run
+- Game files:     the "game" folder next to odin_sphere_leifthrasir.exe
+- Logs:           the "logs" folder next to odin_sphere_leifthrasir.exe,
+                  one numbered log per run
 - Settings:       user\osl.ini
 - Saves:          user\savedata\
 - Shader cache:   user\cache\

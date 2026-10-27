@@ -1,7 +1,7 @@
 """Import inventory of a prepared image, for planning only.
 
 Sources: a boot image folder (image.json, written by prepare_image.py) and the output of
-`osl-loader --check-imports` (the runtime's own answer to "which imports can you bind").
+`odin_sphere_leifthrasir --check-imports` (the runtime's own answer to "which imports can you bind").
 
 Usage: python scripts/import_inventory.py [--image DIR] [--app0 DIR] [--check-log FILE]
            [--reference NAME=import_names.inc ...] [--source NAME=DIR ...]
@@ -39,7 +39,7 @@ def library(scoped):
 
 
 def run_check(image, app0):
-    loader = next(iter(sorted((ROOT / 'build' / 'cmake').glob('*/bin/osl-loader.exe'), key=lambda p: p.stat().st_mtime, reverse=True)), None)
+    loader = next(iter(sorted((ROOT / 'build' / 'cmake').glob('*/bin/odin_sphere_leifthrasir.exe'), key=lambda p: p.stat().st_mtime, reverse=True)), None)
     if not loader or not (image / 'boot.bin').is_file():
         sys.exit('No loader or boot image: run tools/build.ps1 and tools/prepare-game.ps1, or pass --check-log')
     result = subprocess.run([str(loader), str(image / 'boot.bin'), '--app0', str(app0),

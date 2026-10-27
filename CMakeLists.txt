@@ -82,41 +82,41 @@ set_source_files_properties(src/runtime_font.c PROPERTIES
 if (WIN32)
     enable_language(RC)
     # Relink when the application icon, the manifest or the version changes.
-    set_source_files_properties(src/osl-loader.rc PROPERTIES OBJECT_DEPENDS
-        "${CMAKE_SOURCE_DIR}/packaging/icons/app-icon.ico;${CMAKE_SOURCE_DIR}/src/osl-loader.manifest;${CMAKE_BINARY_DIR}/generated/osl_version.h")
-    set(OSL_PLATFORM_SOURCES src/compat_win.c src/runtime_log.c src/osl-loader.rc)
+    set_source_files_properties(src/odin_sphere_leifthrasir.rc PROPERTIES OBJECT_DEPENDS
+        "${CMAKE_SOURCE_DIR}/packaging/icons/app-icon.ico;${CMAKE_SOURCE_DIR}/src/odin_sphere_leifthrasir.manifest;${CMAKE_BINARY_DIR}/generated/osl_version.h")
+    set(OSL_PLATFORM_SOURCES src/compat_win.c src/runtime_log.c src/odin_sphere_leifthrasir.rc)
 else()
     set(OSL_PLATFORM_SOURCES src/runtime_log_posix.c)
 endif()
-add_executable(osl-loader src/loader.c ${OSL_RUNTIME_SOURCES} ${OSL_PLATFORM_SOURCES})
-set_target_properties(osl-loader PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
-target_include_directories(osl-loader PRIVATE src launcher ${CMAKE_BINARY_DIR}/generated)
-target_compile_options(osl-loader PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wall -Wextra -Werror -fno-omit-frame-pointer>)
-target_compile_options(osl-loader PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra>)
+add_executable(odin_sphere_leifthrasir src/loader.c ${OSL_RUNTIME_SOURCES} ${OSL_PLATFORM_SOURCES})
+set_target_properties(odin_sphere_leifthrasir PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_include_directories(odin_sphere_leifthrasir PRIVATE src launcher ${CMAKE_BINARY_DIR}/generated)
+target_compile_options(odin_sphere_leifthrasir PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wall -Wextra -Werror -fno-omit-frame-pointer>)
+target_compile_options(odin_sphere_leifthrasir PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra>)
 if (WIN32)
     # Windows 10 1903+ APIs (VirtualAlloc2, MapViewOfFile3).
-    target_compile_definitions(osl-loader PRIVATE _WIN32_WINNT=0x0A00 NTDDI_VERSION=0x0A000007)
+    target_compile_definitions(odin_sphere_leifthrasir PRIVATE _WIN32_WINNT=0x0A00 NTDDI_VERSION=0x0A000007)
     # The PS4 user range (64 GiB - 1 TiB) must stay free of host allocations: no high-entropy ASLR.
     # The guest main thread runs on the process stack: 16 MiB, committed (guest code has no stack probes).
-    target_link_options(osl-loader PRIVATE -Wl,--disable-high-entropy-va "SHELL:-Xlinker --stack -Xlinker 16777216,16777216")
-    target_link_libraries(osl-loader PRIVATE osl_launcher oslgpu SDL3::SDL3 Freetype::Freetype onecore bcrypt ws2_32 -pthread)
+    target_link_options(odin_sphere_leifthrasir PRIVATE -Wl,--disable-high-entropy-va "SHELL:-Xlinker --stack -Xlinker 16777216,16777216")
+    target_link_libraries(odin_sphere_leifthrasir PRIVATE osl_launcher oslgpu SDL3::SDL3 Freetype::Freetype onecore bcrypt ws2_32 -pthread)
 else()
     # -rdynamic: fault reports name host symbols (dladdr).
-    target_link_options(osl-loader PRIVATE -rdynamic)
-    target_link_libraries(osl-loader PRIVATE osl_launcher oslgpu SDL3::SDL3 Freetype::Freetype Threads::Threads ${CMAKE_DL_LIBS} m)
+    target_link_options(odin_sphere_leifthrasir PRIVATE -rdynamic)
+    target_link_libraries(odin_sphere_leifthrasir PRIVATE osl_launcher oslgpu SDL3::SDL3 Freetype::Freetype Threads::Threads ${CMAKE_DL_LIBS} m)
 endif()
 
 # A release folder holds the update helper next to the program (launcher/CMakeLists.txt).
 if (WIN32)
-    add_dependencies(osl-loader trg-updater)
+    add_dependencies(odin_sphere_leifthrasir trg-updater)
 endif()
 
 # The launcher reads its header art from <exe dir>/assets/launcher.
-add_custom_command(TARGET osl-loader POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:osl-loader>/assets/launcher"
+add_custom_command(TARGET odin_sphere_leifthrasir POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:odin_sphere_leifthrasir>/assets/launcher"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${CMAKE_SOURCE_DIR}/assets/launcher/header-art.png"
-        "$<TARGET_FILE_DIR:osl-loader>/assets/launcher/header-art.png"
+        "$<TARGET_FILE_DIR:odin_sphere_leifthrasir>/assets/launcher/header-art.png"
     VERBATIM)
 
 # Focused tests of the game profile, the settings file, the keys and the window fit (tools\test.ps1);

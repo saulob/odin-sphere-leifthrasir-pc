@@ -3,7 +3,7 @@
 #include "osl_version.h"
 
 1 ICON "../packaging/icons/app-icon.ico"
-CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "osl-loader.manifest"
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "odin_sphere_leifthrasir.manifest"
 
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION OSL_VERSION_NUMBERS
@@ -21,8 +21,8 @@ BEGIN
             VALUE "CompanyName", "saulob"
             VALUE "FileDescription", "Odin Sphere Leifthrasir PC"
             VALUE "FileVersion", OSL_FILE_VERSION_STRING
-            VALUE "InternalName", "osl-loader"
-            VALUE "OriginalFilename", "osl-loader.exe"
+            VALUE "InternalName", "odin_sphere_leifthrasir"
+            VALUE "OriginalFilename", "odin_sphere_leifthrasir.exe"
             VALUE "ProductName", "Odin Sphere Leifthrasir PC"
             VALUE "ProductVersion", OSL_VERSION_STRING
             VALUE "Comments", "https://github.com/saulob/odin-sphere-leifthrasir-pc"

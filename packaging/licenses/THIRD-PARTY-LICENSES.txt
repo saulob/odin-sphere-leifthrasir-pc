@@ -3,11 +3,11 @@ code is at https://github.com/saulob/odin-sphere-leifthrasir-pc. The loader, run
 in gpu/VENDOR.txt of the source.
 
 In the release package, the licence texts named below are in licenses\<folder>\, and licenses\MSYS2-PACKAGES.txt
-lists the exact version and source package of every DLL that ships next to osl-loader.exe.
+lists the exact version and source package of every DLL that ships next to odin_sphere_leifthrasir.exe.
 
 
 ========================================================================
-Compiled into osl-loader.exe
+Compiled into odin_sphere_leifthrasir.exe
 ========================================================================
 
 shadPS4
@@ -63,7 +63,7 @@ ZIP archives with the miniz listed above.
 
 
 ========================================================================
-DLLs next to osl-loader.exe (MSYS2 CLANG64)
+DLLs next to odin_sphere_leifthrasir.exe (MSYS2 CLANG64)
 ========================================================================
 
 SDL3                        Zlib                                                                 licenses\SDL3

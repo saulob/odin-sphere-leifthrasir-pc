@@ -17,7 +17,7 @@ $root = $script:RepoRoot
 $cmake = Get-Content -LiteralPath (Join-Path $root 'CMakeLists.txt') -Raw
 if ($cmake -notmatch '(?m)^set\(OSL_PORT_VERSION "([0-9]+\.[0-9]+\.[0-9]+)"\)') { Stop-Tool 'OSL_PORT_VERSION not found in CMakeLists.txt' }
 $release = Join-Path $root "dist\OdinSphereLeifthrasir-v$($Matches[1])-windows-x64"
-if (-not (Test-Path -LiteralPath (Join-Path $release 'osl-loader.exe'))) { Stop-Tool "Run tools\package.ps1 first: $release is missing" }
+if (-not (Test-Path -LiteralPath (Join-Path $release 'odin_sphere_leifthrasir.exe'))) { Stop-Tool "Run tools\package.ps1 first: $release is missing" }
 $checker = Join-Path $PSScriptRoot 'package.ps1'
 $casesRoot = Join-Path $root 'build\release-check-tests'
 
@@ -36,7 +36,7 @@ $Cases = [ordered]@{
     'install leftover'          = @{ Item = 'CUSA05083-1.00.install-backup\' }
     'game package'              = @{ Item = 'UP0177-CUSA05083.pkg' }
     'package by content'        = @{ Item = 'licenses\notes.txt'; Bytes = [byte[]](0x7F, 0x43, 0x4E, 0x54, 0, 0, 0, 0) }
-    'loader pdb'                = @{ Item = 'osl-loader.pdb' }
+    'loader pdb'                = @{ Item = 'odin_sphere_leifthrasir.pdb' }
     'debug file'                = @{ Item = 'trg-updater.debug' }
     'updater workspace'         = @{ Item = 'trg-update-1234-5678\job.txt' }
     'renderdoc'                 = @{ Item = 'renderdoc.dll' }
@@ -46,8 +46,10 @@ $Cases = [ordered]@{
     'DEBUG_SAULO marker'        = @{ Item = 'README.txt'; Text = 'DEBUG_SAULO' }
     'repository path'           = @{ Item = 'licenses\notes.txt'; Text = $root }
     'user profile path'         = @{ Item = 'licenses\notes.txt'; Text = $env:USERPROFILE }
+    'missing program'           = @{ Missing = 'odin_sphere_leifthrasir.exe' }
+    'obsolete program name'     = @{ Item = 'osl-loader.exe' }
     'missing update helper'     = @{ Missing = 'trg-updater.exe' }
-    'helper not self-contained' = @{ Item = 'trg-updater.exe'; From = 'osl-loader.exe' }
+    'helper not self-contained' = @{ Item = 'trg-updater.exe'; From = 'odin_sphere_leifthrasir.exe' }
     'missing DLL'               = @{ Missing = 'SDL3.dll' }
     'missing licences'          = @{ Missing = 'licenses\THIRD-PARTY-LICENSES.txt' }
     'missing header art'        = @{ Missing = 'assets\launcher\header-art.png' }

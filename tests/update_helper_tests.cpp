@@ -1,7 +1,7 @@
 // The real trg-updater.exe copied alone into a temporary folder: its imports, a start without the project's DLLs on
 // PATH, the parent wait, the replacement, the restart with quoted arguments and without the update test variables,
 // and the rollback when the restart fails. Paths contain spaces. No window opens: the helper and the marker that stands
-// in for osl-loader.exe are GUI-subsystem programs that create none.
+// in for odin_sphere_leifthrasir.exe are GUI-subsystem programs that create none.
 #include <cctype>
 #include <chrono>
 #include <cstdio>
@@ -274,7 +274,7 @@ void WriteJob(const Layout& layout, DWORD parent, const std::vector<std::string>
     text += "staging_dir=" + layout.staging.string() + "\n";
     text += "backup_dir=" + layout.backup.string() + "\n";
     text += "manifest=" + layout.manifest.string() + "\n";
-    text += "restart=" + (layout.install / "osl-loader.exe").string() + "\n";
+    text += "restart=" + (layout.install / "odin_sphere_leifthrasir.exe").string() + "\n";
     text += "log=" + layout.log.string() + "\n";
     for (const std::string& argument : arguments) {
         text += "arg=" + argument + "\n";
@@ -335,17 +335,17 @@ void TestInstallAndRestart(const std::filesystem::path& helper, const std::files
     const std::filesystem::path marker_output = root / "restarted output.txt";
     std::error_code ec;
     std::filesystem::create_directories(layout.staging, ec);
-    WriteFile(layout.install / "osl-loader.exe", "DEVELOPMENT_BUILD");
+    WriteFile(layout.install / "odin_sphere_leifthrasir.exe", "DEVELOPMENT_BUILD");
     WriteFile(layout.install / "trg-updater.exe", "OLD_HELPER");
     for (const auto& [relative, content] : kPlayerFiles) {
         WriteFile(layout.install / relative, content);
     }
-    std::filesystem::copy_file(marker, layout.staging / "osl-loader.exe", ec);
+    std::filesystem::copy_file(marker, layout.staging / "odin_sphere_leifthrasir.exe", ec);
     CHECK(!ec);
     std::filesystem::copy_file(helper, layout.staging / "trg-updater.exe", ec);
     CHECK(!ec);
     WriteFile(layout.staging / "licenses" / "THIRD-PARTY-LICENSES.txt", "PUBLIC_RELEASE licences");
-    WriteFile(layout.manifest, "licenses/THIRD-PARTY-LICENSES.txt\nosl-loader.exe\ntrg-updater.exe\n");
+    WriteFile(layout.manifest, "licenses/THIRD-PARTY-LICENSES.txt\nodin_sphere_leifthrasir.exe\ntrg-updater.exe\n");
 
     PROCESS_INFORMATION parent = StartParent(marker, parent_output, root);
     CHECK(parent.dwProcessId != 0);
@@ -370,7 +370,7 @@ void TestInstallAndRestart(const std::filesystem::path& helper, const std::files
     CHECK(Contains(restarted, "arg5=--launcher\n"));
     CheckRestartedWithoutTestVariables(restarted);
 
-    CHECK(ReadFile(layout.install / "osl-loader.exe") == ReadFile(marker));
+    CHECK(ReadFile(layout.install / "odin_sphere_leifthrasir.exe") == ReadFile(marker));
     CHECK(ReadFile(layout.install / "trg-updater.exe") == ReadFile(helper));
     CHECK(ReadFile(layout.install / "licenses" / "THIRD-PARTY-LICENSES.txt") == "PUBLIC_RELEASE licences");
     CheckPlayerFiles(layout.install);
@@ -380,7 +380,7 @@ void TestInstallAndRestart(const std::filesystem::path& helper, const std::files
     CHECK(Contains(log, "job: " + layout.job.string() + "\n"));
     CHECK(Contains(log, "install root: " + layout.install.string() + "\n"));
     CHECK(Contains(log, "staging root: " + layout.staging.string() + "\n"));
-    CHECK(Contains(log, "restart executable: " + (layout.install / "osl-loader.exe").string() + "\n"));
+    CHECK(Contains(log, "restart executable: " + (layout.install / "odin_sphere_leifthrasir.exe").string() + "\n"));
     CHECK(Contains(log, "restart arguments: " + marker_output.string() +
                             " --user C:\\with space\\ --name=say \"hi\"  --launcher\n"));
     CHECK(Contains(log, "parent pid: " + std::to_string(parent.dwProcessId) + "\n"));
@@ -394,7 +394,7 @@ void TestInstallAndRestart(const std::filesystem::path& helper, const std::files
     CHECK(Contains(log, "install result: success\n"));
     CHECK(Contains(log, "exit code: 0\n"));
     CHECK(!Contains(log, "rollback"));
-    CHECK(!Contains(log, "osl-loader.exe: ok"));
+    CHECK(!Contains(log, "odin_sphere_leifthrasir.exe: ok"));
 
     CHECK(!std::filesystem::exists(layout.job));
     CHECK(!std::filesystem::exists(layout.backup));
@@ -410,14 +410,14 @@ void TestRestartFailureRollsBack(const std::filesystem::path& helper, const std:
     std::error_code ec;
     std::filesystem::create_directories(layout.staging, ec);
     std::filesystem::create_directories(layout.install, ec);
-    std::filesystem::copy_file(marker, layout.install / "osl-loader.exe", ec);
+    std::filesystem::copy_file(marker, layout.install / "odin_sphere_leifthrasir.exe", ec);
     CHECK(!ec);
     for (const auto& [relative, content] : kPlayerFiles) {
         WriteFile(layout.install / relative, content);
     }
-    WriteFile(layout.staging / "osl-loader.exe", "BROKEN_RELEASE");
+    WriteFile(layout.staging / "odin_sphere_leifthrasir.exe", "BROKEN_RELEASE");
     WriteFile(layout.staging / "assets" / "launcher" / "header-art.png", "new art");
-    WriteFile(layout.manifest, "osl-loader.exe\nassets/launcher/header-art.png\n");
+    WriteFile(layout.manifest, "odin_sphere_leifthrasir.exe\nassets/launcher/header-art.png\n");
 
     PROCESS_INFORMATION parent = StartParent(marker, parent_output, root);
     WriteJob(layout, parent.dwProcessId, {marker_output.string(), "--launcher"});
@@ -426,7 +426,7 @@ void TestRestartFailureRollsBack(const std::filesystem::path& helper, const std:
     FinishParent(parent);
     CHECK(exit_code == 7);
 
-    CHECK(ReadFile(layout.install / "osl-loader.exe") == ReadFile(marker));
+    CHECK(ReadFile(layout.install / "odin_sphere_leifthrasir.exe") == ReadFile(marker));
     CHECK(!std::filesystem::exists(layout.install / "assets" / "launcher" / "header-art.png"));
     CheckPlayerFiles(layout.install);
     CHECK(WaitForMarker(marker_output));

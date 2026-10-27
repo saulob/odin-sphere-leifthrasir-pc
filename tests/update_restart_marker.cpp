@@ -1,5 +1,6 @@
-// Stand-in for osl-loader.exe in the update helper tests: [--hold <ms>] <output> [args...]. It writes its arguments and
-// which test variables it inherited to <output>, then optionally stays alive (the launcher the helper waits for).
+// Stand-in for odin_sphere_leifthrasir.exe in the update helper tests: [--hold <ms>] <output> [args...]. It writes its
+// arguments and which test variables it inherited to <output>, then optionally stays alive (the launcher the helper
+// waits for).
 // A GUI-subsystem program, so the helper starts it without a console window.
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN

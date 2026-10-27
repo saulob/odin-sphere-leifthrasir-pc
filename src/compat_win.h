@@ -1,7 +1,7 @@
 /* Windows (MSYS2 MinGW-w64 + winpthreads) counterparts of the POSIX calls the
  * runtime uses. Included through runtime.h after the C library headers, so the macros below
  * only replace calls in this project's own sources. Paths are UTF-8: the executable's
- * manifest selects the UTF-8 code page (src/osl-loader.manifest). */
+ * manifest selects the UTF-8 code page (src/odin_sphere_leifthrasir.manifest). */
 #ifndef OSL_COMPAT_WIN_H
 #define OSL_COMPAT_WIN_H
 #ifdef _WIN32

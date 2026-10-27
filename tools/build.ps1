@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Builds osl-loader.exe incrementally (MSYS2 CLANG64, CMake + Ninja). -Run launches it.
+  Builds odin_sphere_leifthrasir.exe incrementally (MSYS2 CLANG64, CMake + Ninja). -Run launches it.
 .DESCRIPTION
   Reuses what is current and updates only what is stale: the video core dependencies (gpu\deps.txt), the CMake
   configuration and, once the game is installed, the boot image of the active prepared build. The one build
@@ -18,7 +18,7 @@
 .PARAMETER TimeoutSeconds
   Diagnostic for automated tests only: with -Run, kills the loader after this many seconds (and skips the launcher).
 .PARAMETER LoaderArgs
-  Extra arguments for osl-loader.exe (with -Run).
+  Extra arguments for odin_sphere_leifthrasir.exe (with -Run).
 .EXAMPLE
   .\tools\build.ps1
   .\tools\build.ps1 -Run
@@ -45,11 +45,11 @@ if (-not $Version) {
         } | Sort-Object -Property Time -Descending)
     $Version = if ($views.Count -gt 0) { $views[0].Name } else { 'CUSA05083-1.00' }
 }
-$loader = Join-Path $buildDir 'bin\osl-loader.exe'
+$loader = Join-Path $buildDir 'bin\odin_sphere_leifthrasir.exe'
 $view = Join-Path $root "game\prepared\$Version"
 $marker = Join-Path $view '.osl_view.json'
 $image = Join-Path $root "build\image\$Version"
-$loadExecExit = 30 # osl-loader: sceSystemServiceLoadExec ended the process
+$loadExecExit = 30 # odin_sphere_leifthrasir: sceSystemServiceLoadExec ended the process
 
 $imageStamp = Join-Path $image '.osl_image_inputs'
 
@@ -94,7 +94,7 @@ if (-not $configured) {
 }
 # Ninja re-runs CMake first when a CMake input changed (CMakeLists, gpu\deps.txt, a fetched commit, a patch).
 Write-Step 'Building incrementally'
-& ninja -C $buildDir osl-loader
+& ninja -C $buildDir odin_sphere_leifthrasir
 if ($LASTEXITCODE -ne 0) { Stop-Tool 'Build failed' }
 if (-not (Test-Path -LiteralPath $loader)) { Stop-Tool "Missing $loader" }
 
@@ -116,9 +116,9 @@ Write-Host ''
 Write-Host "Built $loader" -ForegroundColor Green
 if (-not $Run) { return }
 
-$running = @(Get-Process osl-loader -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $loader })
+$running = @(Get-Process odin_sphere_leifthrasir -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $loader })
 if ($running.Count -gt 0) {
-    Write-Warn "osl-loader.exe is already running (PID $($running.Id -join ', ')); not launching another copy."
+    Write-Warn "odin_sphere_leifthrasir.exe is already running (PID $($running.Id -join ', ')); not launching another copy."
     return
 }
 # The loader finds the game, the boot image, user\ and build\logs by itself in this tree.
@@ -132,7 +132,7 @@ try {
         $process = Start-Process -FilePath $loader -ArgumentList $arguments -NoNewWindow -PassThru
         $null = $process.Handle # keeps the exit code readable after the process ends
         if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
-            Write-Warn "Stopping osl-loader.exe after $TimeoutSeconds seconds"
+            Write-Warn "Stopping odin_sphere_leifthrasir.exe after $TimeoutSeconds seconds"
             $process.Kill()
             $process.WaitForExit()
         }
@@ -146,6 +146,6 @@ try {
 finally {
     Pop-Location
 }
-Write-Host "osl-loader.exe exit code $code"
+Write-Host "odin_sphere_leifthrasir.exe exit code $code"
 if ($code -eq $loadExecExit) { Write-Host 'The game requested sceSystemServiceLoadExec (see the LoadExec lines above).' }
 exit $code

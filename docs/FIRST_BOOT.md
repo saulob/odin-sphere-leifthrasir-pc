@@ -6,12 +6,12 @@ These checks run without a window and without executing game code:
 ```powershell
 .\tools\build.ps1
 .\tools\test.ps1
-build\cmake\clang64\bin\osl-loader.exe --check-game game\prepared\CUSA05083-1.00 build\image\CUSA05083-1.00
-build\cmake\clang64\bin\osl-loader.exe build\image\CUSA05083-1.00\boot.bin --app0 game\prepared\CUSA05083-1.00 --cpu-only --check-imports
-build\cmake\clang64\bin\osl-loader.exe --check-game game\prepared\CUSA01290-1.02 build\image\CUSA01290-1.02
-build\cmake\clang64\bin\osl-loader.exe build\image\CUSA01290-1.02\boot.bin --app0 game\prepared\CUSA01290-1.02 --cpu-only --check-imports
-build\cmake\clang64\bin\osl-loader.exe --check-game game\prepared\CUSA05262-1.01 build\image\CUSA05262-1.01
-build\cmake\clang64\bin\osl-loader.exe build\image\CUSA05262-1.01\boot.bin --app0 game\prepared\CUSA05262-1.01 --cpu-only --check-imports
+build\cmake\clang64\bin\odin_sphere_leifthrasir.exe --check-game game\prepared\CUSA05083-1.00 build\image\CUSA05083-1.00
+build\cmake\clang64\bin\odin_sphere_leifthrasir.exe build\image\CUSA05083-1.00\boot.bin --app0 game\prepared\CUSA05083-1.00 --cpu-only --check-imports
+build\cmake\clang64\bin\odin_sphere_leifthrasir.exe --check-game game\prepared\CUSA01290-1.02 build\image\CUSA01290-1.02
+build\cmake\clang64\bin\odin_sphere_leifthrasir.exe build\image\CUSA01290-1.02\boot.bin --app0 game\prepared\CUSA01290-1.02 --cpu-only --check-imports
+build\cmake\clang64\bin\odin_sphere_leifthrasir.exe --check-game game\prepared\CUSA05262-1.01 build\image\CUSA05262-1.01
+build\cmake\clang64\bin\odin_sphere_leifthrasir.exe build\image\CUSA05262-1.01\boot.bin --app0 game\prepared\CUSA05262-1.01 --cpu-only --check-imports
 ```
 
 `--check-imports` prints `Imports: 0 missing` for each supported build: every PS4 import of the
@@ -27,7 +27,7 @@ From the repository, after `tools\build.ps1` has completed:
 .\tools\build.ps1 -Run
 ```
 
-`-Run` sets the MSYS2 `PATH`, starts `osl-loader.exe`, and keeps the console attached. The launcher
+`-Run` sets the MSYS2 `PATH`, starts `odin_sphere_leifthrasir.exe`, and keeps the console attached. The launcher
 opens; the Play page should already say **Ready to play** for the active build. With both releases
 installed, the active build is the newest prepared one; the status names its region and version, for
 example **Ready to play · CUSA05083 1.00 USA** or **CUSA01290 1.02 Japan** or **CUSA05262 1.01 Europe**. Press **PLAY**. The
@@ -49,7 +49,7 @@ Detailed logging is on by default. If it is turned off in About → Diagnostics,
 run's log; crashes and abnormal exits still keep it. The About page's **Open logs folder** button opens the
 active log folder (or creates the default logs folder when no log exists yet).
 
-(The release layout uses `logs\odin_sphere_leifthrasir_NNN.log` next to `osl-loader.exe`.)
+(The release layout uses `logs\odin_sphere_leifthrasir_NNN.log` next to `odin_sphere_leifthrasir.exe`.)
 
 ## Reading the log
 
