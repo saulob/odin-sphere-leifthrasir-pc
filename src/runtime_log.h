@@ -5,7 +5,10 @@
 extern "C" {
 #endif
 
-/* Creates the next free odin_sphere_leifthrasir_NNN.log in dir, or exactly file when it is given. 0 on failure. */
+enum { RUNTIME_LOG_KEPT_RUNS = 50 };
+
+/* Creates the next free odin_sphere_leifthrasir_NNN.log in dir, removing the numbered logs RUNTIME_LOG_KEPT_RUNS or
+ * more runs older, or exactly file when it is given. 0 on failure. */
 int runtime_log_create(const char *dir, const char *file, char *path, size_t size, void **handle);
 
 /* Sends stdout and stderr to that log and echoes them to the console the process started with. */

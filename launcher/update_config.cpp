@@ -58,7 +58,7 @@ std::string LinuxPackageName(const trg::update::SemanticVersion& version) {
 }
 
 std::string LinuxChecksumName(const trg::update::SemanticVersion& version) {
-    return "OdinSphereLeifthrasir-v" + version.CoreString() + "-x86_64.sha256";
+    return "OdinSphereLeifthrasir-v" + version.CoreString() + "-x86_64.AppImage.sha256";
 }
 
 std::vector<std::string> UpdateRestartArguments(std::vector<std::string> arguments) {

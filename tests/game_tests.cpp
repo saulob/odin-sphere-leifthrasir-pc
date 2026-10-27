@@ -5,6 +5,7 @@
 #include <cctype>
 #include <chrono>
 #include <cmath>
+#include <csignal>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -13,11 +14,17 @@
 #include <iterator>
 #include <string>
 #include <vector>
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 
 #include <SDL3/SDL_scancode.h>
 
 #include "controller_prompts.h"
 #include "cpk_patch.h"
+#include "crash_report.h"
 #include "game_files.h"
 #include "game_install.h"
 #include "game_profile.h"
@@ -856,6 +863,150 @@ void TestLogRetention() {
     CHECK(!std::filesystem::exists(file));
 }
 
+std::string SessionLogName(unsigned number) {
+    char name[64];
+    std::snprintf(name, sizeof(name), "odin_sphere_leifthrasir_%03u.log", number);
+    return name;
+}
+
+void CloseLog(void* handle) {
+#ifdef _WIN32
+    _close(_open_osfhandle(reinterpret_cast<intptr_t>(handle), 0));
+#else
+    close(static_cast<int>(reinterpret_cast<intptr_t>(handle)));
+#endif
+}
+
+void TestSessionLogFiles() {
+    char path[4200];
+    void* handle = nullptr;
+    const std::filesystem::path fresh = TempDir("session-logs-fresh") / "logs";
+    CHECK(runtime_log_create(Utf8(fresh).c_str(), nullptr, path, sizeof(path), &handle));
+    CloseLog(handle);
+    CHECK(PathFromUtf8(path) == fresh / SessionLogName(1));
+    CHECK(runtime_log_create(Utf8(fresh).c_str(), nullptr, path, sizeof(path), &handle));
+    CloseLog(handle);
+    CHECK(PathFromUtf8(path) == fresh / SessionLogName(2));
+
+    const std::filesystem::path dir = TempDir("session-logs");
+    for (unsigned number = 1; number <= 60; ++number) {
+        std::ofstream(dir / SessionLogName(number)) << "run\n";
+    }
+    std::ofstream(dir / "odin_sphere_leifthrasir_notes.log") << "kept\n";
+    std::ofstream(dir / "trg-updater.log") << "kept\n";
+    CHECK(runtime_log_create(Utf8(dir).c_str(), nullptr, path, sizeof(path), &handle));
+    CloseLog(handle);
+    CHECK(PathFromUtf8(path) == dir / SessionLogName(61));
+    CHECK(!std::filesystem::exists(dir / SessionLogName(1)));
+    CHECK(!std::filesystem::exists(dir / SessionLogName(11)));
+    CHECK(std::filesystem::exists(dir / SessionLogName(12)));
+    CHECK(std::filesystem::exists(dir / "odin_sphere_leifthrasir_notes.log"));
+    CHECK(std::filesystem::exists(dir / "trg-updater.log"));
+    const auto numbered = [&] {
+        size_t count = 0;
+        for (unsigned number = 1; number <= 70; ++number) {
+            count += std::filesystem::exists(dir / SessionLogName(number)) ? 1 : 0;
+        }
+        return count;
+    };
+    CHECK(numbered() == RUNTIME_LOG_KEPT_RUNS);
+
+    const std::filesystem::path given = dir / "given" / "run.log";
+    CHECK(runtime_log_create(Utf8(dir).c_str(), Utf8(given).c_str(), path, sizeof(path), &handle));
+    CloseLog(handle);
+    CHECK(PathFromUtf8(path) == given);
+    CHECK(numbered() == RUNTIME_LOG_KEPT_RUNS);
+}
+
+bool Has(const std::string& text, const char* part) { return text.find(part) != std::string::npos; }
+
+void TestCrashReport() {
+    CHECK(std::string(crash_exception_name(0xC0000005u)) == "ACCESS_VIOLATION");
+    CHECK(std::string(crash_exception_name(0xC0000409u)) == "STATUS_STACK_BUFFER_OVERRUN");
+    CHECK(crash_exception_name(0x12345678u) == nullptr);
+    CHECK(std::string(crash_signal_name(SIGSEGV)) == "SIGSEGV");
+
+    CrashReport report{};
+    report.event = "Windows unhandled exception";
+    report.version = "9.8.7";
+    report.game_build = "CUSA05262 1.01 Europe";
+    report.uptime_ms = 3723456;
+    report.code = 0xC0000005u;
+    report.address = 0x7FF612340000ull;
+    report.location = "odin_sphere_leifthrasir.exe+0x1234";
+    report.parameter_count = 2;
+    report.parameters[0] = 1;
+    report.parameters[1] = 0x10;
+    report.thread_id = 77;
+    report.process_id = 88;
+    char text[4096];
+    size_t length = crash_report_format(&report, text, sizeof(text));
+    std::string block(text, length);
+    CHECK(length == std::strlen(text));
+    CHECK(block.rfind(CRASH_REPORT_RULE "CRASH REPORT\n" CRASH_REPORT_RULE "Windows unhandled exception\n", 0) == 0);
+    CHECK(Has(block, "Product: Odin Sphere Leifthrasir PC 9.8.7\n"));
+    CHECK(Has(block, "Game build: CUSA05262 1.01 Europe\n"));
+    CHECK(Has(block, "Uptime: 01:02:03\n"));
+    CHECK(Has(block, "Exception code: 0xC0000005 (ACCESS_VIOLATION)\n"));
+    CHECK(Has(block, "Exception address: 0x00007FF612340000\n"));
+    CHECK(Has(block, "Faulting module: odin_sphere_leifthrasir.exe+0x1234\n"));
+    CHECK(Has(block, "Exception parameters: 2\n  parameter[0]: 0x0000000000000001\n"));
+    CHECK(Has(block, "Memory access: write\nReferenced address: 0x0000000000000010\n"));
+    CHECK(Has(block, "Thread ID: 77\nProcess ID: 88\n"));
+    CHECK(!Has(block, "Reason:"));
+
+    report.reason = "abort() was called";
+    report.game_build = nullptr;
+    report.location = nullptr;
+    report.code = 0xC0000409u;
+    report.parameter_count = 40;
+    block.assign(text, crash_report_format(&report, text, sizeof(text)));
+    CHECK(Has(block, "Reason: abort() was called\n"));
+    CHECK(!Has(block, "Game build:"));
+    CHECK(Has(block, "Faulting module: unknown\n"));
+    CHECK(Has(block, "Exception parameters: 15\n"));
+    CHECK(Has(block, "parameter[14]"));
+    CHECK(!Has(block, "parameter[15]"));
+    CHECK(!Has(block, "Memory access"));
+
+    CrashReport posix{};
+    posix.event = "Linux fatal signal";
+    posix.signal = SIGSEGV;
+    posix.signal_code = 1;
+    posix.address = 0x401000;
+    posix.has_referenced_address = 1;
+    posix.referenced_address = 0x8;
+    block.assign(text, crash_report_format(&posix, text, sizeof(text)));
+    CHECK(Has(block, "Signal: 11 (SIGSEGV), code 1\nInstruction address: 0x0000000000401000\n"));
+    CHECK(Has(block, "Referenced address: 0x0000000000000008\n"));
+    CHECK(!Has(block, "Exception code"));
+    CHECK(Has(block, "Product: Odin Sphere Leifthrasir PC unknown\n"));
+
+    char tiny[64];
+    CHECK(crash_report_format(&report, tiny, sizeof(tiny)) == sizeof(tiny) - 1);
+    CHECK(tiny[sizeof(tiny) - 1] == '\0');
+    CHECK(crash_report_format(&report, tiny, 0) == 0);
+}
+
+// Run last: it sends this process's stdout and stderr to a session log, which echoes them to the console.
+void TestCrashReportReachesSessionLog() {
+    char path[4200];
+    CHECK(runtime_log_start(Utf8(TempDir("crash-log")).c_str(), nullptr, path, sizeof(path)));
+    CrashReport report{};
+    report.event = "Windows unhandled exception";
+    report.version = "1.2.3";
+    char text[1024];
+    crash_report_format(&report, text, sizeof(text));
+    std::fputs(text, stderr);
+    std::fputs(CRASH_REPORT_RULE, stderr);
+    runtime_log_flush();
+    const std::string log = ReadFile(PathFromUtf8(path));
+    CHECK(Has(log, CRASH_REPORT_RULE "CRASH REPORT\n"));
+    CHECK(Has(log, "Product: Odin Sphere Leifthrasir PC 1.2.3\n"));
+    CHECK(log.size() >= std::strlen(CRASH_REPORT_RULE) &&
+          log.compare(log.size() - std::strlen(CRASH_REPORT_RULE), std::string::npos, CRASH_REPORT_RULE) == 0);
+}
+
 void TestBuildResolutionSites(const GameBuild& build) {
     CHECK(!build.resolution_sites.empty());
     CHECK(build.resolution_sites.size() == 17);
@@ -1548,6 +1699,10 @@ int main() {
     TestControllerPromptsSetting();
     TestShippedPromptsPatch();
     TestControllerPrompts();
+    TestSessionLogFiles();
+    TestCrashReport();
+    TestCrashReportReachesSessionLog();
     std::printf("%s (%d checks, %d failures)\n", g_failures ? "FAILED" : "OK", g_checks, g_failures);
+    runtime_log_flush();
     return g_failures ? 1 : 0;
 }

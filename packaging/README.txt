@@ -19,6 +19,9 @@ Leifthrasir PS4 package (.pkg). This port runs:
   Japan: Title ID CUSA01290, base version 1.00 (APP_VER 01.00, VERSION 01.00)
          and its 1.02 update (APP_VER 01.02, VERSION 01.00). Install the base
          package first, then the update.
+  Europe: Title ID CUSA05262, base version 1.00 (APP_VER 01.00, VERSION
+         01.00) and its 1.01 update (APP_VER 01.01, VERSION 01.00). Install
+         the base package first, then the update.
 
 Any other version is refused with "Different version of Odin Sphere
 Leifthrasir". A package still encrypted for a PS4 console cannot be unpacked on
@@ -44,9 +47,9 @@ INSTALL
 5. Wait while the launcher checks the package and unpacks it into the "game"
    folder next to the program. The .pkg file is only read and can be deleted
    afterwards.
-6. For the Japanese 1.02 build, select the base package first; once it is
-   installed, select the 1.02 update package. The update becomes the active
-   build.
+6. For the Japanese 1.02 or European 1.01 build, select the base package
+   first; once it is installed, select the update package. The update becomes
+   the active build.
 7. When the Play page says "Ready to play", press PLAY.
 
 To repair the game files, use "Reinstall game..." on the Play page. Your
@@ -87,7 +90,21 @@ WHERE THINGS ARE
 ----------------
 - Game files:     the "game" folder next to odin_sphere_leifthrasir.exe
 - Logs:           the "logs" folder next to odin_sphere_leifthrasir.exe,
-                  one numbered log per run
+                  one numbered log per run (the newest 50 are kept)
 - Settings:       user\osl.ini
 - Saves:          user\savedata\
+- Trophies:       user\trophy\
 - Shader cache:   user\cache\
+
+When you move or update the port by hand, keep "user" (and "game", to skip
+reinstalling).
+
+
+REPORTING PROBLEMS
+------------------
+If the game does not start or crashes, please open an issue at
+https://github.com/saulob/odin-sphere-leifthrasir-pc/issues and attach the
+newest odin_sphere_leifthrasir_*.log from the "logs" folder. Say what you were
+doing when it happened. After a crash the log ends with a CRASH REPORT section;
+no other file is needed. For a problem that is not a crash, keep Detailed
+logging on (About page of the launcher), reproduce it, and send the newest log.

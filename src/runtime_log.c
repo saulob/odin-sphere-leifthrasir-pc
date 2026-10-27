@@ -22,7 +22,13 @@ static void make_directories(const char *dir) {
     CreateDirectoryA(path, NULL);
 }
 
-static unsigned last_number(const char *dir) {
+static int log_number(const char *name, unsigned *number) {
+    int used = 0;
+    return sscanf(name, "odin_sphere_leifthrasir_%u.log%n", number, &used) == 1 && used > 0 && !name[used];
+}
+
+/* The highest run number in dir; with keep_after set, also removes the logs numbered keep_after or lower. */
+static unsigned scan_logs(const char *dir, unsigned keep_after) {
     char pattern[4200];
     snprintf(pattern, sizeof(pattern), "%s\\odin_sphere_leifthrasir_*.log", dir);
     WIN32_FIND_DATAA found;
@@ -31,9 +37,13 @@ static unsigned last_number(const char *dir) {
     if (find == INVALID_HANDLE_VALUE) return 0;
     do {
         unsigned number = 0;
-        int used = 0;
-        if (sscanf(found.cFileName, "odin_sphere_leifthrasir_%u.log%n", &number, &used) == 1 && used > 0 && !found.cFileName[used] && number > last)
-            last = number;
+        if (!log_number(found.cFileName, &number)) continue;
+        if (number > last) last = number;
+        if (keep_after && number <= keep_after) {
+            char old[4200];
+            snprintf(old, sizeof(old), "%s\\%s", dir, found.cFileName);
+            DeleteFileA(old);
+        }
     } while (FindNextFileA(find, &found));
     FindClose(find);
     return last;
@@ -54,10 +64,13 @@ int runtime_log_create(const char *dir, const char *file, char *path, size_t siz
         return *handle != INVALID_HANDLE_VALUE;
     }
     make_directories(dir);
-    for (unsigned number = last_number(dir) + 1, tries = 0; tries < 1000; ++number, ++tries) {
+    for (unsigned number = scan_logs(dir, 0) + 1, tries = 0; tries < 1000; ++number, ++tries) {
         if (snprintf(path, size, "%s\\odin_sphere_leifthrasir_%03u.log", dir, number) >= (int)size) return 0;
         *handle = CreateFileA(path, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_DELETE, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-        if (*handle != INVALID_HANDLE_VALUE) return 1;
+        if (*handle != INVALID_HANDLE_VALUE) {
+            if (number > RUNTIME_LOG_KEPT_RUNS) scan_logs(dir, number - RUNTIME_LOG_KEPT_RUNS);
+            return 1;
+        }
         if (GetLastError() != ERROR_FILE_EXISTS) return 0;
     }
     return 0;

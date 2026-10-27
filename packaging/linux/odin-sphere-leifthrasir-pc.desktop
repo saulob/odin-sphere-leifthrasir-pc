@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=Odin Sphere Leifthrasir PC
+Comment=PC port of Odin Sphere Leifthrasir (bring your own game package)
+Exec=AppRun
+Icon=odin-sphere-leifthrasir-pc
+Categories=Game;
+Terminal=false
+StartupWMClass=odin_sphere_leifthrasir
+Actions=Launcher;
+
+[Desktop Action Launcher]
+Name=Show launcher
+Exec=AppRun --launcher

@@ -1,8 +1,9 @@
 <#
 .SYNOPSIS
   Checks that tools\package.ps1 -VerifyOnly accepts the staged release folder and refuses it once it holds the
-  player's files, game data, logs, symbols, updater leftovers, debugging tools, development markers or local paths, or
-  lacks the update helper, a DLL, the licences or the header art. Nothing is built, launched or published.
+  player's files, game data, logs, crash dumps, symbols, build or Python leftovers, sources, test programs, updater
+  leftovers, debugging tools, development markers, stale names or local paths, or lacks the update helper, a DLL, the
+  licences, the header art or the program's version resource. Nothing is built, launched or published.
 .DESCRIPTION
   Needs the staged folder of tools\package.ps1 (dist\OdinSphereLeifthrasir-v<version>-windows-x64). Each case is a
   copy made of hard links in build\release-check-tests; a file a case changes is replaced, never written through
@@ -46,8 +47,19 @@ $Cases = [ordered]@{
     'DEBUG_SAULO marker'        = @{ Item = 'README.txt'; Text = 'DEBUG_SAULO' }
     'repository path'           = @{ Item = 'licenses\notes.txt'; Text = $root }
     'user profile path'         = @{ Item = 'licenses\notes.txt'; Text = $env:USERPROFILE }
+    'Decomp path'               = @{ Item = 'licenses\notes.txt'; Text = 'S:\Decomp\odin' }
+    'crash dump'                = @{ Item = 'odin_sphere_leifthrasir.dmp' }
+    'temporary file'            = @{ Item = 'download.tmp' }
+    'python cache'              = @{ Item = '__pycache__\import_inventory.cpython-314.pyc' }
+    'build folder'              = @{ Item = 'CMakeFiles\' }
+    'object file'               = @{ Item = 'loader.obj' }
+    'static library'            = @{ Item = 'libosl_launcher.a' }
+    'source file'               = @{ Item = 'loader.c' }
+    'test program'              = @{ Item = 'osl-tests.exe'; From = 'odin_sphere_leifthrasir.exe' }
     'missing program'           = @{ Missing = 'odin_sphere_leifthrasir.exe' }
+    'program metadata'          = @{ Item = 'odin_sphere_leifthrasir.exe'; From = 'trg-updater.exe' }
     'obsolete program name'     = @{ Item = 'osl-loader.exe' }
+    'obsolete name in a file'   = @{ Item = 'licenses\notes.txt'; Text = 'osl-loader.exe' }
     'missing update helper'     = @{ Missing = 'trg-updater.exe' }
     'helper not self-contained' = @{ Item = 'trg-updater.exe'; From = 'odin_sphere_leifthrasir.exe' }
     'missing DLL'               = @{ Missing = 'SDL3.dll' }

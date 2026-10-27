@@ -11,7 +11,10 @@
 #include "oslgpu.h"
 #include "osl_launcher.h"
 #include "osl_resolution.h"
+#include "osl_version.h"
 #include "runtime_log.h"
+#include "crash_report.h"
+#include <cpuid.h>
 #if !defined(__x86_64__) || !defined(__GNUC__)
 #error Odin Sphere Leifthrasir PC requires x86-64 GCC or Clang (including MinGW).
 #endif
@@ -29,6 +32,7 @@
 #include <execinfo.h>
 #include <sys/syscall.h>
 #include <sys/uio.h>
+#include <sys/utsname.h>
 #endif
 
 typedef struct { uint64_t address, size, flags; } Segment;
@@ -45,6 +49,51 @@ static LinkedModule modules[16];
 static uint64_t module_count;
 static int entered_game;
 static int gpu_enabled;
+static uint64_t start_ms;
+static const char *crash_game_build;
+
+static uint64_t monotonic_ms(void) {
+#ifdef _WIN32
+    return GetTickCount64();
+#else
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return (uint64_t)now.tv_sec * 1000 + (uint64_t)now.tv_nsec / 1000000;
+#endif
+}
+/* The port version, operating system and processor of this run, for bug reports. */
+static void log_host(void) {
+    char os[192] = "unknown", cpu[49] = "unknown";
+#ifdef _WIN32
+    typedef LONG (WINAPI *VersionQuery)(OSVERSIONINFOW *);
+    OSVERSIONINFOW version = {.dwOSVersionInfoSize = sizeof(version)};
+    VersionQuery query = (VersionQuery)(void *)GetProcAddress(GetModuleHandleA("ntdll.dll"), "RtlGetVersion");
+    if (query && !query(&version))
+        snprintf(os, sizeof(os), "Windows %lu.%lu.%lu", version.dwMajorVersion, version.dwMinorVersion, version.dwBuildNumber);
+#else
+    struct utsname host;
+    char distribution[128] = "";
+    FILE *release = fopen("/etc/os-release", "r");
+    for (char line[256]; release && fgets(line, sizeof(line), release);)
+        if (!strncmp(line, "PRETTY_NAME=", 12)) {
+            const char *value = line + 12 + (line[12] == '"');
+            snprintf(distribution, sizeof(distribution), "%.*s", (int)strcspn(value, "\"\n"), value);
+            break;
+        }
+    if (release) fclose(release);
+    if (!uname(&host))
+        snprintf(os, sizeof(os), "%s %s%s%s", host.sysname, host.release, distribution[0] ? ", " : "", distribution);
+#endif
+    unsigned brand[12] = {0};
+    if (__get_cpuid_max(0x80000000u, NULL) >= 0x80000004u) {
+        for (unsigned leaf = 0; leaf < 3; ++leaf)
+            __get_cpuid(0x80000002u + leaf, &brand[leaf * 4], &brand[leaf * 4 + 1], &brand[leaf * 4 + 2], &brand[leaf * 4 + 3]);
+        const char *name = (const char *)brand;
+        while (*name == ' ') ++name;
+        if (*name) snprintf(cpu, sizeof(cpu), "%.48s", name);
+    }
+    printf("[run] Odin Sphere Leifthrasir PC %s, %s\n[run] CPU %s\n", OSL_VERSION_STRING, os, cpu);
+}
 
 static void fail(const char *message) { fprintf(stderr, "ERROR: %s\n", message); exit(1); }
 /* For failures after the GPU threads started: exit() would run destructors under them. */
@@ -123,19 +172,30 @@ static void describe_address(char *out, size_t size, uintptr_t address) {
     snprintf(out,size,"%p",(void *)address);
 }
 static int fatal_reported;
-static LONG fatal_exception(EXCEPTION_POINTERS *info) {
+static LONG fatal_exception(EXCEPTION_POINTERS *info, const char *reason) {
     if (__atomic_exchange_n(&fatal_reported,1,__ATOMIC_ACQ_REL)) { Sleep(INFINITE); }
     runtime_log_mark_crash();
     const EXCEPTION_RECORD *record=info->ExceptionRecord;
     const CONTEXT *c=info->ContextRecord;
     char where[MAX_PATH+64];
-    describe_address(where,sizeof(where),(uintptr_t)c->Rip);
-    if (record->ExceptionCode==EXCEPTION_ACCESS_VIOLATION && record->NumberParameters>=2)
-        fprintf(stderr,"Fault: %s access to %p at %s (thread %lu)\n",
-                record->ExceptionInformation[0]==1 ? "write" : record->ExceptionInformation[0]==8 ? "execute" : "read",
-                (void *)record->ExceptionInformation[1],where,GetCurrentThreadId());
-    else
-        fprintf(stderr,"Fault: exception 0x%08lx at %s (thread %lu)\n",record->ExceptionCode,where,GetCurrentThreadId());
+    static char header[4096];
+    CrashReport crash={0};
+    crash.event="Windows unhandled exception";
+    crash.reason=reason;
+    crash.version=OSL_VERSION_STRING;
+    crash.game_build=crash_game_build;
+    crash.uptime_ms=monotonic_ms()-start_ms;
+    crash.code=record->ExceptionCode;
+    crash.flags=record->ExceptionFlags;
+    crash.address=(uintptr_t)record->ExceptionAddress;
+    describe_address(where,sizeof(where),(uintptr_t)record->ExceptionAddress);
+    crash.location=where;
+    crash.parameter_count=record->NumberParameters;
+    for (DWORD i=0;i<record->NumberParameters && i<CRASH_REPORT_MAX_PARAMETERS;++i) crash.parameters[i]=record->ExceptionInformation[i];
+    crash.thread_id=GetCurrentThreadId();
+    crash.process_id=GetCurrentProcessId();
+    crash_report_format(&crash,header,sizeof(header));
+    fputs(header,stderr);
     fprintf(stderr,"  rax=%016llx rbx=%016llx rcx=%016llx rdx=%016llx\n  rsi=%016llx rdi=%016llx rbp=%016llx rsp=%016llx\n",
             c->Rax,c->Rbx,c->Rcx,c->Rdx,c->Rsi,c->Rdi,c->Rbp,c->Rsp);
     if (gpu_enabled) {
@@ -189,6 +249,7 @@ static LONG fatal_exception(EXCEPTION_POINTERS *info) {
         fprintf(stderr,"  #%d %s\n",depth,where);
         rbp=frame[0];
     }
+    fputs(CRASH_REPORT_RULE,stderr);
     runtime_log_flush();
     TerminateProcess(GetCurrentProcess(),3);
     return EXCEPTION_CONTINUE_SEARCH;
@@ -204,10 +265,7 @@ static LONG CALLBACK vectored_fault(EXCEPTION_POINTERS *info) {
             /* The GPU handlers may fault on another tracked page a level or two deep; a bug there
              * would recurse until the stack runs out (a silent freeze). */
             static __thread int handler_depth;
-            if (handler_depth>=8) {
-                fprintf(stderr,"Fault handler: faulted inside itself %d levels deep\n",handler_depth);
-                return fatal_exception(info);
-            }
+            if (handler_depth>=8) return fatal_exception(info,"the GPU fault handler faulted inside itself 8 levels deep");
             ++handler_depth;
             const int handled=oslgpu_handle_fault(info,(void *)record->ExceptionInformation[1]);
             --handler_depth;
@@ -238,13 +296,13 @@ static LONG CALLBACK vectored_fault(EXCEPTION_POINTERS *info) {
         int ours=(image && rip-(uintptr_t)image<0x20000000) ||
                  (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS|GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,(LPCSTR)rip,&module) && module==self) ||
                  !module;
-        if (ours) return fatal_exception(info);
+        if (ours) return fatal_exception(info,NULL);
     }
     /* OSL_STRICT_HANDLES=1: a closed or invalid handle used anywhere is reported (diagnostics). */
-    if (code==0xC0000008 /* STATUS_INVALID_HANDLE */) return fatal_exception(info);
+    if (code==0xC0000008 /* STATUS_INVALID_HANDLE */) return fatal_exception(info,NULL);
     return EXCEPTION_CONTINUE_SEARCH;
 }
-static LONG WINAPI unhandled_fault(EXCEPTION_POINTERS *info) { return fatal_exception(info); }
+static LONG WINAPI unhandled_fault(EXCEPTION_POINTERS *info) { return fatal_exception(info,NULL); }
 /* abort() (an uncaught C++ exception, a failed library check), the C runtime's invalid-parameter
  * check and a pure virtual call end the process with 0xC0000409, which no exception handler sees:
  * the same report as a crash, from here. */
@@ -257,8 +315,7 @@ static void report_runtime_check(const char *why) {
     record.ExceptionCode=0xC0000409;
     record.ExceptionAddress=(PVOID)(uintptr_t)context.Rip;
     EXCEPTION_POINTERS pointers={&record,&context};
-    fprintf(stderr,"Fatal: %s\n",why);
-    fatal_exception(&pointers);
+    fatal_exception(&pointers,why);
 }
 static void on_abort(int signal_number) {
     (void)signal_number;
@@ -300,17 +357,28 @@ static void fault(int sig, siginfo_t *info, void *context) {
     /* The process is terminating: dladdr/snprintf are acceptable here. */
     ucontext_t *uc = context;
     uintptr_t rip = (uintptr_t)uc->uc_mcontext.gregs[REG_RIP];
-    char line[512];
+    char line[512], location[384] = "unknown";
     Dl_info where;
     if (rip - (uintptr_t)image < 0x10000000)
-        snprintf(line, sizeof(line), "Guest fault (signal %d) at guest offset 0x%lx, address %p\n",
-                 sig, (unsigned long)(rip - (uintptr_t)image), info->si_addr);
+        snprintf(location, sizeof(location), "guest offset 0x%lx", (unsigned long)(rip - (uintptr_t)image));
     else if (dladdr((void *)rip, &where) && where.dli_fname)
-        snprintf(line, sizeof(line), "Host fault (signal %d) in %s+0x%lx (%s), address %p\n", sig, where.dli_fname,
-                 (unsigned long)(rip - (uintptr_t)where.dli_fbase), where.dli_sname ? where.dli_sname : "?", info->si_addr);
-    else
-        snprintf(line, sizeof(line), "Fault (signal %d) at RIP %p, address %p\n", sig, (void *)rip, info->si_addr);
-    { ssize_t written_=write(2, line, strlen(line)); (void)written_; }
+        snprintf(location, sizeof(location), "%s+0x%lx (%s)", where.dli_fname,
+                 (unsigned long)(rip - (uintptr_t)where.dli_fbase), where.dli_sname ? where.dli_sname : "?");
+    static char header[4096];
+    CrashReport crash = {0};
+    crash.event = "Linux fatal signal";
+    crash.version = OSL_VERSION_STRING;
+    crash.game_build = crash_game_build;
+    crash.uptime_ms = monotonic_ms() - start_ms;
+    crash.signal = sig;
+    crash.signal_code = info->si_code;
+    crash.address = rip;
+    crash.location = location;
+    crash.has_referenced_address = sig != SIGABRT;
+    crash.referenced_address = (uintptr_t)info->si_addr;
+    crash.thread_id = (uint64_t)gettid();
+    crash.process_id = (uint64_t)getpid();
+    { ssize_t written_=write(2, header, crash_report_format(&crash, header, sizeof(header))); (void)written_; }
     if (gpu_enabled) {
         oslgpu_note_fatal_fault();
         oslgpu_dump_guest_writes(context);
@@ -326,6 +394,7 @@ static void fault(int sig, siginfo_t *info, void *context) {
             snprintf(line, sizeof(line), "  #%d %p\n", i, frames[i]);
         ssize_t written_=write(2, line, strlen(line)); (void)written_;
     }
+    { ssize_t written_=write(2, CRASH_REPORT_RULE, sizeof(CRASH_REPORT_RULE) - 1); (void)written_; }
     runtime_log_flush();
     _exit(128 + sig);
 }
@@ -421,6 +490,7 @@ static const char *command_line(int argc, char **argv) {
 #endif
 }
 int main(int argc, char **argv) {
+    start_ms = monotonic_ms();
     setvbuf(stdout, NULL, _IONBF, 0);
     /* tools\build.ps1: the launcher's boot image builder on a prepared game folder, without starting anything. */
     if (argc == 4 && !strcmp(argv[1], "--prepare-image")) {
@@ -508,6 +578,7 @@ int main(int argc, char **argv) {
         char stamp[32];
         strftime(stamp,sizeof(stamp),"%Y-%m-%dT%H:%M:%S",localtime(&now));
         printf("[run] %s\n[run] %s\n[run] log %s\n[run] prepared root %s\n",stamp,command_line(argc,argv),log_path,app0);
+        log_host();
         atexit(runtime_log_flush);
         runtime_log_set_detailed(osl_detailed_logging(settings_file));
         runtime_log_install_cleanup();
@@ -530,6 +601,7 @@ int main(int argc, char **argv) {
     OslGameBuild game_build;
     const int known_build=osl_game_build(paths.image_dir,&game_build);
     printf("OSL: game build %s\n",known_build ? game_build.label : "not a supported build");
+    if (known_build) crash_game_build=game_build.label;
     render_resolution=&osl_resolutions[osl_render_resolution(settings_file,paths.image_dir)];
     aspect_ratio=&osl_aspect_ratios[osl_aspect_ratio(settings_file,paths.image_dir)];
     render_target=osl_render_target(render_resolution,aspect_ratio);

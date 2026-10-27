@@ -63,7 +63,7 @@ The boot path reports these stages in order:
 | `Starting linked module ...` / `Module ... initializer returned 0` | `libc.prx` and `libSceFios2.prx` initialized |
 | `Entering original x86-64 code at guest offset ...` | the first guest instruction is about to run |
 | `STOP: first unsupported PS4 import: ...` | the guest reached an import the runtime does not implement; the caller return offset is printed |
-| `Fault: ... at guest offset ...` | the guest faulted; registers, the stack top and the frame chain follow |
+| `CRASH REPORT` | a fatal fault: the exception, the faulting module or guest offset, registers, the stack top and the frame chain, up to the closing rule |
 
 If the process stops at an import or a fault, the log identifies the first broken stage. Do not
 patch a later failure before that stage is understood.

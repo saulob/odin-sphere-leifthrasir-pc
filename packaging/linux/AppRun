@@ -1,0 +1,24 @@
+#!/bin/sh
+# AppImage entry point. The AppImage's own mount is read-only: the program keeps game/, user/ and logs/ in the folder
+# that holds the AppImage file (launcher/paths.cpp; OSL_PORTABLE_DIR overrides it).
+here=$(dirname -- "$(readlink -f -- "$0")")
+
+# The bundled libraries are found through the executable's RPATH. libstdc++ and libgcc_s only come along as a
+# fallback, for a host whose own copies are older than this build's (it needs GLIBCXX_3.4.@GLIBCXX_NEED@ and
+# GCC_@GCC_NEED@).
+host_has() { # library-file symbol-prefix needed-number
+    [ -n "$1" ] && [ -r "$1" ] || return 1
+    newest=$(grep -a -o -E "$2[0-9]+" "$1" 2>/dev/null | sed "s/^$2//" | sort -n | tail -1)
+    [ -n "$newest" ] && [ "$newest" -ge "$3" ]
+}
+find_library() {
+    for dir in /usr/lib /usr/lib64 /usr/lib/x86_64-linux-gnu /lib/x86_64-linux-gnu /lib64 /usr/local/lib; do
+        [ -r "$dir/$1" ] && { readlink -f -- "$dir/$1"; return; }
+    done
+}
+if ! host_has "$(find_library libstdc++.so.6)" 'GLIBCXX_3\.4\.' @GLIBCXX_NEED@ ||
+   ! host_has "$(find_library libgcc_s.so.1)" 'GCC_' @GCC_NEED@; then
+    export LD_LIBRARY_PATH="$here/usr/lib/compat${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+fi
+
+exec "$here/usr/bin/odin_sphere_leifthrasir" "$@"

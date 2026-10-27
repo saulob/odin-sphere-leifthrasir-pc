@@ -12,8 +12,9 @@
 
 This repository is the foundation of the port: the loader and runtime that map and run the game's own
 x86-64 code, the shadPS4-derived Vulkan video core, the launcher and installer, and the diagnostics
-that make the first boot debuggable. The USA 1.00 base package (`CUSA05083`) and the Japanese release
-(`CUSA01290` base 1.00 plus its 1.02 update) are supported; any other version is refused.
+that make the first boot debuggable. The USA 1.00 base package (`CUSA05083`), the Japanese release
+(`CUSA01290` base 1.00 plus its 1.02 update) and the European release (`CUSA05262` base 1.00 plus its 1.01 update)
+are supported; any other version is refused.
 
 ## Features
 
@@ -44,10 +45,12 @@ that make the first boot debuggable. The USA 1.00 base package (`CUSA05083`) and
 | USA build | Title ID `CUSA05083`, Content ID `UP0177-CUSA05083_00-ODINSPHERELE0000`, `APP_VER` `01.00`, `VERSION` `01.01`, `eboot.bin` SHA-256 `7c517194aba4e5eea55d9197efae47d1567bd785b8c0dced7d1b0f4028d3eed6` |
 | Japanese base | Title ID `CUSA01290`, Content ID `JP0005-CUSA01290_00-ODINSPHERELE0000`, `APP_VER` `01.00`, `VERSION` `01.00`, `eboot.bin` SHA-256 `d0add7e35bc5f58d5c9017fdce0878006c32f944fa8eb3d7ce62671257f5bcc7` |
 | Japanese 1.02 update | Same Title and Content ID, `APP_VER` `01.02`, `VERSION` `01.00`, `eboot.bin` SHA-256 `db96b839fe31adba4b3eb3547202f761d34881325c2fea650c4c020eded5d071` |
+| European base | Title ID `CUSA05262`, Content ID `EP1063-CUSA05262_00-ODINSPHERELE0000`, `APP_VER` `01.00`, `VERSION` `01.00`, `eboot.bin` SHA-256 `3e6b1741e8a404d0f8fbe10bce93c6887974566f5be09ef1bddc22a00ba29feb` |
+| European 1.01 update | Same Title and Content ID, `APP_VER` `01.01`, `VERSION` `01.00`, `eboot.bin` SHA-256 `572bf21e57febee415d739cded5516def9ca81e867ad3184c989367248edcd7e` |
 
 The launcher checks the Title ID, Content ID and versions in the package's `param.sfo` before it unpacks anything, and
-the `eboot.bin` hash before it installs the result. A Japanese update is only laid over the Japanese base package with
-the same Title ID and Content ID. A package encrypted for a PS4 console cannot be unpacked on a PC.
+the `eboot.bin` hash before it installs the result. An update is only laid over the base package of its own region,
+with the same Title ID and Content ID. A package encrypted for a PS4 console cannot be unpacked on a PC.
 
 ## Installing
 
@@ -56,11 +59,22 @@ the same Title ID and Content ID. A package encrypted for a PS4 console cannot b
 3. On the **Play** page click **Install game...** and select your own Odin Sphere Leifthrasir `.pkg` file.
 4. Wait until **Ready to play** appears. The package is unpacked on your PC into the `game` folder next to the program
    (about 3.3 GB). The `.pkg` file is only read, and you can delete it afterwards.
-5. Japanese 1.02: install the Japanese base package first, then install its 1.02 update package the same way. The
-   update is laid over the base and becomes the active build.
+5. Japanese 1.02 or European 1.01: install the base package of that region first, then install its update package the
+   same way. The update is laid over the base and becomes the active build.
 6. Press **PLAY**.
 
 **No game files are included** in the release, and the port does not download the game.
+
+On Windows, SmartScreen may warn the first time the program starts, because releases are not digitally signed. If you
+downloaded it from this project's GitHub releases page, choose **More info**, then **Run anyway**.
+
+### Linux (experimental)
+
+The Linux release is one AppImage, `OdinSphereLeifthrasir-v<version>-x86_64.AppImage`, for 64-bit Linux with glibc 2.31
+(Ubuntu 20.04) or newer and a Vulkan 1.3 driver. Put it in a folder you can write to, make it executable and run it:
+`game`, `user` and `logs` are kept next to it. It mounts itself with FUSE and unpacks itself automatically when FUSE is
+not available. The Linux build is new and has not yet been tested on many systems; how it is built and checked is in
+[docs/LINUX.md](docs/LINUX.md).
 
 ### Saves and settings
 
@@ -73,7 +87,7 @@ Everything is kept next to the program:
 | `user\trophy\` | Your trophy progress and the trophy list and icons unpacked from your game |
 | `user\keys.json` | Your Trophy Key, if you configure one |
 | `user\cache\<Title ID>\` | Shader cache, so later starts load faster |
-| `logs\` | One `odin_sphere_leifthrasir_NNN.log` per run |
+| `logs\` | One `odin_sphere_leifthrasir_NNN.log` per run, launcher and game together; the newest 50 are kept |
 | `game\` | The installed game (unpacked from your own package) |
 
 ## The launcher
@@ -100,9 +114,8 @@ The Render resolution and Aspect Ratio options change the game's verified intern
 21:9 and 32:9 stretch the gameplay horizontally instead of showing more of the world, and 16:10, 4:3 and
 5:4 squeeze it. The HUD, menus and prerendered videos are not adjusted either.
 
-Xbox button prompts and cheats are not exposed: Odin Sphere's prompt atlases and gameplay values have not yet been
-verified for those launcher options. The PlayStation prompts and each build's own text are used, and no region's assets
-are ever mixed.
+Cheats are not exposed: Odin Sphere's gameplay values have not yet been verified for a launcher option. Each build's own
+text is used, and no region's assets are ever mixed.
 
 **Menu & Subtitles** is offered for the European build (CUSA05262) only, whose executable selects its menu and subtitle
 archives from the console's System Language: English, French, German, Spanish or Italian. The setting is stored in
@@ -115,10 +128,14 @@ single `Odin2_BT_UK.CPK` audio container (the per-language `Odin2_BT_*.CPK` file
 **Options → Voice Language** chooses between them. The launcher does not add a Voice Language option and does not
 change the game's choice; Menu & Subtitles affects text only.
 
-**Detailed logging** (About, Diagnostics) is on by default and keeps the log of every session. Turned off, a run
-still writes its log while it runs, but a normal exit discards it so normal sessions do not accumulate files. A
-crash or abnormal exit keeps the log, and crash diagnostics are never discarded. **Open logs folder** opens the
-folder that holds the logs, creating it first when it does not exist.
+**Detailed logging** (About, Diagnostics) is on by default and keeps the log of every session. The launcher and the
+game write one `odin_sphere_leifthrasir_NNN.log` for the whole run; it records the port version, the operating system,
+the processor, the game build and the graphics and display settings, and nothing per frame. Turned off, a
+run still writes its log while it runs, but a normal exit discards it so normal sessions do not accumulate files. A
+crash or abnormal exit keeps the log, and crash diagnostics are never discarded: a crash appends one `CRASH REPORT`
+section (exception, faulting module or guest offset, registers and stack) to the same log, and no other crash file or
+minidump is written. The newest 50 numbered logs are kept. **Open logs folder** opens the folder that holds the logs,
+creating it first when it does not exist.
 
 ## Building it yourself
 
@@ -126,7 +143,8 @@ folder that holds the logs, creating it first when it does not exist.
 2. `.\tools\build.ps1` fetches the pinned dependencies (TRG Launcher, Dear ImGui and a few small libraries) and builds `build\cmake\clang64\bin\odin_sphere_leifthrasir.exe`.
 3. `.\tools\build.ps1 -Run` also starts it. Install the game from the launcher's Play page, as in a release; the development build keeps it in `game\prepared\<build folder>` and the boot image in `build\image\<build folder>` of the repository (`CUSA05083-1.00`, `CUSA01290-1.00`, `CUSA01290-1.02`, `CUSA05262-1.00` or `CUSA05262-1.01`).
 4. `.\tools\test.ps1` builds and runs the focused headless tests (game profile, settings, keys, window fit, GPU tiling, patch workflow, updater and update helper). Python is not needed to build, test or play; the optional development scripts in `scripts\` use it (`.\tools\setup.ps1 -InstallPython`).
-5. `.\tools\package.ps1` packages `dist\OdinSphereLeifthrasir-v<version>-windows-x64.zip` and its `.sha256` file, the layout the launcher's updater installs; `.\tools\test-release-check.ps1` then checks that the release check refuses player files, game data and leftovers. Nothing is published.
+5. `.\tools\package.ps1` builds the Release configuration (`.\tools\build.ps1 -Release`, in `build\cmake\clang64-release`) and packages `dist\OdinSphereLeifthrasir-v<version>-windows-x64.zip` and its `.sha256` file, the layout the launcher's updater installs; `.\tools\test-release-check.ps1` then checks that the release check refuses player files, game data and leftovers. Nothing is published.
+6. Linux: `tools/build.sh` builds on Linux x86_64, and `tools/package-linux.sh` packages `dist/OdinSphereLeifthrasir-v<version>-x86_64.AppImage` and its `.AppImage.sha256` on Ubuntu 20.04 (in WSL2 from this Windows checkout: `tools/package-release-linux.sh`). See [docs/LINUX.md](docs/LINUX.md).
 
 ### What rebuilds
 
@@ -147,8 +165,21 @@ is the architectural model for the loader, runtime, launcher and installer.
 
 ## Reporting problems
 
-If the game does not start or crashes, attach the newest `odin_sphere_leifthrasir_*.log` from the
-`logs` folder next to the program, and say what you were doing when the problem happened.
+If the game does not start or crashes, please open an [issue](https://github.com/saulob/odin-sphere-leifthrasir-pc/issues).
+Attach the newest `odin_sphere_leifthrasir_*.log` file from the `logs` folder next to the program, and say what you were
+doing when the problem happened. The launcher and the game write to the same log for one run; after a crash the log
+ends with a `CRASH REPORT` section, and no separate crash file or minidump is written. One log is normally enough.
+
+For a problem that is not a crash, keep **Detailed logging** on in the launcher (About, Diagnostics), reproduce it, and
+send the newest log. On Linux, please also give your distribution, your GPU and its driver.
+
+## Sponsoring
+
+Odin Sphere Leifthrasir PC is maintained and developed in my free time. If you enjoy the project or find it useful, consider supporting its continued development.
+
+<p align="center">
+<a href="https://github.com/sponsors/saulob" target="_blank"><img src="https://img.shields.io/badge/GitHub%20Sponsors-Sponsor-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors"></a>
+</p>
 
 ## Credits
 
@@ -156,7 +187,7 @@ If the game does not start or crashes, attach the newest `odin_sphere_leifthrasi
 - [shadPS4](https://github.com/shadps4-emu/shadPS4) for the Vulkan renderer, shader recompiler and GPU command processing the video core is built on, and for the PS4 package extractor the installer is adapted from
 - [gow3_pc](https://github.com/FelipePrado0/gow3_pc) and its lineage, uncharted-ndc-native, MediEvil PC and the HayatoG ports, for the loader, runtime and video core this port grew from
 - Dragon's Crown Pro PC, the port this architecture is reproduced from
-- [TRG Launcher](https://github.com/TekRantGaming/trg-launcher), the launcher interface, pinned at v1.1.0
+- [TRG Launcher](https://github.com/TekRantGaming/trg-launcher) by TekRantGaming, the launcher interface, pinned at v1.1.0, licensed under the MIT License
 - The licenses of the libraries the release includes are in the `licenses` folder of the ZIP
 
 ## AI disclosure

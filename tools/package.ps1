@@ -3,18 +3,18 @@
   Packages the tested build as dist\OdinSphereLeifthrasir-v<version>-windows-x64.zip and its .sha256 file. Local only:
   nothing is published, tagged or uploaded.
 .DESCRIPTION
-  Builds with tools\build.ps1 (the one RelWithDebInfo configuration) unless -SkipBuild, then stages
-  odin_sphere_leifthrasir.exe and the update helper trg-updater.exe without their debug information, the MSYS2 DLLs
-  the loader uses (found by walking its imports), the launcher header art, README.txt, LICENSE.txt and the licence texts. The debug information goes to
-  dist\<name>-symbols\, which is not packaged. The staging folder is checked for game data, user files, logs, symbols,
-  updater leftovers, debugging tools, local paths and anything unexpected; trg-updater.exe must import nothing but
-  Windows' own DLLs. The ZIP holds the files at its root, the layout the updater installs; it is extracted again and
+  Builds CMake's Release configuration with tools\build.ps1 -Release (build\cmake\clang64-release) unless -SkipBuild,
+  then stages odin_sphere_leifthrasir.exe and the update helper trg-updater.exe without debug information, the MSYS2
+  DLLs the loader uses (found by walking its imports), the launcher header art, README.txt, LICENSE.txt and the licence
+  texts. The staging folder is checked for game data, user files, logs, symbols,
+  updater leftovers, debugging tools, local paths, stale names and anything unexpected; odin_sphere_leifthrasir.exe must
+  carry its product name and version, and trg-updater.exe must import nothing but Windows' own DLLs. The ZIP holds the files at its root, the layout the updater installs; it is extracted again and
   checked, then passed through the updater's own extraction rules (osl-update-tests --check-package).
   The version is OSL_PORT_VERSION in CMakeLists.txt, the only place it is written.
 .PARAMETER SkipBuild
-  Packages the existing build\cmake\clang64\bin\odin_sphere_leifthrasir.exe and trg-updater.exe.
+  Packages the existing build\cmake\clang64-release\bin\odin_sphere_leifthrasir.exe and trg-updater.exe.
 .PARAMETER Clean
-  Passes -Clean to tools\build.ps1.
+  Passes -Clean to tools\build.ps1 -Release.
 .PARAMETER VerifyOnly
   Only checks an existing staged folder or release ZIP, then exits.
 .EXAMPLE
@@ -31,7 +31,7 @@ param(
 . (Join-Path $PSScriptRoot '_common.ps1')
 
 $root = $script:RepoRoot
-$buildDir = Join-Path $root 'build\cmake\clang64'
+$buildDir = Join-Path $root 'build\cmake\clang64-release'
 $loader = Join-Path $buildDir 'bin\odin_sphere_leifthrasir.exe'
 $updater = Join-Path $buildDir 'bin\trg-updater.exe'
 $updateTests = Join-Path $buildDir 'bin\osl-update-tests.exe'
@@ -78,13 +78,18 @@ $RequiredLicenses = @('licenses\THIRD-PARTY-LICENSES.txt', 'licenses\MSYS2-PACKA
 # Game data, the player's files, logs, caches, symbols, updater leftovers and debugging tools.
 $ForbiddenNames = @('game', 'user', 'logs', 'cache', 'build', 'prepared', 'extracted', 'image', 'savedata', 'trophy',
     'download0', 'temp0', 'shader', 'screenshots', 'sce_sys', 'sce_module', 'eboot.bin', 'param.sfo', 'osl.ini',
-    'keys.json', 'boot.bin', 'image.json', 'imports.json', 'symbols', 'vulkan-1.dll')
+    'keys.json', 'boot.bin', 'image.json', 'imports.json', 'symbols', 'vulkan-1.dll', '__pycache__', 'CMakeFiles')
 $ForbiddenEverywhere = @('*.pkg', '*.pdb', '*.debug', '*.log', '*.dmp', 'trg-update-*', 'VkLayer_*', 'renderdoc*',
-    '*.install-temp', '*.install-backup', '*.install-update')
+    '*.install-temp', '*.install-backup', '*.install-update', '*.pyc')
 # Licence texts have names such as COPYING.LIB, so these apply outside licenses\ (still checked for content below).
 $ForbiddenPatterns = @('*.ini', '*.bin', '*.self', '*.sprx', '*.prx', '*.elf', '*.cpk', '*.sfo', '*.trp', '*.json',
     '*.spv', '*.pipeline_cache', '*.obj', '*.o', '*.a', '*.lib', '*.tmp', '*.bak', '*.part', '*.sav', '*.py', '*.ps1',
-    '*.c', '*.cpp', '*.h')
+    '*.c', '*.cpp', '*.h', '*.hpp')
+# odin_sphere_leifthrasir.exe's version resource (src\odin_sphere_leifthrasir.rc).
+$ProgramMetadata = [ordered]@{
+    ProductName = 'Odin Sphere Leifthrasir PC'; FileDescription = 'Odin Sphere Leifthrasir PC'
+    OriginalFilename = 'odin_sphere_leifthrasir.exe'; InternalName = 'odin_sphere_leifthrasir'
+}
 # File signatures of PS4 packages, SELF/ELF executables and CRI archives.
 $ForbiddenMagic = @{ '7F434E54' = 'PS4 package'; '4F153D1D' = 'PS4 SELF'; '7F454C46' = 'ELF executable'; '43504B20' = 'CPK archive' }
 
@@ -93,7 +98,8 @@ $LocalText = New-Object System.Collections.Generic.List[string]
 foreach ($path in @($root, $env:USERPROFILE)) {
     if ($path) { $LocalText.Add($path); $LocalText.Add($path.Replace('\', '/')) }
 }
-foreach ($word in @('VisualStudio', 'DEBUG_SAULO', 'referencias-ps4', 'build\cmake', 'build/cmake', 'dragons_crown', 'DragonsCrown')) {
+foreach ($word in @('VisualStudio', 'S:\Decomp', 'S:/Decomp', 'DEBUG_SAULO', 'referencias-ps4', 'build\cmake', 'build/cmake',
+        'dragons_crown', 'DragonsCrown', 'osl-loader', 'osl.loader')) {
     $LocalText.Add($word)
 }
 $LocalNeedles = foreach ($text in $LocalText) { $text; $Latin1.GetString([Text.Encoding]::Unicode.GetBytes($text)) }
@@ -171,6 +177,15 @@ function Test-ReleaseFolder([string]$Dir) {
     if (Test-Path -LiteralPath $helper) {
         foreach ($problem in (Get-HelperProblems $helper)) { $problems.Add($problem) }
     }
+    if (Test-Path -LiteralPath $exe) {
+        $info = (Get-Item -LiteralPath $exe).VersionInfo
+        foreach ($field in $ProgramMetadata.Keys) {
+            if ($info.$field -ne $ProgramMetadata[$field]) { $problems.Add("odin_sphere_leifthrasir.exe ${field}: '$($info.$field)'") }
+        }
+        if ($info.ProductVersion -ne $version) {
+            $problems.Add("odin_sphere_leifthrasir.exe is version '$($info.ProductVersion)', CMakeLists.txt says $version")
+        }
+    }
     foreach ($item in Get-ChildItem -LiteralPath $base -Recurse -Force) {
         $relative = $item.FullName.Substring($base.Length + 1)
         $parts = $relative -split '\\'
@@ -244,6 +259,10 @@ function Expand-ReleaseZip([string]$Zip) {
     return $target
 }
 
+$cmake = Get-Content -LiteralPath (Join-Path $root 'CMakeLists.txt') -Raw
+if ($cmake -notmatch '(?m)^set\(OSL_PORT_VERSION "([0-9]+\.[0-9]+\.[0-9]+)"\)') { Stop-Tool 'OSL_PORT_VERSION not found in CMakeLists.txt' }
+$version = $Matches[1]
+
 if ($VerifyOnly) {
     $path = (Resolve-Path -LiteralPath $VerifyOnly).Path
     if (Test-Path -LiteralPath $path -PathType Leaf) {
@@ -257,9 +276,6 @@ if ($VerifyOnly) {
     return
 }
 
-$cmake = Get-Content -LiteralPath (Join-Path $root 'CMakeLists.txt') -Raw
-if ($cmake -notmatch '(?m)^set\(OSL_PORT_VERSION "([0-9]+\.[0-9]+\.[0-9]+)"\)') { Stop-Tool 'OSL_PORT_VERSION not found in CMakeLists.txt' }
-$version = $Matches[1]
 $name = "OdinSphereLeifthrasir-v$version-windows-x64"
 $dist = Join-Path $root 'dist'
 $stage = Join-Path $dist $name
@@ -269,13 +285,16 @@ $shaFile = Join-Path $dist "$name.sha256"
 
 Write-Step "Odin Sphere Leifthrasir PC $version - Windows release package (local only)"
 if (-not $SkipBuild) {
-    $build = @{}
+    $build = @{ Release = $true }
     if ($Clean) { $build.Clean = $true }
     & (Join-Path $PSScriptRoot 'build.ps1') @build
     if ($LASTEXITCODE -ne 0) { Stop-Tool 'Build failed' }
 }
 foreach ($file in $loader, $updater) {
     if (-not (Test-Path -LiteralPath $file)) { Stop-Tool "Missing $file (run without -SkipBuild)" }
+}
+if (-not (Select-String -LiteralPath (Join-Path $buildDir 'CMakeCache.txt') -SimpleMatch 'CMAKE_BUILD_TYPE:STRING=Release' -Quiet)) {
+    Stop-Tool "$buildDir is not the Release build of tools\build.ps1 -Release (run without -SkipBuild)"
 }
 $built = (Get-Item -LiteralPath $loader).VersionInfo.ProductVersion
 if ($built -ne $version) { Stop-Tool "odin_sphere_leifthrasir.exe is version $built, CMakeLists.txt says $version (run without -SkipBuild)" }
@@ -285,15 +304,12 @@ foreach ($old in @($stage, $symbols, $zip, $shaFile)) {
     if (Test-Path -LiteralPath $old) { Remove-Item -LiteralPath $old -Recurse -Force }
 }
 $licenses = Join-Path $stage 'licenses'
-New-Item -ItemType Directory $stage, $licenses, $symbols | Out-Null
+New-Item -ItemType Directory $stage, $licenses | Out-Null
 
 foreach ($program in $loader, $updater) {
     $leaf = Split-Path $program -Leaf
     Write-Step "Staging $leaf without debug information"
-    $debugFile = Join-Path $symbols ([IO.Path]::ChangeExtension($leaf, '.debug'))
-    & $objcopy --only-keep-debug $program $debugFile
-    if ($LASTEXITCODE -ne 0) { Stop-Tool "llvm-objcopy --only-keep-debug failed on $leaf" }
-    & $objcopy --strip-debug "--add-gnu-debuglink=$debugFile" $program (Join-Path $stage $leaf)
+    & $objcopy --strip-debug $program (Join-Path $stage $leaf)
     if ($LASTEXITCODE -ne 0) { Stop-Tool "llvm-objcopy --strip-debug failed on $leaf" }
 }
 $helperProblems = @(Get-HelperProblems (Join-Path $stage 'trg-updater.exe'))
@@ -407,6 +423,5 @@ Write-Host "  Folder:   $stage ($(Format-Size $stageBytes), $($files.Count) file
 Write-Host "  ZIP:      $zip ($(Format-Size (Get-Item -LiteralPath $zip).Length))"
 Write-Host "  SHA-256:  $hash"
 Write-Host "  Checksum: $shaFile"
-Write-Host "  Symbols:  $symbols (not in the package)"
 Write-Host "  Loader:   $(Format-Size (Get-Item -LiteralPath $loader).Length) built, $(Format-Size (Get-Item -LiteralPath (Join-Path $stage 'odin_sphere_leifthrasir.exe')).Length) packaged"
 Write-Host "  DLLs:     $($dlls.Count), $(Format-Size $dllBytes)"

@@ -597,7 +597,7 @@ void TestConfig() {
     CHECK(osl::WindowsPackageName(version) == "OdinSphereLeifthrasir-v0.2.0-windows-x64.zip");
     CHECK(osl::WindowsChecksumName(version) == "OdinSphereLeifthrasir-v0.2.0-windows-x64.sha256");
     CHECK(osl::LinuxPackageName(version) == "OdinSphereLeifthrasir-v0.2.0-x86_64.AppImage");
-    CHECK(osl::LinuxChecksumName(version) == "OdinSphereLeifthrasir-v0.2.0-x86_64.sha256");
+    CHECK(osl::LinuxChecksumName(version) == "OdinSphereLeifthrasir-v0.2.0-x86_64.AppImage.sha256");
     CHECK(std::string(osl::kReleasesUrl) == "https://api.github.com/repos/saulob/odin-sphere-leifthrasir-pc/releases/latest");
     CHECK(std::string(osl::kGameExecutable) == "odin_sphere_leifthrasir.exe");
 
@@ -669,10 +669,24 @@ void TestVersionSource() {
     CHECK(package.find("set\\(OSL_PORT_VERSION") != std::string::npos);
     CHECK(package.find("trg-updater.exe") != std::string::npos);
     CHECK(package.find("$RootFiles = @('odin_sphere_leifthrasir.exe', 'trg-updater.exe'") != std::string::npos);
-    for (const char* source : {"CMakeLists.txt", "tools/build.ps1", "tools/package.ps1", "launcher/update_config.h",
-                               "src/odin_sphere_leifthrasir.rc", "packaging/README.txt"}) {
+    CHECK(package.find("'osl-loader', 'osl.loader'") != std::string::npos);
+    CHECK(package.find("$build = @{ Release = $true }") != std::string::npos);
+    CHECK(package.find("'build\\cmake\\clang64-release'") != std::string::npos);
+    CHECK(package.find("CMAKE_BUILD_TYPE:STRING=Release'") != std::string::npos);
+    CHECK(package.find("RelWithDebInfo") == std::string::npos);
+    const std::string linux_package = ReadFile(std::filesystem::path(OSL_SOURCE_DIR) / "tools" / "package-linux.sh");
+    CHECK(linux_package.find("name=OdinSphereLeifthrasir-v$version-x86_64\n") != std::string::npos);
+    CHECK(linux_package.find("s/^set\\(OSL_PORT_VERSION ") != std::string::npos);
+    CHECK(linux_package.find("sha256sum \"$name.AppImage\" > \"$name.AppImage.sha256\"") != std::string::npos);
+    CHECK(linux_package.find("max_glibc=2.31\n") != std::string::npos);
+    CHECK(linux_package.find("program=odin_sphere_leifthrasir\n") != std::string::npos);
+    CHECK(linux_package.find("patchelf --force-rpath --set-rpath '$ORIGIN/../lib'") != std::string::npos);
+    for (const char* source : {"CMakeLists.txt", "tools/build.ps1", "launcher/update_config.h",
+                               "src/odin_sphere_leifthrasir.rc", "src/odin_sphere_leifthrasir.manifest",
+                               "packaging/README.txt", "packaging/README-linux.txt", "packaging/linux/AppRun",
+                               "packaging/linux/odin-sphere-leifthrasir-pc.desktop"}) {
         const std::string text = ReadFile(std::filesystem::path(OSL_SOURCE_DIR) / source);
-        CHECK(!text.empty() && text.find("osl-loader") == std::string::npos);
+        CHECK(!text.empty() && text.find("osl-loader") == std::string::npos && text.find("osl.loader") == std::string::npos);
     }
     const std::string launcher = ReadFile(std::filesystem::path(OSL_SOURCE_DIR) / "launcher" / "launcher.cpp");
     CHECK(launcher.find("{\"v\" OSL_PORT_VERSION \"   \\xC2\\xB7   \", \"\"}") != std::string::npos);

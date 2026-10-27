@@ -29,15 +29,21 @@ static void make_directories(const char *dir) {
     mkdir(path, 0777);
 }
 
-static unsigned last_number(const char *dir) {
+static int log_number(const char *name, unsigned *number) {
+    int used = 0;
+    return sscanf(name, "odin_sphere_leifthrasir_%u.log%n", number, &used) == 1 && used > 0 && !name[used];
+}
+
+/* The highest run number in dir; with keep_after set, also removes the logs numbered keep_after or lower. */
+static unsigned scan_logs(const char *dir, unsigned keep_after) {
     DIR *d = opendir(dir);
     unsigned last = 0;
     if (!d) return 0;
     for (struct dirent *e; (e = readdir(d));) {
         unsigned number = 0;
-        int used = 0;
-        if (sscanf(e->d_name, "odin_sphere_leifthrasir_%u.log%n", &number, &used) == 1 && used > 0 && !e->d_name[used] && number > last)
-            last = number;
+        if (!log_number(e->d_name, &number)) continue;
+        if (number > last) last = number;
+        if (keep_after && number <= keep_after) unlinkat(dirfd(d), e->d_name, 0);
     }
     closedir(d);
     return last;
@@ -59,10 +65,11 @@ int runtime_log_create(const char *dir, const char *file, char *path, size_t siz
         return 1;
     }
     make_directories(dir);
-    for (unsigned number = last_number(dir) + 1, tries = 0; tries < 1000; ++number, ++tries) {
+    for (unsigned number = scan_logs(dir, 0) + 1, tries = 0; tries < 1000; ++number, ++tries) {
         if (snprintf(path, size, "%s/odin_sphere_leifthrasir_%03u.log", dir, number) >= (int)size) return 0;
         int fd = open(path, flags | O_EXCL, 0666);
         if (fd >= 0) {
+            if (number > RUNTIME_LOG_KEPT_RUNS) scan_logs(dir, number - RUNTIME_LOG_KEPT_RUNS);
             *handle = (void *)(intptr_t)fd;
             return 1;
         }

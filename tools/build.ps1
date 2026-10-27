@@ -3,16 +3,19 @@
   Builds odin_sphere_leifthrasir.exe incrementally (MSYS2 CLANG64, CMake + Ninja). -Run launches it.
 .DESCRIPTION
   Reuses what is current and updates only what is stale: the video core dependencies (gpu\deps.txt), the CMake
-  configuration and, once the game is installed, the boot image of the active prepared build. The one build
-  configuration, RelWithDebInfo (-O2 -g -DNDEBUG), is what is tested and what a package must contain; nothing else
-  is built. The game is installed from the launcher (Play page, Install game...), as in a release.
+  configuration and, once the game is installed, the boot image of the active prepared build. The development
+  configuration is RelWithDebInfo (-O2 -g -DNDEBUG) in build\cmake\clang64; -Release builds CMake's Release
+  configuration in build\cmake\clang64-release, the one tools\package.ps1 packages. The game is installed from the
+  launcher (Play page, Install game...), as in a release.
+.PARAMETER Release
+  Builds the Release configuration in build\cmake\clang64-release instead.
 .PARAMETER Version
   The prepared build whose boot image to update (default: the active one, game\prepared\CUSA05083-1.00 by default).
 .PARAMETER Run
   Launches the loader that was just built and stays attached until the game is closed. The launcher opens first
   when its rules say so (docs\LAUNCHER.md). Logs to build\logs\odin_sphere_leifthrasir_NNN.log.
 .PARAMETER Clean
-  Deletes build\cmake first (the installed game, the boot image and the logs are kept).
+  Deletes the configuration's build folder first (the installed game, the boot image and the logs are kept).
 .PARAMETER CheckImports
   Diagnostic: with -Run, lists the PS4 imports the runtime lacks instead of running the game.
 .PARAMETER TimeoutSeconds
@@ -22,9 +25,11 @@
 .EXAMPLE
   .\tools\build.ps1
   .\tools\build.ps1 -Run
+  .\tools\build.ps1 -Release
 #>
 [CmdletBinding()]
 param(
+    [switch]$Release,
     [switch]$Run,
     [switch]$Clean,
     [switch]$CheckImports,
@@ -34,9 +39,14 @@ param(
 )
 
 . (Join-Path $PSScriptRoot '_common.ps1')
-$config = 'RelWithDebInfo'
 $root = $script:RepoRoot
-$buildDir = Join-Path $root 'build\cmake\clang64'
+if ($Release) {
+    $config = 'Release'
+    $buildDir = Join-Path $root 'build\cmake\clang64-release'
+} else {
+    $config = 'RelWithDebInfo'
+    $buildDir = Join-Path $root 'build\cmake\clang64'
+}
 if (-not $Version) {
     $views = @(Get-ChildItem -LiteralPath (Join-Path $root 'game\prepared') -Directory -ErrorAction SilentlyContinue |
         Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName '.osl_view.json') } |
@@ -81,7 +91,7 @@ $fetched = @(Sync-GpuDependencies)
 if ($fetched.Count -eq 0) { Write-Step 'Pinned sources (gpu\deps.txt): current' }
 
 if ($Clean -and (Test-Path -LiteralPath $buildDir)) {
-    Write-Step 'Cleaning build\cmake'
+    Write-Step "Cleaning $buildDir"
     Remove-Item -LiteralPath $buildDir -Recurse -Force
 }
 $cache = Join-Path $buildDir 'CMakeCache.txt'
