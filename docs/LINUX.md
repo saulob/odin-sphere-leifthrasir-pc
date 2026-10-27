@@ -68,6 +68,13 @@ file, so the data folders stay beside it.
 
 These are the same pins and patch as Dragon's Crown Pro PC and Hard Corps: Uprising Recompiled.
 
+## Differences from Windows
+
+- The launcher restores its saved size, maximized and fullscreen states, but Wayland compositors choose the window
+  position themselves.
+- No `hang_NNN.txt` freeze report is written: the hang watchdog is Windows-only. `--timeout <seconds>` stops a run that
+  is still going after that long and writes every thread's frame chain to the log (a development aid).
+
 ## Verification
 
 Not verified yet: the Linux build of this port, the AppImage on any distribution, GPU or driver, FUSE and the

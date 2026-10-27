@@ -44,7 +44,7 @@ excluded='^(ld-linux.*|libc|libm|libdl|librt|libpthread|libresolv|libutil|libnsl
 # Fallback copies, used only when the system's are older than the build's (packaging/linux/AppRun).
 compat_libs='^(libstdc\+\+|libgcc_s)\.so'
 
-forbidden_names='^(game|user|logs|cache|build|prepared|extracted|image|savedata|trophy|download0|temp0|shader|screenshots|sce_sys|sce_module|eboot\.bin|param\.sfo|osl\.ini|keys\.json|boot\.bin|content\.bin|image\.json|imports\.json|symbols|__pycache__|CMakeFiles)$'
+forbidden_names='^(game|user|logs|cache|build|prepared|extracted|image|savedata|trophy|download0|temp0|shader|screenshots|sce_sys|sce_module|eboot\.bin|param\.sfo|osl\.ini|keys\.json|boot\.bin|content\.bin|image\.json|imports\.json|symbols|__pycache__|CMakeFiles|hang_[0-9]+\.txt)$'
 forbidden_patterns='\.(pkg|pdb|debug|log|dmp|ini|bin|self|sprx|prx|elf|cpk|sfo|json|trp|spv|pipeline_cache|o|obj|a|lib|tmp|bak|part|sav|py|pyc|ps1|c|cpp|h|hpp|exe|dll|AppImage)$'
 
 newer_than() { [[ $1 != "$2" && $(printf '%s\n' "$1" "$2" | sort -V | tail -1) == "$1" ]]; }

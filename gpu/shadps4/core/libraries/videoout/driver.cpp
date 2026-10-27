@@ -43,6 +43,12 @@ extern std::atomic<u64> g_osl_snapshot_ns, g_osl_guest_wait_ns;
 extern std::atomic<u32> g_osl_pending_draws;
 } // namespace Vulkan
 
+// osl: the hang watchdog's heartbeat, read without the port lock.
+static std::atomic<u64> g_osl_presented_frames;
+extern "C" uint64_t oslgpu_presented_frames(void) {
+    return g_osl_presented_frames.load(std::memory_order_relaxed);
+}
+
 namespace Libraries::VideoOut {
 
 constexpr static bool Is32BppPixelFormat(PixelFormat format) {
@@ -555,6 +561,7 @@ void VideoOutDriver::Flip(const Request& req) {
         }
         --flip_status.flip_pending_num;
     }
+    g_osl_presented_frames.fetch_add(1, std::memory_order_relaxed);
 
     // Trigger flip events for the port.
     for (auto event : port->flip_events) {

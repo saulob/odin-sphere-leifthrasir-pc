@@ -23,7 +23,7 @@ struct HostOptions {
     int height = 720;
     int min_width = 900;
     int min_height = 560;
-    std::optional<WindowPlacement> restore;  // used when it lies on a display
+    std::optional<WindowPlacement> restore;  // its rectangle is used when it lies on a display
     bool hidden = false;                     // page screenshots without showing the window
 };
 
@@ -56,7 +56,7 @@ public:
     // A picture for ImGui to draw (RGBA8, width * height * 4 bytes). The host owns it until Close; 0 when it could not be made.
     ImTextureID CreateTexture(const uint8_t* rgba, int width, int height);
 
-    // The saved placement the window was opened with, when it lay on a display.
+    // The saved placement the window was opened with; its rectangle is empty when it no longer lay on a display.
     const std::optional<WindowPlacement>& Restored() const { return restored_; }
 
 private:

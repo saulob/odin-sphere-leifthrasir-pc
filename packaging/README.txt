@@ -106,5 +106,6 @@ If the game does not start or crashes, please open an issue at
 https://github.com/saulob/odin-sphere-leifthrasir-pc/issues and attach the
 newest odin_sphere_leifthrasir_*.log from the "logs" folder. Say what you were
 doing when it happened. After a crash the log ends with a CRASH REPORT section;
-no other file is needed. For a problem that is not a crash, keep Detailed
+no other file is needed. If the game froze without crashing, also attach the
+newest hang_NNN.txt from the same folder. For a problem that is not a crash, keep Detailed
 logging on (About page of the launcher), reproduce it, and send the newest log.

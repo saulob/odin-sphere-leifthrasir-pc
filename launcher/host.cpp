@@ -37,13 +37,15 @@ bool LauncherHost::Open(const HostOptions& options) {
         usable.push_back(ToRect(display.usable));
     }
 
-    const bool restore = options.restore && PlacementIsVisible(*options.restore, usable);
-    restored_ = restore ? options.restore : std::nullopt;
+    if (options.restore) {
+        restored_ = RestorablePlacement(*options.restore, usable);
+    }
+    const bool restore = restored_ && PlacementIsSet(*restored_);
     const Display* target = &displays.front();
     int x = SDL_WINDOWPOS_CENTERED, y = SDL_WINDOWPOS_CENTERED;
     int width = 0, height = 0;
     if (restore) {
-        const Rect& normal = options.restore->normal;
+        const Rect& normal = restored_->normal;
         const SDL_Point center{(normal.left + normal.right) / 2, (normal.top + normal.bottom) / 2};
         const SDL_DisplayID id = SDL_GetDisplayForPoint(&center);
         for (const Display& display : displays) {
@@ -225,6 +227,8 @@ bool LauncherHost::Fullscreen() const {
 
 void LauncherHost::SetFullscreen(bool fullscreen) {
     SDL_SetWindowFullscreen(window_, fullscreen);
+    // X11 and Wayland apply it later; a frame in between could record the fullscreen size as the window's own.
+    SDL_SyncWindow(window_);
 }
 
 std::optional<WindowState> LauncherHost::State() const {

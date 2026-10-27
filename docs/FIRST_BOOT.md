@@ -64,6 +64,7 @@ The boot path reports these stages in order:
 | `Entering original x86-64 code at guest offset ...` | the first guest instruction is about to run |
 | `STOP: first unsupported PS4 import: ...` | the guest reached an import the runtime does not implement; the caller return offset is printed |
 | `CRASH REPORT` | a fatal fault: the exception, the faulting module or guest offset, registers, the stack top and the frame chain, up to the closing rule |
+| `Hang diagnostic written: logs\hang_NNN.txt (...)` | Windows: the game window stopped answering or no frame was presented; the file holds every thread's stack and the game keeps running |
 
 If the process stops at an import or a fault, the log identifies the first broken stage. Do not
 patch a later failure before that stage is understood.

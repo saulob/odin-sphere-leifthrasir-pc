@@ -14,6 +14,7 @@
 #include "osl_version.h"
 #include "runtime_log.h"
 #include "crash_report.h"
+#include "hang_watchdog.h"
 #include <cpuid.h>
 #if !defined(__x86_64__) || !defined(__GNUC__)
 #error Odin Sphere Leifthrasir PC requires x86-64 GCC or Clang (including MinGW).
@@ -51,6 +52,7 @@ static int entered_game;
 static int gpu_enabled;
 static uint64_t start_ms;
 static const char *crash_game_build;
+static char host_os[192] = "unknown";
 
 static uint64_t monotonic_ms(void) {
 #ifdef _WIN32
@@ -92,6 +94,7 @@ static void log_host(void) {
         while (*name == ' ') ++name;
         if (*name) snprintf(cpu, sizeof(cpu), "%.48s", name);
     }
+    snprintf(host_os, sizeof(host_os), "%s", os);
     printf("[run] Odin Sphere Leifthrasir PC %s, %s\n[run] CPU %s\n", OSL_VERSION_STRING, os, cpu);
 }
 
@@ -170,6 +173,11 @@ static void describe_address(char *out, size_t size, uintptr_t address) {
         return;
     }
     snprintf(out,size,"%p",(void *)address);
+}
+static int guest_location(uintptr_t address, uint64_t *offset, int *moved) {
+    *moved=0;
+    if (image && address-(uintptr_t)image<0x20000000) { *offset=address-(uintptr_t)image; return 1; }
+    return *moved=runtime_redzone_site(address,offset);
 }
 static int fatal_reported;
 static LONG fatal_exception(EXCEPTION_POINTERS *info, const char *reason) {
@@ -570,7 +578,7 @@ int main(int argc, char **argv) {
     boot=paths.boot; app0=paths.app0; user_dir=paths.user_dir;
     static char settings_file[4200];
     snprintf(settings_file,sizeof(settings_file),"%s/osl.ini",user_dir);
-    char log_path[4200];
+    char log_path[4200]="";
     static char log_folder[4200];
     snprintf(log_folder,sizeof(log_folder),"%s",paths.logs_dir);
     if (runtime_log_start(paths.logs_dir,log_file,log_path,sizeof(log_path))) {
@@ -584,7 +592,10 @@ int main(int argc, char **argv) {
         runtime_log_install_cleanup();
         if (!osl_logs_directory(paths.logs_dir,log_path,log_folder,sizeof(log_folder)))
             snprintf(log_folder,sizeof(log_folder),"%s",paths.logs_dir);
-    } else fprintf(stderr,"Cannot create the log %s\n",log_file ? log_file : paths.logs_dir);
+    } else {
+        log_path[0]=0;
+        fprintf(stderr,"Cannot create the log %s\n",log_file ? log_file : paths.logs_dir);
+    }
     if (!cpu_only && !check_imports) {
         OslGraphicsCheck check_graphics=NULL;
 #ifndef _WIN32
@@ -747,6 +758,11 @@ int main(int argc, char **argv) {
         gpu_enabled=1; /* page tracking starts while the rasterizer registers guest memory */
         if (oslgpu_init(&gpu)) fail("GPU initialization failed");
         printf("GPU: window and Vulkan presenter ready; SDK 0x%08x, %u HLE symbols\n",(unsigned)sdk,oslgpu_symbol_count());
+#ifdef _WIN32
+        const HangWatchdogConfig watchdog={oslgpu_native_window(),log_folder,log_path[0] ? log_path : NULL,OSL_VERSION_STRING,
+                                           crash_game_build,host_os,start_ms,oslgpu_presented_frames,guest_location};
+        hang_watchdog_start(&watchdog);
+#endif
     }
     unsigned char *traps = allocate(round_page((import_count + 1) * 32));
     unsigned char *data_traps = allocate((import_count + 1) * page_size);

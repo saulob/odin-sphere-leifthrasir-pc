@@ -28,11 +28,13 @@
 #include "game_files.h"
 #include "game_install.h"
 #include "game_profile.h"
+#include "hang_report.h"
 #include "launcher_quit.h"
 #include "options.h"
 #include "osl_accent.h"
 #include "osl_graphics.h"
 #include "osl_launcher.h"
+#include "placement.h"
 #include "runtime_log.h"
 #include "settings.h"
 #include "utf8.h"
@@ -988,6 +990,187 @@ void TestCrashReport() {
     CHECK(crash_report_format(&report, tiny, 0) == 0);
 }
 
+const Rect kScreen{0, 0, 1920, 1040};
+const std::vector<Rect> kWorkAreas{kScreen};
+const Rect kNormal{200, 100, 1480, 820};
+
+WindowState NormalState(Rect rect) { return {rect, false, false}; }
+
+void TestPlacementVisibility() {
+    const auto visible = [](const Rect& rect) { return PlacementIsVisible(WindowPlacement{rect}, kWorkAreas); };
+    CHECK(visible(kNormal));
+    const std::vector<Rect> two{{-1920, 0, 0, 1040}, kScreen};
+    const WindowPlacement straddling{{-600, 100, 680, 820}};
+    CHECK(PlacementIsVisible(straddling, two));
+    CHECK(PlacementIsVisible(straddling, kWorkAreas));
+    CHECK(!visible({3000, 100, 4280, 820}));   // the second monitor was unplugged
+    CHECK(!visible({-1500, 100, -220, 820}));
+    CHECK(!visible({200, 1030, 1480, 1750}));  // 10 pixels left above the taskbar
+    CHECK(!visible({1850, 100, 3130, 820}));   // 70 pixels wide on screen
+    CHECK(!visible({0, 0, 0, 0}));
+    CHECK(!visible({200, 100, 300, 150}));     // smaller than any launcher
+    CHECK(!PlacementIsVisible(WindowPlacement{kNormal}, std::span<const Rect>()));
+
+    // Stored rectangles are in the display's pixels, whatever its scale: the same window at 100%, 150% and 225%.
+    const Rect at_150{300, 150, 2220, 1230};
+    const Rect at_225{450, 225, 3330, 1845};
+    CHECK(PlacementIsVisible(WindowPlacement{at_150}, std::vector<Rect>{{0, 0, 2880, 1560}}));
+    CHECK(PlacementIsVisible(WindowPlacement{at_225}, std::vector<Rect>{{0, 0, 3840, 2100}}));
+    // The resolution went down: what lay inside a 4K desktop can be outside a 1080p one.
+    CHECK(!PlacementIsVisible(WindowPlacement{{2600, 1200, 3500, 1760}}, kWorkAreas));
+
+    const WindowPlacement gone{{3000, 100, 4280, 820}, true, true};
+    const WindowPlacement restored = RestorablePlacement(gone, kWorkAreas);
+    CHECK(!PlacementIsSet(restored) && restored.maximized && restored.fullscreen);
+    CHECK(RestorablePlacement(WindowPlacement{kNormal, true}, kWorkAreas) == (WindowPlacement{kNormal, true}));
+}
+
+void TestPlacementTracking() {
+    PlacementTracker tracker;
+    tracker.Observe(NormalState(kNormal), false, 0.0);
+    CHECK(!tracker.TakeSettled(10.0));  // the first observation is what was opened
+    const Rect moved{300, 150, 1580, 870};
+    tracker.Observe(NormalState(moved), false, 11.0);
+    CHECK(!tracker.TakeSettled(11.2));
+    const auto settled = tracker.TakeSettled(11.6);
+    CHECK(settled && settled->normal == moved && !settled->maximized);
+    CHECK(!tracker.TakeSettled(20.0));
+    tracker.Observe(NormalState({300, 150, 1000, 700}), false, 21.0);
+    tracker.Observe(NormalState({300, 150, 1100, 750}), false, 21.3);
+    CHECK(!tracker.TakeSettled(21.6));  // a second resize restarts the delay
+    const auto resized = tracker.TakeSettled(21.9);
+    CHECK(resized && resized->normal == (Rect{300, 150, 1100, 750}));
+    tracker.Observe(NormalState({10, 10, 1290, 730}), false, 22.0);
+    const auto closed = tracker.Flush();  // closing does not wait for the delay
+    CHECK(closed && closed->normal == (Rect{10, 10, 1290, 730}));
+    CHECK(!tracker.Flush());
+
+    PlacementTracker maximized(WindowPlacement{kNormal});
+    maximized.Observe(WindowState{kScreen, true, false}, false, 1.0);
+    const auto zoomed = maximized.Flush();
+    CHECK(zoomed && zoomed->maximized && zoomed->normal == kNormal);
+    maximized.Observe(NormalState(kNormal), false, 2.0);
+    const auto restored = maximized.Flush();
+    CHECK(restored && !restored->maximized && restored->normal == kNormal);
+
+    // SDL may drop the maximized flag of a minimized window; the minimized coordinates mean nothing either.
+    PlacementTracker minimized(WindowPlacement{kNormal, true});
+    minimized.Observe(WindowState{{-32000, -32000, -31840, -31972}, false, true}, false, 1.0);
+    CHECK(!minimized.Flush());
+    CHECK(minimized.Current()->maximized && minimized.Current()->normal == kNormal);
+
+    PlacementTracker fullscreen(WindowPlacement{kNormal, true});
+    fullscreen.Observe(WindowState{{0, 0, 3840, 2160}, false, false}, true, 1.0);
+    const auto full = fullscreen.Flush();
+    CHECK(full && full->fullscreen && full->maximized && full->normal == kNormal);
+    fullscreen.Observe(WindowState{kScreen, true, false}, false, 2.0);
+    const auto left = fullscreen.Flush();
+    CHECK(left && !left->fullscreen && left->maximized && left->normal == kNormal);
+
+    // A saved rectangle that was off-screen: the window opened at its default place, which is then kept.
+    PlacementTracker recovered(RestorablePlacement(WindowPlacement{{3000, 100, 4280, 820}}, kWorkAreas));
+    recovered.Observe(NormalState(kNormal), false, 0.0);
+    const auto healed = recovered.TakeSettled(1.0);
+    CHECK(healed && healed->normal == kNormal);
+}
+
+void TestPlacementSettings() {
+    const std::filesystem::path dir = TempDir("placement");
+    LauncherSettings settings(dir / "osl.ini");
+    settings.Set(kDisplayModeKey, "borderless");
+    settings.Set(kWindowWidthKey, "2560");
+    settings.Set(kMonitorKey, "2");
+    CHECK(settings.Save());
+
+    const WindowPlacement launcher{{-1700, 80, -420, 800}, true, true};
+    const Values values = PlacementValues(launcher);
+    CHECK(values.size() == 6);
+    for (const auto& [key, value] : values) {
+        CHECK(IsLauncherPlacementSetting(key));
+    }
+    for (const char* game : {kDisplayModeKey, kWindowWidthKey, kWindowHeightKey, kMonitorKey}) {
+        CHECK(!IsLauncherPlacementSetting(game));
+        CHECK(values.find(game) == values.end());
+    }
+    CHECK(settings.SaveNow(values));
+
+    LauncherSettings reloaded(dir / "osl.ini");
+    CHECK(ReadPlacement(reloaded) == launcher);
+    CHECK(reloaded.Get(kDisplayModeKey) == "borderless");  // the launcher's F11 is not the game's Display mode
+    CHECK(reloaded.GetInt(kWindowWidthKey, 0) == 2560);
+    CHECK(reloaded.GetInt(kMonitorKey, 0) == 2);
+    reloaded.ResetToDefaults();
+    CHECK(reloaded.Save());
+    LauncherSettings reset(dir / "osl.ini");
+    CHECK(reset.Get(kDisplayModeKey) == "windowed");
+    CHECK(ReadPlacement(reset) == launcher);
+    CHECK(!PlacementIsSet(ReadPlacement(LauncherSettings(dir / "missing.ini"))));
+}
+
+void TestHangReport() {
+    HangReport report{};
+    report.reason = "the game presented no frame for 15 s";
+    report.version = "9.8.7";
+    report.game_build = "CUSA05083 1.00 USA";
+    report.os = "Windows 10.0.26200";
+    report.time = "2026-10-27T13:45:12";
+    report.session_log = "odin_sphere_leifthrasir_012.log";
+    report.uptime_ms = 3723456;
+    report.process_id = 88;
+    report.frames = 4567;
+    report.threads = 41;
+    report.reported = 39;
+    char text[4096];
+    std::string block(text, hang_report_format(&report, text, sizeof(text)));
+    CHECK(block.rfind(CRASH_REPORT_RULE "HANG REPORT\n" CRASH_REPORT_RULE, 0) == 0);
+    CHECK(Has(block, "Reason: the game presented no frame for 15 s\n"));
+    CHECK(Has(block, "Product: Odin Sphere Leifthrasir PC 9.8.7\n"));
+    CHECK(Has(block, "Game build: CUSA05083 1.00 USA\nOS: Windows 10.0.26200\nTime: 2026-10-27T13:45:12\n"));
+    CHECK(Has(block, "Uptime: 01:02:03\nProcess ID: 88\nSession log: odin_sphere_leifthrasir_012.log\n"));
+    CHECK(Has(block, "Frames presented: 4567\nThreads: 41, 39 reported"));
+    CHECK(!Has(block, "CRASH REPORT"));
+    report.game_build = report.os = report.session_log = nullptr;
+    block.assign(text, hang_report_format(&report, text, sizeof(text)));
+    CHECK(!Has(block, "Game build:") && !Has(block, "OS:") && !Has(block, "Session log:"));
+
+    std::vector<std::string> names;
+    for (unsigned i = 0; i < HANG_REPORT_MAX_FRAMES + 10; ++i) {
+        names.push_back("ntdll.dll+0x" + std::to_string(i));
+    }
+    std::vector<const char*> frames;
+    for (const std::string& name : names) {
+        frames.push_back(name.c_str());
+    }
+    HangThread thread{4242, "osl:window\n\"x\"", nullptr, 1, 3, frames.data()};
+    std::string lines(text, hang_report_format_thread(&thread, text, sizeof(text)));
+    CHECK(lines == "\nThread 4242 \"osl:window??x?\" (game window)\n  #00 ntdll.dll+0x0\n  #01 ntdll.dll+0x1\n"
+                   "  #02 ntdll.dll+0x2\n");
+    thread = {7, nullptr, "stack walk timed out", 0, 1, frames.data()};
+    lines.assign(text, hang_report_format_thread(&thread, text, sizeof(text)));
+    CHECK(lines == "\nThread 7\n  (stack walk timed out)\n  #00 ntdll.dll+0x0\n");
+    thread.frame_count = static_cast<unsigned>(frames.size());
+    lines.assign(text, hang_report_format_thread(&thread, text, sizeof(text)));
+    CHECK(Has(lines, "  #47 ntdll.dll+0x47\n") && !Has(lines, "#48"));
+    char tiny[32];
+    CHECK(hang_report_format_thread(&thread, tiny, sizeof(tiny)) == sizeof(tiny) - 1 && tiny[sizeof(tiny) - 1] == '\0');
+    CHECK(hang_report_format(&report, tiny, 0) == 0);
+
+    char name[16];
+    CHECK(hang_report_file_name(1, name, sizeof(name)) && std::string(name) == "hang_001.txt");
+    CHECK(hang_report_file_name(1234, name, sizeof(name)) && std::string(name) == "hang_1234.txt");
+    CHECK(!hang_report_file_name(1, name, 8));
+    unsigned number = 0;
+    CHECK(hang_report_number("hang_007.txt", &number) && number == 7);
+    CHECK(hang_report_number("hang_1234.txt", &number) && number == 1234);
+    CHECK(!hang_report_number("hang_007.txt.bak", &number));
+    CHECK(!hang_report_number("hang_.txt", &number));
+    CHECK(!hang_report_number("odin_sphere_leifthrasir_007.log", &number));
+    CHECK(std::string(hang_report_base_name("\\Device\\HarddiskVolume3\\Windows\\System32\\ntdll.dll")) == "ntdll.dll");
+    CHECK(std::string(hang_report_base_name("C:/Users/someone/Games/odin_sphere_leifthrasir.exe")) ==
+          "odin_sphere_leifthrasir.exe");
+    CHECK(std::string(hang_report_base_name("SDL3.dll")) == "SDL3.dll");
+}
+
 // Run last: it sends this process's stdout and stderr to a session log, which echoes them to the console.
 void TestCrashReportReachesSessionLog() {
     char path[4200];
@@ -1701,6 +1884,10 @@ int main() {
     TestControllerPrompts();
     TestSessionLogFiles();
     TestCrashReport();
+    TestHangReport();
+    TestPlacementVisibility();
+    TestPlacementTracking();
+    TestPlacementSettings();
     TestCrashReportReachesSessionLog();
     std::printf("%s (%d checks, %d failures)\n", g_failures ? "FAILED" : "OK", g_checks, g_failures);
     runtime_log_flush();

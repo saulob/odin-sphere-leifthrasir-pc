@@ -259,6 +259,11 @@ extern "C" unsigned oslgpu_symbol_count(void) {
     return unsigned(g_symbols.size());
 }
 
+extern "C" void* oslgpu_native_window(void) {
+    std::scoped_lock lock{g_window_mutex};
+    return g_window ? g_window->GetWindowInfo().render_surface : nullptr;
+}
+
 // Kernel service thread: runs boost::asio timers for equeue timer events.
 namespace Libraries::Kernel {
 boost::asio::io_context io_context;

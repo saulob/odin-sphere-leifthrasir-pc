@@ -29,6 +29,10 @@ void oslgpu_dump_guest_writes(void *context);
 void oslgpu_note_fatal_fault(void);
 /* Number of symbols registered by the video core (diagnostics). */
 unsigned oslgpu_symbol_count(void);
+/* The game window's HWND on Windows; NULL before oslgpu_init. */
+void *oslgpu_native_window(void);
+/* Frames presented so far, read without locks (the hang watchdog). */
+uint64_t oslgpu_presented_frames(void);
 /* Keyboard text entry and list selection drawn by the video core; begin returns 0 without a window.
  * text poll: 0 typing, 1 confirmed, 2 cancelled. choice poll: -1 open, -2 cancelled, else the index. */
 int oslgpu_text_input_begin(const char *initial_utf8, const char *prompt_utf8);

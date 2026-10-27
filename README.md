@@ -137,6 +137,11 @@ section (exception, faulting module or guest offset, registers and stack) to the
 minidump is written. The newest 50 numbered logs are kept. **Open logs folder** opens the folder that holds the logs,
 creating it first when it does not exist.
 
+On Windows, a freeze that is not a crash writes `logs\hang_NNN.txt`: the port version, the game build, and a short stack
+(module and offset, or guest offset) for every thread. The run's log gets one line naming the file. It is written when
+the game window stops answering for 5 seconds, or when no frame is presented for 15 seconds while the game is in front
+and not minimized. The game keeps running, and a session writes at most three such files.
+
 ## Building it yourself
 
 1. Install [MSYS2](https://www.msys2.org) with the CLANG64 toolchain. `.\tools\setup.ps1` checks it and prints the `pacman` command for anything missing.
@@ -168,7 +173,8 @@ is the architectural model for the loader, runtime, launcher and installer.
 If the game does not start or crashes, please open an [issue](https://github.com/saulob/odin-sphere-leifthrasir-pc/issues).
 Attach the newest `odin_sphere_leifthrasir_*.log` file from the `logs` folder next to the program, and say what you were
 doing when the problem happened. The launcher and the game write to the same log for one run; after a crash the log
-ends with a `CRASH REPORT` section, and no separate crash file or minidump is written. One log is normally enough.
+ends with a `CRASH REPORT` section, and no separate crash file or minidump is written. One log is normally enough. If
+the game froze without crashing, attach the newest `hang_NNN.txt` from the same folder as well.
 
 For a problem that is not a crash, keep **Detailed logging** on in the launcher (About, Diagnostics), reproduce it, and
 send the newest log. On Linux, please also give your distribution, your GPU and its driver.

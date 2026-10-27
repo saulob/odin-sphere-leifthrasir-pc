@@ -61,6 +61,7 @@ contaminate() { # case dir
         'trophy key') echo '{}' > "$dir/usr/bin/keys.json" ;;
         'shader cache') mkdir -p "$dir/cache/CUSA05083" && echo 'x' > "$dir/cache/CUSA05083/pipeline" ;;
         log) mkdir -p "$dir/logs" && echo 'x' > "$dir/logs/odin_sphere_leifthrasir_001.log" ;;
+        'hang report') echo 'x' > "$dir/usr/share/doc/$doc/hang_001.txt" ;;
         'game files') mkdir -p "$dir/game/prepared/CUSA05083-1.00" && echo 'x' > "$dir/game/prepared/CUSA05083-1.00/eboot.bin" ;;
         'game package') echo 'x' > "$dir/UP0177-CUSA05083.pkg" ;;
         'package by content') printf '\x7fCNT\0\0\0\0' > "$dir/usr/share/doc/$doc/notes" ;;
@@ -95,7 +96,7 @@ contaminate() { # case dir
         *) echo "unknown case $1" >&2; exit 2 ;;
     esac
 }
-cases=(settings 'save data' trophies 'trophy key' 'shader cache' log 'game files' 'game package' 'package by content'
+cases=(settings 'save data' trophies 'trophy key' 'shader cache' log 'hang report' 'game files' 'game package' 'package by content'
        'SELF by content' 'debug file' pdb 'object file' 'static library' 'source file' 'python cache' 'build folder'
        'nested AppImage' 'Windows program' renderdoc 'vulkan layer' 'vulkan loader' glibc 'newer glibc'
        'debug sections' 'absolute RPATH' 'RUNPATH instead of RPATH' 'unresolved library' 'DEBUG_SAULO marker'

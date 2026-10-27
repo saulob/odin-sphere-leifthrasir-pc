@@ -62,6 +62,16 @@ inline bool PlacementIsVisible(const WindowPlacement& placement, std::span<const
     return false;
 }
 
+// A rectangle no longer on any display is dropped, so the window opens at its default place, but the maximized and
+// fullscreen states are kept.
+inline WindowPlacement RestorablePlacement(const WindowPlacement& saved, std::span<const Rect> work_areas) {
+    WindowPlacement restored = saved;
+    if (!PlacementIsVisible(saved, work_areas)) {
+        restored.normal = {};
+    }
+    return restored;
+}
+
 template <typename Settings>
 WindowPlacement ReadPlacement(const Settings& settings) {
     WindowPlacement placement;
@@ -86,7 +96,8 @@ inline Values PlacementValues(const WindowPlacement& placement) {
 }
 
 // Follows the window and says when its placement has changed and settled, so it is saved once and not on every move.
-// A maximized window keeps the restored rectangle; a fullscreen one keeps both it and the maximized flag.
+// A maximized window keeps the restored rectangle; a fullscreen one keeps both it and the maximized flag, and a
+// minimized one keeps everything (SDL may clear the maximized flag while the window is minimized).
 class PlacementTracker {
 public:
     explicit PlacementTracker(std::optional<WindowPlacement> saved = std::nullopt) : saved_(saved), current_(saved) {}
@@ -94,9 +105,9 @@ public:
     void Observe(const WindowState& state, bool fullscreen, double now) {
         WindowPlacement next = current_.value_or(WindowPlacement{});
         next.fullscreen = fullscreen;
-        if (!fullscreen) {
+        if (!fullscreen && !state.minimized) {
             next.maximized = state.maximized;
-            if (!state.minimized && !state.maximized) {
+            if (!state.maximized) {
                 next.normal = state.rect;
             }
         }

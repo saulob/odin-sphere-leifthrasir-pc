@@ -1,9 +1,10 @@
 <#
 .SYNOPSIS
   Checks that tools\package.ps1 -VerifyOnly accepts the staged release folder and refuses it once it holds the
-  player's files, game data, logs, crash dumps, symbols, build or Python leftovers, sources, test programs, updater
-  leftovers, debugging tools, development markers, stale names or local paths, or lacks the update helper, a DLL, the
-  licences, the header art or the program's version resource. Nothing is built, launched or published.
+  player's files, game data, logs, hang reports, crash dumps, symbols, build or Python leftovers, sources, test
+  programs, updater leftovers, debugging tools, development markers, stale names or local paths, or lacks the update
+  helper, a DLL, the licences, the header art or the program's version resource. Nothing is built, launched or
+  published.
 .DESCRIPTION
   Needs the staged folder of tools\package.ps1 (dist\OdinSphereLeifthrasir-v<version>-windows-x64). Each case is a
   copy made of hard links in build\release-check-tests; a file a case changes is replaced, never written through
@@ -49,6 +50,7 @@ $Cases = [ordered]@{
     'user profile path'         = @{ Item = 'licenses\notes.txt'; Text = $env:USERPROFILE }
     'Decomp path'               = @{ Item = 'licenses\notes.txt'; Text = 'S:\Decomp\odin' }
     'crash dump'                = @{ Item = 'odin_sphere_leifthrasir.dmp' }
+    'hang report'               = @{ Item = 'licenses\hang_001.txt' }
     'temporary file'            = @{ Item = 'download.tmp' }
     'python cache'              = @{ Item = '__pycache__\import_inventory.cpython-314.pyc' }
     'build folder'              = @{ Item = 'CMakeFiles\' }

@@ -79,7 +79,7 @@ $RequiredLicenses = @('licenses\THIRD-PARTY-LICENSES.txt', 'licenses\MSYS2-PACKA
 $ForbiddenNames = @('game', 'user', 'logs', 'cache', 'build', 'prepared', 'extracted', 'image', 'savedata', 'trophy',
     'download0', 'temp0', 'shader', 'screenshots', 'sce_sys', 'sce_module', 'eboot.bin', 'param.sfo', 'osl.ini',
     'keys.json', 'boot.bin', 'image.json', 'imports.json', 'symbols', 'vulkan-1.dll', '__pycache__', 'CMakeFiles')
-$ForbiddenEverywhere = @('*.pkg', '*.pdb', '*.debug', '*.log', '*.dmp', 'trg-update-*', 'VkLayer_*', 'renderdoc*',
+$ForbiddenEverywhere = @('*.pkg', '*.pdb', '*.debug', '*.log', '*.dmp', 'hang_*.txt', 'trg-update-*', 'VkLayer_*', 'renderdoc*',
     '*.install-temp', '*.install-backup', '*.install-update', '*.pyc')
 # Licence texts have names such as COPYING.LIB, so these apply outside licenses\ (still checked for content below).
 $ForbiddenPatterns = @('*.ini', '*.bin', '*.self', '*.sprx', '*.prx', '*.elf', '*.cpk', '*.sfo', '*.trp', '*.json',
