@@ -23,8 +23,12 @@ Write-Step 'Running the patch workflow tests'
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step 'Building the tests'
-& ninja -C $buildDir osl-tests osl-window-tests osl-tiling-tests osl-cursor-tests osl-trophy-tests osl-runtime-tests osl-update-tests osl-update-helper-tests
+& ninja -C $buildDir osl-memory-windows-tests osl-tests osl-window-tests osl-tiling-tests osl-cursor-tests osl-trophy-tests osl-runtime-tests osl-update-tests osl-update-helper-tests
 if ($LASTEXITCODE -ne 0) { Stop-Tool 'Test build failed' }
+
+Write-Step 'Running the Windows memory tests (sparse backing, commitment, aliases, release)'
+& (Join-Path $buildDir 'bin\osl-memory-windows-tests.exe')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step 'Running the game, settings and keys tests'
 & (Join-Path $buildDir 'bin\osl-tests.exe')

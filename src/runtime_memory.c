@@ -1,9 +1,9 @@
 /* PS4 virtual memory: direct (physical) pool, flexible memory, reservations,
  * protection changes and queries. One sparse memfd backs the whole direct
  * pool, so any mapping of any physical range aliases the same storage.
- * Windows: a pagefile-backed section plays the memfd's part, and the PS4 user range is
- * reserved as one placeholder that views of the section replace (VirtualAlloc2/MapViewOfFile3,
- * as shadPS4 does); see the "host mappings" section below.
+ * Windows: a reserve-only pagefile-backed section plays the memfd's part (ranges are committed as they are
+ * mapped), and the PS4 user range is reserved as one placeholder that views of the section replace
+ * (VirtualAlloc2/MapViewOfFile3, as shadPS4 does); see the "host mappings" section below.
  * Guest addresses are placed below 1 TiB (PS4 user range): GPU descriptors
  * encode 40-bit addresses, so host-default 0x7f... addresses would not fit. */
 #define _GNU_SOURCE
@@ -18,6 +18,7 @@
 #include <errno.h>
 #ifdef _WIN32
 #include <windows.h>
+#include "runtime_log.h"
 #else
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -164,6 +165,11 @@ typedef struct { uintptr_t start, end; uint64_t phys; int mapped; } HostRegion;
 typedef struct { uintptr_t start, end; DWORD protect; } ProtRun;
 static HostRegion *regions; static size_t region_count, region_capacity;
 static HANDLE section;
+static int host_commit(uint64_t phys, uint64_t size) {
+    if (VirtualAlloc(backing_base+phys,(SIZE_T)size,MEM_COMMIT,PAGE_READWRITE)) return 0;
+    fprintf(stderr,"Runtime: cannot commit guest memory range (+0x%" PRIx64 ", %" PRIu64 " bytes), error %lu\n",phys,size,GetLastError());
+    return -1;
+}
 static DWORD win_prot(int prot) {
     if (prot & PROT_EXEC) return (prot & PROT_WRITE) ? PAGE_EXECUTE_READWRITE : (prot & PROT_READ) ? PAGE_EXECUTE_READ : PAGE_EXECUTE;
     if (prot & PROT_WRITE) return PAGE_READWRITE;
@@ -171,7 +177,8 @@ static DWORD win_prot(int prot) {
 }
 static void win_fail(const char *what, uintptr_t address, uint64_t size) {
     fprintf(stderr,"STOP: %s failed at %p (+0x%" PRIx64 "), error %lu\n",what,(void *)address,size,GetLastError());
-    exit(21);
+    runtime_log_flush();
+    _exit(21); /* GPU workers may be running: exit() would destruct their state under them */
 }
 static size_t region_index(uintptr_t a) { /* first region with end > a */
     size_t lo=0, hi=region_count;
@@ -182,7 +189,7 @@ static void region_insert(size_t at, HostRegion r) {
     if (region_count==region_capacity) {
         size_t capacity=region_capacity ? region_capacity*2 : 256;
         HostRegion *next=realloc(regions,capacity*sizeof(*regions));
-        if (!next) { fputs("Out of memory (host regions)\n",stderr); exit(1); }
+        if (!next) { fputs("Out of memory (host regions)\n",stderr); runtime_log_flush(); _exit(1); }
         regions=next; region_capacity=capacity;
     }
     memmove(regions+at+1,regions+at,(region_count-at)*sizeof(*regions));
@@ -199,9 +206,11 @@ void runtime_memory_reserve(void) {
     region_insert(0,(HostRegion){USER_MIN,USER_MAX,0,0});
 }
 static void view_map(const HostRegion *r, DWORD protect) {
-    DWORD initial=protect==PAGE_NOACCESS ? PAGE_READWRITE : protect, old;
+    DWORD initial=PAGE_EXECUTE_READWRITE, old; /* the view's maximum protection: a later guest mprotect may add execute */
     if (!MapViewOfFile3(section,GetCurrentProcess(),(void *)r->start,r->phys,r->end-r->start,MEM_REPLACE_PLACEHOLDER,initial,NULL,0))
         win_fail("MapViewOfFile3",r->start,r->end-r->start);
+    if (!VirtualAlloc((void *)r->start,r->end-r->start,MEM_COMMIT,initial))
+        win_fail("committing guest view",r->start,r->end-r->start);
     if (initial!=protect && !VirtualProtect((void *)r->start,r->end-r->start,protect,&old))
         win_fail("VirtualProtect",r->start,r->end-r->start);
 }
@@ -268,6 +277,7 @@ static size_t carve_host(uintptr_t a, uintptr_t b) {
     return at;
 }
 static int host_map(uintptr_t address, uint64_t size, int prot, int reserved, uint64_t phys) {
+    if (!reserved && host_commit(phys,size)) return -1; /* before carving: a failure keeps the live mappings */
     size_t i=carve_host(address,address+size);
     if (reserved) return 0;
     regions[i].phys=phys; regions[i].mapped=1;
@@ -285,44 +295,33 @@ static int host_protect(uintptr_t address, uint64_t size, int prot) {
     }
     return 0;
 }
-/* Released pages read as zero when reused, like the memfd's punched holes. */
-static void host_discard(uint64_t phys, uint64_t size) { memset(backing_base+phys,0,size); }
-static HANDLE create_section(uint64_t bytes) {
-    return CreateFileMapping2(INVALID_HANDLE_VALUE,NULL,FILE_MAP_ALL_ACCESS,PAGE_EXECUTE_READWRITE,SEC_COMMIT,bytes,NULL,NULL,0);
-}
-/* Near the commit limit Windows refuses one request this large instead of growing a system-managed
- * page file, but grows it while the charge rises in steps: commit (never touch) 256 MiB blocks up to
- * the section plus 1 GiB, release them and try again, for about 15 s. */
-static HANDLE create_section_growing_page_file(uint64_t bytes, DWORD error) {
-    HANDLE created=NULL;
-    const ULONGLONG deadline=GetTickCount64()+15000;
-    for (int attempt=0; attempt<30 && !created && GetTickCount64()<deadline; ++attempt) {
-        if (error!=ERROR_COMMITMENT_LIMIT && error!=ERROR_NOT_ENOUGH_MEMORY && error!=ERROR_NO_SYSTEM_RESOURCES) break;
-        if (!attempt) fprintf(stderr,"Runtime: %" PRIu64 " MiB of guest memory refused (error %lu); growing the page file\n",bytes>>20,error);
-        enum { STEP=256u<<20, MAX_STEPS=96 };
-        void *steps[MAX_STEPS];
-        int held=0;
-        for (int failures=0; held<MAX_STEPS && (uint64_t)held*STEP<bytes+(UINT64_C(1)<<30) && failures<8;) {
-            void *p=VirtualAlloc(NULL,STEP,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE);
-            if (p) { steps[held++]=p; failures=0; }
-            else { ++failures; Sleep(100); }
-        }
-        for (int i=0; i<held; ++i) VirtualFree(steps[i],0,MEM_RELEASE);
-        created=create_section(bytes);
-        if (!created) { error=GetLastError(); Sleep(500); }
+/* Released pages read as zero when reused, like the memfd's punched holes. Only committed pages hold data:
+ * touching reserved ones would fault or commit them. */
+static void host_discard(uint64_t phys, uint64_t size) {
+    unsigned char *at=backing_base+phys, *end=at+size;
+    while (at<end) {
+        MEMORY_BASIC_INFORMATION info;
+        if (!VirtualQuery(at,&info,sizeof(info))) win_fail("VirtualQuery backing",(uintptr_t)at,0);
+        unsigned char *next=(unsigned char *)info.BaseAddress+info.RegionSize;
+        if (next>end) next=end;
+        if (info.State==MEM_COMMIT) memset(at,0,(size_t)(next-at));
+        at=next;
     }
-    return created;
 }
 /* Direct memory occupies [0,POOL_SIZE) of the section, flexible memory [POOL_SIZE,+FLEX_SPAN). */
 static int pool(void) {
     if (backing_base) return 0;
     runtime_memory_reserve();
     uint64_t bytes=POOL_SIZE+FLEX_SPAN;
-    section=create_section(bytes);
-    if (!section) section=create_section_growing_page_file(bytes,GetLastError());
-    if (!section) { fprintf(stderr,"Runtime: cannot create %" PRIu64 " MiB of guest memory (error %lu); is the page file large enough?\n",bytes>>20,GetLastError()); return -1; }
+    section=CreateFileMapping2(INVALID_HANDLE_VALUE,NULL,FILE_MAP_ALL_ACCESS,PAGE_EXECUTE_READWRITE,SEC_RESERVE,bytes,NULL,NULL,0);
+    if (!section) { fprintf(stderr,"Runtime: cannot create %" PRIu64 " MiB of guest memory (error %lu)\n",bytes>>20,GetLastError()); return -1; }
     backing_base=MapViewOfFile3(section,GetCurrentProcess(),NULL,0,bytes,0,PAGE_READWRITE,NULL,0);
-    return backing_base ? 0 : -1;
+    if (!backing_base) {
+        fprintf(stderr,"Runtime: cannot map %" PRIu64 " MiB of guest memory, error %lu\n",bytes>>20,GetLastError());
+        CloseHandle(section); section=NULL;
+        return -1;
+    }
+    return 0;
 }
 #else
 /* Direct memory occupies [0,POOL_SIZE) of the memfd, flexible memory [POOL_SIZE,+FLEX_SPAN). */
@@ -368,6 +367,15 @@ static void host_discard(uint64_t phys, uint64_t size) {
     fallocate(pool_fd,FALLOC_FL_PUNCH_HOLE|FALLOC_FL_KEEP_SIZE,(off_t)phys,(off_t)size);
 }
 #endif
+/* Called before the GPU, audio or guest threads start, while a failure can still be reported. */
+int runtime_memory_prepare(void) {
+    if (pool()) return -1;
+#ifdef _WIN32
+    return host_commit(0,PAGE);
+#else
+    return 0;
+#endif
+}
 static void queue_hook(int kind, uintptr_t address, uint64_t size) {
     GpuRange hook = kind==HOOK_MAP ? hook_map : kind==HOOK_UNMAP ? hook_unmap : hook_invalidate;
     if (!hook) return;

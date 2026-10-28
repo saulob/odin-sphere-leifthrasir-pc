@@ -23,6 +23,9 @@ int32_t *runtime_errno(void) {
     static __thread int32_t value;
     return &value;
 }
+#ifdef _WIN32
+void runtime_log_flush(void) {}
+#endif
 
 static void sleep_ms(unsigned ms) {
 #ifdef _WIN32

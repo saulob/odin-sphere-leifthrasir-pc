@@ -759,6 +759,13 @@ int main(int argc, char **argv) {
     image = allocate(round_page(size));
     if (fread(image, 1, size, f) != size || fgetc(f) != EOF) fail("incorrect memory image size");
     fclose(f);
+    if (runtime_memory_prepare()) {
+#ifdef _WIN32
+        MessageBoxW(NULL,L"Odin Sphere Leifthrasir could not reserve or commit guest memory. Freeing virtual memory or disk space for the page file may help. Your saved data has not been opened.",
+                    L"Odin Sphere Leifthrasir - memory unavailable",MB_OK|MB_ICONERROR);
+#endif
+        fail("guest memory unavailable before starting GPU or game threads");
+    }
     if (!cpu_only && !oslgpu_available()) puts("GPU: no video core in this build; running CPU-side only");
     else if (!cpu_only) {
         char title[128]="Odin Sphere Leifthrasir", serial[16]="UNKNOWN", sfo[4096];

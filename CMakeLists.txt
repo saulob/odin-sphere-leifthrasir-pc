@@ -164,6 +164,16 @@ else()
     target_link_libraries(osl-runtime-tests PRIVATE Threads::Threads)
 endif()
 
+# Focused tests of the sparse Windows guest memory backing (tools/test.ps1); not part of the default build.
+if (WIN32)
+    add_executable(osl-memory-windows-tests EXCLUDE_FROM_ALL tests/memory_windows_tests.c)
+    target_include_directories(osl-memory-windows-tests PRIVATE src)
+    target_compile_definitions(osl-memory-windows-tests PRIVATE _WIN32_WINNT=0x0A00 NTDDI_VERSION=0x0A000007)
+    target_compile_options(osl-memory-windows-tests PRIVATE -Wall -Wextra -Werror)
+    target_link_libraries(osl-memory-windows-tests PRIVATE onecore -pthread)
+    target_link_options(osl-memory-windows-tests PRIVATE -Wl,--disable-high-entropy-va)
+endif()
+
 # Focused tests of the game window's cursor visibility (tools/test.ps1); not part of the default build.
 add_executable(osl-cursor-tests EXCLUDE_FROM_ALL tests/cursor_tests.cpp)
 set_target_properties(osl-cursor-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
