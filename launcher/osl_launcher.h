@@ -89,6 +89,7 @@ typedef struct {
     const char *label;
     const OslResolutionSite *resolution_sites;
     size_t resolution_site_count;
+    uint32_t snapshot_scale_site;
     const OslSkipIntroSites *skip_intro; /* NULL: not available for the build */
 } OslGameBuild;
 

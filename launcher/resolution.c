@@ -63,6 +63,55 @@ uint32_t osl_scaled_budget(uint32_t native_bytes, const OslResolution *target) {
     return (uint32_t)(bytes > native_bytes ? bytes : native_bytes);
 }
 
+#define ANY (-1)
+
+/* vmovss xmm1,[1.5f]; lea rax,[pair]; mov edi,0; vmovaps xmm2,xmm1; vmovss xmm5,[rax]; vmovss xmm1,[rax+4];
+ * vmulss xmm3,xmm3,xmm2; vmulss xmm6,xmm6,xmm2; vmulss xmm7,xmm7,xmm2 */
+enum { SNAPSHOT_WINDOW = 45, SNAPSHOT_FACTOR = 4, SNAPSHOT_PAIR = 11, SNAPSHOT_LOAD = 32 };
+static const short snapshot_window[SNAPSHOT_WINDOW] = {
+    0xc5, 0xfa, 0x10, 0x0d, ANY,  ANY,  ANY,  ANY,  0x48, 0x8d, 0x05, ANY,  ANY,  ANY,  ANY,
+    0xbf, 0x00, 0x00, 0x00, 0x00, 0xc5, 0xf8, 0x28, 0xd1, 0xc5, 0xfa, 0x10, 0x28, 0xc5, 0xfa, 0x10,
+    0x48, 0x04, 0xc5, 0xe2, 0x59, 0xda, 0xc5, 0xca, 0x59, 0xf2, 0xc5, 0xc2, 0x59, 0xfa,
+};
+
+static int32_t read_displacement(const unsigned char *at) {
+    int32_t value;
+    memcpy(&value, at, 4);
+    return value;
+}
+
+/* mov edx,x; vmovd xmm1,edx; mov edx,y; vmovd xmm2,edx; xor edi,edi; vmulss xmm3,xmm3,xmm1; vmulss xmm6,xmm6,xmm1;
+ * vmulss xmm7,xmm7,xmm2; vmovq xmm5,[pair]; vpsrlq xmm1,xmm5,32
+ * The same registers hold the same values afterwards; edx and the flags are dead there. */
+int osl_apply_snapshot_scale(unsigned char *image, uint64_t image_size, uint32_t offset, const OslResolution *resolution,
+                             char *error, size_t error_size) {
+    if ((uint64_t)offset + SNAPSHOT_WINDOW > image_size) return fail(error, error_size, "site outside the image", offset);
+    unsigned char *at = image + offset;
+    for (int i = 0; i < SNAPSHOT_WINDOW; ++i)
+        if (snapshot_window[i] != ANY && at[i] != (unsigned char)snapshot_window[i])
+            return fail(error, error_size, "unexpected instruction", offset);
+    const int64_t factor = (int64_t)offset + SNAPSHOT_FACTOR + 4 + read_displacement(at + SNAPSHOT_FACTOR);
+    const int64_t pair = (int64_t)offset + SNAPSHOT_PAIR + 4 + read_displacement(at + SNAPSHOT_PAIR);
+    uint32_t native;
+    if (factor < 0 || (uint64_t)factor + 4 > image_size) return fail(error, error_size, "constant outside the image", offset);
+    memcpy(&native, image + factor, 4);
+    if (native != 0x3fc00000) return fail(error, error_size, "unexpected constant", offset);
+
+    const float scales[2] = {(float)resolution->width / 1280.0f, (float)resolution->height / 720.0f};
+    uint32_t x, y;
+    memcpy(&x, &scales[0], 4);
+    memcpy(&y, &scales[1], 4);
+    const int32_t pair_displacement = (int32_t)(pair - ((int64_t)offset + SNAPSHOT_LOAD + 8));
+    unsigned char code[SNAPSHOT_WINDOW] = {0xba, 0, 0, 0, 0, 0xc5, 0xf9, 0x6e, 0xca, 0xba, 0, 0, 0, 0, 0xc5, 0xf9, 0x6e, 0xd2,
+                                           0x31, 0xff, 0xc5, 0xe2, 0x59, 0xd9, 0xc5, 0xca, 0x59, 0xf1, 0xc5, 0xc2, 0x59, 0xfa,
+                                           0xc5, 0xfa, 0x7e, 0x2d, 0, 0, 0, 0, 0xc5, 0xf1, 0x73, 0xd5, 0x20};
+    memcpy(code + 1, &x, 4);
+    memcpy(code + 10, &y, 4);
+    memcpy(code + SNAPSHOT_LOAD + 4, &pair_displacement, 4);
+    memcpy(at, code, sizeof(code));
+    return 1;
+}
+
 int osl_apply_resolution(unsigned char *image, uint64_t image_size, const OslResolutionSite *sites, size_t count,
                          const OslResolution *resolution, char *error, size_t error_size) {
     for (size_t i = 0; i < count; ++i) {

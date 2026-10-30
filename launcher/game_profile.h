@@ -43,6 +43,7 @@ struct GameBuild {
     const char* region;
     std::span<const PackageLayer> layers; // base package first; the last layer is the finished game
     std::span<const OslResolutionSite> resolution_sites;
+    uint32_t snapshot_scale_site; // image offset of the Text Archive snapshot scale code (osl_apply_snapshot_scale)
     const OslSkipIntroSites* skip_intro; // nullptr when Skip intro is not available for the build
     std::span<const TextLanguage> text_languages; // the first is the default; empty when the build has only one
 };

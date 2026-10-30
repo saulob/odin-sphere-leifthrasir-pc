@@ -49,6 +49,12 @@ typedef struct {
     int pixel_budget;     /* 1 when value is a byte count that grows with the render target (osl_scaled_budget) */
 } OslResolutionSite;
 
+/* The Text Archive draws its page text into a screen-sized snapshot and composites it back from pixel rectangles scaled
+ * from layer units (1280x720) with the 1080p factor 1.5. Rewrites the code that applies the factor to use the render
+ * target's width / 1280 and height / 720. `offset` is where that code starts; nothing is written when it differs. */
+int osl_apply_snapshot_scale(unsigned char *image, uint64_t image_size, uint32_t offset, const OslResolution *resolution,
+                             char *error, size_t error_size);
+
 /* A byte budget sized for the native 1920x1080 target, grown with the target's pixel count in 2 MiB steps and never
  * below the native budget. */
 uint32_t osl_scaled_budget(uint32_t native_bytes, const OslResolution *target);

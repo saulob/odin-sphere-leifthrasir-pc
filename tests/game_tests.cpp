@@ -1400,6 +1400,71 @@ void TestResolutionSites() {
     }
 }
 
+// The snapshot scale patch rewrites the Text Archive's 1080p factor 1.5 with the target's width / 1280 and height / 720
+// and refuses anything else without writing.
+void TestSnapshotScale() {
+    static constexpr unsigned char kWindow[45] = {
+        0xc5, 0xfa, 0x10, 0x0d, 0, 0, 0, 0, 0x48, 0x8d, 0x05, 0, 0, 0, 0, 0xbf, 0, 0, 0, 0, 0xc5, 0xf8, 0x28, 0xd1,
+        0xc5, 0xfa, 0x10, 0x28, 0xc5, 0xfa, 0x10, 0x48, 0x04, 0xc5, 0xe2, 0x59, 0xda, 0xc5, 0xca, 0x59, 0xf2, 0xc5,
+        0xc2, 0x59, 0xfa};
+    constexpr uint32_t kFactor = 0x300, kPair = 0x340;
+    const auto make_image = [&](uint32_t site) {
+        std::vector<unsigned char> image(site + 0x400);
+        std::memcpy(image.data() + site, kWindow, sizeof(kWindow));
+        const float factor = 1.5f;
+        std::memcpy(image.data() + site + kFactor, &factor, 4);
+        const int32_t factor_disp = kFactor - 8, pair_disp = kPair - 15;
+        std::memcpy(image.data() + site + 4, &factor_disp, 4);
+        std::memcpy(image.data() + site + 11, &pair_disp, 4);
+        return image;
+    };
+    char error[320] = "";
+    for (const GameBuild& build : SupportedBuilds()) {
+        const uint32_t site = build.snapshot_scale_site;
+        CHECK(site != 0);
+        for (const int resolution : {0, 1, 2, 3, 5}) {
+            for (const int aspect : {0, 2, 4}) {
+                const OslResolution target =
+                    osl_render_target(&osl_resolutions[resolution], &osl_aspect_ratios[aspect]);
+                std::vector<unsigned char> image = make_image(site);
+                CHECK(osl_apply_snapshot_scale(image.data(), image.size(), site, &target, error, sizeof(error)));
+                float x = 0.0f, y = 0.0f;
+                std::memcpy(&x, image.data() + site + 1, 4);
+                std::memcpy(&y, image.data() + site + 10, 4);
+                CHECK(x == float(target.width) / 1280.0f && y == float(target.height) / 720.0f);
+                int32_t pair_disp = 0;
+                std::memcpy(&pair_disp, image.data() + site + 36, 4);
+                CHECK(site + 40 + pair_disp == site + kPair);
+                if (resolution == 0 && aspect == 0) {
+                    CHECK(x == 1.5f && y == 1.5f);
+                }
+                const std::vector<unsigned char> patched = image;
+                CHECK(!osl_apply_snapshot_scale(image.data(), image.size(), site, &target, error, sizeof(error)));
+                CHECK(image == patched);
+            }
+        }
+
+        const OslResolution target = osl_render_target(&osl_resolutions[3], &osl_aspect_ratios[0]);
+        const std::vector<unsigned char> original = make_image(site);
+        const auto rejected = [&](std::vector<unsigned char> image, uint32_t at, uint64_t size) {
+            const std::vector<unsigned char> before = image;
+            error[0] = 0;
+            return !osl_apply_snapshot_scale(image.data(), size, at, &target, error, sizeof(error)) && error[0] &&
+                   image == before;
+        };
+        std::vector<unsigned char> changed = original;
+        changed[site + 16] ^= 1;
+        CHECK(rejected(changed, site, changed.size()));
+        changed = original;
+        const float other = 1.25f;
+        std::memcpy(changed.data() + site + kFactor, &other, 4);
+        CHECK(rejected(changed, site, changed.size()));
+        CHECK(rejected(std::vector<unsigned char>(original.size()), site, original.size()));
+        CHECK(rejected(original, site + 1, original.size()));
+        CHECK(rejected(original, site, site + 20));
+    }
+}
+
 struct PixelSpan {
     int x0, y0, x1, y1; ///< pixel centres inside [x0, x1) x [y0, y1)
 };
@@ -2254,6 +2319,7 @@ int main() {
     TestDetailedLogging();
     TestLogsDirectory();
     TestResolutionSites();
+    TestSnapshotScale();
     TestPartialClearCoverage();
     TestRenderBufferBudget();
     TestSkipIntroSetting();

@@ -941,6 +941,12 @@ int main(int argc, char **argv) {
         if (!known_build) fail_running("render resolution and aspect ratio need a supported game build");
         if (game_build.resolution_site_count==0)
             fail_running("render resolution and aspect ratio are not available for this game build");
+        if (game_build.snapshot_scale_site &&
+            !osl_apply_snapshot_scale(image,size,game_build.snapshot_scale_site,&render_target,error,sizeof(error))) {
+            char message[400];
+            snprintf(message,sizeof(message),"%s, game build %s",error,game_build.label);
+            fail_running(message);
+        }
         if (!osl_apply_resolution(image,size,game_build.resolution_sites,game_build.resolution_site_count,
                                   &render_target,error,sizeof(error))) {
             char message[400];
