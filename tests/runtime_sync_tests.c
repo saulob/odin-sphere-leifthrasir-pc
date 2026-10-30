@@ -14,9 +14,9 @@ static int failures;
         }                                                               \
     } while (0)
 
-/* runtime.c is not linked: nothing here resolves through its tables. */
+/* runtime.c is not linked: tables are looked up by symbol name instead of NID. */
 uintptr_t runtime_lookup(const RuntimeExport *table, size_t count, const char *nid) {
-    (void)table; (void)count; (void)nid;
+    for (size_t i=0; i<count; ++i) if (!strcmp(table[i].name,nid)) return (uintptr_t)table[i].function;
     return 0;
 }
 int32_t *runtime_errno(void) {
@@ -288,6 +288,143 @@ static void test_guest_mutex_object(void) {
     CHECK(lock(&mutex)==0 && unlock(&mutex)==0 && destroy(&mutex)==0);
 }
 
+/* ---- event flags (libkernel sceKernel*EventFlag) ---- */
+typedef int32_t (ABI *EfCreate)(void **, const char *, uint32_t, uint64_t, const void *);
+typedef int32_t (ABI *EfHandleOp)(void *);
+typedef int32_t (ABI *EfSet)(void *, uint64_t);
+typedef int32_t (ABI *EfPoll)(void *, uint64_t, uint32_t, uint64_t *);
+typedef int32_t (ABI *EfWait)(void *, uint64_t, uint32_t, uint64_t *, uint32_t *);
+typedef int32_t (ABI *EfCancel)(void *, uint64_t, int32_t *);
+#define EPERM_CODE ((int32_t)UINT32_C(0x80020001))
+#define ECANCELED_CODE ((int32_t)UINT32_C(0x80020055))
+#define EF_SINGLE 0x10
+#define EF_MULTI 0x20
+#define EF_AND 0x01
+#define EF_CLEAR_ALL 0x10
+static EfCreate ef_create_fn;
+static EfHandleOp ef_delete_fn;
+static EfSet ef_set_fn;
+static EfPoll ef_poll_fn;
+static EfWait ef_wait_fn;
+static EfCancel ef_cancel_fn;
+static int resolve_event_flags(void) {
+    ef_create_fn=(EfCreate)runtime_eventflag_resolve("sceKernelCreateEventFlag");
+    ef_delete_fn=(EfHandleOp)runtime_eventflag_resolve("sceKernelDeleteEventFlag");
+    ef_set_fn=(EfSet)runtime_eventflag_resolve("sceKernelSetEventFlag");
+    ef_poll_fn=(EfPoll)runtime_eventflag_resolve("sceKernelPollEventFlag");
+    ef_wait_fn=(EfWait)runtime_eventflag_resolve("sceKernelWaitEventFlag");
+    ef_cancel_fn=(EfCancel)runtime_eventflag_resolve("sceKernelCancelEventFlag");
+    return ef_create_fn && ef_delete_fn && ef_set_fn && ef_poll_fn && ef_wait_fn && ef_cancel_fn;
+}
+/* Polls until a single-waiter flag reports its waiter, as the game does. */
+static int32_t poll_until_parked(void *flag, uint64_t pattern, uint32_t mode) {
+    int32_t r=0;
+    for (unsigned waited=0; waited<2000; ++waited) {
+        if ((r=ef_poll_fn(flag,pattern,mode,NULL))==EPERM_CODE) break;
+        sleep_ms(1);
+    }
+    return r;
+}
+typedef struct {
+    void *flag;
+    uint64_t pattern, result;
+    uint32_t mode, timeout;
+    int use_timeout;
+    int32_t status;
+} EfWaitCall;
+static void *ef_waiter(void *p) {
+    EfWaitCall *call=p;
+    call->status=ef_wait_fn(call->flag,call->pattern,call->mode,&call->result,call->use_timeout ? &call->timeout : NULL);
+    return NULL;
+}
+static void test_event_flag_poll_reports_parked_waiter(void) {
+    void *flag=NULL;
+    CHECK(ef_create_fn(&flag,"single",EF_SINGLE,1,NULL)==0);
+    uint64_t result=0;
+    CHECK(ef_poll_fn(flag,1,EF_AND,&result)==0 && result==1);
+
+    EfWaitCall call={.flag=flag,.pattern=2,.mode=EF_AND|EF_CLEAR_ALL};
+    pthread_t waiter=start(ef_waiter,&call);
+    CHECK(poll_until_parked(flag,1,EF_AND)==EPERM_CODE);
+    result=0xdead;
+    CHECK(ef_poll_fn(flag,1,EF_AND,&result)==EPERM_CODE && result==0xdead);
+    CHECK(ef_wait_fn(flag,1,EF_AND,NULL,NULL)==EPERM_CODE);
+
+    /* The setter releases the waiter and applies its clear before the waiter runs. */
+    CHECK(ef_set_fn(flag,2)==0);
+    CHECK(ef_poll_fn(flag,1,EF_AND,&result)==EBUSY_CODE && result==0);
+    pthread_join(waiter,NULL);
+    CHECK(call.status==0 && call.result==3);
+    CHECK(ef_delete_fn(flag)==0);
+
+    CHECK(ef_create_fn(&flag,"multi",EF_MULTI,1,NULL)==0);
+    EfWaitCall other={.flag=flag,.pattern=4,.mode=EF_AND};
+    waiter=start(ef_waiter,&other);
+    sleep_ms(50);
+    CHECK(ef_poll_fn(flag,1,EF_AND,NULL)==0);
+    CHECK(ef_set_fn(flag,4)==0);
+    pthread_join(waiter,NULL);
+    CHECK(other.status==0 && other.result==5);
+    CHECK(ef_delete_fn(flag)==0);
+}
+/* The game's LIGHTCALC handshake: the main thread waits for its worker to park, then hands it a job. */
+static void *light_flag;
+static int light_quit, light_jobs, light_done, light_exit;
+static void *light_worker(void *unused) {
+    (void)unused;
+    while (!__atomic_load_n(&light_quit,__ATOMIC_ACQUIRE)) {
+        CHECK(ef_wait_fn(light_flag,2,EF_AND|EF_CLEAR_ALL,NULL,NULL)==0);
+        __atomic_add_fetch(&light_done,1,__ATOMIC_ACQ_REL);
+        CHECK(ef_set_fn(light_flag,1)==0);
+    }
+    set_flag(&light_exit);
+    return NULL;
+}
+static void test_event_flag_worker_handshake(void) {
+    CHECK(ef_create_fn(&light_flag,"LIGHTCALC",EF_SINGLE,1,NULL)==0);
+    pthread_t worker=start(light_worker,NULL);
+    for (int frame=0; frame<500; ++frame) {
+        int32_t r;
+        unsigned spins=0;
+        while ((r=ef_poll_fn(light_flag,1,EF_AND,NULL))==EBUSY_CODE || r==0) {
+            if (++spins%1024) continue;
+            if (spins>1024u*2000) deadlock("LIGHTCALC worker never reported parked");
+            sleep_ms(1);
+        }
+        CHECK(r==EPERM_CODE);
+        CHECK(__atomic_load_n(&light_done,__ATOMIC_ACQUIRE)==light_jobs);
+        ++light_jobs;
+        CHECK(ef_set_fn(light_flag,2)==0);
+    }
+    __atomic_store_n(&light_quit,1,__ATOMIC_RELEASE);
+    for (unsigned waited=0; !__atomic_load_n(&light_exit,__ATOMIC_ACQUIRE); ++waited) {
+        if (waited>2000) deadlock("LIGHTCALC worker teardown");
+        if (ef_poll_fn(light_flag,1,EF_AND,NULL)==EPERM_CODE) ef_set_fn(light_flag,2);
+        sleep_ms(1);
+    }
+    pthread_join(worker,NULL);
+    CHECK(light_done>=light_jobs);
+    CHECK(ef_delete_fn(light_flag)==0);
+}
+static void test_event_flag_timeout_and_cancel(void) {
+    void *flag=NULL;
+    CHECK(ef_create_fn(&flag,"single",EF_SINGLE,0,NULL)==0);
+    EfWaitCall timed={.flag=flag,.pattern=1,.mode=EF_AND,.timeout=50000,.use_timeout=1};
+    pthread_join(start(ef_waiter,&timed),NULL);
+    CHECK(timed.status==ETIMEDOUT_CODE && timed.timeout==0);
+    CHECK(ef_poll_fn(flag,1,EF_AND,NULL)==EBUSY_CODE);
+
+    EfWaitCall canceled={.flag=flag,.pattern=1,.mode=EF_AND};
+    pthread_t waiter=start(ef_waiter,&canceled);
+    CHECK(poll_until_parked(flag,1,EF_AND)==EPERM_CODE);
+    int32_t count=-1;
+    CHECK(ef_cancel_fn(flag,8,&count)==0 && count==1);
+    pthread_join(waiter,NULL);
+    CHECK(canceled.status==ECANCELED_CODE && canceled.result==8);
+    CHECK(ef_poll_fn(flag,8,EF_AND,NULL)==0);
+    CHECK(ef_delete_fn(flag)==0);
+}
+
 int main(void) {
     test_split_keeps_backing_offsets();
     test_unchanged_protection();
@@ -296,6 +433,10 @@ int main(void) {
     test_table_lock_stress();
     test_guest_rwlock();
     test_guest_mutex_object();
+    if (!resolve_event_flags()) { puts("FAIL: event flag entry points"); return 1; }
+    test_event_flag_poll_reports_parked_waiter();
+    test_event_flag_worker_handshake();
+    test_event_flag_timeout_and_cancel();
     if (failures) {
         printf("%d check(s) failed\n",failures);
         return 1;

@@ -184,7 +184,7 @@ target_compile_options(osl-tiling-tests PRIVATE -Wall -Wextra -Werror)
 target_link_libraries(osl-tiling-tests PRIVATE oslgpu)
 
 # Focused tests of the runtime's locks and guest memory table (tools/test.ps1); not part of the default build.
-add_executable(osl-runtime-tests EXCLUDE_FROM_ALL tests/runtime_sync_tests.c src/runtime_rwlock.c src/runtime_mutex.c)
+add_executable(osl-runtime-tests EXCLUDE_FROM_ALL tests/runtime_sync_tests.c src/runtime_rwlock.c src/runtime_mutex.c src/runtime_eventflag.c)
 target_include_directories(osl-runtime-tests PRIVATE src)
 target_compile_options(osl-runtime-tests PRIVATE -Wall -Wextra -Werror)
 if (WIN32)
