@@ -214,9 +214,9 @@ minidump is written. The newest 50 numbered logs are kept. **Open logs folder** 
 creating it first when it does not exist.
 
 On Windows, a freeze that is not a crash writes `logs\hang_NNN.txt`: the port version, the game build, and a short stack
-(module and offset, or guest offset) for every thread. The run's log gets one line naming the file. It is written when
-the game window stops answering for 5 seconds, or when no frame is presented for 15 seconds while the game is in front
-and not minimized. The game keeps running, and a session writes at most three such files. Linux writes no freeze report.
+(module and offset, or guest offset) for every thread. The run's log gets one line naming the file and is kept even with
+Detailed logging off. It is written when the game window stops answering for 5 seconds, or when no frame is presented
+for 15 seconds while the game is in front and not minimized. The game keeps running, and a session writes at most three such files. Linux writes no freeze report.
 
 ## Building it yourself
 

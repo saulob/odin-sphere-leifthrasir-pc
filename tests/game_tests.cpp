@@ -286,6 +286,39 @@ void TestProfile() {
     CHECK(std::string(kBundledModules[1]) == "libSceFios2.prx");
 }
 
+// The Play card's label and its APP_VER · VERSION line come from the same finished layer, for every build.
+void TestBuildMetadata() {
+    struct Expected {
+        const char* folder;
+        const char* label;
+        const char* metadata;
+        const char* base_folder; // the build the update is laid over, or nullptr
+    };
+    const Expected expected[] = {
+        {"CUSA05083-1.00", "CUSA05083 1.00 USA", "APP_VER 1.00 \xC2\xB7 VERSION 1.01", nullptr},
+        {"CUSA01290-1.00", "CUSA01290 1.00 Japan", "APP_VER 1.00 \xC2\xB7 VERSION 1.00", nullptr},
+        {"CUSA01290-1.02", "CUSA01290 1.02 Japan", "APP_VER 1.02 \xC2\xB7 VERSION 1.00", "CUSA01290-1.00"},
+        {"CUSA05262-1.00", "CUSA05262 1.00 Europe", "APP_VER 1.00 \xC2\xB7 VERSION 1.00", nullptr},
+        {"CUSA05262-1.01", "CUSA05262 1.01 Europe", "APP_VER 1.01 \xC2\xB7 VERSION 1.00", "CUSA05262-1.00"},
+    };
+    const std::span<const GameBuild> builds = SupportedBuilds();
+    CHECK(builds.size() == std::size(expected));
+    for (size_t i = 0; i < std::min(builds.size(), std::size(expected)); ++i) {
+        const GameBuild& build = builds[i];
+        const Expected& want = expected[i];
+        CHECK(std::string(build.folder) == want.folder);
+        CHECK(std::string(build.label) == want.label);
+        CHECK(BuildMetadataText(build) == want.metadata);
+        CHECK(std::string(build.label) == std::string(build.title_id) + " " + build.version + " " + build.region);
+        CHECK(BuildMetadataText(build).starts_with(std::string("APP_VER ") + build.version + " \xC2\xB7 VERSION "));
+        CHECK(std::string(FinishedLayer(build).app_ver).size() == 5);
+        CHECK(std::string(FinishedLayer(build).sfo_version).size() == 5);
+        CHECK(FinishedLayer(build).update == (build.layers.size() > 1));
+        const GameBuild* base = BaseBuildOf(build);
+        CHECK(want.base_folder ? base && std::string(base->folder) == want.base_folder : !base);
+    }
+}
+
 void TestSfoIdentity() {
     const std::filesystem::path dir = TempDir("sfo");
     const std::filesystem::path sfo = dir / "param.sfo";
@@ -873,6 +906,20 @@ void TestLogRetention() {
     runtime_log_mark_clean_exit();
     runtime_log_finalize();
     CHECK(!std::filesystem::exists(file));
+
+    // A new session starts unfinalized, unmarked: only its own clean exit removes it.
+    const std::filesystem::path next = file.parent_path() / "next.log";
+    std::ofstream(next) << "run\n";
+    runtime_log_set_session_path(next.string().c_str());
+    runtime_log_finalize();
+    CHECK(std::filesystem::exists(next));
+    runtime_log_set_session_path(next.string().c_str());
+    runtime_log_mark_clean_exit();
+    runtime_log_finalize();
+    CHECK(!std::filesystem::exists(next));
+
+    const std::string watchdog = ReadFile(std::filesystem::path(OSL_SOURCE_DIR) / "src" / "hang_watchdog.c");
+    CHECK(watchdog.find("runtime_log_mark_crash();") != std::string::npos);
 }
 
 std::string SessionLogName(unsigned number) {
@@ -1694,8 +1741,11 @@ std::string Utf(const std::string& name, const std::vector<Column>& columns, con
         cols += char(c.storage | c.type);
         Be32(cols, intern(c.name));
         if (c.storage == 0x30) {
-            const uint64_t v = cell(rows.at(0), c.name).number;
-            if (c.type == 2) Be16(cols, uint32_t(v)); else if (c.type == 4) Be32(cols, uint32_t(v)); else Be64(cols, v);
+            const Cell v = cell(rows.at(0), c.name);
+            if (c.type == 0xA) Be32(cols, intern(v.text));
+            else if (c.type == 2) Be16(cols, uint32_t(v.number));
+            else if (c.type == 4) Be32(cols, uint32_t(v.number));
+            else Be64(cols, v.number);
         }
     }
     std::string rowbuf;
@@ -1776,7 +1826,9 @@ struct Entry {
 };
 
 // A CPK with an encrypted header (EnableTocCrc on), an optionally encrypted TOC and 2 KB alignment, as the game's.
-std::string BuildCpk(const std::vector<Entry>& entries, bool encrypt_toc) {
+// With `shared_dir`, DirName and UserString are stored once for the table, as the 1.01 ES, FR and IT Refined archives
+// do; every entry must then be in the same folder.
+std::string BuildCpk(const std::vector<Entry>& entries, bool encrypt_toc, bool shared_dir = false) {
     const uint64_t toc_offset = 0x800, content_offset = 0x3000, align = 0x800;
     std::string content;
     std::vector<Row> rows;
@@ -1793,9 +1845,11 @@ std::string BuildCpk(const std::vector<Entry>& entries, bool encrypt_toc) {
                         {"UserString", S("<NULL>")}});
         content += stored;
     }
+    const int text_storage = shared_dir ? 0x30 : 0x50;
     std::string toc = Utf("CpkTocInfo",
-                          {{"DirName", 0xA, 0x50}, {"FileName", 0xA, 0x50}, {"FileSize", 4, 0x50}, {"ExtractSize", 4, 0x50},
-                           {"FileOffset", 6, 0x50}, {"ID", 4, 0x50}, {"UserString", 0xA, 0x50}},
+                          {{"DirName", 0xA, text_storage}, {"FileName", 0xA, 0x50}, {"FileSize", 4, 0x50},
+                           {"ExtractSize", 4, 0x50}, {"FileOffset", 6, 0x50}, {"ID", 4, 0x50},
+                           {"UserString", 0xA, text_storage}},
                           rows);
     if (encrypt_toc) toc = Crypt(toc);
     const std::string header = Utf("CpkHeader",
@@ -2078,11 +2132,49 @@ void TestControllerPrompts() {
     }
 }
 
+// The 1.01 ES, FR and IT Refined archives store DirName once for the table: their button art is still found, patched
+// and restored byte for byte (issue #3).
+void TestSharedDirectoryArchive() {
+    using namespace cpk_test;
+    const fs::path app0 = TempDir("prompts-shared-dir") / "app0";
+    fs::create_directories(app0);
+    const std::string es = Pattern(20480, 11), title = Pattern(4096, 5);
+    const std::string es_x = Painted(es, {0x340, 0x2000}, 'Y');
+    const std::string patch_bytes = MakePatch({{"GUI/HD_Interface.ftx", {es, es_x}}});
+    const std::string original =
+        BuildCpk({{"GUI/HD_Interface.ftx", es, true}, {"GUI/HD_title.ftx", title, true}}, true, true);
+    const char* const files[] = {"Odin2_EU_PATCH1_RE_ES.CPK"};
+    WriteAll(app0 / files[0], original);
+    GameBuild build{};
+    build.label = "test build";
+    build.data_files = files;
+
+    CpkArchive archive;
+    CHECK(archive.Open(app0 / files[0]) && archive.entries().size() == 2);
+    CHECK(archive.Find("GUI/HD_Interface.ftx") && archive.Find("gui/hd_title.ftx") && !archive.Find("HD_Interface.ftx"));
+    CHECK(archive.Find("GUI/HD_Interface.ftx") && Bytes(archive.Read(*archive.Find("GUI/HD_Interface.ftx"))) == es);
+    CHECK(PromptArchives(app0, build, *ParseBlockPatch(Span(patch_bytes))).size() == 1);
+    CHECK(InstalledPromptStyle(app0, build, Span(patch_bytes)) == PromptStyle::kPlayStation);
+
+    const PromptsResult xbox = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch_bytes));
+    CHECK(xbox.ok && xbox.detail.find("1 file(s) patched") != std::string::npos);
+    CHECK(InstalledPromptStyle(app0, build, Span(patch_bytes)) == PromptStyle::kXbox);
+    CpkArchive patched;
+    CHECK(patched.Open(app0 / files[0]) && patched.Find("GUI/HD_Interface.ftx") && patched.Find("GUI/HD_title.ftx"));
+    if (patched.Find("GUI/HD_Interface.ftx") && patched.Find("GUI/HD_title.ftx")) {
+        CHECK(Bytes(patched.Read(*patched.Find("GUI/HD_Interface.ftx"))) == es_x);
+        CHECK(Bytes(patched.Read(*patched.Find("GUI/HD_title.ftx"))) == title);
+    }
+    CHECK(SetPromptStyle(app0, build, PromptStyle::kPlayStation, {}).ok);
+    CHECK(ReadFile(app0 / files[0]) == original && !AnyPromptPatch(app0, build));
+}
+
 } // namespace
 
 int main() {
     TestBranding();
     TestProfile();
+    TestBuildMetadata();
     TestSfoIdentity();
     TestGameTree();
     TestBuildSelection();
@@ -2107,6 +2199,7 @@ int main() {
     TestControllerPromptsSetting();
     TestShippedPromptsPatch();
     TestControllerPrompts();
+    TestSharedDirectoryArchive();
     TestSessionLogFiles();
     TestCrashReport();
     TestHangReport();

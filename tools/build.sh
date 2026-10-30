@@ -74,8 +74,8 @@ if ! grep -qs "CMAKE_BUILD_TYPE:STRING=$config" "$build_dir/CMakeCache.txt" || [
 fi
 step 'Building'
 targets=(odin_sphere_leifthrasir)
-((test)) && targets+=(osl-tests osl-trophy-tests osl-window-tests osl-cursor-tests osl-runtime-tests osl-tiling-tests
-                      osl-update-tests osl-isa-tests)
+((test)) && targets+=(osl-tests osl-log-tests osl-trophy-tests osl-window-tests osl-cursor-tests osl-runtime-tests
+                      osl-tiling-tests osl-update-tests osl-isa-tests)
 ninja -C "$build_dir" "${targets[@]}"
 loader=$build_dir/bin/odin_sphere_leifthrasir
 [[ -x $loader ]] || die "Missing $loader"
@@ -83,8 +83,8 @@ loader=$build_dir/bin/odin_sphere_leifthrasir
 if ((test)); then
     step 'Running the patch workflow tests'
     cmake "-DOSL_TEST_DIR=$build_dir/patch-workflow-tests" -P "$root/tests/patch_workflow_tests.cmake"
-    for test_program in osl-tests osl-trophy-tests osl-window-tests osl-cursor-tests osl-runtime-tests osl-tiling-tests \
-                        osl-update-tests osl-isa-tests; do
+    for test_program in osl-tests osl-log-tests osl-trophy-tests osl-window-tests osl-cursor-tests osl-runtime-tests \
+                        osl-tiling-tests osl-update-tests osl-isa-tests; do
         step "Running $test_program"
         "$build_dir/bin/$test_program"
     done

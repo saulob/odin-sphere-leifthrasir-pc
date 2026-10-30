@@ -92,7 +92,7 @@ struct UtfTable {
     size_t strings_off = 0, data_off = 0;
     std::vector<std::pair<std::string, uint8_t>> columns; // name, flags
     std::vector<std::vector<std::pair<std::string, size_t>>> positions; // per row: column -> field position
-    std::vector<std::vector<std::pair<std::string, std::string>>> strings;  // per row: string columns
+    std::vector<std::vector<std::pair<std::string, std::string>>> strings;  // per row: string columns (constants too)
     std::vector<std::vector<std::pair<std::string, uint64_t>>> numbers;    // per row: numeric columns (constants too)
 
     std::string StringAt(size_t off) const {
@@ -132,6 +132,8 @@ struct UtfTable {
         name = StringAt(name_off);
         size_t pos = 32;
         std::vector<std::pair<std::string, uint64_t>> constants;
+        // A table whose rows all share a value stores it once: DirName "GUI" in Odin2_EU_PATCH1_RE_ES.CPK.
+        std::vector<std::pair<std::string, std::string>> constant_strings;
         for (uint16_t c = 0; c < ncols; ++c) {
             if (pos + 5 > packet.size()) {
                 if (error) *error = "@UTF column table truncated";
@@ -144,6 +146,8 @@ struct UtfTable {
             const int type = flags & kTypeMask;
             if ((flags & kStorageMask) == kStorageConstant) {
                 if (type == kTypeString) {
+                    if (pos + 4 > packet.size()) return false;
+                    constant_strings.emplace_back(cname, StringAt(ReadBe32(p + pos)));
                     pos += 4;
                 } else if (type == kTypeData) {
                     pos += 8;
@@ -163,6 +167,7 @@ struct UtfTable {
         for (uint32_t r = 0; r < nrows; ++r) {
             pos = rows_off + size_t(r) * row_len;
             numbers[r] = constants;
+            strings[r] = constant_strings;
             for (const auto& [cname, flags] : columns) {
                 if ((flags & kStorageMask) != kStoragePerRow) continue;
                 const int type = flags & kTypeMask;

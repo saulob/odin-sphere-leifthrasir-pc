@@ -148,6 +148,14 @@ target_compile_definitions(osl-tests PRIVATE OSL_SOURCE_DIR="${PROJECT_SOURCE_DI
 target_compile_options(osl-tests PRIVATE -Wall -Wextra -Werror)
 target_link_libraries(osl-tests PRIVATE osl_launcher_core SDL3::SDL3)
 
+# Focused tests of the run log's retention on the open log file (tools\test.ps1); not part of the default build.
+add_executable(osl-log-tests EXCLUDE_FROM_ALL tests/log_tests.c ${OSL_TEST_LOG_SOURCES})
+target_include_directories(osl-log-tests PRIVATE src)
+target_compile_options(osl-log-tests PRIVATE -Wall -Wextra -Werror)
+if (NOT WIN32)
+    target_link_libraries(osl-log-tests PRIVATE Threads::Threads)
+endif()
+
 # Focused tests of the MOVBE and BMI1 emulation and the LZCNT rewrite used when the host CPU lacks the instructions, on
 # synthetic images and the local boot images (tools\test.ps1); not part of the default build.
 add_executable(osl-isa-tests EXCLUDE_FROM_ALL tests/isa_tests.c src/isa_emulate.c src/lzcnt_compat.c)

@@ -27,10 +27,10 @@ void runtime_log_set_detailed(int enabled);
 /* Marks the exit as normal, so Detailed logging off may discard this run's log. */
 void runtime_log_mark_clean_exit(void);
 
-/* Marks a crash, so the log is kept even if the process exits through a normal path. */
+/* Marks a crash or a hang report, so the log is kept even if the process exits through a normal path. */
 void runtime_log_mark_crash(void);
 
-/* Records the file this run writes; called by runtime_log_start. */
+/* Records the file this run writes and starts its retention state afresh; called by runtime_log_start. */
 void runtime_log_set_session_path(const char *path);
 
 /* Idempotent: discards this run's log when the decision above says so. Registered by

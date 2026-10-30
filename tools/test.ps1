@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
-  Builds and runs the focused tests: the game profile and the package identity, the settings file, the keyboard
-  bindings, the controller prompts patch, the cursor visibility rules, the window fit, the GPU tile layouts, the patch workflow and the
+  Builds and runs the focused tests: the game profile and the package identity, the settings file, the run log's
+  retention, the keyboard bindings, the controller prompts patch, the cursor visibility rules, the window fit, the GPU tile layouts, the patch workflow and the
   launcher self-update (versions, release JSON, checksums, ZIP safety, the install transaction and the real update helper). They use
   synthetic data in a temporary folder: no window, no game files.
 .DESCRIPTION
@@ -23,7 +23,7 @@ Write-Step 'Running the patch workflow tests'
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step 'Building the tests'
-& ninja -C $buildDir osl-memory-windows-tests osl-tests osl-window-tests osl-tiling-tests osl-cursor-tests osl-trophy-tests osl-runtime-tests osl-isa-tests osl-update-tests osl-update-helper-tests
+& ninja -C $buildDir osl-memory-windows-tests osl-tests osl-log-tests osl-window-tests osl-tiling-tests osl-cursor-tests osl-trophy-tests osl-runtime-tests osl-isa-tests osl-update-tests osl-update-helper-tests
 if ($LASTEXITCODE -ne 0) { Stop-Tool 'Test build failed' }
 
 Write-Step 'Running the Windows memory tests (sparse backing, commitment, aliases, release)'
@@ -32,6 +32,10 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step 'Running the game, settings and keys tests'
 & (Join-Path $buildDir 'bin\osl-tests.exe')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+Write-Step 'Running the log retention tests (Detailed logging, crashes, clean exits)'
+& (Join-Path $buildDir 'bin\osl-log-tests.exe')
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step 'Running the trophy tests'

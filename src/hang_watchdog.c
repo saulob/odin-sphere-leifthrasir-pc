@@ -1,6 +1,7 @@
 #include "hang_watchdog.h"
 #include "crash_report.h"
 #include "hang_report.h"
+#include "runtime_log.h"
 #include <windows.h>
 #include <io.h>
 #include <psapi.h>
@@ -218,6 +219,7 @@ static void log_line(const char *line) {
  * earlier ones. */
 static void write_report(const char *reason) {
     char name[32], line[512];
+    runtime_log_mark_crash();
     HANDLE file = create_report(name, sizeof(name));
     if (file == INVALID_HANDLE_VALUE) {
         snprintf(line, sizeof(line), "Hang diagnostic could not be written (%s)\n", reason);

@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /* A freeze (no crash) writes logs/hang_NNN.txt: the header below, one block per thread, then CRASH_REPORT_RULE.
- * The run's log is left as it is, apart from one line naming the file. */
+ * The run's log gets one line naming the file and is kept even when Detailed logging is off. */
 enum {
     HANG_REPORT_MAX_THREADS = 256,
     HANG_REPORT_MAX_FRAMES = 48,

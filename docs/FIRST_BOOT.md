@@ -30,7 +30,8 @@ From the repository, after `tools\build.ps1` has completed:
 `-Run` sets the MSYS2 `PATH`, starts `odin_sphere_leifthrasir.exe`, and keeps the console attached. The launcher
 opens; the Play page should already say **Ready to play** for the active build. With both releases
 installed, the active build is the newest prepared one; the status names its region and version, for
-example **Ready to play · CUSA05083 1.00 USA** or **CUSA01290 1.02 Japan** or **CUSA05262 1.01 Europe**. Press **PLAY**. The
+example **Ready to play · CUSA05083 1.00 USA** or **CUSA01290 1.02 Japan** or **CUSA05262 1.01 Europe**, and the
+line below gives the finished package's metadata (`APP_VER 1.00 · VERSION 1.01` for the USA build). Press **PLAY**. The
 runtime, graphics, audio, controller and UI behavior is tested manually only.
 
 The first manual pass should also check the new parity features: Display's Aspect Ratio and Window
