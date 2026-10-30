@@ -78,6 +78,7 @@ $Cases = [ordered]@{
     'missing DLL'               = @{ Missing = 'SDL3.dll' }
     'missing licences'          = @{ Missing = 'licenses\THIRD-PARTY-LICENSES.txt' }
     'missing header art'        = @{ Missing = 'assets\launcher\header-art.png' }
+    'missing sponsor heart'     = @{ Missing = 'assets\launcher\sponsor-heart.png' }
 }
 
 function New-LinkedCopy([string]$Source, [string]$Target) {

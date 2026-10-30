@@ -80,7 +80,7 @@ $HelperSystemDlls = @('kernel32.dll', 'shell32.dll', 'user32.dll', 'advapi32.dll
     'ole32.dll', 'bcrypt.dll')
 
 $RootFiles = @('odin_sphere_leifthrasir.exe', 'trg-updater.exe', 'README.txt', 'LICENSE.txt')
-$AssetFiles = @('assets\launcher\header-art.png')
+$AssetFiles = @('assets\launcher\header-art.png', 'assets\launcher\sponsor-heart.png')
 $RequiredLicenses = @('licenses\THIRD-PARTY-LICENSES.txt', 'licenses\MSYS2-PACKAGES.txt', 'licenses\miniz\LICENSE')
 # Game data, the player's files, logs, caches, symbols, updater leftovers and debugging tools.
 $ForbiddenNames = @('game', 'user', 'logs', 'cache', 'build', 'prepared', 'extracted', 'image', 'savedata', 'trophy',
@@ -402,12 +402,14 @@ Write-Text (Join-Path $licenses 'MSYS2-PACKAGES.txt') (($manifest -join "`n") + 
 $readme = (Get-Content -LiteralPath (Join-Path $root 'packaging\README.txt') -Raw).Replace('@VERSION@', $version)
 Write-Text (Join-Path $stage 'README.txt') $readme
 
-Write-Step 'Staging the launcher header art'
+Write-Step 'Staging the launcher images'
 $assetDir = Join-Path $stage 'assets\launcher'
 New-Item -ItemType Directory -Force $assetDir | Out-Null
-$headerArt = Join-Path $root 'assets\launcher\header-art.png'
-if (-not (Test-Path -LiteralPath $headerArt -PathType Leaf)) { Stop-Tool "Missing launcher header art: $headerArt" }
-Copy-Item -LiteralPath $headerArt $assetDir
+foreach ($image in @('header-art.png', 'sponsor-heart.png')) {
+    $source = Join-Path $root "assets\launcher\$image"
+    if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { Stop-Tool "Missing launcher image: $source" }
+    Copy-Item -LiteralPath $source $assetDir
+}
 
 Write-Step 'Checking the release folder'
 $problems = @(Test-ReleaseFolder $stage)

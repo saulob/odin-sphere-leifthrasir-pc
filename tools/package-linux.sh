@@ -55,7 +55,7 @@ forbidden_patterns='\.(pkg|pdb|debug|log|dmp|ini|bin|self|sprx|prx|elf|cpk|sfo|j
 # The only places a file may be: anything else in the AppDir is refused.
 allowed_path() { # relative path of a file or link
     case $1 in
-        AppRun | "$app.desktop" | "$app.png" | .DirIcon | "usr/bin/$program" | usr/bin/assets/launcher/header-art.png | \
+        AppRun | "$app.desktop" | "$app.png" | .DirIcon | "usr/bin/$program" | usr/bin/assets/launcher/header-art.png | usr/bin/assets/launcher/sponsor-heart.png | \
         "usr/share/applications/$app.desktop" | "usr/share/icons/hicolor/256x256/apps/$app.png" | \
         "usr/share/doc/$doc_name/README.txt" | "usr/share/licenses/$doc_name/"*) return 0 ;;
         usr/lib/compat/*) [[ $1 =~ ^usr/lib/compat/(libstdc\+\+|libgcc_s)\.so[.0-9]*$ ]] ;;
@@ -133,7 +133,7 @@ check_appdir() { # dir [the AppImage file, whose runtime is an ELF too]
             LC_ALL=C grep -a -q -P -- "${patterns[$i]}" "$item" && { problem "UTF-16 local path or marker '${needles[$i]}' in $rel"; break; }
         done
     done < <(find "$dir" -mindepth 1 -print0)
-    for leaf in AppRun "$app.desktop" "$app.png" .DirIcon "usr/bin/$program" usr/bin/assets/launcher/header-art.png \
+    for leaf in AppRun "$app.desktop" "$app.png" .DirIcon "usr/bin/$program" usr/bin/assets/launcher/header-art.png usr/bin/assets/launcher/sponsor-heart.png \
                 "usr/share/licenses/$doc_name/LICENSE.txt" "usr/share/licenses/$doc_name/THIRD-PARTY-LICENSES.txt" \
                 "usr/share/licenses/$doc_name/THIRD-PARTY-LICENSES-LINUX.txt" \
                 "usr/share/licenses/$doc_name/NotoSansTC/LICENSE-NotoSansTC.txt" "usr/share/doc/$doc_name/README.txt"; do
@@ -211,9 +211,10 @@ objcopy --only-keep-debug "$loader" "$symbols/$program.debug"
 objcopy --strip-debug --add-gnu-debuglink="$symbols/$program.debug" "$loader" "$appdir/usr/bin/$program"
 chmod 755 "$appdir/usr/bin/$program"
 
-step 'Staging the launcher header art'
+step 'Staging the launcher images'
 install -d "$appdir/usr/bin/assets/launcher"
 install -m644 assets/launcher/header-art.png "$appdir/usr/bin/assets/launcher/header-art.png"
+install -m644 assets/launcher/sponsor-heart.png "$appdir/usr/bin/assets/launcher/sponsor-heart.png"
 
 step 'Staging the libraries it loads'
 declare -A seen=()

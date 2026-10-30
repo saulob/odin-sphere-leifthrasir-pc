@@ -33,3 +33,16 @@ All colors are in the SVG's `<style>` block; each color has a fill class, and so
 | `ice`       | `#B9D4FF` | small cool highlights                     |
 
 Keep the left ~55% of the viewBox (x < 880) almost empty: the title and subtitle are drawn there.
+
+# Sponsor heart
+
+`sponsor-heart.svg` is the source of truth for the heart in the Sponsor on GitHub buttons (CC0, see
+`packaging/licenses/THIRD-PARTY-LICENSES.txt`). `sponsor-heart.png` is the runtime asset, a white 64x64 rendering of it
+with a transparent background. Do not edit it by hand; regenerate it after every SVG change, from the repository root
+with rsvg-convert (MSYS2 `mingw-w64-clang-x86_64-librsvg`):
+
+```sh
+rsvg-convert -w 64 -h 64 -f png -o assets/launcher/sponsor-heart.png assets/launcher/sponsor-heart.svg
+```
+
+The launcher draws it before the button label, as a square slightly taller than the label's text.

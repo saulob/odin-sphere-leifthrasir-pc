@@ -46,7 +46,7 @@ loader and drivers, X11/Wayland and the audio libraries always come from the pla
 
 `package-linux.sh` refuses to package on a system with a newer glibc than 2.31, and checks the staged AppDir and the
 written AppImage again: every file must be in an allowed place (AppRun, the desktop entry and icon, the program, the
-header art, the bundled libraries, the licences and README); every ELF (found by content) must be x86-64, need no glibc
+launcher images, the bundled libraries, the licences and README); every ELF (found by content) must be x86-64, need no glibc
 newer than 2.31 (its version-needs section), carry no debug sections, no absolute RPATH/RUNPATH and no RenderDoc or
 Vulkan layer; the program must resolve every library (`ldd`) through `$ORIGIN/../lib`; and the package must hold no game
 data, PS4 packages, user files, saves, trophies, logs, caches, hang reports, crash dumps, symbols, updater leftovers,

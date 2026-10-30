@@ -122,12 +122,15 @@ if (WIN32)
     target_link_options(odin_sphere_leifthrasir PRIVATE "$<$<CONFIG:Release>:${OSL_RELEASE_LINK}>")
 endif()
 
-# The launcher reads its header art from <exe dir>/assets/launcher.
+# The launcher reads its images from <exe dir>/assets/launcher.
 add_custom_command(TARGET odin_sphere_leifthrasir POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:odin_sphere_leifthrasir>/assets/launcher"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${CMAKE_SOURCE_DIR}/assets/launcher/header-art.png"
         "$<TARGET_FILE_DIR:odin_sphere_leifthrasir>/assets/launcher/header-art.png"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/assets/launcher/sponsor-heart.png"
+        "$<TARGET_FILE_DIR:odin_sphere_leifthrasir>/assets/launcher/sponsor-heart.png"
     VERBATIM)
 
 # Focused tests of the game profile, the settings file, the keys and the window fit (tools\test.ps1);

@@ -181,27 +181,48 @@ __attribute__((format(printf, 1, 2))) void Log(const char* format, ...) {
     std::printf("\n");
 }
 
-// Optional: without it the header keeps its plain gradient.
-HeaderArt LoadHeaderArt(LauncherHost& host) {
+bool LoadLauncherImage(const char* file, OslPng::Image& image) {
     const char* base = SDL_GetBasePath();
     if (!base) {
-        return {};
+        return false;
     }
-    const std::filesystem::path path = PathFromUtf8(base) / "assets" / "launcher" / "header-art.png";
+    const std::filesystem::path path = PathFromUtf8(base) / "assets" / "launcher" / file;
     std::ifstream in(path, std::ios::binary);
     if (!in) {
-        Log("header art not found: %s", Utf8(path).c_str());
-        return {};
+        Log("launcher image not found: %s", Utf8(path).c_str());
+        return false;
     }
     const std::vector<unsigned char> bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-    OslPng::Image image;
     if (!OslPng::DecodeRgba(bytes.data(), bytes.size(), image)) {
-        Log("header art could not be decoded: %s", Utf8(path).c_str());
+        Log("launcher image could not be decoded: %s", Utf8(path).c_str());
+        return false;
+    }
+    return true;
+}
+
+ImTextureID LoadSponsorIcon(LauncherHost& host) {
+    OslPng::Image image;
+    if (!LoadLauncherImage("sponsor-heart.png", image)) {
+        return ImTextureID{};
+    }
+    // Transparent texels are white too, so linear filtering does not darken the heart's edge.
+    for (size_t i = 0; i + 3 < image.rgba.size(); i += 4) {
+        if (image.rgba[i + 3] == 0) {
+            image.rgba[i] = image.rgba[i + 1] = image.rgba[i + 2] = 255;
+        }
+    }
+    return host.CreateTexture(image.rgba.data(), image.width, image.height);
+}
+
+// Optional: without it the header keeps its plain gradient.
+HeaderArt LoadHeaderArt(LauncherHost& host) {
+    OslPng::Image image;
+    if (!LoadLauncherImage("header-art.png", image)) {
         return {};
     }
     const ImTextureID texture = host.CreateTexture(image.rgba.data(), image.width, image.height);
     if (texture == ImTextureID{}) {
-        Log("header art could not be uploaded: %s", Utf8(path).c_str());
+        Log("header art could not be uploaded");
         return {};
     }
     return {texture, float(image.width) / float(image.height)};
@@ -276,6 +297,7 @@ public:
         placement_ = PlacementTracker(host_.Restored());
         fonts_ = trg::LoadSystemFonts(18.0f);
         header_art_ = LoadHeaderArt(host_);
+        sponsor_icon_ = LoadSponsorIcon(host_);
         trophy_page_ = std::make_unique<TrophyPage>(host_, UserDir());
         launcher_ = std::make_unique<trg::Launcher>(MakeConfig());
         updater_ = std::make_unique<trg::update::UpdateController>(MakeUpdateConfig(InstallDir(), OSL_PORT_VERSION));
@@ -519,6 +541,7 @@ private:
             {"BY SAULOB", kAuthorUrl},
         };
         c.branding.background = LauncherHeader(header_art_);
+        c.sponsor = {"Sponsor on GitHub", kSponsorUrl, sponsor_icon_};
         c.hints = "Enter  Play     Alt+F4  Quit     Ctrl+S  Save";
         c.note = "Play applies the changes. Save keeps them without starting.";
         for (const PageId page : kPageOrder) {
@@ -973,6 +996,10 @@ private:
     }
 
     void PageAbout(trg::Ui& ui) {
+        ui.SponsorCard(
+            "This open source PC port is maintained and developed in my free time. If you enjoy the project and would "
+            "like to support its continued development, you can sponsor my work on GitHub.",
+            "Support is completely optional and helps support ongoing improvements and future projects.");
         ui.Paragraph("Odin Sphere Leifthrasir for PlayStation 4, running natively on this PC. No game files are included; "
                      "the game runs from the user's own copy.");
         ui.Spacer(4);
@@ -1049,6 +1076,7 @@ private:
     std::vector<std::string> gpu_names_;
     trg::Fonts fonts_;
     HeaderArt header_art_;
+    ImTextureID sponsor_icon_{};
     std::unique_ptr<trg::Launcher> launcher_;
     std::unique_ptr<TrophyPage> trophy_page_;
     std::unique_ptr<trg::update::UpdateController> updater_;

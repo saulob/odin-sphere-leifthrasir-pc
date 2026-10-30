@@ -45,6 +45,7 @@ ln -s odin-sphere-leifthrasir-pc.png "$clean/.DirIcon"
 cp "$work/program" "$clean/usr/bin/odin_sphere_leifthrasir"
 cp "$work/libfixture.so" "$clean/usr/lib/libfixture.so"
 cp "$root/assets/launcher/header-art.png" "$clean/usr/bin/assets/launcher/header-art.png"
+cp "$root/assets/launcher/sponsor-heart.png" "$clean/usr/bin/assets/launcher/sponsor-heart.png"
 for file in LICENSE.txt THIRD-PARTY-LICENSES.txt THIRD-PARTY-LICENSES-LINUX.txt NotoSansTC/LICENSE-NotoSansTC.txt; do
     echo 'licence text' > "$clean/usr/share/licenses/$doc/$file"
 done
@@ -98,6 +99,7 @@ contaminate() { # case dir
         'missing program') rm "$dir/usr/bin/odin_sphere_leifthrasir" ;;
         'missing Linux licences') rm "$dir/usr/share/licenses/$doc/THIRD-PARTY-LICENSES-LINUX.txt" ;;
         'missing header art') rm "$dir/usr/bin/assets/launcher/header-art.png" ;;
+        'missing sponsor heart') rm "$dir/usr/bin/assets/launcher/sponsor-heart.png" ;;
         'program not executable') chmod 644 "$dir/usr/bin/odin_sphere_leifthrasir" ;;
         *) echo "unknown case $1" >&2; exit 2 ;;
     esac
@@ -108,7 +110,7 @@ cases=(settings 'save data' trophies 'trophy key' 'shader cache' log 'hang repor
        'Windows user folder' 'Windows program' renderdoc 'vulkan layer' 'vulkan loader' glibc 'newer glibc'
        'debug sections' 'absolute RPATH' 'RUNPATH instead of RPATH' 'unresolved library' 'DEBUG_SAULO marker'
        'repository path' 'home path' 'obsolete program name' 'missing AppRun' 'missing program'
-       'missing Linux licences' 'missing header art' 'program not executable')
+       'missing Linux licences' 'missing header art' 'missing sponsor heart' 'program not executable')
 
 failures=0 ran=0
 if ! bash "$checker" --verify "$clean" >"$work/clean.log" 2>&1; then

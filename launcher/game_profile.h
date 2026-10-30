@@ -14,6 +14,7 @@ namespace osl {
 inline constexpr char kGameTitle[] = "Odin Sphere Leifthrasir";
 inline constexpr char kPortRepository[] = "github.com/saulob/odin-sphere-leifthrasir-pc";
 inline constexpr char kAuthorUrl[] = "https://github.com/saulob";
+inline constexpr char kSponsorUrl[] = "https://github.com/sponsors/saulob";
 
 // A package of a build, by its param.sfo APP_VER and VERSION. An update (CATEGORY gp) is applied over the packages
 // before it.

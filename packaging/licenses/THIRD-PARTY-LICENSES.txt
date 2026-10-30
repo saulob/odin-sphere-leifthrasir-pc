@@ -131,6 +131,19 @@ License: CC0 (public domain dedication). CC0 requires no attribution; the source
 
 
 ========================================================================
+Launcher icon: Heart
+========================================================================
+
+Source: SVG Repo (www.svgrepo.com), https://www.svgrepo.com/svg/532473/heart. The source file was named
+heart-svgrepo-com.svg.
+Modified to be a white filled heart: the stroke color #000000 became #FFFFFF and a #FFFFFF fill was added (the path is
+unchanged). assets/launcher/sponsor-heart.svg is the only copy kept in the source repository;
+assets/launcher/sponsor-heart.png is a 64 x 64 rendering of it.
+
+License: CC0 (public domain dedication). CC0 requires no attribution; the source is listed for reference.
+
+
+========================================================================
 AMD GCN register headers (gpu/third_party/gcn/include/gcn)
 ========================================================================
 
