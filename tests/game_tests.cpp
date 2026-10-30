@@ -34,6 +34,7 @@
 #include "osl_accent.h"
 #include "osl_graphics.h"
 #include "osl_launcher.h"
+#include "osl_title.h"
 #include "placement.h"
 #include "runtime_log.h"
 #include "settings.h"
@@ -561,6 +562,67 @@ void TestKeys() {
     char name[32];
     CHECK(std::string(osl_key_name(map.scancode[OSL_KEY_CROSS], name, sizeof(name))) == "q");
     CHECK(!osl_key_bindable(0));
+}
+
+// Presentation only fits the finished frame into the window: Letterbox unless Stretch is chosen, read by the launcher
+// and the video core alike, and picked by the presenter's blit.
+void TestPresentation() {
+    CHECK(std::string(kPresentationKey) == "presentation" && std::string(kDefaultPresentation) == "letterbox");
+    CHECK(std::string(kPresentationChoices[0].key) == "letterbox" && std::string(kPresentationChoices[1].key) == "stretch");
+    CHECK(OslGraphics::ParsePresentation("letterbox") == OslGraphics::Letterbox);
+    CHECK(OslGraphics::ParsePresentation("stretch") == OslGraphics::Stretch);
+    for (const char* invalid : {"", "fit", "Stretch", "1"}) {
+        CHECK(OslGraphics::ParsePresentation(invalid) == OslGraphics::Letterbox);
+        CHECK(!IsValidSetting(kPresentationKey, invalid));
+    }
+
+    const std::filesystem::path root(OSL_SOURCE_DIR);
+    const std::string launcher = ReadFile(root / "launcher" / "launcher.cpp");
+    const size_t vsync = launcher.find("ui.Toggle(\"VSync\"");
+    const size_t presentation =
+        launcher.find("ui.Choice(\"Presentation\", kPresentationHelp, kPresentationKey, kDefaultPresentation");
+    const size_t scaling = launcher.find("ui.Heading(\"Scaling and sharpening\");");
+    CHECK(vsync != std::string::npos && vsync < presentation && presentation < scaling && scaling != std::string::npos);
+    const std::string reader = ReadFile(root / "gpu" / "shim" / "osl_settings.cpp");
+    CHECK(reader.find("v.presentation = OslGraphics::ParsePresentation(value);") != std::string::npos);
+    const std::string presenter =
+        ReadFile(root / "gpu" / "shadps4" / "video_core" / "renderer_vulkan" / "vk_presenter.cpp");
+    const size_t pick = presenter.find("const vk::ImageBlit blit = stretch");
+    CHECK(presenter.find("OslSettings::Get().presentation.load() == OslGraphics::Stretch") != std::string::npos);
+    CHECK(pick != std::string::npos && presenter.find("MakeImageBlitStretch(frame->width", pick) <
+                                           presenter.find("MakeImageBlitFit(frame->width", pick));
+}
+
+// The game window's title: the game's title, then the render resolution and the frame rate when shown. A text entry
+// takes the place of the frame rate and keeps the resolution.
+void TestWindowTitle() {
+    const auto compose = [](bool resolution, bool fps) {
+        return OslTitle::Compose({.base = "Odin Sphere Leifthrasir", .show_resolution = resolution, .width = 2560,
+                                  .height = 1440, .show_fps = fps, .fps = 60.0});
+    };
+    CHECK(compose(false, false) == "Odin Sphere Leifthrasir");
+    CHECK(compose(true, false) == "Odin Sphere Leifthrasir | 2560x1440");
+    CHECK(compose(false, true) == "Odin Sphere Leifthrasir | FPS: 60.00");
+    CHECK(compose(true, true) == "Odin Sphere Leifthrasir | 2560x1440 | FPS: 60.00");
+    CHECK(OslTitle::Compose({.base = "G", .show_resolution = true, .show_fps = true}) == "G");
+    CHECK(OslTitle::Compose({.base = "G", .show_fps = true, .fps = 59.999}) == "G | FPS: 60.00");
+    CHECK(OslTitle::Compose({.base = "G", .show_resolution = true, .width = 1280, .height = 720, .show_fps = true,
+                             .fps = 30.0, .entry = " — Name: ab_"}) == "G | 1280x720 — Name: ab_");
+
+    const std::filesystem::path file = TempDir("window-title") / "osl.ini";
+    LauncherSettings settings(file);
+    settings.ResetToDefaults();
+    CHECK(settings.Get(kShowResolutionTitleKey, "") == "0" && settings.Get(kShowFpsTitleKey, "") == "0");
+    settings.SetBool(kShowResolutionTitleKey, true);
+    CHECK(settings.Save());
+    CHECK(LauncherSettings(file).GetBool(kShowResolutionTitleKey, false));
+
+    const std::filesystem::path root(OSL_SOURCE_DIR);
+    const std::string reader = ReadFile(root / "gpu" / "shim" / "osl_settings.cpp");
+    CHECK(reader.find("key == \"show_resolution_title\"") != std::string::npos);
+    const std::string window = ReadFile(root / "gpu" / "shim" / "window.cpp");
+    CHECK(window.find(".show_resolution = settings.show_resolution_title") != std::string::npos);
+    CHECK(window.find("if (title != title_shown)") != std::string::npos);
 }
 
 void TestNoRuntimeOverlay() {
@@ -2183,6 +2245,8 @@ int main() {
     TestTextLanguages();
     TestVoicePolicy();
     TestKeys();
+    TestPresentation();
+    TestWindowTitle();
     TestNoRuntimeOverlay();
     TestOptionsAndInstall();
     TestHash();

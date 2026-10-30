@@ -1,6 +1,7 @@
 /* Focused tests of the run log's retention on the real log runtime_log_start opens: stdout and stderr still write
  * to it when it is removed. Each start begins a new numbered log in a temporary folder; the results go to the
- * console the process started with. */
+ * console the process started with. On Windows the log is also checked in a Windows-subsystem process
+ * (log_gui_probe.c). */
 #include "runtime_log.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,6 +50,38 @@ static int holds(const char *path, const char *text) {
     return strstr(buffer, text) != NULL;
 }
 
+#ifdef _WIN32
+/* The probe as Explorer starts a Windows-subsystem program: no console and no standard handles. */
+static DWORD run_gui_probe(const char *log, const char *mode) {
+    char command[8600];
+    snprintf(command, sizeof(command), "\"%s\" \"%s\" %s", OSL_LOG_GUI_PROBE, log, mode);
+    STARTUPINFOA startup = {0};
+    startup.cb = sizeof(startup);
+    startup.dwFlags = STARTF_USESTDHANDLES;
+    PROCESS_INFORMATION process;
+    if (!CreateProcessA(NULL, command, NULL, NULL, FALSE, 0, NULL, NULL, &startup, &process)) return 1000;
+    DWORD code = 1001;
+    if (WaitForSingleObject(process.hProcess, 30000) == WAIT_OBJECT_0) GetExitCodeProcess(process.hProcess, &code);
+    else TerminateProcess(process.hProcess, code);
+    CloseHandle(process.hThread);
+    CloseHandle(process.hProcess);
+    return code;
+}
+
+static void check_gui_process(const char *dir) {
+    char kept[4200], removed[4200];
+    snprintf(kept, sizeof(kept), "%s\\gui_kept.log", dir);
+    snprintf(removed, sizeof(removed), "%s\\gui_removed.log", dir);
+    CHECK(run_gui_probe(kept, "keep") == 0);
+    CHECK(holds(kept, "stdout line\n") && holds(kept, "stderr line\n"));
+    CHECK(holds(kept, "raw stdout\n") && holds(kept, "raw stderr\n"));
+    CHECK(holds(kept, "win32 stdout\n") && holds(kept, "win32 stderr\n"));
+    CHECK(run_gui_probe(removed, "remove") == 0);
+    CHECK(!exists(removed));
+    remove(kept);
+}
+#endif
+
 static int start(const char *dir, const char *line, char *path, size_t size) {
     if (!runtime_log_start(dir, NULL, path, size)) return 0;
     printf("%s\n", line);
@@ -73,6 +106,9 @@ int main(void) {
     fflush(NULL);
     console = dup(1);
 
+#ifdef _WIN32
+    check_gui_process(dir);
+#endif
     CHECK(start(dir, "crashed run", kept, sizeof(kept)));
     CHECK(holds(kept, "crashed run\n") && holds(kept, "crashed run on stderr\n"));
     runtime_log_set_detailed(0);

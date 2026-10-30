@@ -115,7 +115,8 @@ if (-not (Test-Path -LiteralPath $marker)) {
 elseif ($imageProblem) {
     Write-Step "Updating the boot image ($Version): $imageProblem"
     if (Test-Path -LiteralPath $imageStamp) { Remove-Item -LiteralPath $imageStamp }
-    & $loader --prepare-image $view $image
+    # The call operator waits for a Windows-subsystem program only when its output is piped.
+    & $loader --prepare-image $view $image | Out-Host
     if ($LASTEXITCODE -ne 0) { Stop-Tool 'Boot image build failed' }
     [System.IO.File]::WriteAllText($imageStamp, (Get-ImageInputs), [System.Text.Encoding]::ASCII)
 }
@@ -149,7 +150,7 @@ try {
         $code = $process.ExitCode
     }
     else {
-        & $loader @arguments
+        & $loader @arguments | Out-Host
         $code = $LASTEXITCODE
     }
 }

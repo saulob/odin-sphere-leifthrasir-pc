@@ -90,13 +90,22 @@ static DWORD WINAPI echo_log(LPVOID unused) {
     }
 }
 
+/* A GUI-subsystem process can start without standard streams: the C runtime then leaves stdout and stderr without a
+ * file descriptor, and its _dup2 never updates the Win32 standard handles. */
+static void attach_stream(FILE *stream, int fd, int std_handle) {
+    if (_fileno(stream) < 0 && freopen("NUL", "w", stream)) setvbuf(stream, NULL, _IONBF, 0);
+    const int stream_fd = _fileno(stream);
+    if (stream_fd >= 0 && stream_fd != fd) _dup2(fd, stream_fd);
+    SetStdHandle(std_handle, (HANDLE)_get_osfhandle(fd));
+}
+
 int runtime_log_start(const char *dir, const char *file, char *path, size_t size) {
     void *log;
     if (!runtime_log_create(dir, file, path, size, &log)) return 0;
     runtime_log_set_session_path(path);
     HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE), original = NULL;
     /* _dup2 below closes the handle that fd 1 owns now. */
-    if (console && console != INVALID_HANDLE_VALUE)
+    if (console && console != INVALID_HANDLE_VALUE && GetFileType(console) != FILE_TYPE_UNKNOWN)
         DuplicateHandle(GetCurrentProcess(), console, GetCurrentProcess(), &original, 0, FALSE, DUPLICATE_SAME_ACCESS);
     int fd = _open_osfhandle((intptr_t)log, _O_WRONLY | _O_BINARY);
     if (fd < 0) {
@@ -107,6 +116,9 @@ int runtime_log_start(const char *dir, const char *file, char *path, size_t size
     _dup2(fd, 1);
     _dup2(fd, 2);
     _close(fd);
+    attach_stream(stdout, 1, STD_OUTPUT_HANDLE);
+    attach_stream(stderr, 2, STD_ERROR_HANDLE);
+    if (_fileno(stdin) < 0) freopen("NUL", "r", stdin);
     HANDLE reader = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (original && reader != INVALID_HANDLE_VALUE) {
         echo_source = reader;

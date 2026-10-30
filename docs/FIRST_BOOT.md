@@ -6,18 +6,18 @@ These checks run without a window and without executing game code:
 ```powershell
 .\tools\build.ps1
 .\tools\test.ps1
-build\cmake\clang64\bin\odin_sphere_leifthrasir.exe --check-game game\prepared\CUSA05083-1.00 build\image\CUSA05083-1.00
-build\cmake\clang64\bin\odin_sphere_leifthrasir.exe build\image\CUSA05083-1.00\boot.bin --app0 game\prepared\CUSA05083-1.00 --cpu-only --check-imports
-build\cmake\clang64\bin\odin_sphere_leifthrasir.exe --check-game game\prepared\CUSA01290-1.02 build\image\CUSA01290-1.02
-build\cmake\clang64\bin\odin_sphere_leifthrasir.exe build\image\CUSA01290-1.02\boot.bin --app0 game\prepared\CUSA01290-1.02 --cpu-only --check-imports
-build\cmake\clang64\bin\odin_sphere_leifthrasir.exe --check-game game\prepared\CUSA05262-1.01 build\image\CUSA05262-1.01
-build\cmake\clang64\bin\odin_sphere_leifthrasir.exe build\image\CUSA05262-1.01\boot.bin --app0 game\prepared\CUSA05262-1.01 --cpu-only --check-imports
+build\cmake\clang64\bin\odin_sphere_leifthrasir.exe --check-game game\prepared\CUSA05083-1.00 build\image\CUSA05083-1.00 | Out-Host
+build\cmake\clang64\bin\odin_sphere_leifthrasir.exe build\image\CUSA05083-1.00\boot.bin --app0 game\prepared\CUSA05083-1.00 --cpu-only --check-imports | Out-Host
+build\cmake\clang64\bin\odin_sphere_leifthrasir.exe --check-game game\prepared\CUSA01290-1.02 build\image\CUSA01290-1.02 | Out-Host
+build\cmake\clang64\bin\odin_sphere_leifthrasir.exe build\image\CUSA01290-1.02\boot.bin --app0 game\prepared\CUSA01290-1.02 --cpu-only --check-imports | Out-Host
+build\cmake\clang64\bin\odin_sphere_leifthrasir.exe --check-game game\prepared\CUSA05262-1.01 build\image\CUSA05262-1.01 | Out-Host
+build\cmake\clang64\bin\odin_sphere_leifthrasir.exe build\image\CUSA05262-1.01\boot.bin --app0 game\prepared\CUSA05262-1.01 --cpu-only --check-imports | Out-Host
 ```
 
 `--check-imports` prints `Imports: 0 missing` for each supported build: every PS4 import of the
 eboot and its bundled modules is either provided by the game's own modules or implemented by the
 runtime. `--check-game` runs the same readiness check the launcher's Play page uses and prints the
-active build label.
+active build label. The program has no console window: `| Out-Host` makes PowerShell wait for it and show its output.
 
 ## The first manual run
 
@@ -27,7 +27,7 @@ From the repository, after `tools\build.ps1` has completed:
 .\tools\build.ps1 -Run
 ```
 
-`-Run` sets the MSYS2 `PATH`, starts `odin_sphere_leifthrasir.exe`, and keeps the console attached. The launcher
+`-Run` sets the MSYS2 `PATH`, starts `odin_sphere_leifthrasir.exe`, and shows its run log in the terminal until it exits. The launcher
 opens; the Play page should already say **Ready to play** for the active build. With both releases
 installed, the active build is the newest prepared one; the status names its region and version, for
 example **Ready to play · CUSA05083 1.00 USA** or **CUSA01290 1.02 Japan** or **CUSA05262 1.01 Europe**, and the

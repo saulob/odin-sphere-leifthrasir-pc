@@ -100,7 +100,15 @@ static void log_host(void) {
     printf("[run] Odin Sphere Leifthrasir PC %s, %s\n[run] CPU %s\n", OSL_VERSION_STRING, os, cpu);
 }
 
-static void fail(const char *message) { fprintf(stderr, "ERROR: %s\n", message); exit(1); }
+static int log_started;
+static void fail(const char *message) {
+    fprintf(stderr, "ERROR: %s\n", message);
+#ifdef _WIN32
+    /* No console: without the run log the message would be lost. */
+    if (!log_started) MessageBoxA(NULL, message, "Odin Sphere Leifthrasir", MB_OK | MB_ICONERROR);
+#endif
+    exit(1);
+}
 /* For failures after the GPU threads started: exit() would run destructors under them. */
 static void fail_running(const char *message) { fprintf(stderr, "ERROR: %s\n", message); runtime_log_flush(); _exit(1); }
 static uint64_t read64(FILE *f) {
@@ -679,6 +687,7 @@ int main(int argc, char **argv) {
     static char log_folder[4200];
     snprintf(log_folder,sizeof(log_folder),"%s",paths.logs_dir);
     if (runtime_log_start(paths.logs_dir,log_file,log_path,sizeof(log_path))) {
+        log_started=1;
         time_t now=time(NULL);
         char stamp[32];
         strftime(stamp,sizeof(stamp),"%Y-%m-%dT%H:%M:%S",localtime(&now));
@@ -693,6 +702,10 @@ int main(int argc, char **argv) {
         log_path[0]=0;
         fprintf(stderr,"Cannot create the log %s\n",log_file ? log_file : paths.logs_dir);
     }
+#ifdef _WIN32
+    AddVectoredExceptionHandler(1, vectored_fault);
+    SetUnhandledExceptionFilter(unhandled_fault);
+#endif
     log_cpu();
     if (!cpu_only && !check_imports) {
         OslGraphicsCheck check_graphics=cpu_usable;
@@ -735,8 +748,6 @@ int main(int argc, char **argv) {
     oslgpu_register_kernel();
 #ifdef _WIN32
     SYSTEM_INFO system_info; GetSystemInfo(&system_info); page_size = system_info.dwPageSize;
-    AddVectoredExceptionHandler(1, vectored_fault);
-    SetUnhandledExceptionFilter(unhandled_fault);
     signal(SIGABRT, on_abort);
     _set_purecall_handler(on_pure_call);
     if (getenv("OSL_STRICT_HANDLES")) {

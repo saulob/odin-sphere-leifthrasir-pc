@@ -11,7 +11,7 @@ enum { RUNTIME_LOG_KEPT_RUNS = 50 };
  * more runs older, or exactly file when it is given. 0 on failure. */
 int runtime_log_create(const char *dir, const char *file, char *path, size_t size, void **handle);
 
-/* Sends stdout and stderr to that log and echoes them to the console the process started with. */
+/* Sends stdout and stderr to that log and echoes them to the standard output the process started with, if any. */
 int runtime_log_start(const char *dir, const char *file, char *path, size_t size);
 
 /* Waits until what was written so far has reached the console. */
