@@ -88,7 +88,7 @@ if (WIN32)
 else()
     set(OSL_PLATFORM_SOURCES src/runtime_log_posix.c)
 endif()
-add_executable(odin_sphere_leifthrasir src/loader.c src/crash_report.c src/hang_report.c ${OSL_RUNTIME_SOURCES} ${OSL_PLATFORM_SOURCES})
+add_executable(odin_sphere_leifthrasir src/loader.c src/crash_report.c src/hang_report.c src/isa_emulate.c src/lzcnt_compat.c ${OSL_RUNTIME_SOURCES} ${OSL_PLATFORM_SOURCES})
 set_target_properties(odin_sphere_leifthrasir PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
 target_include_directories(odin_sphere_leifthrasir PRIVATE src launcher ${CMAKE_BINARY_DIR}/generated)
 target_compile_options(odin_sphere_leifthrasir PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wall -Wextra -Werror -fno-omit-frame-pointer>)
@@ -147,6 +147,13 @@ target_include_directories(osl-tests PRIVATE src launcher gpu/shim)
 target_compile_definitions(osl-tests PRIVATE OSL_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 target_compile_options(osl-tests PRIVATE -Wall -Wextra -Werror)
 target_link_libraries(osl-tests PRIVATE osl_launcher_core SDL3::SDL3)
+
+# Focused tests of the MOVBE and BMI1 emulation and the LZCNT rewrite used when the host CPU lacks the instructions, on
+# synthetic images and the local boot images (tools\test.ps1); not part of the default build.
+add_executable(osl-isa-tests EXCLUDE_FROM_ALL tests/isa_tests.c src/isa_emulate.c src/lzcnt_compat.c)
+target_include_directories(osl-isa-tests PRIVATE src)
+target_compile_definitions(osl-isa-tests PRIVATE OSL_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+target_compile_options(osl-isa-tests PRIVATE -Wall -Wextra -Werror)
 
 # Focused tests of the GPU tiling parameters and macro-tiled addresses (tools\test.ps1); not part of the default build.
 add_executable(osl-tiling-tests EXCLUDE_FROM_ALL tests/tiling_tests.cpp)

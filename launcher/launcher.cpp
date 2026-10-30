@@ -490,7 +490,7 @@ private:
             return true;
         }
         problem_.Show(cause, advice);
-        Log("graphics unavailable, staying open");
+        Log("this system cannot run the game, staying open");
         return false;
     }
 
@@ -1109,7 +1109,7 @@ OslLauncherResult PlayOrExplain(const OslLauncherConfig& config) {
     options.min_width = 360;
     options.min_height = 220;
     if (!host.Open(options)) {
-        std::fprintf(stderr, "Graphics: %s %s\n", cause, advice);
+        std::fprintf(stderr, "System: %s %s\n", cause, advice);
         return OSL_LAUNCHER_BLOCKED;
     }
     const trg::Fonts fonts = trg::LoadSystemFonts(18.0f);

@@ -63,6 +63,8 @@ checked by scripts, but it has not yet been tested on real Linux PCs or a Steam 
 - **Windows**: Windows 10 (version 1903 or newer) or Windows 11, 64-bit, **or**
 - **Linux / Steam Deck** (experimental): 64-bit x86 Linux with glibc 2.31 or newer (such as Ubuntu 20.04 or later), a
   Vulkan loader, and an X11 or Wayland desktop
+- A processor with **AVX** and POPCNT: Intel Core 2nd generation (Sandy Bridge), AMD FX or newer. MOVBE, BMI1 and LZCNT,
+  which older processors lack, are handled in software
 - A graphics card and driver with **Vulkan 1.3**, `VK_EXT_robustness2`, `VK_KHR_push_descriptor` and `VK_EXT_vertex_attribute_divisor`
 - **Your own legally obtained Odin Sphere Leifthrasir package**: a decrypted PS4 `.pkg` of a supported build, and about 4 GB of free space
 

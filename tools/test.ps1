@@ -23,7 +23,7 @@ Write-Step 'Running the patch workflow tests'
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step 'Building the tests'
-& ninja -C $buildDir osl-memory-windows-tests osl-tests osl-window-tests osl-tiling-tests osl-cursor-tests osl-trophy-tests osl-runtime-tests osl-update-tests osl-update-helper-tests
+& ninja -C $buildDir osl-memory-windows-tests osl-tests osl-window-tests osl-tiling-tests osl-cursor-tests osl-trophy-tests osl-runtime-tests osl-isa-tests osl-update-tests osl-update-helper-tests
 if ($LASTEXITCODE -ne 0) { Stop-Tool 'Test build failed' }
 
 Write-Step 'Running the Windows memory tests (sparse backing, commitment, aliases, release)'
@@ -48,6 +48,10 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step 'Running the runtime lock and guest memory table tests'
 & (Join-Path $buildDir 'bin\osl-runtime-tests.exe')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+Write-Step 'Running the MOVBE, BMI1 and LZCNT tests'
+& (Join-Path $buildDir 'bin\osl-isa-tests.exe')
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step 'Running the tiling tests (GPU tile layouts and addresses)'

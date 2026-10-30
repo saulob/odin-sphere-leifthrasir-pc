@@ -15,6 +15,8 @@
 #include "runtime_log.h"
 #include "crash_report.h"
 #include "hang_watchdog.h"
+#include "isa_emulate.h"
+#include "lzcnt_compat.h"
 #include <cpuid.h>
 #if !defined(__x86_64__) || !defined(__GNUC__)
 #error Odin Sphere Leifthrasir PC requires x86-64 GCC or Clang (including MinGW).
@@ -159,6 +161,38 @@ __asm__(".text\n.globl enter_on_stack\nenter_on_stack:\n"
         " mov %rbp,%rsp\n pop %rbp\n ret\n");
 #endif
 static ABI void guest_exit(void) { puts("Runtime: process finalizer callback reached"); }
+static void log_cpu(void) {
+    char sets[96];
+    const IsaHostFeatures host=isa_host_features();
+    if (isa_present_sets(host,sets,sizeof(sets))) printf("CPU: native %s\n",sets);
+    if (isa_missing_sets(host,1,sets,sizeof(sets))) printf("CPU: handled in software: %s\n",sets);
+    if (isa_missing_sets(host,0,sets,sizeof(sets))) printf("CPU: missing %s, which cannot be emulated\n",sets);
+}
+/* An OslGraphicsCheck for the processor, which runs the game's PS4 (Jaguar) code directly. */
+static int cpu_usable(char *cause, size_t cause_size, char *advice, size_t advice_size) {
+    char missing[96];
+    if (!isa_missing_sets(isa_host_features(),0,missing,sizeof(missing))) return 1;
+    snprintf(cause,cause_size,"This processor lacks %s, which the game's PS4 code needs.",missing);
+    snprintf(advice,advice_size,"The game needs an Intel Core 2nd generation (Sandy Bridge), AMD FX or newer processor.");
+    return 0;
+}
+#ifndef _WIN32
+static int system_usable(char *cause, size_t cause_size, char *advice, size_t advice_size) {
+    return cpu_usable(cause,cause_size,advice,advice_size) && osl_check_vulkan(cause,cause_size,advice,advice_size);
+}
+#endif
+/* OSL_EMULATE_LZCNT=1 (test): the LZCNT rewrite also on a host that has LZCNT. */
+static int lzcnt_forced(void) {
+    const char *value=getenv("OSL_EMULATE_LZCNT");
+    return value && value[0] && value[0]!='0';
+}
+/* The first emulated instruction, then a running count every 2^22. */
+static void note_isa_emulated(uint64_t offset) {
+    static long long count;
+    const long long n=__atomic_add_fetch(&count,1,__ATOMIC_RELAXED);
+    if (n==1) printf("ISA: first MOVBE/BMI1 instruction emulated at guest offset 0x%" PRIx64 "\n",offset);
+    else if (!(n&((1<<22)-1))) printf("DEBUG_SAULO ISA: %lld emulated instructions, latest at guest offset 0x%" PRIx64 "\n",n,offset);
+}
 #ifdef _WIN32
 static void describe_address(char *out, size_t size, uintptr_t address) {
     HMODULE module=NULL;
@@ -206,6 +240,15 @@ static LONG fatal_exception(EXCEPTION_POINTERS *info, const char *reason) {
     fputs(header,stderr);
     fprintf(stderr,"  rax=%016llx rbx=%016llx rcx=%016llx rdx=%016llx\n  rsi=%016llx rdi=%016llx rbp=%016llx rsp=%016llx\n",
             c->Rax,c->Rbx,c->Rcx,c->Rdx,c->Rsi,c->Rdi,c->Rbp,c->Rsp);
+    if (record->ExceptionCode==EXCEPTION_ILLEGAL_INSTRUCTION) {
+        unsigned char bytes[16];
+        SIZE_T got=0;
+        if (ReadProcessMemory(GetCurrentProcess(),(void *)c->Rip,bytes,sizeof(bytes),&got) && got==sizeof(bytes)) {
+            char hex[sizeof(bytes)*3+1];
+            for (size_t i=0;i<sizeof(bytes);++i) snprintf(hex+3*i,4,"%02x ",bytes[i]);
+            fprintf(stderr,"  instruction bytes: %s\n",hex);
+        }
+    }
     if (gpu_enabled) {
         oslgpu_note_fatal_fault();
         oslgpu_dump_guest_writes(info);
@@ -295,6 +338,23 @@ static LONG CALLBACK vectored_fault(EXCEPTION_POINTERS *info) {
             return EXCEPTION_CONTINUE_EXECUTION;
         }
     }
+    if (code==EXCEPTION_ILLEGAL_INSTRUCTION) {
+        /* Hosts without MOVBE or BMI1 trap at the game's uses; LZCNT does not trap, lzcnt_compat rewrites it at load. */
+        CONTEXT *c=info->ContextRecord;
+        uint64_t offset;
+        int moved;
+        if (guest_location((uintptr_t)c->Rip,&offset,&moved)) {
+            _Static_assert(offsetof(CONTEXT,R15)-offsetof(CONTEXT,Rax)==15*sizeof(DWORD64),"CONTEXT register order");
+            uint64_t flags=c->EFlags;
+            size_t length=isa_emulate((const uint8_t *)(uintptr_t)c->Rip,c->Rip,&c->Rax,&flags);
+            if (length) {
+                note_isa_emulated(offset);
+                c->EFlags=(DWORD)flags;
+                c->Rip+=length;
+                return EXCEPTION_CONTINUE_EXECUTION;
+            }
+        }
+    }
     if (code==EXCEPTION_ACCESS_VIOLATION || code==EXCEPTION_ILLEGAL_INSTRUCTION || code==EXCEPTION_PRIV_INSTRUCTION ||
         code==EXCEPTION_STACK_OVERFLOW || code==EXCEPTION_INT_DIVIDE_BY_ZERO || code==EXCEPTION_DATATYPE_MISALIGNMENT) {
         /* Faults in guest code, the loader or the runtime end the process with a report; drivers
@@ -376,6 +436,22 @@ static void fault(int sig, siginfo_t *info, void *context) {
         pthread_sigmask(SIG_UNBLOCK, &unblock, NULL);
         siglongjmp(*recover, 1);
     }
+    if (sig == SIGILL) {
+        static const int order[16] = {REG_RAX, REG_RCX, REG_RDX, REG_RBX, REG_RSP, REG_RBP, REG_RSI, REG_RDI,
+                                      REG_R8, REG_R9, REG_R10, REG_R11, REG_R12, REG_R13, REG_R14, REG_R15};
+        ucontext_t *state = context;
+        uint64_t gpr[16];
+        for (int i = 0; i < 16; ++i) gpr[i] = (uint64_t)state->uc_mcontext.gregs[order[i]];
+        uint64_t at = (uint64_t)state->uc_mcontext.gregs[REG_RIP], flags = (uint64_t)state->uc_mcontext.gregs[REG_EFL];
+        size_t length = at - (uintptr_t)image < 0x20000000 ? isa_emulate((const uint8_t *)(uintptr_t)at, at, gpr, &flags) : 0;
+        if (length) {
+            note_isa_emulated(at - (uintptr_t)image);
+            for (int i = 0; i < 16; ++i) state->uc_mcontext.gregs[order[i]] = (greg_t)gpr[i];
+            state->uc_mcontext.gregs[REG_EFL] = (greg_t)flags;
+            state->uc_mcontext.gregs[REG_RIP] = (greg_t)(at + length);
+            return;
+        }
+    }
     runtime_log_mark_crash();
     /* The process is terminating: dladdr/snprintf are acceptable here. */
     ucontext_t *uc = context;
@@ -402,6 +478,12 @@ static void fault(int sig, siginfo_t *info, void *context) {
     crash.thread_id = (uint64_t)gettid();
     crash.process_id = (uint64_t)getpid();
     { ssize_t written_=write(2, header, crash_report_format(&crash, header, sizeof(header))); (void)written_; }
+    if (sig == SIGILL) {
+        for (int i = 0; i < 16; ++i) snprintf(line + 3 * i, 4, "%02x ", ((const unsigned char *)rip)[i]);
+        strcat(line, "\n");
+        { ssize_t written_=write(2, "  instruction bytes: ", 21); (void)written_; }
+        { ssize_t written_=write(2, line, strlen(line)); (void)written_; }
+    }
     if (gpu_enabled) {
         oslgpu_note_fatal_fault();
         oslgpu_dump_guest_writes(context);
@@ -611,16 +693,24 @@ int main(int argc, char **argv) {
         log_path[0]=0;
         fprintf(stderr,"Cannot create the log %s\n",log_file ? log_file : paths.logs_dir);
     }
+    log_cpu();
     if (!cpu_only && !check_imports) {
-        OslGraphicsCheck check_graphics=NULL;
+        OslGraphicsCheck check_graphics=cpu_usable;
 #ifndef _WIN32
-        check_graphics=osl_check_vulkan;
+        check_graphics=system_usable;
 #endif
         OslLauncherConfig launcher={app0,paths.image_dir,user_dir,settings_file,log_folder,skip_launcher,force_launcher,check_graphics};
         OslLauncherResult launched=osl_launcher_run(&launcher);
         runtime_log_set_detailed(osl_detailed_logging(settings_file));
         if (launched==OSL_LAUNCHER_QUIT) { runtime_log_mark_clean_exit(); exit(0); }
         if (launched==OSL_LAUNCHER_BLOCKED) exit(1);
+    }
+    if (!check_imports) {
+        char cause[160], advice[160], message[330];
+        if (!cpu_usable(cause,sizeof(cause),advice,sizeof(advice))) {
+            snprintf(message,sizeof(message),"%s %s",cause,advice);
+            fail(message);
+        }
     }
     if (!osl_resolve_paths(&request,&paths)) fail("cannot locate the game folders");
     boot=paths.boot; app0=paths.app0;
@@ -756,7 +846,9 @@ int main(int argc, char **argv) {
             if (!executable) fail("native function is not executable");
         }
     }
-    image = allocate(round_page(size));
+    const int lzcnt_rewrite = lzcnt_compat_needed(isa_host_features()) || lzcnt_forced();
+    const size_t lzcnt_stub_bytes = lzcnt_rewrite ? round_page(lzcnt_compat_stub_bytes()) : 0;
+    image = allocate(round_page(size) + lzcnt_stub_bytes);
     if (fread(image, 1, size, f) != size || fgetc(f) != EOF) fail("incorrect memory image size");
     fclose(f);
     if (runtime_memory_prepare()) {
@@ -850,8 +942,9 @@ int main(int argc, char **argv) {
     if (osl_skip_intro(settings_file)) apply_skip_intro(known_build ? &game_build : NULL,segments,ns,size);
 #ifdef _WIN32
     printf("Guest TCB loads redirected to the TEB TLS slot: %" PRIu64 "\n", patch_tcb_loads(segments, ns));
-    /* After every other change to guest code. Only GPU page tracking resumes faulting guest code. */
-    if (gpu_enabled) {
+    /* After every other change to guest code except the LZCNT rewrite, whose ranges the stubs keep clear of. Only GPU
+     * page tracking and the MOVBE/BMI1 emulation resume faulting guest code. */
+    if (gpu_enabled || isa_emulation_needed(isa_host_features())) {
         uint64_t *triples=calloc(ns*3,sizeof(*triples));
         if (!triples) fail_running("allocation failed");
         for (uint64_t i=0;i<ns;++i) {
@@ -861,6 +954,22 @@ int main(int argc, char **argv) {
         free(triples);
     }
 #endif
+    if (lzcnt_rewrite) {
+        const char *rewritten_build="";
+        const LzcntCompatStatus status=lzcnt_compat_install(image,size,entry,image+round_page(size),lzcnt_stub_bytes,&rewritten_build);
+        if (status!=LZCNT_COMPAT_OK) {
+            char message[330];
+            snprintf(message,sizeof(message),"This game executable cannot be adapted to this processor, which lacks LZCNT: %s.",
+                     lzcnt_compat_status_text(status));
+#ifdef _WIN32
+            MessageBoxA(NULL,message,"Odin Sphere Leifthrasir - unsupported processor",MB_OK|MB_ICONERROR);
+#endif
+            fail_running(message);
+        }
+        protect(image + round_page(size), lzcnt_stub_bytes, 5);
+        printf("LZCNT: %zu instructions rewritten in %d ranges (%s)%s\n",lzcnt_compat_instructions(),LZCNT_RANGE_COUNT,
+               rewritten_build,lzcnt_compat_needed(isa_host_features()) ? "" : ", forced");
+    }
     protect(traps, round_page((import_count + 1) * 32), 5);
     protect(image, round_page(size), 0);
     int executable_entry = 0;

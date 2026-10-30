@@ -16,11 +16,15 @@
  * as are functions with an indirect jump (a jump table: its targets are unknown, and its entries may
  * sit in the code).
  *
+ * A host without MOVBE or BMI1 raises #UD at those instructions, which loader.c emulates; the exception frame
+ * lands the same way, so in a red-zone function they are moved into stubs like the faulting accesses.
+ *
  * OSL_RED_ZONE=0: off. OSL_RED_ZONE=list: each rewritten function is printed.
  * OSL_RED_ZONE_SCRIBBLE=1 (test): after each GPU page-tracking fault the guest survives, the 128
  * bytes below the faulting rsp are filled with 0xcc, as a Windows build that leaves no slack there
  * does. A fault at an access of a red-zone function that could not be moved is reported once. */
 #include "runtime.h"
+#include "isa_emulate.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,6 +56,7 @@ static uint32_t *rz_skipped;
 static volatile LONG *rz_warned;
 static size_t rz_skipped_count, rz_skipped_cap;
 static int rz_scribble, rz_ready, rz_protecting;
+static unsigned rz_isa_needed;
 /* Each stub's start and the site it replaces (sorted by stub); test mode diagnostics: the red-zone
  * functions (sorted ranges), first-fault flags, fault counts. */
 typedef struct { uint32_t begin, end; } RzRange;
@@ -173,12 +178,18 @@ static int prefetch(ZydisMnemonic m) {
     return m == ZYDIS_MNEMONIC_PREFETCHNTA || m == ZYDIS_MNEMONIC_PREFETCHT0 || m == ZYDIS_MNEMONIC_PREFETCHT1 ||
            m == ZYDIS_MNEMONIC_PREFETCHT2 || m == ZYDIS_MNEMONIC_PREFETCHW || m == ZYDIS_MNEMONIC_PREFETCH;
 }
-/* fault: the instruction reads or writes memory that can be a GPU-tracked page.
+static int emulated_isa(ZydisMnemonic m) {
+    if (rz_isa_needed & ISA_EMULATE_MOVBE && m == ZYDIS_MNEMONIC_MOVBE) return 1;
+    return rz_isa_needed & ISA_EMULATE_BMI1 &&
+           (m == ZYDIS_MNEMONIC_ANDN || m == ZYDIS_MNEMONIC_BEXTR || m == ZYDIS_MNEMONIC_BLSI ||
+            m == ZYDIS_MNEMONIC_BLSMSK || m == ZYDIS_MNEMONIC_BLSR);
+}
+/* fault: the instruction reads or writes memory that can be a GPU-tracked page, or traps for emulation.
  * move: it can run from a stub (no control flow, rsp only as a memory base with a SIB byte,
  * rip-relative only with a 32-bit displacement, no EVEX compressed displacement). */
 static void classify(const ZydisDecodedInstruction *in, const ZydisDecodedOperand *ops, RzOp *op) {
     int move = !control_flow(in) && !(in->attributes & (ZYDIS_ATTRIB_HAS_EVEX | ZYDIS_ATTRIB_HAS_MVEX));
-    int fault = 0, rsp = 0, rip = 0;
+    int fault = emulated_isa(in->mnemonic), rsp = 0, rip = 0;
     for (unsigned k = 0; k < in->operand_count; ++k) {
         const ZydisDecodedOperand *o = &ops[k];
         if (o->type == ZYDIS_OPERAND_TYPE_REGISTER && stack_register(o->reg.value)) move = 0;
@@ -434,6 +445,7 @@ uint64_t runtime_redzone_install(unsigned char *image, uint64_t size, const uint
     rz_scribble = scribble && scribble[0] == '1';
     if (rz_scribble) puts("Red zone: test mode, the 128 bytes below rsp are overwritten after each handled fault");
     rz_ready = 1;
+    rz_isa_needed = isa_emulation_needed(isa_host_features());
     /* Off: nothing changes; the test mode still lists the red-zone functions (for its counts). */
     rz_protecting = !(env && env[0] == '0');
     if (!rz_protecting && !rz_scribble) { puts("Red zone: protection off (OSL_RED_ZONE=0)"); return 0; }
