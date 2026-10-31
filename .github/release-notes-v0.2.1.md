@@ -48,6 +48,15 @@ Installation steps, requirements and known limitations are in the
   cancellation path found in the newer hang report. This has not been verified by the reporter yet; it needs their test
   of this release.
 
+### Security
+
+The final release artifacts were scanned with VirusTotal before publication. A VirusTotal scan is an additional check, not a guarantee of safety, so please also verify the SHA-256 of your download.
+
+| File | VirusTotal |
+| --- | --- |
+| `OdinSphereLeifthrasirPC-v0.2.1-windows-x64.zip` | https://www.virustotal.com/gui/file/45a401a227b8e2e9444e0c0d3edd38a2c1faf34b5edbc7e361f19cf5b6c58014 |
+| `OdinSphereLeifthrasirPC-v0.2.1-x86_64.AppImage` | https://www.virustotal.com/gui/file/ad348500a75045c6416005fbce811d140a6b103314ca2ea4f1d331f57d8bdaee |
+
 ## Checksums
 | File | SHA-256 |
 | --- | --- |
