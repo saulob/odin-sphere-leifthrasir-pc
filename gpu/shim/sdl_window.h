@@ -50,6 +50,7 @@ private:
     };
     void ApplyDisplayMode(int mode);
     void ToggleBorderless();
+    void ToggleFrameCounter();
     void UpdateFpsTitle();
     void UpdateCursor();
     bool TrackControllerEvent(const SDL_Event& event);

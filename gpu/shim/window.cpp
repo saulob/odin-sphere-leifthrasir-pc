@@ -231,6 +231,13 @@ void WindowSDL::ToggleBorderless() {
     OslSettings::SaveDisplayMode();
 }
 
+// F2: shows or hides the in-game frame counter for this session only, like the launcher's Frame
+// counter row but without writing osl.ini; the launcher keeps whatever it was set to.
+void WindowSDL::ToggleFrameCounter() {
+    auto& show_fps = OslSettings::Get().show_fps;
+    show_fps = !show_fps.load();
+}
+
 // Window thread. Visible while a game dialog needs it or focus is away; otherwise the last
 // gameplay input device decides, in Windowed and Borderless alike.
 void WindowSDL::UpdateCursor() {
@@ -351,9 +358,12 @@ bool WindowSDL::PollEvents() {
             break;
         case SDL_EVENT_KEY_DOWN: {
             const bool window_shortcut = event.key.scancode == OslSettings::Get().window_mode_key;
-            const bool host_shortcut = window_shortcut;
+            const bool frame_counter_shortcut = event.key.scancode == SDL_SCANCODE_F2;
+            const bool host_shortcut = window_shortcut || frame_counter_shortcut;
             if (window_shortcut && !event.key.repeat) {
                 ToggleBorderless();
+            } else if (frame_counter_shortcut && !event.key.repeat) {
+                ToggleFrameCounter();
             } else if (OslCursor::IsGameplayKey(event.key.repeat, host_shortcut) && !ui) {
                 cursor.KeyboardActivity();
             }

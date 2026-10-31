@@ -44,7 +44,8 @@ checked by scripts, but it has not yet been tested on real Linux PCs or a Steam 
 ### Gameplay
 - **Skip intro**: start at the title's PRESS START, without the startup notice, logos and intro
 - **Menu & Subtitles** language for the European build (English, French, German, Spanish, Italian)
-- Frame rate and render resolution in the window title, and an in-game **frame counter** with the frame time
+- Frame rate and render resolution in the window title, and an in-game **frame counter** with the frame time, toggled with **F2** while playing
+- Startup hints confirm **Skip intro** and **Unlock Bookshelf** when either is on, then disappear on their own
 
 ### Controls
 - Xbox controllers without setup, and keyboard play with every binding changeable
@@ -187,6 +188,7 @@ and it is available for every supported build.
 ## Controls
 
 - **F11** switches between Windowed and Borderless Fullscreen while playing; the key can be changed on the Controls page.
+- **F2** shows or hides the in-game frame counter while playing, for the current session only.
 - Xbox controllers work without setup (on Linux through SDL's gamepad support).
 - The keyboard plays too: the Controls page lists every binding, and **Reset to defaults** restores them.
 - **Controller prompts** chooses the button pictures the game shows: PlayStation (the original) or Xbox.

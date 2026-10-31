@@ -130,7 +130,7 @@ constexpr char kRestrictedRenderResolutionHelp[] =
 constexpr char kShowFpsTitleHelp[] = "Shows the frame rate in the window title: Odin Sphere Leifthrasir | FPS: 60.00";
 constexpr char kShowResolutionTitleHelp[] =
     "Shows the game's render resolution in the window title: Odin Sphere Leifthrasir | 1920x1080";
-constexpr char kFrameCounterHelp[] = "Shows the frame rate and frame time in a corner of the game.";
+constexpr char kFrameCounterHelp[] = "Shows the game's frame rate in the corner. F2 toggles it while playing.";
 constexpr char kWindowModeKeyHelp[] = "Switches between Windowed and Borderless Fullscreen while playing.";
 constexpr char kControllerPromptsHelp[] = "The button images shown in the game's prompts.";
 

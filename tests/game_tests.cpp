@@ -625,6 +625,74 @@ void TestWindowTitle() {
     CHECK(window.find("if (title != title_shown)") != std::string::npos);
 }
 
+// The Frame counter setting, its F2 hotkey and the startup Gameplay hints: default state, save/load, and that the
+// pieces are wired to each other the way osl_notice.h's pure logic (covered by osl-notice-tests) expects.
+void TestFrameCounterAndNotices() {
+    const std::filesystem::path file = TempDir("frame-counter") / "osl.ini";
+    LauncherSettings settings(file);
+    settings.ResetToDefaults();
+    CHECK(settings.Get(kShowFrameCounterKey, "") == "0"); // Hidden by default
+    settings.SetBool(kShowFrameCounterKey, true);
+    CHECK(settings.Save());
+    CHECK(LauncherSettings(file).GetBool(kShowFrameCounterKey, false));
+    CHECK(LauncherSettings(file).GetBool(kSkipIntroKey, true) == false);
+    CHECK(LauncherSettings(file).GetBool(kUnlockBookshelfKey, true) == false);
+
+    const std::filesystem::path root(OSL_SOURCE_DIR);
+
+    // The launcher's Gameplay page: Skip intro and Unlock Bookshelf before the title/counter rows, and the
+    // Frame counter row documents F2 directly (not only in the README).
+    const std::string launcher = ReadFile(root / "launcher" / "launcher.cpp");
+    CHECK(launcher.find("constexpr char kFrameCounterHelp[] = \"Shows the game's frame rate in the corner. "
+                        "F2 toggles it while playing.\";") != std::string::npos);
+    const size_t page = launcher.find("void PageGameplay(trg::Ui& ui) {");
+    const size_t page_end = launcher.find("void PageControls(trg::Ui& ui) {");
+    CHECK(page != std::string::npos && page_end != std::string::npos && page < page_end);
+    const std::string gameplay = launcher.substr(page, page_end - page);
+    const size_t skip = gameplay.find("ui.Toggle(\"Skip intro\"");
+    const size_t unlock = gameplay.find("ui.Toggle(\"Unlock Bookshelf\"");
+    const size_t counter =
+        gameplay.find("ui.Toggle(\"Frame counter\", kFrameCounterHelp, kShowFrameCounterKey, false, \"Hidden\", \"Shown\");");
+    CHECK(skip != std::string::npos && unlock != std::string::npos && counter != std::string::npos);
+    CHECK(skip < unlock && unlock < counter);
+
+    // The video core mirrors Skip intro and Unlock Bookshelf for the startup notice only.
+    const std::string reader = ReadFile(root / "gpu" / "shim" / "osl_settings.cpp");
+    CHECK(reader.find("key == \"skip_intro\"") != std::string::npos);
+    CHECK(reader.find("key == \"unlock_bookshelf\"") != std::string::npos);
+
+    // F2 toggles only the frame counter's runtime atomic: no repeat retoggle, no file write.
+    const std::string window = ReadFile(root / "gpu" / "shim" / "window.cpp");
+    const size_t f2 = window.find("event.key.scancode == SDL_SCANCODE_F2");
+    const size_t toggle_call = window.find("ToggleFrameCounter();");
+    const size_t repeat_guard = window.find("frame_counter_shortcut && !event.key.repeat");
+    CHECK(f2 != std::string::npos && toggle_call != std::string::npos && repeat_guard != std::string::npos);
+    const size_t toggle_def = window.find("void WindowSDL::ToggleFrameCounter() {");
+    const size_t toggle_def_end = window.find("\n}", toggle_def);
+    CHECK(toggle_def != std::string::npos && toggle_def_end != std::string::npos);
+    const std::string toggle_body = window.substr(toggle_def, toggle_def_end - toggle_def);
+    CHECK(toggle_body.find("show_fps = !show_fps.load();") != std::string::npos);
+    CHECK(toggle_body.find("Save") == std::string::npos); // runtime-only: no osl.ini write
+
+    // Queued once per launch, right after settings load, in the Frame counter / Skip Intro / Unlock Bookshelf order.
+    const std::string gpu = ReadFile(root / "gpu" / "shim" / "oslgpu.cpp");
+    const size_t load = gpu.find("OslSettings::Load(config->settings_file);");
+    const size_t skip_notice = gpu.find("QueueStartupNotice(\"Skip Intro: On\");");
+    const size_t bookshelf_notice = gpu.find("QueueStartupNotice(\"Unlock Bookshelf: On\");");
+    CHECK(load != std::string::npos && skip_notice != std::string::npos && bookshelf_notice != std::string::npos);
+    CHECK(load < skip_notice && skip_notice < bookshelf_notice);
+    CHECK(gpu.find("if (loaded.skip_intro) {") != std::string::npos);
+    CHECK(gpu.find("if (loaded.unlock_bookshelf) {") != std::string::npos);
+
+    // The overlay draws the frame counter, then the startup notices, for 5 seconds each.
+    const std::string overlay = ReadFile(root / "gpu" / "shim" / "osl_overlay.cpp");
+    CHECK(overlay.find("constexpr double kStartupNoticeSeconds = 5.0;") != std::string::npos);
+    const size_t fps_counter_call = overlay.find("FpsCounter();");
+    const size_t notices_call = overlay.find("StartupNotices();");
+    CHECK(fps_counter_call != std::string::npos && notices_call != std::string::npos && fps_counter_call < notices_call);
+    CHECK(overlay.find("AnyStartupNoticePending()") != std::string::npos);
+}
+
 void TestNoRuntimeOverlay() {
     const std::filesystem::path root(OSL_SOURCE_DIR);
     const std::string overlay = ReadFile(root / "gpu" / "shim" / "osl_overlay.cpp");
@@ -2540,6 +2608,7 @@ int main() {
     TestKeys();
     TestPresentation();
     TestWindowTitle();
+    TestFrameCounterAndNotices();
     TestNoRuntimeOverlay();
     TestOptionsAndInstall();
     TestHash();

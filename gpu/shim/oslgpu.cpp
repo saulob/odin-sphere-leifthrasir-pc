@@ -194,6 +194,13 @@ extern "C" int oslgpu_available(void) {
 
 extern "C" int oslgpu_init(const OslGpuConfig* config) {
     OslSettings::Load(config->settings_file);
+    const auto& loaded = OslSettings::Get();
+    if (loaded.skip_intro) {
+        OslOverlay::QueueStartupNotice("Skip Intro: On");
+    }
+    if (loaded.unlock_bookshelf) {
+        OslOverlay::QueueStartupNotice("Unlock Bookshelf: On");
+    }
     const std::string user_dir = config->user_dir;
     Common::FS::SetUserDir(std::filesystem::path(std::u8string(user_dir.begin(), user_dir.end())));
     g_sdk_version = config->sdk_version;

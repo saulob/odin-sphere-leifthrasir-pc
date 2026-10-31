@@ -14,6 +14,7 @@
 
 #include <SDL3/SDL.h>
 #include "osl_accent.h"
+#include "osl_notice.h"
 #include "osl_settings.h"
 #include "imgui.h"
 #include "imgui_internal.h" // RegisterUserTexture (save pictures)
@@ -94,6 +95,16 @@ float base_scale = 1.0f;
 std::chrono::steady_clock::time_point last_present{};
 float frame_ms_avg = 0.0f;
 
+// Startup Gameplay hints ("Skip Intro: On"), queued once per launch by QueueStartupNotice and
+// drawn in the order they were queued, stacked below the frame counter.
+constexpr double kStartupNoticeSeconds = 5.0;
+std::mutex notice_mutex;
+std::vector<OslNotice::StartupNotice> startup_notices;
+
+double NowSeconds() {
+    return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
 // The frame counter's text.
 std::string OverlayText() {
     char text[64];
@@ -122,7 +133,69 @@ FpsBox FpsCounterBox(const char* text) {
 }
 
 bool FpsCounterShown() {
-    return OslSettings::Get().show_fps && frame_ms_avg > 0.0f;
+    return OslNotice::FrameCounterVisible(OslSettings::Get().show_fps, frame_ms_avg);
+}
+
+// Upper-right box for a startup notice, `top` below the viewport's work area; same look as the
+// frame counter's panel but independent of its corner (notices always stay upper-right).
+FpsBox NoticeBox(const char* text, float top) {
+    const auto& s = OslSettings::Get();
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    const float size = ImGui::GetFontSize() * s.overlay_scale / 100.0f;
+    const ImVec2 text_size = ImGui::GetFont()->CalcTextSizeA(size, FLT_MAX, 0.0f, text);
+    const ImVec2 pad(size * 0.6f, size * 0.3f);
+    const ImVec2 box(text_size.x + pad.x * 2, text_size.y + pad.y * 2);
+    const ImVec2 p0(viewport->WorkPos.x + viewport->WorkSize.x - size - box.x, viewport->WorkPos.y + top);
+    return {p0, ImVec2(p0.x + box.x, p0.y + box.y), pad, size};
+}
+
+// Where the first startup notice begins: below the frame counter when it is shown in its default
+// top-right corner, otherwise the overlay's normal top margin.
+float StartupNoticeTop() {
+    const auto& s = OslSettings::Get();
+    const float size = ImGui::GetFontSize() * s.overlay_scale / 100.0f;
+    if (s.overlay_corner == 1 && FpsCounterShown()) {
+        const FpsBox fps_box = FpsCounterBox(OverlayText().c_str());
+        return (fps_box.p1.y - ImGui::GetMainViewport()->WorkPos.y) + size * 0.5f;
+    }
+    return size;
+}
+
+void StartupNotices() {
+    std::scoped_lock lock{notice_mutex};
+    if (startup_notices.empty()) {
+        return;
+    }
+    constexpr ImU32 panel_color = IM_COL32(7, 10, 22, 190);
+    constexpr ImU32 border_color = IM_COL32(osl::kAccentRed, osl::kAccentGreen, osl::kAccentBlue, 255);
+    constexpr ImU32 text_color = IM_COL32(255, 255, 255, 255);
+    const bool frame_counter_enabled = OslSettings::Get().show_fps;
+    const bool ready = OslNotice::StartupNoticeReady(frame_counter_enabled, FpsCounterShown());
+    const double now = NowSeconds();
+    const float gap = ImGui::GetFontSize() * OslSettings::Get().overlay_scale / 100.0f * 0.4f;
+    float top = StartupNoticeTop();
+    ImDrawList* draw = ImGui::GetForegroundDrawList();
+    for (OslNotice::StartupNotice& notice : startup_notices) {
+        const FpsBox box = NoticeBox(notice.text().c_str(), top);
+        if (notice.Visible(now, ready, kStartupNoticeSeconds)) {
+            draw->AddRectFilled(box.p0, box.p1, panel_color, box.size * 0.5f);
+            draw->AddRect(box.p0, box.p1, border_color, box.size * 0.5f, 0, 1.0f);
+            draw->AddText(ImGui::GetFont(), box.size, ImVec2(box.p0.x + box.pad.x, box.p0.y + box.pad.y),
+                         text_color, notice.text().c_str());
+        }
+        top += (box.p1.y - box.p0.y) + gap;
+    }
+}
+
+bool AnyStartupNoticePending() {
+    std::scoped_lock lock{notice_mutex};
+    const double now = NowSeconds();
+    for (const OslNotice::StartupNotice& notice : startup_notices) {
+        if (notice.Pending(now, kStartupNoticeSeconds)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // The game's text dialog: what is typed, and how to finish (keyboard or controller).
@@ -483,10 +556,22 @@ void SetLoading(bool active, u32 done, u32 total) {
     loading = active;
 }
 
+void QueueStartupNotice(std::string text) {
+    std::scoped_lock lock{notice_mutex};
+    for (const OslNotice::StartupNotice& notice : startup_notices) {
+        if (notice.text() == text) {
+            return; // already queued this launch
+        }
+    }
+    OslNotice::StartupNotice notice;
+    notice.QueueStartup(std::move(text));
+    startup_notices.push_back(std::move(notice));
+}
+
 bool Visible() {
     const auto& s = OslSettings::Get();
     return initialized && (loading || background_total || text_entry_active || choice_active ||
-                           choice_retiring || s.show_fps);
+                           choice_retiring || s.show_fps || AnyStartupNoticePending());
 }
 
 void SetDisplayScale(float scale) {
@@ -565,6 +650,7 @@ void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent) {
     if (OslSettings::Get().show_fps) {
         FpsCounter();
     }
+    StartupNotices();
     if (background_total && !loading) {
         BackgroundLoading();
     }

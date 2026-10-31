@@ -29,8 +29,15 @@ void SetLoading(bool active, u32 done, u32 total);
 /// Background cache warm-up: a small corner note while the game runs; `total` 0 hides it.
 void SetBackgroundLoading(u32 done, u32 total);
 
-/// Whether anything is drawn this frame (a dialog, the loading screen or the frame counter).
+/// Whether anything is drawn this frame (a dialog, the loading screen, the frame counter or a
+/// startup notice).
 bool Visible();
+
+/// A startup Gameplay hint ("Skip Intro: On"): queued at most once per launch, stacked below the
+/// frame counter in the upper-right corner, and shown for a few seconds once the overlay can draw
+/// (waiting for the frame counter's first reading when it is enabled). Ignored once already queued
+/// with this exact text.
+void QueueStartupNotice(std::string text);
 
 /// Counts a presented game frame (the frame rate in the window title).
 void LogPresent();

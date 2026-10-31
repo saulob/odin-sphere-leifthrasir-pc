@@ -211,6 +211,12 @@ target_include_directories(osl-cursor-tests PRIVATE gpu/shim)
 target_compile_definitions(osl-cursor-tests PRIVATE OSL_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 target_compile_options(osl-cursor-tests PRIVATE -Wall -Wextra -Werror)
 
+# Focused tests of the startup Gameplay notices and frame-counter visibility gating; not part of the default build.
+add_executable(osl-notice-tests EXCLUDE_FROM_ALL tests/notice_tests.cpp)
+set_target_properties(osl-notice-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_include_directories(osl-notice-tests PRIVATE gpu/shim)
+target_compile_options(osl-notice-tests PRIVATE -Wall -Wextra -Werror)
+
 # Focused tests of the windowed-mode size and centring arithmetic; not part of the default build.
 add_executable(osl-window-tests EXCLUDE_FROM_ALL tests/window_fit_tests.cpp)
 set_target_properties(osl-window-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)

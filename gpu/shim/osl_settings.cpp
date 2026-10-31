@@ -83,6 +83,10 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         v.show_fps_title = ParseBool(value, v.show_fps_title);
     } else if (key == "show_resolution_title") {
         v.show_resolution_title = ParseBool(value, v.show_resolution_title);
+    } else if (key == "skip_intro") {
+        v.skip_intro = ParseBool(value, v.skip_intro);
+    } else if (key == "unlock_bookshelf") {
+        v.unlock_bookshelf = ParseBool(value, v.unlock_bookshelf);
     } else if (const int scancode = osl_key_from_name(value.c_str());
                scancode != 0 && key == osl_key_actions[OSL_KEY_HOTKEY_WINDOW_MODE].ini_key) {
         v.window_mode_key = scancode;

@@ -34,6 +34,9 @@ struct Values {
     std::atomic<bool> show_fps_title{false}, show_resolution_title{false};
     // Port hotkey as an SDL scancode (osl_keys.h): the window mode switch.
     std::atomic<int> window_mode_key{SDL_SCANCODE_F11};
+    // Mirrors the launcher's Skip intro and Unlock Bookshelf for the startup notice only; the
+    // features themselves are applied elsewhere and are not read or changed here.
+    std::atomic<bool> skip_intro{false}, unlock_bookshelf{false};
 };
 
 Values& Get();
