@@ -23,7 +23,7 @@
   Only checks an existing staged folder or release ZIP, then exits.
 .EXAMPLE
   .\tools\package.ps1
-  .\tools\package.ps1 -VerifyOnly dist\OdinSphereLeifthrasirPC-v0.1.0-windows-x64.zip
+  .\tools\package.ps1 -VerifyOnly dist\OdinSphereLeifthrasirPC-v0.2.0-windows-x64.zip
 #>
 [CmdletBinding()]
 param(

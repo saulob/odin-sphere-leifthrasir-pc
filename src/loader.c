@@ -199,7 +199,7 @@ static void note_isa_emulated(uint64_t offset) {
     static long long count;
     const long long n=__atomic_add_fetch(&count,1,__ATOMIC_RELAXED);
     if (n==1) printf("ISA: first MOVBE/BMI1 instruction emulated at guest offset 0x%" PRIx64 "\n",offset);
-    else if (!(n&((1<<22)-1))) printf("DEBUG_SAULO ISA: %lld emulated instructions, latest at guest offset 0x%" PRIx64 "\n",n,offset);
+    else if (!(n&((1<<22)-1))) printf("ISA: %lld emulated instructions, latest at guest offset 0x%" PRIx64 "\n",n,offset);
 }
 #ifdef _WIN32
 static void describe_address(char *out, size_t size, uintptr_t address) {

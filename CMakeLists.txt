@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.24)
 project(odin_sphere_leifthrasir_pc LANGUAGES C CXX)
-set(OSL_PORT_VERSION "0.1.0")
+set(OSL_PORT_VERSION "0.2.0")
 
 if (NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
     message(FATAL_ERROR "Build with Clang: MSYS2 CLANG64 (tools\\build.ps1) on Windows, tools/build.sh on Linux.")
