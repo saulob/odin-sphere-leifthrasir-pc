@@ -28,6 +28,8 @@
 #define MIN_STACK (64*1024)
 #define DEFAULT_STACK (1024*1024)
 #define DEFAULT_PRIO 700
+#define CANCELED_RESULT ((void *)1)
+#define SLEEP_SLICE_NS UINT64_C(20000000)
 
 typedef void *(ABI *GuestEntry)(void *);
 typedef struct ThreadAttr {
@@ -46,6 +48,10 @@ typedef struct GuestThread {
     ThreadAttr attr;
     char name[32];
     int detached, finished, joined, host_owned;
+    int cancel_pending, cancelled;
+    pthread_mutex_t wait_lock;
+    void (*wake)(void *,void *);
+    void *wake_first,*wake_second;
 #ifdef _WIN32
     osl_jmp_buf exit_jump; /* no SEH unwinding through guest frames */
 #else
@@ -59,6 +65,7 @@ typedef struct GuestThread {
 } GuestThread;
 
 static pthread_mutex_t lock=PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t changed=PTHREAD_COND_INITIALIZER; /* with `lock`: a thread finished or a cancellation was requested */
 static ThreadAttr *attributes;
 static GuestThread *threads;
 static _Thread_local GuestThread *current;
@@ -135,6 +142,7 @@ static void attach(GuestThread *t) {
 static GuestThread *new_thread(void) {
     GuestThread *t=calloc(1,sizeof(*t));
     if (!t) return NULL;
+    pthread_mutex_init(&t->wait_lock,NULL);
     t->attr=(ThreadAttr){.magic=ATTR_MAGIC,.policy=1,.prio=DEFAULT_PRIO,.stack=DEFAULT_STACK,.affinity=0x7f};
     return t;
 }
@@ -303,6 +311,60 @@ static void set_host_name(const char *name) {
 #define exit_setjmp(t) setjmp((t)->exit_jump)
 #define exit_longjmp(t) longjmp((t)->exit_jump,1)
 #endif
+static int cancel_requested(const GuestThread *t) {
+    return __atomic_load_n(&t->cancel_pending,__ATOMIC_ACQUIRE);
+}
+static __attribute__((noreturn)) void cancel_exit(GuestThread *t,const char *point) {
+    printf("Runtime: thread '%s' exited by cancellation at %s\n",t->name,point);
+    t->cancelled=1; t->result=CANCELED_RESULT;
+    exit_longjmp(t);
+}
+void runtime_thread_test_cancel(const char *point) {
+    GuestThread *t=current;
+    if (t && !t->host_owned && cancel_requested(t)) cancel_exit(t,point);
+}
+/* The wake callback must make a blocked wait return; it runs without any runtime lock held. */
+void runtime_thread_wait_begin(const char *point,void (*wake)(void *,void *),void *first,void *second) {
+    GuestThread *t=current;
+    if (!t || t->host_owned) return;
+    pthread_mutex_lock(&t->wait_lock);
+    t->wake=wake; t->wake_first=first; t->wake_second=second;
+    pthread_mutex_unlock(&t->wait_lock);
+    if (cancel_requested(t)) { runtime_thread_wait_end(); cancel_exit(t,point); }
+}
+void runtime_thread_wait_end(void) {
+    GuestThread *t=current;
+    if (!t || t->host_owned) return;
+    pthread_mutex_lock(&t->wait_lock);
+    t->wake=NULL;
+    pthread_mutex_unlock(&t->wait_lock);
+}
+static void wake_waiter(GuestThread *t) {
+    pthread_mutex_lock(&t->wait_lock);
+    void (*wake)(void *,void *)=t->wake;
+    void *first=t->wake_first,*second=t->wake_second;
+    pthread_mutex_unlock(&t->wait_lock);
+    if (wake) wake(first,second);
+}
+static void host_sleep(uint64_t ns) {
+#ifdef _WIN32
+    compat_sleep_ns(ns);
+#else
+    struct timespec t={.tv_sec=(time_t)(ns/1000000000),.tv_nsec=(long)(ns%1000000000)};
+    while (nanosleep(&t,&t) && errno==EINTR) {}
+#endif
+}
+/* Sleeps in slices so a cancellation request is seen within one slice. */
+void runtime_thread_sleep_ns(uint64_t ns) {
+    runtime_thread_test_cancel("sleep");
+    while (ns>SLEEP_SLICE_NS) {
+        host_sleep(SLEEP_SLICE_NS);
+        ns-=SLEEP_SLICE_NS;
+        runtime_thread_test_cancel("sleep");
+    }
+    host_sleep(ns);
+    runtime_thread_test_cancel("sleep");
+}
 static void *host_start(void *p) {
     GuestThread *t=p;
     attach(t);
@@ -313,6 +375,7 @@ static void *host_start(void *p) {
 #ifndef _WIN32
     queue_for_reap_locked(t);
 #endif
+    pthread_cond_broadcast(&changed);
     pthread_mutex_unlock(&lock);
     return t->result;
 }
@@ -359,13 +422,24 @@ static ABI int32_t thread_create(GuestThread **out,ThreadAttr **attr,GuestEntry 
 }
 static ABI int32_t thread_join(GuestThread *t,void **result) {
     if (!find_thread(t) || t->host_owned) return ERR(3);
-    if (t==current) return ERR(11);
-    if (t->detached || t->joined) return ERR(22);
+    GuestThread *self=runtime_thread_current();
+    if (t==self) return ERR(11);
+    runtime_thread_test_cancel("join");
+    pthread_mutex_lock(&lock);
+    if (t->detached || t->joined) { pthread_mutex_unlock(&lock); return ERR(22); }
     t->joined=1;
+    while (!t->finished && !cancel_requested(self)) pthread_cond_wait(&changed,&lock);
+    if (!t->finished) {
+        t->joined=0;
+        pthread_mutex_unlock(&lock);
+        cancel_exit(self,"join");
+    }
+    pthread_mutex_unlock(&lock);
     void *value=NULL;
     int e=pthread_join(t->host,&value);
     if (e) { fprintf(stderr,"STOP: host pthread_join failed: %d\n",e); exit(21); }
     if (result) *result=t->result;
+    if (t->cancelled) printf("Runtime: thread '%s' joined after cancellation\n",t->name);
 #ifndef _WIN32
     if (t->stack) release_stack(t);
 #endif
@@ -388,10 +462,24 @@ static ABI int32_t thread_detach(GuestThread *t) {
 #endif
     return 0;
 }
+/* Deferred cancellation: the target exits at its next cancellation point (join, condition wait, sleep). */
 static ABI int32_t thread_cancel(GuestThread *t) {
-    if (!find_thread(t) || t->finished) return ERR(3);
-    fputs("STOP: scePthreadCancel of a running thread is not supported\n",stderr);
-    exit(21);
+    if (!find_thread(t)) return ERR(3);
+    if (t->host_owned) return ERR(1);
+    int32_t result=0, newly=0;
+    pthread_mutex_lock(&lock);
+    if (t->finished) result=ERR(3);
+    else if (!t->cancel_pending) {
+        __atomic_store_n(&t->cancel_pending,1,__ATOMIC_RELEASE);
+        newly=1;
+        pthread_cond_broadcast(&changed);
+    }
+    pthread_mutex_unlock(&lock);
+    if (newly) {
+        printf("Runtime: thread '%s' cancellation requested\n",t->name);
+        wake_waiter(t);
+    }
+    return result;
 }
 static ABI __attribute__((noreturn)) void thread_exit(void *value) {
     GuestThread *t=runtime_thread_current();

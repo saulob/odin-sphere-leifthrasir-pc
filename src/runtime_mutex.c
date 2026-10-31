@@ -6,6 +6,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <errno.h>
+#include <sched.h>
 #include <time.h>
 typedef struct { int type; } GuestAttr;
 /* The game's libc treats the handle as the PS4 kernel's own mutex object: after scePthreadMutexInit it
@@ -188,19 +189,42 @@ static ABI int32_t cond_destroy(GuestCond **cond) {
     }
     return 0;
 }
+/* A cancelled waiter has to leave pthread_cond_wait: wake it with the mutex held, so it is already
+ * waiting rather than still on its way in. Retired conditions and mutexes stay valid for the call. */
+#define WAKE_ATTEMPTS 64
+static void cond_wake(void *cond, void *mutex) {
+    GuestCond *c = cond;
+    GuestMutex *m = mutex;
+    for (int attempt = 0; attempt < WAKE_ATTEMPTS; ++attempt) {
+        if (!pthread_mutex_trylock(&m->native)) {
+            pthread_cond_broadcast(&c->native);
+            pthread_mutex_unlock(&m->native);
+            return;
+        }
+        sched_yield();
+    }
+    pthread_cond_broadcast(&c->native);
+}
+static int cond_block(GuestCond *c, GuestMutex *m, const struct timespec *end) {
+    runtime_thread_wait_begin("condition wait", cond_wake, c, m);
+    int e = end ? pthread_cond_timedwait(&c->native, &m->native, end) : pthread_cond_wait(&c->native, &m->native);
+    runtime_thread_wait_end();
+    runtime_thread_test_cancel("condition wait");
+    return e;
+}
 static ABI int32_t cond_wait(GuestCond **cond, GuestMutex **mutex) {
     int32_t e = ensure_cond(cond);
     if (e) return e;
     if (!mutex || (uintptr_t)*mutex < 3) return orbis_error(EINVAL);
     ++waits;
-    return orbis_error(pthread_cond_wait(&(*cond)->native, &(*mutex)->native));
+    return orbis_error(cond_block(*cond, *mutex, NULL));
 }
 static int32_t cond_wait_until(GuestCond **cond, GuestMutex **mutex, const struct timespec *end) {
     int32_t e = ensure_cond(cond);
     if (e) return e;
     if (!mutex || (uintptr_t)*mutex < 3 || !end) return orbis_error(EINVAL);
     ++waits;
-    return timed_error(pthread_cond_timedwait(&(*cond)->native, &(*mutex)->native, end));
+    return timed_error(cond_block(*cond, *mutex, end));
 }
 static ABI int32_t cond_timedwait(GuestCond **cond, GuestMutex **mutex, uint32_t usec) {
     struct timespec end;

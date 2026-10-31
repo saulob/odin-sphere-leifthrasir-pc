@@ -1,6 +1,6 @@
 /* Focused tests of the runtime's locks and of the guest memory table: no game, no GPU, no host
  * mappings. The memory table's internals are tested directly (this file includes runtime_memory.c);
- * guest rwlocks and mutexes through their libkernel entry points. A deadlock fails the test after a
+ * guest rwlocks, mutexes, event flags and threads through their libkernel entry points. A deadlock fails the test after a
  * timeout and ends the process. */
 #include "../src/runtime_memory.c"
 #include <malloc.h>
@@ -18,10 +18,6 @@ static int failures;
 uintptr_t runtime_lookup(const RuntimeExport *table, size_t count, const char *nid) {
     for (size_t i=0; i<count; ++i) if (!strcmp(table[i].name,nid)) return (uintptr_t)table[i].function;
     return 0;
-}
-int32_t *runtime_errno(void) {
-    static __thread int32_t value;
-    return &value;
 }
 #ifdef _WIN32
 void runtime_log_flush(void) {}
@@ -425,6 +421,323 @@ static void test_event_flag_timeout_and_cancel(void) {
     CHECK(ef_delete_fn(flag)==0);
 }
 
+/* ---- guest threads: cancellation, join, detach (libkernel scePthread*) ---- */
+void runtime_thread_keys_cleanup(void) {}
+typedef int32_t (ABI *ThrCreate)(void **, void **, void *(ABI *)(void *), void *, const char *);
+typedef int32_t (ABI *ThrJoin)(void *, void **);
+typedef int32_t (ABI *ThrOp)(void *);
+typedef int32_t (ABI *AttrInit)(void **);
+typedef int32_t (ABI *AttrSet)(void **, int);
+typedef int32_t (ABI *ThrMutexInit)(void **, void **, const char *);
+typedef int32_t (ABI *CondInit)(void **, void **, const char *);
+typedef int32_t (ABI *CondWait)(void **, void **);
+typedef int32_t (ABI *CondTimed)(void **, void **, uint32_t);
+typedef int32_t (ABI *CondOp)(void **);
+typedef int32_t (ABI *SemCreate)(uint32_t *, const char *, uint32_t, int32_t, int32_t, const void *);
+typedef int32_t (ABI *SemWait)(uint32_t, int32_t, uint32_t *);
+typedef int32_t (ABI *SemSignal)(uint32_t, int32_t);
+typedef int32_t (ABI *SemDelete)(uint32_t);
+#define ESRCH_CODE ((int32_t)UINT32_C(0x80020003))
+#define EINVAL_CODE ((int32_t)UINT32_C(0x80020016))
+#define ETIMEDOUT_THREAD_CODE ((int32_t)UINT32_C(0x8002003c))
+#define CANCELED_RESULT ((void *)1)
+static ThrCreate thr_create;
+static ThrJoin thr_join;
+static ThrOp thr_detach, thr_cancel;
+static AttrInit attr_init_fn;
+static AttrSet attr_set_detach_fn;
+static ThrMutexInit mutex_init_fn;
+static RwOp mutex_lock_fn, mutex_unlock_fn;
+static CondInit cond_init_fn;
+static CondWait cond_wait_fn;
+static CondTimed cond_timedwait_fn;
+static CondOp cond_signal_fn;
+static SemCreate sem_create_fn;
+static SemWait sem_wait_fn;
+static SemSignal sem_signal_fn;
+static SemDelete sem_delete_fn;
+static int resolve_threads(void) {
+    thr_create=(ThrCreate)runtime_thread_resolve("6UgtwV+0zb4#libkernel");
+    thr_join=(ThrJoin)runtime_thread_resolve("onNY9Byn-W8#libkernel");
+    thr_detach=(ThrOp)runtime_thread_resolve("4qGrR6eoP9Y#libkernel");
+    thr_cancel=(ThrOp)runtime_thread_resolve("qBDmpCyGssE#libkernel");
+    attr_init_fn=(AttrInit)runtime_thread_resolve("nsYoNRywwNg#libkernel");
+    attr_set_detach_fn=(AttrSet)runtime_thread_resolve("-Wreprtu0Qs#libkernel");
+    mutex_init_fn=(ThrMutexInit)runtime_mutex_resolve("cmo1RIYva9o#libkernel");
+    mutex_lock_fn=(RwOp)runtime_mutex_resolve("9UK1vLZQft4#libkernel");
+    mutex_unlock_fn=(RwOp)runtime_mutex_resolve("tn3VlD0hG60#libkernel");
+    cond_init_fn=(CondInit)runtime_mutex_resolve("2Tb92quprl0#libkernel");
+    cond_wait_fn=(CondWait)runtime_mutex_resolve("WKAXJ4XBPQ4#libkernel");
+    cond_timedwait_fn=(CondTimed)runtime_mutex_resolve("BmMjYxmew1w#libkernel");
+    cond_signal_fn=(CondOp)runtime_mutex_resolve("kDh-NfxgMtE#libkernel");
+    sem_create_fn=(SemCreate)runtime_sema_resolve("188x57JYp0g#libkernel");
+    sem_wait_fn=(SemWait)runtime_sema_resolve("Zxa0VhQVTsk#libkernel");
+    sem_signal_fn=(SemSignal)runtime_sema_resolve("4czppHBiriw#libkernel");
+    sem_delete_fn=(SemDelete)runtime_sema_resolve("R1Jvn8bSCW8#libkernel");
+    return thr_create && thr_join && thr_detach && thr_cancel && attr_init_fn && attr_set_detach_fn &&
+           mutex_init_fn && mutex_lock_fn && mutex_unlock_fn && cond_init_fn && cond_wait_fn && cond_timedwait_fn &&
+           cond_signal_fn && sem_create_fn && sem_wait_fn && sem_signal_fn && sem_delete_fn;
+}
+static void *spawn(void *(ABI *body)(void *), void *argument, int detached) {
+    void *thread=NULL, *attr=NULL;
+    if (detached) CHECK(attr_init_fn(&attr)==0 && attr_set_detach_fn(&attr,1)==0);
+    CHECK(thr_create(&thread,detached ? &attr : NULL,body,argument,"test")==0 && thread);
+    return thread;
+}
+/* Joins from a host thread, so a join that never returns fails as a deadlock after two seconds. */
+typedef struct { void *thread; void *result; int32_t status; int done; } JoinCall;
+static void *join_runner(void *p) {
+    JoinCall *call=p;
+    call->status=thr_join(call->thread,&call->result);
+    set_flag(&call->done);
+    return NULL;
+}
+static int32_t join_within(void *thread, void **result, const char *what) {
+    JoinCall call={.thread=thread};
+    pthread_t runner=start(join_runner,&call);
+    if (!wait_for(&call.done,2000)) deadlock(what);
+    pthread_join(runner,NULL);
+    if (result) *result=call.result;
+    return call.status;
+}
+/* A finished thread's handle is dead: cancel reports ESRCH. */
+static int finished_within(void *thread, unsigned ms) {
+    for (unsigned waited=0; waited<=ms; waited+=2) {
+        if (thr_cancel(thread)==ESRCH_CODE) return 1;
+        sleep_ms(2);
+    }
+    return 0;
+}
+
+typedef struct {
+    int started, go, after, waiting;
+    void *mutex, *cond, *target;
+    uint32_t sem;
+} Shared;
+static ABI void *returns_value(void *p) {
+    Shared *s=p;
+    set_flag(&s->started);
+    return (void *)(uintptr_t)42;
+}
+static ABI void *sleeps_long(void *p) {
+    Shared *s=p;
+    set_flag(&s->started);
+    runtime_thread_sleep_ns(UINT64_C(20000000000));
+    set_flag(&s->after);
+    return NULL;
+}
+static ABI void *spins_then_sleeps(void *p) {
+    Shared *s=p;
+    set_flag(&s->started);
+    while (!__atomic_load_n(&s->go,__ATOMIC_ACQUIRE)) {}
+    runtime_thread_sleep_ns(UINT64_C(5000000));
+    set_flag(&s->after);
+    return NULL;
+}
+static ABI void *waits_on_cond(void *p) {
+    Shared *s=p;
+    CHECK(mutex_lock_fn(&s->mutex)==0);
+    s->waiting=1;
+    set_flag(&s->started);
+    cond_wait_fn(&s->cond,&s->mutex);
+    set_flag(&s->after);
+    mutex_unlock_fn(&s->mutex);
+    return (void *)(uintptr_t)7;
+}
+static ABI void *waits_on_sema_then_sleeps(void *p) {
+    Shared *s=p;
+    set_flag(&s->started);
+    CHECK(sem_wait_fn(s->sem,1,NULL)==0);
+    set_flag(&s->go);
+    runtime_thread_sleep_ns(UINT64_C(5000000));
+    set_flag(&s->after);
+    return NULL;
+}
+static ABI void *joins_target(void *p) {
+    Shared *s=p;
+    set_flag(&s->started);
+    thr_join(s->target,NULL);
+    set_flag(&s->after);
+    return NULL;
+}
+static void init_shared(Shared *s) {
+    memset(s,0,sizeof(*s));
+    CHECK(mutex_init_fn(&s->mutex,NULL,"test")==0);
+    CHECK(cond_init_fn(&s->cond,NULL,"test")==0);
+}
+/* The waiter holds the mutex until it is inside pthread_cond_wait, so taking it proves the waiter waits. */
+static void wait_until_cond_waiting(Shared *s) {
+    if (!wait_for(&s->started,2000)) deadlock("cond waiter start");
+    CHECK(mutex_lock_fn(&s->mutex)==0 && s->waiting);
+    CHECK(mutex_unlock_fn(&s->mutex)==0);
+}
+static void wait_until_sema_parked(uint32_t sem) {
+    for (unsigned waited=0; runtime_sema_waiters(sem)==0; ++waited) {
+        if (waited>2000) deadlock("semaphore waiter never parked");
+        sleep_ms(1);
+    }
+}
+
+static void test_thread_normal_lifecycle(void) {
+    Shared s;
+    init_shared(&s);
+    void *thread=spawn(returns_value,&s,0), *result=NULL;
+    CHECK(join_within(thread,&result,"normal join")==0 && result==(void *)(uintptr_t)42);
+    CHECK(join_within(thread,NULL,"second join")==EINVAL_CODE);
+    CHECK(thr_cancel(thread)==ESRCH_CODE);
+
+    memset(&s,0,sizeof(s));
+    void *detached=spawn(returns_value,&s,1);
+    CHECK(finished_within(detached,2000));
+    CHECK(thr_join(detached,NULL)==EINVAL_CODE);
+    CHECK(thr_detach(detached)==EINVAL_CODE);
+
+    thread=spawn(returns_value,&s,0);
+    CHECK(thr_detach(thread)==0);
+    CHECK(finished_within(thread,2000));
+}
+static void test_thread_cancel_invalid(void) {
+    CHECK(thr_cancel(NULL)==ESRCH_CODE);
+    CHECK(thr_cancel((void *)(uintptr_t)0x1234)==ESRCH_CODE);
+}
+static void test_thread_sleep_normal(void) {
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC,&t);
+    uint64_t begin=(uint64_t)t.tv_sec*1000000000+(uint64_t)t.tv_nsec;
+    runtime_thread_sleep_ns(60000000);
+    clock_gettime(CLOCK_MONOTONIC,&t);
+    uint64_t spent=(uint64_t)t.tv_sec*1000000000+(uint64_t)t.tv_nsec-begin;
+    CHECK(spent>=55000000 && spent<2000000000);
+    runtime_thread_sleep_ns(0);
+}
+static void test_thread_cancel_sleeping(void) {
+    Shared s;
+    init_shared(&s);
+    void *thread=spawn(sleeps_long,&s,0), *result=NULL;
+    if (!wait_for(&s.started,2000)) deadlock("sleeper start");
+    sleep_ms(30);
+    CHECK(thr_cancel(thread)==0);
+    CHECK(join_within(thread,&result,"join of a cancelled sleeper")==0 && result==CANCELED_RESULT);
+    CHECK(!__atomic_load_n(&s.after,__ATOMIC_ACQUIRE));
+    CHECK(thr_cancel(thread)==ESRCH_CODE);
+}
+static void test_thread_cancel_running(void) {
+    Shared s;
+    init_shared(&s);
+    void *thread=spawn(spins_then_sleeps,&s,0), *result=NULL;
+    if (!wait_for(&s.started,2000)) deadlock("spinner start");
+    CHECK(thr_cancel(thread)==0);
+    CHECK(thr_cancel(thread)==0);
+    set_flag(&s.go);
+    CHECK(join_within(thread,&result,"join of a cancelled running thread")==0 && result==CANCELED_RESULT);
+    CHECK(!__atomic_load_n(&s.after,__ATOMIC_ACQUIRE));
+}
+static void test_thread_cancel_cond_wait(void) {
+    Shared s;
+    init_shared(&s);
+    void *thread=spawn(waits_on_cond,&s,0), *result=NULL;
+    wait_until_cond_waiting(&s);
+    CHECK(thr_cancel(thread)==0);
+    CHECK(join_within(thread,&result,"join of a cancelled cond waiter")==0 && result==CANCELED_RESULT);
+    CHECK(!__atomic_load_n(&s.after,__ATOMIC_ACQUIRE));
+}
+/* The request can land while the waiter is still on its way into the wait. */
+static void test_thread_cancel_racing_cond_wait(void) {
+    for (int round=0; round<200; ++round) {
+        Shared s;
+        init_shared(&s);
+        void *thread=spawn(waits_on_cond,&s,0), *result=NULL;
+        if (round%2) sleep_ms(1);
+        CHECK(thr_cancel(thread)==0);
+        CHECK(join_within(thread,&result,"cancel racing a cond wait")==0);
+        CHECK(result==CANCELED_RESULT);
+    }
+}
+static void test_thread_cond_wait_normal(void) {
+    Shared s;
+    init_shared(&s);
+    void *thread=spawn(waits_on_cond,&s,0), *result=NULL;
+    wait_until_cond_waiting(&s);
+    CHECK(cond_signal_fn(&s.cond)==0);
+    CHECK(join_within(thread,&result,"join after a signal")==0 && result==(void *)(uintptr_t)7);
+    CHECK(__atomic_load_n(&s.after,__ATOMIC_ACQUIRE));
+
+    CHECK(mutex_lock_fn(&s.mutex)==0);
+    CHECK(cond_timedwait_fn(&s.cond,&s.mutex,20000)==ETIMEDOUT_THREAD_CODE);
+    CHECK(mutex_unlock_fn(&s.mutex)==0);
+}
+/* A kernel semaphore wait is not a cancellation point: the request stays pending until the next one. */
+static void test_thread_cancel_semaphore_wait(void) {
+    Shared s;
+    init_shared(&s);
+    CHECK(sem_create_fn(&s.sem,"cancelled",0,0,10,NULL)==0);
+    void *thread=spawn(waits_on_sema_then_sleeps,&s,0), *result=NULL;
+    wait_until_sema_parked(s.sem);
+    CHECK(thr_cancel(thread)==0);
+    CHECK(thr_cancel(thread)==0);
+    sleep_ms(50);
+    CHECK(!__atomic_load_n(&s.go,__ATOMIC_ACQUIRE) && runtime_sema_waiters(s.sem)==1);
+    CHECK(sem_signal_fn(s.sem,1)==0);
+    CHECK(join_within(thread,&result,"join of a cancelled semaphore waiter")==0 && result==CANCELED_RESULT);
+    CHECK(__atomic_load_n(&s.go,__ATOMIC_ACQUIRE) && !__atomic_load_n(&s.after,__ATOMIC_ACQUIRE));
+    CHECK(sem_delete_fn(s.sem)==0);
+
+    memset(&s,0,sizeof(s));
+    CHECK(sem_create_fn(&s.sem,"normal",0,0,10,NULL)==0);
+    thread=spawn(waits_on_sema_then_sleeps,&s,0);
+    wait_until_sema_parked(s.sem);
+    CHECK(sem_signal_fn(s.sem,1)==0);
+    CHECK(join_within(thread,&result,"join of a normal semaphore waiter")==0 && result==NULL);
+    CHECK(__atomic_load_n(&s.after,__ATOMIC_ACQUIRE));
+    CHECK(sem_delete_fn(s.sem)==0);
+}
+static void test_thread_cancel_detached(void) {
+    Shared s;
+    init_shared(&s);
+    void *thread=spawn(sleeps_long,&s,1);
+    if (!wait_for(&s.started,2000)) deadlock("detached sleeper start");
+    CHECK(thr_cancel(thread)==0);
+    CHECK(finished_within(thread,2000));
+    CHECK(!__atomic_load_n(&s.after,__ATOMIC_ACQUIRE));
+    CHECK(thr_join(thread,NULL)==EINVAL_CODE);
+}
+/* Cancelling a thread blocked in join ends that join without joining its target. */
+static void test_thread_cancel_joiner(void) {
+    Shared target, joiner;
+    init_shared(&target);
+    init_shared(&joiner);
+    void *victim=spawn(sleeps_long,&target,0), *result=NULL;
+    if (!wait_for(&target.started,2000)) deadlock("join target start");
+    joiner.target=victim;
+    void *waiter=spawn(joins_target,&joiner,0);
+    if (!wait_for(&joiner.started,2000)) deadlock("joiner start");
+    sleep_ms(30);
+    CHECK(thr_cancel(waiter)==0);
+    CHECK(join_within(waiter,&result,"join of a cancelled joiner")==0 && result==CANCELED_RESULT);
+    CHECK(!__atomic_load_n(&joiner.after,__ATOMIC_ACQUIRE));
+    CHECK(thr_cancel(victim)==0);
+    CHECK(join_within(victim,&result,"join of the target after its joiner was cancelled")==0 && result==CANCELED_RESULT);
+}
+static void test_thread_cancel_races(void) {
+    Shared s;
+    for (int round=0; round<200; ++round) {
+        memset(&s,0,sizeof(s));
+        void *thread=spawn(returns_value,&s,0), *result=NULL;
+        int32_t r=thr_cancel(thread);
+        CHECK(r==0 || r==ESRCH_CODE);
+        CHECK(join_within(thread,&result,"cancel racing a finish")==0);
+        CHECK(result==CANCELED_RESULT || result==(void *)(uintptr_t)42);
+    }
+    for (int round=0; round<200; ++round) {
+        memset(&s,0,sizeof(s));
+        void *thread=spawn(returns_value,&s,0);
+        int32_t c=thr_cancel(thread);
+        CHECK(c==0 || c==ESRCH_CODE);
+        CHECK(thr_detach(thread)==0);
+        CHECK(finished_within(thread,2000));
+    }
+}
+
 int main(void) {
     test_split_keeps_backing_offsets();
     test_unchanged_protection();
@@ -437,6 +750,19 @@ int main(void) {
     test_event_flag_poll_reports_parked_waiter();
     test_event_flag_worker_handshake();
     test_event_flag_timeout_and_cancel();
+    if (!resolve_threads()) { puts("FAIL: thread entry points"); return 1; }
+    test_thread_normal_lifecycle();
+    test_thread_cancel_invalid();
+    test_thread_sleep_normal();
+    test_thread_cancel_sleeping();
+    test_thread_cancel_running();
+    test_thread_cancel_cond_wait();
+    test_thread_cancel_racing_cond_wait();
+    test_thread_cond_wait_normal();
+    test_thread_cancel_semaphore_wait();
+    test_thread_cancel_detached();
+    test_thread_cancel_joiner();
+    test_thread_cancel_races();
     if (failures) {
         printf("%d check(s) failed\n",failures);
         return 1;

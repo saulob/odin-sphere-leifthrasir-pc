@@ -35,6 +35,12 @@ uintptr_t runtime_thread_resolve(const char *name);
 void runtime_thread_report(void);
 void runtime_set_main_tls(const void *data, uint64_t filesz, uint64_t memsz, uint64_t align);
 void runtime_thread_attach_main(void);
+/* Cancellation points: a guest thread with a pending scePthreadCancel exits there (result 1). A blocking wait
+ * registers a wake callback that makes it return, so the thread can reach the next test. */
+void runtime_thread_test_cancel(const char *point);
+void runtime_thread_wait_begin(const char *point, void (*wake)(void *, void *), void *first, void *second);
+void runtime_thread_wait_end(void);
+void runtime_thread_sleep_ns(uint64_t ns);
 int32_t *runtime_errno(void);
 uintptr_t runtime_sema_resolve(const char *name);
 uintptr_t runtime_fiber_resolve(const char *name);
