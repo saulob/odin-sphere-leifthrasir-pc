@@ -88,7 +88,7 @@ if (WIN32)
 else()
     set(OSL_PLATFORM_SOURCES src/runtime_log_posix.c)
 endif()
-set(OSL_MAIN_SOURCES src/loader.c src/crash_report.c src/hang_report.c src/isa_emulate.c src/lzcnt_compat.c ${OSL_RUNTIME_SOURCES} ${OSL_PLATFORM_SOURCES})
+set(OSL_MAIN_SOURCES src/loader.c src/crash_report.c src/hang_report.c src/isa_emulate.c ${OSL_RUNTIME_SOURCES} ${OSL_PLATFORM_SOURCES})
 if (WIN32)
     # Windows subsystem: no console window. The run log takes stdout and stderr (src/runtime_log.c).
     add_executable(odin_sphere_leifthrasir WIN32 ${OSL_MAIN_SOURCES})

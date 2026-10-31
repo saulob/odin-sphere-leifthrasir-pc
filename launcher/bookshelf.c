@@ -9,7 +9,7 @@ enum {
     SAVE_UNLOCKED = 0x184c5,
     CALL_BYTES = 5,
     SIGNATURE_BYTES = OSL_BOOKSHELF_SIGNATURE_BYTES,
-    ACCESSOR_BYTES = 22,
+    ACCESSOR_BYTES = OSL_BOOKSHELF_ACCESSOR_BYTES,
     TOTAL_BYTES = OSL_BOOKSHELF_TOTAL_BYTES,
     TOTAL_TEST_BYTES = 7,
     STUB_SPACE = 0x400,
@@ -17,7 +17,7 @@ enum {
     READ_STATE = 2
 };
 
-static const short accessor_shape[ACCESSOR_BYTES] = {
+const short osl_bookshelf_accessor_shape[OSL_BOOKSHELF_ACCESSOR_BYTES] = {
     0x48, 0x8d, 0x05, ANY, ANY, ANY, ANY, 0x48, 0x8b, 0x00, 0x48, 0x8b, 0xb8, 0x88, 0x01, 0x00, 0x00, 0xe9, ANY, ANY, ANY, ANY,
 };
 
@@ -160,7 +160,7 @@ int osl_apply_bookshelf(unsigned char *image, uint64_t image_size, const OslBook
     if ((uint64_t)sites->accessor + ACCESSOR_BYTES > image_size)
         return fail(error, error_size, "site outside the image", sites->accessor);
     for (int i = 0; i < ACCESSOR_BYTES; ++i)
-        if (accessor_shape[i] != ANY && image[sites->accessor + i] != (unsigned char)accessor_shape[i])
+        if (osl_bookshelf_accessor_shape[i] != ANY && image[sites->accessor + i] != (unsigned char)osl_bookshelf_accessor_shape[i])
             return fail(error, error_size, "unexpected save data getter", sites->accessor);
     if ((uint64_t)sites->total + TOTAL_BYTES > image_size || memcmp(image + sites->total, osl_bookshelf_total_code, TOTAL_BYTES))
         return fail(error, error_size, "unexpected code", sites->total);

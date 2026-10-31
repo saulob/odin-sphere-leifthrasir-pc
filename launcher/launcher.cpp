@@ -660,6 +660,7 @@ private:
              replace = files_ == GameFileState::kValid](trg::Task& task) {
                 InstallHooks hooks;
                 hooks.replace_active = replace;
+                hooks.prompt_patch = XboxPromptsPatch();
                 hooks.phase = [&task](const char* text) {
                     task.SetLabel(text);
                     task.Progress(0, 0);
@@ -711,6 +712,9 @@ private:
             return;
         }
         Log("game install failed: %s (%s)", message.title.c_str(), outcome->detail.c_str());
+        if (!outcome->report.empty()) {
+            std::printf("%s", outcome->report.c_str());
+        }
         install_failure_ = message.title;
         install_failure_text_ = message.text;
         launcher_->SetStatus(std::string("Install failed: ") + install_failure_, 8.0);

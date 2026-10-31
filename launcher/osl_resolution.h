@@ -49,6 +49,11 @@ typedef struct {
     int pixel_budget;     /* 1 when value is a byte count that grows with the render target (osl_scaled_budget) */
 } OslResolutionSite;
 
+enum { OSL_SNAPSHOT_WINDOW = 45, OSL_SNAPSHOT_FACTOR = 4, OSL_SNAPSHOT_PAIR = 11 };
+/* The code the snapshot scale site holds; -1 matches any byte. The rip-relative operands at OSL_SNAPSHOT_FACTOR and
+ * OSL_SNAPSHOT_PAIR reach the factor 1.5 (0x3fc00000) and the two floats the layer scale is read from. */
+extern const short osl_snapshot_window[OSL_SNAPSHOT_WINDOW];
+
 /* The Text Archive draws its page text into a screen-sized snapshot and composites it back from pixel rectangles scaled
  * from layer units (1280x720) with the 1080p factor 1.5. Rewrites the code that applies the factor to use the render
  * target's width / 1280 and height / 720. `offset` is where that code starts; nothing is written when it differs. */

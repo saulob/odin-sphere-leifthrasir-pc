@@ -16,6 +16,7 @@ enum {
     OSL_BOOKSHELF_MARKS = 2,
     OSL_BOOKSHELF_SIGNATURE_BYTES = 9,
     OSL_BOOKSHELF_TOTAL_BYTES = 12,
+    OSL_BOOKSHELF_ACCESSOR_BYTES = 22,
     OSL_BOOKSHELF_STUB_BYTES = 0x1000
 };
 
@@ -33,6 +34,8 @@ extern const unsigned char osl_bookshelf_read_signatures[OSL_BOOKSHELF_READS][OS
 extern const unsigned char osl_bookshelf_in_place_page_signature[OSL_BOOKSHELF_SIGNATURE_BYTES];
 extern const unsigned char osl_bookshelf_mark_signatures[OSL_BOOKSHELF_MARKS][OSL_BOOKSHELF_SIGNATURE_BYTES];
 extern const unsigned char osl_bookshelf_total_code[OSL_BOOKSHELF_TOTAL_BYTES];
+/* The save data getter's first bytes; -1 matches any byte. */
+extern const short osl_bookshelf_accessor_shape[OSL_BOOKSHELF_ACCESSOR_BYTES];
 
 /* Whether a slot holds content: slots 0-54 and 102-161 the 115 texts, 162 Special, the artwork gallery. 55-101 are
  * placeholders. */

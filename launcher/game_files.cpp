@@ -447,6 +447,9 @@ extern "C" int osl_install_game(const char* package, const char* app0, const cha
     if (!result.detail.empty()) {
         std::printf("  %s\n", result.detail.c_str());
     }
+    if (!result.report.empty()) {
+        std::printf("%s", result.report.c_str());
+    }
     if (detail && detail_size) {
         std::snprintf(detail, detail_size, "%s", message.title.c_str());
     }

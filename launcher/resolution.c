@@ -67,8 +67,8 @@ uint32_t osl_scaled_budget(uint32_t native_bytes, const OslResolution *target) {
 
 /* vmovss xmm1,[1.5f]; lea rax,[pair]; mov edi,0; vmovaps xmm2,xmm1; vmovss xmm5,[rax]; vmovss xmm1,[rax+4];
  * vmulss xmm3,xmm3,xmm2; vmulss xmm6,xmm6,xmm2; vmulss xmm7,xmm7,xmm2 */
-enum { SNAPSHOT_WINDOW = 45, SNAPSHOT_FACTOR = 4, SNAPSHOT_PAIR = 11, SNAPSHOT_LOAD = 32 };
-static const short snapshot_window[SNAPSHOT_WINDOW] = {
+enum { SNAPSHOT_WINDOW = OSL_SNAPSHOT_WINDOW, SNAPSHOT_FACTOR = OSL_SNAPSHOT_FACTOR, SNAPSHOT_PAIR = OSL_SNAPSHOT_PAIR, SNAPSHOT_LOAD = 32 };
+const short osl_snapshot_window[OSL_SNAPSHOT_WINDOW] = {
     0xc5, 0xfa, 0x10, 0x0d, ANY,  ANY,  ANY,  ANY,  0x48, 0x8d, 0x05, ANY,  ANY,  ANY,  ANY,
     0xbf, 0x00, 0x00, 0x00, 0x00, 0xc5, 0xf8, 0x28, 0xd1, 0xc5, 0xfa, 0x10, 0x28, 0xc5, 0xfa, 0x10,
     0x48, 0x04, 0xc5, 0xe2, 0x59, 0xda, 0xc5, 0xca, 0x59, 0xf2, 0xc5, 0xc2, 0x59, 0xfa,
@@ -88,7 +88,7 @@ int osl_apply_snapshot_scale(unsigned char *image, uint64_t image_size, uint32_t
     if ((uint64_t)offset + SNAPSHOT_WINDOW > image_size) return fail(error, error_size, "site outside the image", offset);
     unsigned char *at = image + offset;
     for (int i = 0; i < SNAPSHOT_WINDOW; ++i)
-        if (snapshot_window[i] != ANY && at[i] != (unsigned char)snapshot_window[i])
+        if (osl_snapshot_window[i] != ANY && at[i] != (unsigned char)osl_snapshot_window[i])
             return fail(error, error_size, "unexpected instruction", offset);
     const int64_t factor = (int64_t)offset + SNAPSHOT_FACTOR + 4 + read_displacement(at + SNAPSHOT_FACTOR);
     const int64_t pair = (int64_t)offset + SNAPSHOT_PAIR + 4 + read_displacement(at + SNAPSHOT_PAIR);

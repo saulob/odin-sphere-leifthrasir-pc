@@ -22,6 +22,7 @@
 
 #include <SDL3/SDL_scancode.h>
 
+#include "build_diagnostics.h"
 #include "controller_prompts.h"
 #include "cpk_patch.h"
 #include "crash_report.h"
@@ -30,6 +31,7 @@
 #include "game_profile.h"
 #include "hang_report.h"
 #include "launcher_quit.h"
+#include "lzcnt_compat.h"
 #include "options.h"
 #include "osl_accent.h"
 #include "osl_graphics.h"
@@ -746,7 +748,8 @@ void TestOptionsAndInstall() {
 
     for (const InstallStatus status : {InstallStatus::kInstalled, InstallStatus::kCancelled, InstallStatus::kNotPackage,
                                        InstallStatus::kUnsupportedPackage, InstallStatus::kNotGameFolder,
-                                       InstallStatus::kWrongGame, InstallStatus::kWrongVersion, InstallStatus::kIncomplete,
+                                       InstallStatus::kWrongGame, InstallStatus::kWrongVersion, InstallStatus::kUnsupportedBuild,
+                                       InstallStatus::kIncomplete,
                                        InstallStatus::kReadFailed, InstallStatus::kNoSpace, InstallStatus::kWriteFailed,
                                        InstallStatus::kPrepareFailed}) {
         const InstallMessage message = DescribeInstall(status);
@@ -2592,6 +2595,326 @@ void TestSharedDirectoryArchive() {
     CHECK(ReadFile(app0 / files[0]) == original && !AnyPromptPatch(app0, build));
 }
 
+std::vector<int16_t> Shorts(const short* bytes, size_t count) {
+    return std::vector<int16_t>(bytes, bytes + count);
+}
+
+void PlantPattern(MappedExecutable& image, size_t at, const std::vector<int16_t>& pattern) {
+    for (size_t i = 0; i < pattern.size(); ++i) {
+        image.image[at + i] = pattern[i] < 0 ? 0 : static_cast<uint8_t>(pattern[i]);
+    }
+}
+
+void PlantRelative(MappedExecutable& image, size_t at, size_t target, size_t instruction_end) {
+    const int32_t relative = static_cast<int32_t>(static_cast<int64_t>(target) - static_cast<int64_t>(instruction_end));
+    std::memcpy(&image.image[at], &relative, 4);
+}
+
+void PlantFloat(MappedExecutable& image, size_t at, float value) {
+    std::memcpy(&image.image[at], &value, 4);
+}
+
+constexpr size_t kPlantedNotice = 0x100, kPlantedHd = 0x200, kPlantedClassic = 0x300, kPlantedSnapshot = 0x400;
+constexpr size_t kPlantedGetter = 0x2000, kPlantedTotal = 0x2100, kPlantedReads = 0x2200, kPlantedMarks = 0x2600;
+constexpr size_t kPlantedLzcnt = 0x3000, kPlantedData = 0x31000, kPlantedDecoy = 0x20000;
+
+// An image holding every pattern the scanner looks for exactly once, in the shapes the production patches expect.
+MappedExecutable SyntheticOdinImage() {
+    MappedExecutable image;
+    image.image.assign(0x40000, 0);
+    image.segments = {{0, 0x2f800, 5}, {0x30000, 0x8000, 4}};
+    image.entry = 0x1234;
+    PlantPattern(image, kPlantedNotice, Shorts(osl_skip_intro_notice_code.bytes, osl_skip_intro_notice_code.count));
+    PlantPattern(image, kPlantedHd, Shorts(osl_skip_intro_hd_title_code.bytes, osl_skip_intro_hd_title_code.count));
+    PlantPattern(image, kPlantedClassic,
+                 Shorts(osl_skip_intro_classic_title_code.bytes, osl_skip_intro_classic_title_code.count));
+    PlantRelative(image, kPlantedClassic + 45, 0x1000, kPlantedClassic + 49);
+
+    PlantPattern(image, kPlantedSnapshot, Shorts(osl_snapshot_window, OSL_SNAPSHOT_WINDOW));
+    PlantRelative(image, kPlantedSnapshot + OSL_SNAPSHOT_FACTOR, kPlantedData, kPlantedSnapshot + OSL_SNAPSHOT_FACTOR + 4);
+    PlantRelative(image, kPlantedSnapshot + OSL_SNAPSHOT_PAIR, kPlantedData + 8, kPlantedSnapshot + OSL_SNAPSHOT_PAIR + 4);
+    PlantFloat(image, kPlantedData, 1.5f);
+    PlantFloat(image, kPlantedData + 8, 1280.0f);
+    PlantFloat(image, kPlantedData + 12, 720.0f);
+
+    size_t cursor = 0x1100;
+    uint32_t previous_end = 0;
+    for (const OslResolutionSite& site : SupportedBuilds()[0].resolution_sites) {
+        if (site.offset != previous_end) {
+            cursor += 0x40;
+        }
+        std::memcpy(&image.image[cursor], site.opcode, site.opcode_length);
+        std::memcpy(&image.image[cursor + site.opcode_length], &site.value, 4);
+        size_t length = site.opcode_length + 4u;
+        if (site.packed_floats) {
+            std::memcpy(&image.image[cursor + length], &site.value_high, 4);
+            length += 4;
+        }
+        cursor += length;
+        previous_end = site.offset + static_cast<uint32_t>(length);
+    }
+
+    PlantPattern(image, kPlantedGetter, Shorts(osl_bookshelf_accessor_shape, OSL_BOOKSHELF_ACCESSOR_BYTES));
+    std::memcpy(&image.image[kPlantedTotal], osl_bookshelf_total_code, OSL_BOOKSHELF_TOTAL_BYTES);
+    const auto plant_call = [&](size_t at, const unsigned char* signature) {
+        image.image[at] = 0xe8;
+        PlantRelative(image, at + 1, kPlantedGetter, at + 5);
+        std::memcpy(&image.image[at + 5], signature, OSL_BOOKSHELF_SIGNATURE_BYTES);
+    };
+    for (int i = 0; i < OSL_BOOKSHELF_READS; ++i) {
+        plant_call(kPlantedReads + i * 0x20, osl_bookshelf_read_signatures[i]);
+    }
+    for (int i = 0; i < OSL_BOOKSHELF_MARKS; ++i) {
+        plant_call(kPlantedMarks + i * 0x20, osl_bookshelf_mark_signatures[i]);
+    }
+    plant_call(kPlantedDecoy, osl_bookshelf_read_signatures[7]);
+
+    for (int i = 0; i < LZCNT_RANGE_COUNT; ++i) {
+        std::memcpy(&image.image[kPlantedLzcnt + i * 0x20], lzcnt_shapes[i].bytes, lzcnt_shapes[i].length);
+    }
+    return image;
+}
+
+bool Contains(const std::string& text, const std::string& part) {
+    return text.find(part) != std::string::npos;
+}
+
+std::string HexText(uint64_t value) {
+    char text[24];
+    std::snprintf(text, sizeof(text), "0x%llx", static_cast<unsigned long long>(value));
+    return text;
+}
+
+bool Unresolved(const ScanResult& scan, const std::string& what) {
+    return std::find(scan.unresolved.begin(), scan.unresolved.end(), what) != scan.unresolved.end();
+}
+
+void TestBuildDiagnosticsScanner() {
+    const MappedExecutable image = SyntheticOdinImage();
+    const ScanResult scan = ScanExecutable(image, image.image.size());
+    CHECK(scan.complete());
+    CHECK(scan.anything_found);
+    CHECK(Contains(scan.text, "notice scene: unique " + HexText(kPlantedNotice + 19)));
+    CHECK(Contains(scan.text, "hd title check: unique " + HexText(kPlantedHd + 7)));
+    CHECK(Contains(scan.text, "classic title check: unique " + HexText(kPlantedClassic + 44)));
+    CHECK(Contains(scan.text, "classic button: inside the code 0x1000"));
+    CHECK(Contains(scan.text, "stub space: free 0x2f800"));
+    CHECK(Contains(scan.text, "getter: unique " + HexText(kPlantedGetter)));
+    CHECK(Contains(scan.text, "special test: unique " + HexText(kPlantedTotal)));
+    CHECK(Contains(scan.text, "reads: 14/14"));
+    CHECK(Contains(scan.text, "marks: 2/2 " + HexText(kPlantedMarks) + " " + HexText(kPlantedMarks + 0x20)));
+    CHECK(Contains(scan.text, "read order: consistent"));
+    CHECK(Contains(scan.text, "site: unique " + HexText(kPlantedSnapshot)));
+    CHECK(Contains(scan.text, "the expected 1.5"));
+    const std::string site_count = std::to_string(SupportedBuilds()[0].resolution_sites.size());
+    CHECK(Contains(scan.text, "sites: " + site_count + "/" + site_count));
+    CHECK(Contains(scan.text, "ranges: unique"));
+    CHECK(Contains(scan.text, "unexpected instructions: 0"));
+    CHECK(Contains(scan.text, "rewrite check on a scratch copy: ok"));
+    size_t complete = 0;
+    for (size_t at = scan.text.find("status: complete"); at != std::string::npos; at = scan.text.find("status: complete", at + 1)) {
+        ++complete;
+    }
+    CHECK(complete == 5);
+
+    MappedExecutable duplicated = image;
+    PlantPattern(duplicated, 0x10000, Shorts(osl_skip_intro_notice_code.bytes, osl_skip_intro_notice_code.count));
+    const ScanResult ambiguous = ScanExecutable(duplicated, duplicated.image.size());
+    CHECK(!ambiguous.complete());
+    CHECK(Contains(ambiguous.text, "notice scene: ambiguous (2 matches, expected 1)"));
+    CHECK(Unresolved(ambiguous, "Skip intro notice scene"));
+
+    MappedExecutable no_mark = image;
+    std::fill_n(no_mark.image.begin() + kPlantedMarks + 0x20, 16, uint8_t{0x90});
+    const ScanResult missing = ScanExecutable(no_mark, no_mark.image.size());
+    CHECK(!missing.complete());
+    CHECK(Unresolved(missing, "Bookshelf mark 1"));
+
+    MappedExecutable no_getter = image;
+    std::fill_n(no_getter.image.begin() + kPlantedGetter, 22, uint8_t{0x90});
+    const ScanResult no_reads = ScanExecutable(no_getter, no_getter.image.size());
+    CHECK(Contains(no_reads.text, "reads: not attempted"));
+    CHECK(!no_reads.complete());
+
+    MappedExecutable extra = image;
+    const unsigned char unknown_lzcnt[] = {0xf3, 0x4c, 0x0f, 0xbd, 0xc1};
+    std::memcpy(&extra.image[0x20100], unknown_lzcnt, sizeof(unknown_lzcnt));
+    const ScanResult unexpected = ScanExecutable(extra, extra.image.size());
+    CHECK(Contains(unexpected.text, "unexpected instructions: 1"));
+    CHECK(Unresolved(unexpected, "LZCNT instructions outside the shapes"));
+
+    MappedExecutable wrong_scale = image;
+    PlantFloat(wrong_scale, kPlantedData, 2.0f);
+    CHECK(!ScanExecutable(wrong_scale, wrong_scale.image.size()).complete());
+
+    const MappedExecutable empty;
+    const ScanResult nothing = ScanExecutable(empty, 0);
+    CHECK(!nothing.complete() && !nothing.anything_found);
+}
+
+void WriteBytes(const std::filesystem::path& path, const std::vector<uint8_t>& bytes) {
+    std::filesystem::create_directories(path.parent_path());
+    std::ofstream out(path, std::ios::binary);
+    out.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+}
+
+void TestMapExecutableRejectsMalformedFiles() {
+    const std::filesystem::path dir = TempDir("map-executable");
+    MappedExecutable out;
+    out.entry = 77;
+    CHECK(!MapExecutable(dir / "missing.bin", out).empty());
+    WriteBytes(dir / "empty.bin", {});
+    CHECK(!MapExecutable(dir / "empty.bin", out).empty());
+    WriteBytes(dir / "magic.bin", {'O', 0x15, '=', 0x1d});
+    CHECK(!MapExecutable(dir / "magic.bin", out).empty());
+
+    std::vector<uint8_t> header(4096, 0);
+    const uint8_t magic[] = {'O', 0x15, '=', 0x1d};
+    std::memcpy(header.data(), magic, 4);
+    WriteBytes(dir / "no-elf.bin", header);
+    CHECK(!MapExecutable(dir / "no-elf.bin", out).empty());
+
+    const uint8_t ident[] = {0x7f, 'E', 'L', 'F', 2, 1, 1};
+    std::memcpy(header.data() + 32, ident, sizeof(ident));
+    header[32 + 18] = 62;
+    header[32 + 54] = 56;
+    header[32 + 56] = 1;
+    const uint64_t far = 0xfffffffffffffff0ull;
+    std::memcpy(header.data() + 32 + 32, &far, 8);
+    WriteBytes(dir / "wild-offset.bin", header);
+    CHECK(!MapExecutable(dir / "wild-offset.bin", out).empty());
+
+    const uint64_t near_end = 4090;
+    std::memcpy(header.data() + 32 + 32, &near_end, 8);
+    WriteBytes(dir / "truncated-headers.bin", header);
+    CHECK(!MapExecutable(dir / "truncated-headers.bin", out).empty());
+    CHECK(out.entry == 77 && out.image.empty());
+}
+
+void TestUnsupportedBuildFlow() {
+    const std::filesystem::path root = TempDir("unsupported-build");
+    const std::filesystem::path game = root / "game";
+    std::filesystem::create_directories(game / "sce_sys");
+    const std::string eboot_bytes(2048, 'x');
+    {
+        std::ofstream eboot(game / "eboot.bin", std::ios::binary);
+        eboot << eboot_bytes;
+    }
+    std::ofstream(game / "Odin2_BT_US.CPK", std::ios::binary) << "not a cpk";
+    std::ofstream(game / "sce_discmap.plt", std::ios::binary) << "plt";
+    WriteSfo(game / "sce_sys" / "param.sfo",
+             {{"TITLE_ID", "CUSA05083"},
+              {"CONTENT_ID", "UP0177-CUSA05083_00-ODINSPHERELE0000"},
+              {"CATEGORY", "gd"},
+              {"APP_VER", "01.01"},
+              {"VERSION", "01.01"}});
+    const GameRoots roots{root / "prepared", root / "image"};
+
+    const InstallResult result = InstallFromFolder(game, roots);
+    CHECK(result.status == InstallStatus::kUnsupportedBuild);
+    CHECK(!result.ok());
+    CHECK(result.report.starts_with("Unsupported build diagnostics begin\n"));
+    CHECK(result.report.ends_with("Unsupported build diagnostics end\n"));
+    CHECK(Contains(result.report, "eboot.bin: 2048 bytes"));
+    CHECK(Contains(result.report, "SHA-256: " + Sha256Hex(game / "eboot.bin")));
+    CHECK(Contains(result.report, "Reported build match: none (still unsupported)"));
+    CHECK(Contains(result.report, "TITLE_ID CUSA05083, CONTENT_ID UP0177-CUSA05083_00-ODINSPHERELE0000, APP_VER 01.01"));
+    CHECK(Contains(result.report, "Executable: not readable"));
+    CHECK(Contains(result.report, "Odin2_BT_US.CPK: 9 bytes, CPK NOT READABLE"));
+    CHECK(Contains(result.report, "sce_discmap_patch.plt: absent"));
+    CHECK(Contains(result.report, "Mapping incomplete"));
+    CHECK(!std::filesystem::exists(roots.prepared) && !std::filesystem::exists(roots.image));
+    CHECK(ReadFile(game / "eboot.bin") == eboot_bytes);
+    const InstallMessage message = DescribeInstall(InstallStatus::kUnsupportedBuild);
+    CHECK(message.title == "Unsupported Odin Sphere Leifthrasir build");
+    CHECK(Contains(message.text, "not supported yet") && Contains(message.text, "written to the log"));
+    CHECK(!Contains(message.text, "0x") && !Contains(message.title, "0x"));
+
+    std::filesystem::remove(game / "Odin2_BT_US.CPK");
+    const InstallResult other = InstallFromFolder(game, roots);
+    CHECK(other.status == InstallStatus::kWrongVersion && other.report.empty());
+    CHECK(!DiagnoseUnsupportedBuild(game, "detail").odin);
+
+    std::ofstream(game / "Odin2_BT_US.CPK", std::ios::binary) << "not a cpk";
+    WriteSfo(game / "sce_sys" / "param.sfo",
+             {{"TITLE_ID", "CUSA99999"}, {"CONTENT_ID", "UP0000-CUSA99999_00-OTHERGAME000000"}, {"APP_VER", "01.00"}});
+    const InstallResult foreign = InstallFromFolder(game, roots);
+    CHECK(foreign.status == InstallStatus::kWrongGame && foreign.report.empty());
+
+    WriteSfo(game / "sce_sys" / "param.sfo",
+             {{"TITLE_ID", "CUSA05083"},
+              {"CONTENT_ID", "UP0177-CUSA05083_00-ODINSPHERELE0000"},
+              {"APP_VER", "01.01"},
+              {"VERSION", "01.01"},
+              {"CATEGORY", "gp"}});
+    const UnsupportedBuildReport package = DiagnoseUnsupportedPackage(ReadFile(game / "sce_sys" / "param.sfo"));
+    CHECK(package.odin && Contains(package.text, "APP_VER 01.01") && Contains(package.text, "CATEGORY gp"));
+    CHECK(!DiagnoseUnsupportedPackage("").odin);
+
+    const std::filesystem::path supported = root / "supported";
+    std::filesystem::create_directories(supported / "sce_sys");
+    WriteSfo(supported / "sce_sys" / "param.sfo",
+             {{"TITLE_ID", "CUSA05083"},
+              {"CONTENT_ID", "UP0177-CUSA05083_00-ODINSPHERELE0000"},
+              {"APP_VER", "01.00"},
+              {"VERSION", "01.01"}});
+    std::ofstream(supported / "eboot.bin", std::ios::binary) << "x";
+    const InstallResult supported_identity = InstallFromFolder(supported, roots);
+    CHECK(supported_identity.status == InstallStatus::kIncomplete && supported_identity.report.empty());
+}
+
+void TestBuildDiagnosticsKnownBuild() {
+    const std::filesystem::path game = std::filesystem::path(OSL_SOURCE_DIR) / "game" / "prepared" / "CUSA05083-1.00";
+    std::error_code ec;
+    if (!std::filesystem::is_regular_file(game / "eboot.bin", ec)) {
+        std::printf("skipped: no local CUSA05083 1.00 game folder for the known-build scan\n");
+        return;
+    }
+    const GameBuild& build = SupportedBuilds()[0];
+    if (Sha256Hex(game / "eboot.bin") != build.eboot_sha256) {
+        std::printf("skipped: the local CUSA05083 game folder is not the supported eboot\n");
+        return;
+    }
+    const std::uintmax_t size_before = std::filesystem::file_size(game / "eboot.bin", ec);
+    const auto time_before = std::filesystem::last_write_time(game / "eboot.bin", ec);
+    const UnsupportedBuildReport report = DiagnoseUnsupportedBuild(game, "test");
+    CHECK(report.odin);
+    CHECK(Contains(report.text, "Mapping appears complete"));
+    CHECK(Contains(report.text, "SHA-256: " + std::string(build.eboot_sha256)));
+    CHECK(Contains(report.text, "notice scene: unique " + HexText(build.skip_intro->notice_scene)));
+    CHECK(Contains(report.text, "hd title check: unique " + HexText(build.skip_intro->hd_title_check)));
+    CHECK(Contains(report.text, "classic title check: unique " + HexText(build.skip_intro->classic_title_check)));
+    CHECK(Contains(report.text, "classic button: inside the code " + HexText(build.skip_intro->classic_button)));
+    CHECK(Contains(report.text, "stub space: free " + HexText(build.skip_intro->stubs)));
+    CHECK(Contains(report.text, "getter: unique " + HexText(build.bookshelf->accessor)));
+    CHECK(Contains(report.text, "special test: unique " + HexText(build.bookshelf->total)));
+    std::string reads;
+    for (int i = 0; i < OSL_BOOKSHELF_READS; ++i) {
+        reads += (i ? " " : "") + HexText(build.bookshelf->reads[i]);
+    }
+    CHECK(Contains(report.text, reads));
+    CHECK(Contains(report.text, "marks: 2/2 " + HexText(build.bookshelf->marks[0]) + " " + HexText(build.bookshelf->marks[1])));
+    CHECK(Contains(report.text, "read order: consistent, page read: through a helper"));
+    CHECK(Contains(report.text, "site: unique " + HexText(build.snapshot_scale_site)));
+    CHECK(Contains(report.text, "the expected 1.5"));
+    std::string sites;
+    for (size_t i = 0; i < build.resolution_sites.size(); ++i) {
+        sites += (i ? " " : "") + HexText(build.resolution_sites[i].offset);
+    }
+    CHECK(Contains(report.text, sites));
+    const LzcntBuild& lzcnt = lzcnt_builds[2];
+    CHECK(std::string(lzcnt.build) == "CUSA05083 1.00 USA");
+    std::string ranges;
+    for (size_t i = 0; i < LZCNT_RANGE_COUNT; ++i) {
+        ranges += (i ? " " : "") + HexText(lzcnt.offsets[i]);
+    }
+    CHECK(Contains(report.text, ranges));
+    CHECK(Contains(report.text, "linked image: " + HexText(lzcnt.size) + ", entry " + HexText(lzcnt.entry)));
+    CHECK(Contains(report.text, "unexpected instructions: 0"));
+    CHECK(std::filesystem::file_size(game / "eboot.bin", ec) == size_before);
+    CHECK(std::filesystem::last_write_time(game / "eboot.bin", ec) == time_before);
+}
+
 } // namespace
 
 int main() {
@@ -2638,6 +2961,10 @@ int main() {
     TestPlacementTracking();
     TestPlacementSettings();
     TestCrashReportReachesSessionLog();
+    TestBuildDiagnosticsScanner();
+    TestMapExecutableRejectsMalformedFiles();
+    TestUnsupportedBuildFlow();
+    TestBuildDiagnosticsKnownBuild();
     std::printf("%s (%d checks, %d failures)\n", g_failures ? "FAILED" : "OK", g_checks, g_failures);
     runtime_log_flush();
     return g_failures ? 1 : 0;

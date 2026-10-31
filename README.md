@@ -19,7 +19,7 @@
 **v0.1.0 is the first public release.** The loader and runtime map and run the game's own x86-64 code, with the
 shadPS4-derived Vulkan video core, the launcher and installer, local trophies, the self-updater and the diagnostics.
 The USA 1.00 base package (`CUSA05083`), the Japanese release (`CUSA01290` base 1.00 plus its 1.02 update) and the
-European release (`CUSA05262` base 1.00 plus its 1.01 update) are supported; any other version is refused.
+European release (`CUSA05262` base 1.00 plus its 1.01 update) are supported; any other version is refused, and the log then holds diagnostic information useful for adding it.
 
 Windows is the supported platform. The native Linux build, shipped as an AppImage, is **experimental**: it is built and
 checked by scripts, but it has not yet been tested on real Linux PCs or a Steam Deck.

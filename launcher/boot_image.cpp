@@ -198,6 +198,9 @@ void ParseSelf(const Bytes& data, Module& module) {
     if (phentsize != 56 || phnum == 0 || phnum >= 256) {
         Fail("unsupported program headers");
     }
+    if (phoff > data.size()) {
+        Fail("program headers outside the file");
+    }
     for (uint16_t i = 0; i < phnum; ++i) {
         const uint64_t at = base + phoff + uint64_t(i) * 56;
         module.ph.push_back({Read<uint32_t>(data, at), Read<uint32_t>(data, at + 4), Read<uint64_t>(data, at + 8),
@@ -206,6 +209,9 @@ void ParseSelf(const Bytes& data, Module& module) {
     }
     uint64_t end = 0;
     for (const ProgramHeader& p : module.ph) {
+        if (p.offset > kMaxImage || p.filesz > kMaxImage) {
+            Fail("image exceeds 512 MiB limit");
+        }
         end = std::max(end, p.offset + p.filesz);
     }
     if (end > kMaxImage) {
@@ -826,6 +832,53 @@ void Build(const std::filesystem::path& game, const std::filesystem::path& out) 
 }
 
 } // namespace
+
+std::string MapExecutable(const std::filesystem::path& file, MappedExecutable& out) {
+    try {
+        std::error_code ec;
+        const std::uintmax_t file_size = std::filesystem::file_size(file, ec);
+        if (ec || file_size > kMaxImage) {
+            Fail("cannot read " + file.filename().string());
+        }
+        const Bytes source = ReadFile(file);
+        Module module;
+        ParseSelf(source, module);
+        uint64_t size = 0;
+        for (const ProgramHeader& p : module.ph) {
+            if (IsLoadable(p) && p.memsz) {
+                if (p.vaddr > kMaxImage || p.memsz > kMaxImage) {
+                    Fail("segment outside the 512 MiB limit");
+                }
+                size = std::max(size, p.vaddr + p.memsz);
+            }
+        }
+        if (size == 0 || size > kMaxImage) {
+            Fail("invalid memory image");
+        }
+        MappedExecutable mapped;
+        mapped.image.assign(size, 0);
+        for (const ProgramHeader& p : module.ph) {
+            if (!IsLoadable(p) || !p.memsz) {
+                continue;
+            }
+            if (p.filesz > p.memsz) {
+                Fail("segment file size exceeds memory size");
+            }
+            CheckSpan(mapped.image.size(), p.vaddr, p.filesz);
+            CheckSpan(module.elf.size(), p.offset, p.filesz);
+            std::memcpy(mapped.image.data() + p.vaddr, module.elf.data() + p.offset, p.filesz);
+            mapped.segments.push_back({p.vaddr, p.memsz, p.flags});
+        }
+        mapped.entry = module.entry;
+        mapped.file_size = source.size();
+        out = std::move(mapped);
+        return {};
+    } catch (const Failure& failure) {
+        return failure.what();
+    } catch (const std::exception& error) {
+        return error.what();
+    }
+}
 
 std::string BuildBootImage(const std::filesystem::path& game, const std::filesystem::path& out) {
     try {

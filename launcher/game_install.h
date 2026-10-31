@@ -22,6 +22,7 @@ enum class InstallStatus {
     kNotGameFolder,
     kWrongGame,
     kWrongVersion,
+    kUnsupportedBuild,
     kIncomplete,
     kReadFailed,
     kOverlapping,
@@ -36,6 +37,7 @@ enum class InstallStatus {
 struct InstallResult {
     InstallStatus status = InstallStatus::kInstalled;
     std::string detail; // for the log, not the UI
+    std::string report; // the unsupported-build diagnostics for the log, when the source is Odin Sphere Leifthrasir
     uint64_t bytes = 0;
     size_t files = 0, linked = 0;
     const GameBuild* build = nullptr; // the build that was installed
@@ -48,6 +50,7 @@ struct InstallHooks {
     std::function<void(const char* phase)> phase;
     // Returns false to cancel. Cancelling is possible until the new files are activated.
     std::function<bool(uint64_t done, uint64_t total)> progress;
+    std::span<const uint8_t> prompt_patch; // the Xbox prompts patch, for the unsupported-build diagnostics
     bool replace_active = false; // install the package even when its build is the active, ready one
 };
 

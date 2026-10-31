@@ -21,6 +21,7 @@
 #endif
 
 #include "boot_image.h"
+#include "build_diagnostics.h"
 #include "cpk_patch.h"
 #include "pkg_extract.h"
 #include "utf8.h"
@@ -639,6 +640,14 @@ InstallResult InstallFromPackage(const fs::path& package_file, const GameRoots& 
     }
     const GameCheck identity = CheckPackageIdentity(package.sfo(), builds);
     if (identity.state != GameFileState::kValid) {
+        if (identity.build) {
+            UnsupportedBuildReport diagnostics = DiagnoseUnsupportedPackage(package.sfo());
+            if (diagnostics.odin) {
+                InstallResult result = Failure(InstallStatus::kUnsupportedBuild, identity.detail);
+                result.report = std::move(diagnostics.text);
+                return result;
+            }
+        }
         return Failure(FromCheck(identity), identity.detail);
     }
     const GameBuild& build = *identity.build;
@@ -670,6 +679,14 @@ InstallResult InstallFromFolder(const fs::path& source_dir, const GameRoots& roo
         return Failure(InstallStatus::kOverlapping, Utf8(source));
     }
     const GameCheck check = CheckGameTree(source, builds);
+    if (check.state == GameFileState::kDifferentVersion) {
+        UnsupportedBuildReport diagnostics = DiagnoseUnsupportedBuild(source, check.detail, hooks.prompt_patch);
+        if (diagnostics.odin) {
+            InstallResult result = Failure(InstallStatus::kUnsupportedBuild, check.detail);
+            result.report = std::move(diagnostics.text);
+            return result;
+        }
+    }
     if (check.state != GameFileState::kValid) {
         return Failure(FromCheck(check), check.detail);
     }
@@ -764,6 +781,10 @@ InstallMessage DescribeInstall(InstallStatus status) {
                 "This is not a supported Odin Sphere Leifthrasir package. Supported: " + SupportedBuildsText() + "."};
     case InstallStatus::kWrongVersion:
         return {"Different version of Odin Sphere Leifthrasir", "This port supports " + SupportedBuildsText() + "."};
+    case InstallStatus::kUnsupportedBuild:
+        return {"Unsupported Odin Sphere Leifthrasir build",
+                "This version is not supported yet. Diagnostic information was written to the log. Please send the "
+                "latest log when reporting this version."};
     case InstallStatus::kIncomplete:
         return {"Game files missing",
                 "The package is incomplete or some of the game's files are missing. Copy or download it again."};
