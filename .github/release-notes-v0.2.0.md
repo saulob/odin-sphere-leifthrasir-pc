@@ -66,5 +66,5 @@ Installation steps, requirements and known limitations are in the
 ## Checksums
 | File | SHA-256 |
 | --- | --- |
-| `OdinSphereLeifthrasirPC-v0.2.0-windows-x64.zip` | `90454b682d0f29d66d972dd8184805ec3754c7f2592ae1d07e145815afb6bc9a` |
-| `OdinSphereLeifthrasirPC-v0.2.0-x86_64.AppImage` | `ab1d9b5dffddf2f06b010e745e3091ba783ea57c101ba689dbc696afa212205e` |
+| `OdinSphereLeifthrasirPC-v0.2.0-windows-x64.zip` | `b893eab52118ab6f1b28b57744a04a80251af4e3cd0d2cb41e1fb17457c5da3c` |
+| `OdinSphereLeifthrasirPC-v0.2.0-x86_64.AppImage` | `a4e4d30ce9f555fee48d3dc04ccc6c6a4c12545fe49bcd10cc916a4022e113ed` |
