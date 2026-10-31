@@ -544,6 +544,16 @@ static ABI void *waits_on_cond(void *p) {
     mutex_unlock_fn(&s->mutex);
     return (void *)(uintptr_t)7;
 }
+static ABI void *waits_on_timed_cond(void *p) {
+    Shared *s=p;
+    CHECK(mutex_lock_fn(&s->mutex)==0);
+    s->waiting=1;
+    set_flag(&s->started);
+    cond_timedwait_fn(&s->cond,&s->mutex,UINT32_C(20000000));
+    set_flag(&s->after);
+    mutex_unlock_fn(&s->mutex);
+    return (void *)(uintptr_t)7;
+}
 static ABI void *waits_on_sema_then_sleeps(void *p) {
     Shared *s=p;
     set_flag(&s->started);
@@ -718,6 +728,44 @@ static void test_thread_cancel_joiner(void) {
     CHECK(thr_cancel(victim)==0);
     CHECK(join_within(victim,&result,"join of the target after its joiner was cancelled")==0 && result==CANCELED_RESULT);
 }
+static void test_thread_cancel_timed_cond_wait(void) {
+    Shared s;
+    init_shared(&s);
+    void *thread=spawn(waits_on_timed_cond,&s,0), *result=NULL;
+    wait_until_cond_waiting(&s);
+    CHECK(thr_cancel(thread)==0);
+    CHECK(join_within(thread,&result,"join of a cancelled timed cond waiter")==0 && result==CANCELED_RESULT);
+    CHECK(!__atomic_load_n(&s.after,__ATOMIC_ACQUIRE));
+    CHECK(thr_cancel(thread)==ESRCH_CODE);
+}
+/* The request lands while another thread is blocked in the join of the target. */
+static void test_thread_cancel_during_join(void) {
+    for (int round=0; round<50; ++round) {
+        Shared s;
+        init_shared(&s);
+        void *thread=spawn(sleeps_long,&s,0);
+        if (!wait_for(&s.started,2000)) deadlock("join race target start");
+        JoinCall call={.thread=thread};
+        pthread_t runner=start(join_runner,&call);
+        if (round%2) sleep_ms(2);
+        CHECK(thr_cancel(thread)==0);
+        if (!wait_for(&call.done,2000)) deadlock("join of a target cancelled during the join");
+        pthread_join(runner,NULL);
+        CHECK(call.status==0 && call.result==CANCELED_RESULT);
+    }
+}
+/* A cancelled thread that finished is dead: a second cancel, a join and a detach all report it. */
+static void test_thread_cancel_after_finish(void) {
+    Shared s;
+    init_shared(&s);
+    void *thread=spawn(sleeps_long,&s,0), *result=NULL;
+    if (!wait_for(&s.started,2000)) deadlock("sleeper start");
+    CHECK(thr_cancel(thread)==0);
+    CHECK(finished_within(thread,2000));
+    CHECK(thr_cancel(thread)==ESRCH_CODE);
+    CHECK(join_within(thread,&result,"join after the cancelled thread finished")==0 && result==CANCELED_RESULT);
+    CHECK(thr_cancel(thread)==ESRCH_CODE);
+}
 static void test_thread_cancel_races(void) {
     Shared s;
     for (int round=0; round<200; ++round) {
@@ -758,10 +806,13 @@ int main(void) {
     test_thread_cancel_running();
     test_thread_cancel_cond_wait();
     test_thread_cancel_racing_cond_wait();
+    test_thread_cancel_timed_cond_wait();
     test_thread_cond_wait_normal();
     test_thread_cancel_semaphore_wait();
     test_thread_cancel_detached();
     test_thread_cancel_joiner();
+    test_thread_cancel_during_join();
+    test_thread_cancel_after_finish();
     test_thread_cancel_races();
     if (failures) {
         printf("%d check(s) failed\n",failures);

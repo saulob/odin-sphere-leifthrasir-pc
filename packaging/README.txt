@@ -24,6 +24,8 @@ Leifthrasir PS4 package (.pkg). This port runs:
   Europe: Title ID CUSA05262, base version 1.00 (APP_VER 01.00, VERSION
          01.00) and its 1.01 update (APP_VER 01.01, VERSION 01.00). Install
          the base package first, then the update.
+  Hong Kong: Title ID CUSA03873, version 1.00 (the base package, APP_VER
+         01.00, VERSION 01.00).
 
 Any other version is refused with "Different version of Odin Sphere
 Leifthrasir". A package still encrypted for a PS4 console cannot be unpacked on

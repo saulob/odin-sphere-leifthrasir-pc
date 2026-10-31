@@ -118,10 +118,18 @@ private:
     std::string name_;
 };
 
+std::string HostPackageName(const SemanticVersion& version) {
+#ifdef _WIN32
+    return osl::WindowsPackageName(version);
+#else
+    return osl::LinuxPackageName(version);
+#endif
+}
+
 std::string ReleaseJson(std::string_view tag, bool draft = false, bool prerelease = false,
                         std::string_view asset_url = "https://github.com/saulob/odin-sphere-leifthrasir-pc/releases/download/x.zip") {
     const std::optional<SemanticVersion> version = ParseVersion(tag);
-    const std::string zip = version ? osl::WindowsPackageName(*version) : "x.zip";
+    const std::string zip = version ? HostPackageName(*version) : "x.zip";
     return std::string(R"({"tag_name":")") + std::string(tag) + R"(","draft":)" + (draft ? "true" : "false") +
            R"(,"prerelease":)" + (prerelease ? "true" : "false") +
            R"(,"html_url":"https://github.com/saulob/odin-sphere-leifthrasir-pc/releases/tag/)" + std::string(tag) +
@@ -176,9 +184,9 @@ void TestReleases() {
     if (release) {
         CHECK(release->version.CoreString() == "0.2.0");
         CHECK(IsInstallableRelease(*release));
-        const ReleaseAsset* asset = FindAsset(*release, "OdinSphereLeifthrasirPC-v0.2.0-windows-x64.zip");
+        const ReleaseAsset* asset = FindAsset(*release, HostPackageName(*ParseVersion("0.2.0")));
         CHECK(asset && asset->size == 1234 && asset->sha256() == std::string(64, 'a'));
-        CHECK(!FindAsset(*release, "OdinSphereLeifthrasirPC-v0.2.1-windows-x64.zip"));
+        CHECK(!FindAsset(*release, HostPackageName(*ParseVersion("0.2.1"))));
         CHECK(!FindAsset(*release, "OdinSphereLeifthrasirPC-v0.2.0-windows-x64.sha256"));
     }
     const std::optional<Release> draft = ParseRelease(ReleaseJson("v0.2.0", true));
@@ -625,7 +633,7 @@ void TestUpdateCheck() {
     const UpdateSnapshot available = state_for(ReleaseJson("v0.2.0"), "0.1.0");
     CHECK(available.state == UpdateState::kAvailable && ShowsUpdateBanner(available));
     CHECK(available.latest_version == "0.2.0" && available.current_version == "0.1.0");
-    CHECK(available.asset_name == "OdinSphereLeifthrasirPC-v0.2.0-windows-x64.zip");
+    CHECK(available.asset_name == HostPackageName(*ParseVersion("0.2.0")));
     CHECK(available.release_url == "https://github.com/saulob/odin-sphere-leifthrasir-pc/releases/tag/v0.2.0");
 
     // An invalid local version disables the check instead of offering anything.

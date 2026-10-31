@@ -75,7 +75,7 @@ fi
 step 'Building'
 targets=(odin_sphere_leifthrasir)
 ((test)) && targets+=(osl-tests osl-log-tests osl-trophy-tests osl-window-tests osl-cursor-tests osl-runtime-tests
-                      osl-tiling-tests osl-update-tests osl-isa-tests)
+                      osl-tiling-tests osl-update-tests osl-isa-tests osl-notice-tests)
 ninja -C "$build_dir" "${targets[@]}"
 loader=$build_dir/bin/odin_sphere_leifthrasir
 [[ -x $loader ]] || die "Missing $loader"
@@ -83,10 +83,19 @@ loader=$build_dir/bin/odin_sphere_leifthrasir
 if ((test)); then
     step 'Running the patch workflow tests'
     cmake "-DOSL_TEST_DIR=$build_dir/patch-workflow-tests" -P "$root/tests/patch_workflow_tests.cmake"
-    for test_program in osl-tests osl-log-tests osl-trophy-tests osl-window-tests osl-cursor-tests osl-runtime-tests \
-                        osl-tiling-tests osl-update-tests osl-isa-tests; do
+    for test_program in osl-tests osl-log-tests osl-trophy-tests osl-window-tests osl-cursor-tests osl-notice-tests \
+                        osl-runtime-tests osl-tiling-tests osl-update-tests osl-isa-tests; do
         step "Running $test_program"
-        "$build_dir/bin/$test_program"
+        if [[ $test_program == osl-tests ]]; then
+            game_tests=$("$build_dir/bin/$test_program") || { printf '%s\n' "$game_tests"; exit 1; }
+            printf '%s\n' "$game_tests"
+            for label in 'CUSA05083 1.00 USA' 'CUSA05083 1.01 USA' 'CUSA01290 1.00 Japan' 'CUSA01290 1.02 Japan' \
+                         'CUSA05262 1.00 Europe' 'CUSA05262 1.01 Europe' 'CUSA03873 1.00 HK'; do
+                grep -qxE "  $label +PASS" <<<"$game_tests" || die "Build parity has no PASS row for $label"
+            done
+        else
+            "$build_dir/bin/$test_program"
+        fi
     done
 fi
 printf '\nBuilt %s\n' "$loader"

@@ -1,6 +1,6 @@
 # First boot
 
-The project builds and the installed USA 1.00 and 1.01, Japanese 1.02 and European 1.01 games are recognized and prepared.
+The project builds and the installed USA 1.00 and 1.01, Japanese 1.00 and 1.02, European 1.00 and 1.01 and Hong Kong 1.00 games are recognized and prepared.
 These checks run without a window and without executing game code:
 
 ```powershell
@@ -30,7 +30,7 @@ From the repository, after `tools\build.ps1` has completed:
 `-Run` sets the MSYS2 `PATH`, starts `odin_sphere_leifthrasir.exe`, and shows its run log in the terminal until it exits. The launcher
 opens; the Play page should already say **Ready to play** for the active build. With both releases
 installed, the active build is the newest prepared one; the status names its region and version, for
-example **Ready to play · CUSA05083 1.00 USA** or **CUSA01290 1.02 Japan** or **CUSA05262 1.01 Europe**, and the
+example **Ready to play · CUSA05083 1.00 USA**, **CUSA01290 1.02 Japan**, **CUSA05262 1.01 Europe** or **CUSA03873 1.00 HK**, and the
 line below gives the finished package's metadata (`APP_VER 1.00 · VERSION 1.01` for the USA build). Press **PLAY**. The
 runtime, graphics, audio, controller and UI behavior is tested manually only.
 

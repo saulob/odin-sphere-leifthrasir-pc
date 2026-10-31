@@ -15,11 +15,13 @@ You need your own legally obtained copy of the game: a decrypted Odin Sphere
 Leifthrasir PS4 package (.pkg). This port runs:
 
   US:      Title ID CUSA05083, versions 1.00 (the base package) and 1.01
-           (the base package, then the update)
+           (the base package, then the update; a complete 1.01 package
+           installs by itself)
   Japan:   Title ID CUSA01290, versions 1.00 (the base package) and 1.02
            (the base package, then the update)
   Europe:  Title ID CUSA05262, versions 1.00 (the base package) and 1.01
            (the base package, then the update)
+  Hong Kong: Title ID CUSA03873, version 1.00 (the base package)
 
 Any other version is refused with "Different version of Odin Sphere
 Leifthrasir". A package still encrypted for a PS4 console cannot be unpacked on

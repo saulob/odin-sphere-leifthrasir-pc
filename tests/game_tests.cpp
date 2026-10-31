@@ -525,7 +525,7 @@ void TestBuildSelection() {
         marker << "{\"version\": \"" << build.version << "\", \"scope\": \"full\"}\n";
         marker.close();
         std::filesystem::last_write_time(roots.prepared / build.folder / kPreparedMarker,
-                                         std::filesystem::file_time_type(std::chrono::seconds(seconds)));
+                                         std::filesystem::file_time_type::clock::now() - std::chrono::hours(24) + std::chrono::seconds(seconds));
     };
     write_marker(builds[0], 10);
     write_marker(builds[2], 20);
@@ -3821,7 +3821,7 @@ void TestUsa101Layering() {
         std::ofstream(paths.app0 / kPreparedMarker)
             << "{\"version\": \"" << build.version << "\", \"scope\": \"full\"}\n";
         std::filesystem::last_write_time(paths.app0 / kPreparedMarker,
-                                         std::filesystem::file_time_type(std::chrono::seconds(seconds)));
+                                         std::filesystem::file_time_type::clock::now() - std::chrono::hours(24) + std::chrono::seconds(seconds));
         WriteGameFile(paths.image_dir, "boot.bin", "image");
         WriteImageReport(paths.image_dir, build);
     };
