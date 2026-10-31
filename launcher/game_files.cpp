@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "crypto.h"
+#include "lzcnt_compat.h"
 #include "game_install.h"
 #include "osl_launcher.h"
 #include "utf8.h"
@@ -171,6 +172,120 @@ std::string JsonString(const std::string& text, const std::string& key) {
     }
     const size_t end = text.find('"', at + 1);
     return end == std::string::npos ? std::string{} : text.substr(at + 1, end - at - 1);
+}
+
+std::vector<uint64_t> JsonNumbers(const std::string& text, const std::string& key) {
+    std::vector<uint64_t> numbers;
+    const std::string needle = "\"" + key + "\"";
+    size_t at = text.find(needle);
+    if (at == std::string::npos) {
+        return numbers;
+    }
+    at = text.find_first_not_of(" \t\r\n:", at + needle.size());
+    if (at == std::string::npos || text[at] != '[') {
+        return numbers;
+    }
+    const size_t end = text.find(']', at);
+    if (end == std::string::npos) {
+        return numbers;
+    }
+    for (size_t i = at + 1; i < end;) {
+        i = text.find_first_not_of(" \t\r\n,", i);
+        if (i == std::string::npos || i >= end) {
+            break;
+        }
+        char* parsed = nullptr;
+        const unsigned long long value = std::strtoull(text.c_str() + i, &parsed, 10);
+        if (parsed == text.c_str() + i) {
+            return {};
+        }
+        numbers.push_back(value);
+        i = static_cast<size_t>(parsed - text.c_str());
+    }
+    return numbers;
+}
+
+std::vector<std::pair<std::string, std::string>> ScannedMappingFields(const ScannedMapping& mapping) {
+    const auto list = [](const std::vector<uint64_t>& values) {
+        std::string text = "[";
+        for (size_t i = 0; i < values.size(); ++i) {
+            text += (i ? ", " : "") + std::to_string(values[i]);
+        }
+        return text + "]";
+    };
+    std::vector<std::pair<std::string, std::string>> fields;
+    if (!mapping.resolution_offsets.empty() && mapping.snapshot_scale_site) {
+        fields.emplace_back("map_resolution",
+                            list({mapping.resolution_offsets.begin(), mapping.resolution_offsets.end()}));
+        fields.emplace_back("map_snapshot_scale", list({mapping.snapshot_scale_site}));
+    }
+    if (const auto& skip = mapping.skip_intro) {
+        fields.emplace_back("map_skip_intro", list({skip->notice_scene, skip->hd_title_check, skip->classic_title_check,
+                                                    skip->classic_button, skip->stubs}));
+    }
+    if (const auto& shelf = mapping.bookshelf) {
+        std::vector<uint64_t> values = {shelf->accessor, shelf->total};
+        values.insert(values.end(), shelf->reads, shelf->reads + OSL_BOOKSHELF_READS);
+        values.insert(values.end(), shelf->marks, shelf->marks + OSL_BOOKSHELF_MARKS);
+        values.push_back(shelf->in_place_page_read ? 1 : 0);
+        fields.emplace_back("map_bookshelf", list(values));
+    }
+    if (!mapping.lzcnt_offsets.empty()) {
+        fields.emplace_back("map_lzcnt", list({mapping.lzcnt_offsets.begin(), mapping.lzcnt_offsets.end()}));
+    }
+    return fields;
+}
+
+ScannedMapping ScannedMappingOfImageDir(const std::filesystem::path& image_dir) {
+    ScannedMapping mapping;
+    std::string report;
+    if (!ReadSmallFile(image_dir / "image.json", report)) {
+        return mapping;
+    }
+    const auto narrow = [](const std::vector<uint64_t>& values) {
+        return std::vector<uint32_t>(values.begin(), values.end());
+    };
+    mapping.resolution_offsets = narrow(JsonNumbers(report, "map_resolution"));
+    const std::vector<uint64_t> snapshot = JsonNumbers(report, "map_snapshot_scale");
+    mapping.snapshot_scale_site = snapshot.size() == 1 ? static_cast<uint32_t>(snapshot[0]) : 0;
+    const std::vector<uint64_t> skip = JsonNumbers(report, "map_skip_intro");
+    if (skip.size() == 5) {
+        mapping.skip_intro = OslSkipIntroSites{static_cast<uint32_t>(skip[0]), static_cast<uint32_t>(skip[1]),
+                                               static_cast<uint32_t>(skip[2]), static_cast<uint32_t>(skip[3]),
+                                               static_cast<uint32_t>(skip[4])};
+    }
+    const std::vector<uint64_t> shelf = JsonNumbers(report, "map_bookshelf");
+    if (shelf.size() == 2 + OSL_BOOKSHELF_READS + OSL_BOOKSHELF_MARKS + 1) {
+        OslBookshelfSites sites{};
+        sites.accessor = static_cast<uint32_t>(shelf[0]);
+        sites.total = static_cast<uint32_t>(shelf[1]);
+        for (int i = 0; i < OSL_BOOKSHELF_READS; ++i) {
+            sites.reads[i] = static_cast<uint32_t>(shelf[2 + i]);
+        }
+        for (int i = 0; i < OSL_BOOKSHELF_MARKS; ++i) {
+            sites.marks[i] = static_cast<uint32_t>(shelf[2 + OSL_BOOKSHELF_READS + i]);
+        }
+        sites.in_place_page_read = shelf.back() ? 1 : 0;
+        mapping.bookshelf = sites;
+    }
+    mapping.lzcnt_offsets = narrow(JsonNumbers(report, "map_lzcnt"));
+    if (mapping.lzcnt_offsets.size() != LZCNT_RANGE_COUNT) {
+        mapping.lzcnt_offsets.clear();
+    }
+    return mapping;
+}
+
+BuildFeatures FeaturesOf(const GameBuild* build, const std::filesystem::path& image_dir) {
+    BuildFeatures features;
+    if (!build || build->mapping == ExecutableMapping::kTable) {
+        return features;
+    }
+    const ScannedMapping mapping = ScannedMappingOfImageDir(image_dir);
+    features.custom_resolution = !mapping.resolution_offsets.empty() && mapping.snapshot_scale_site != 0;
+    features.skip_intro = mapping.skip_intro.has_value();
+    features.unlock_bookshelf = mapping.bookshelf.has_value();
+    features.lzcnt_rewrite = !mapping.lzcnt_offsets.empty();
+    return features;
 }
 
 std::string Sha256Hex(const std::filesystem::path& file) {
@@ -408,6 +523,21 @@ extern "C" int osl_game_build(const char* image_dir, OslGameBuild* out) {
     out->snapshot_scale_site = build->snapshot_scale_site;
     out->skip_intro = build->skip_intro;
     out->bookshelf = build->bookshelf;
+    out->lzcnt_offsets = nullptr;
+    if (build->mapping == osl::ExecutableMapping::kScanned) {
+        // Valid until the next call; the loader asks once.
+        static osl::ScannedMapping scanned;
+        static std::vector<OslResolutionSite> resolution;
+        scanned = osl::ScannedMappingOfImageDir(osl::PathFromUtf8(image_dir));
+        resolution = osl::ResolutionSitesAt(osl::SupportedBuilds(), scanned.resolution_offsets);
+        const bool resolution_ok = !resolution.empty() && scanned.snapshot_scale_site != 0;
+        out->resolution_sites = resolution_ok ? resolution.data() : nullptr;
+        out->resolution_site_count = resolution_ok ? resolution.size() : 0;
+        out->snapshot_scale_site = resolution_ok ? scanned.snapshot_scale_site : 0;
+        out->skip_intro = scanned.skip_intro ? &*scanned.skip_intro : nullptr;
+        out->bookshelf = scanned.bookshelf ? &*scanned.bookshelf : nullptr;
+        out->lzcnt_offsets = scanned.lzcnt_offsets.empty() ? nullptr : scanned.lzcnt_offsets.data();
+    }
     return 1;
 }
 

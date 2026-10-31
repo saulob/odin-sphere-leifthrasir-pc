@@ -96,6 +96,7 @@ typedef struct {
     uint32_t snapshot_scale_site;
     const OslSkipIntroSites *skip_intro; /* NULL: not available for the build */
     const OslBookshelfSites *bookshelf;  /* NULL: not available for the build */
+    const uint32_t *lzcnt_offsets;       /* LZCNT_RANGE_COUNT offsets of a scanned build; NULL: the loader's table */
 } OslGameBuild;
 
 /* The supported game build a boot image folder was built from (its image.json); 0 when it is not one. */

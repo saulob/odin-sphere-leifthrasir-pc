@@ -276,7 +276,8 @@ enum class Outcome { kRunning, kPlay, kQuit };
 class LauncherApp {
 public:
     LauncherApp(const OslLauncherConfig& config, LauncherSettings& settings, GamePaths paths, GameCheck check)
-        : config_(config), settings_(settings), paths_(std::move(paths)), files_(check.state), build_(check.build) {}
+        : config_(config), settings_(settings), paths_(std::move(paths)), files_(check.state), build_(check.build),
+          features_(FeaturesOf(check.build, paths_.image_dir)) {}
 
     // Runs the launcher window until Play or Quit. False when no window could be opened.
     bool Run(Outcome& outcome) {
@@ -501,6 +502,7 @@ private:
         const GameCheck check = CheckAndLog(paths_);
         files_ = check.state;
         build_ = check.build;
+        features_ = FeaturesOf(build_, paths_.image_dir);
     }
 
     void TrackPlacement() {
@@ -696,6 +698,9 @@ private:
                 Log("game installed: %zu files (%zu linked), %llu bytes", outcome->files, outcome->linked,
                     static_cast<unsigned long long>(outcome->bytes));
             }
+            if (!outcome->report.empty()) {
+                std::printf("%s", outcome->report.c_str());
+            }
             paths_ = ActiveBuildPaths(RootsOf(paths_));
             Recheck();
             if (trophy_page_) {
@@ -735,7 +740,7 @@ private:
         ui.Row("Monitor", kMonitorHelp);
         MonitorCombo();
         std::vector<trg::Option> aspects;
-        const bool custom = !RestrictedToNativeResolution(build_);
+        const bool custom = features_.custom_resolution;
         for (const OslAspectRatio& aspect : osl_aspect_ratios) {
             if (custom || std::string_view(aspect.key) == kDefaultAspectRatio) {
                 aspects.push_back({aspect.key, aspect.name});
@@ -822,7 +827,7 @@ private:
     }
 
     void PageGraphics(trg::Ui& ui) {
-        const bool custom = !RestrictedToNativeResolution(build_);
+        const bool custom = features_.custom_resolution;
         std::vector<trg::Option> options;
         for (const OslResolution& resolution : osl_resolutions) {
             if (custom || std::string_view(resolution.key) == kNativeResolution) {
@@ -851,8 +856,12 @@ private:
             }
             ui.Combo("Menu & Subtitles", kTextLanguageHelp, kTextLanguageKey, available.front().key.data(), languages);
         }
-        ui.Toggle("Skip intro", kSkipIntroHelp, kSkipIntroKey, false, "Off", "On");
-        ui.Toggle("Unlock Bookshelf", kUnlockBookshelfHelp, kUnlockBookshelfKey, false, "Off", "On");
+        if (features_.skip_intro) {
+            ui.Toggle("Skip intro", kSkipIntroHelp, kSkipIntroKey, false, "Off", "On");
+        }
+        if (features_.unlock_bookshelf) {
+            ui.Toggle("Unlock Bookshelf", kUnlockBookshelfHelp, kUnlockBookshelfKey, false, "Off", "On");
+        }
         ui.Toggle("Frame rate in title", kShowFpsTitleHelp, kShowFpsTitleKey, false, "Off", "On");
         ui.Toggle("Render resolution in title", kShowResolutionTitleHelp, kShowResolutionTitleKey, false, "Off", "On");
         ui.Toggle("Frame counter", kFrameCounterHelp, kShowFrameCounterKey, false, "Hidden", "Shown");
@@ -1079,6 +1088,7 @@ private:
     GamePaths paths_;
     GameFileState files_;
     const GameBuild* build_ = nullptr;
+    BuildFeatures features_;
     LauncherHost host_;
     std::vector<Display> displays_;
     std::vector<std::string> gpu_names_;

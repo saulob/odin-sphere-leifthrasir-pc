@@ -696,6 +696,21 @@ void TestRegionsAndMissingData(const fs::path& base) {
         CHECK(s.Count(flags) == 5 && flags.bits[0] == 6);
     }
 
+    const fs::path hk = MakeGame(base, "region-hk", BuildTrp(StandardEntries()), "NPWR07394_00");
+    CHECK(ReadNpCommId(hk / "sce_sys" / "npbind.dat") == std::string("NPWR07394_00"));
+    CHECK(PrepareTrophyPack(hk, user).np_comm_id == "NPWR07394_00");
+    CHECK(TrophyDirectory(user, "NPWR07394_00") != TrophyDirectory(user, kNpId));
+    {
+        Session s(hk, user);
+        FlagArray flags{};
+        CHECK(s.Count(flags) == 0 && flags.bits[0] == 0);
+    }
+    {
+        Session s(us, user);
+        FlagArray flags{};
+        CHECK(s.Count(flags) == 5 && flags.bits[0] == 6);
+    }
+
     const fs::path empty_user = base / "empty-user";
     {
         Session s(base / "no-game", empty_user);

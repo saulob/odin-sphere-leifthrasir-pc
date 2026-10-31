@@ -89,6 +89,23 @@ PROFILES = {
         'modules': ('libc.prx', 'libSceFios2.prx'),
         'core_patterns': ('eboot.bin', 'sce_module/*', 'sce_sys/*', '*.plt'),
     },
+    'CUSA03873': {
+        'name': 'Odin Sphere Leifthrasir',
+        'region': 'HK',
+        'content_id': 'HP0177-CUSA03873_00-ODINSPHERELE0000',
+        'versions': {
+            '1.00': {
+                'layers': ({'app_ver': '01.00', 'sfo_version': '01.00', 'update': False},),
+                'eboot_sha256': '8c483dc2c06d958ccd84bdbf726df6d23e31592c7c1bb39eb5425718b5bc1eb3',
+                'folder': 'CUSA03873-1.00', 'extra_files': (),
+                'data_files': ('Odin2_BT_CN.CPK', 'Odin2_OR_CN.CPK', 'Odin2_RE_CN.CPK'),
+            },
+        },
+        'entry': 'eboot.bin',
+        'extra_executables': (),
+        'modules': ('libc.prx', 'libSceFios2.prx'),
+        'core_patterns': ('eboot.bin', 'sce_module/*', 'sce_sys/*', '*.plt'),
+    },
 }
 
 

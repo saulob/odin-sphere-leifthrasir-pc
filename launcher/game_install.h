@@ -37,7 +37,7 @@ enum class InstallStatus {
 struct InstallResult {
     InstallStatus status = InstallStatus::kInstalled;
     std::string detail; // for the log, not the UI
-    std::string report; // the unsupported-build diagnostics for the log, when the source is Odin Sphere Leifthrasir
+    std::string report; // for the log: the unsupported-build diagnostics, or a new install's build mapping diagnostics
     uint64_t bytes = 0;
     size_t files = 0, linked = 0;
     const GameBuild* build = nullptr; // the build that was installed

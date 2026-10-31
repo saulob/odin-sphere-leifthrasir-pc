@@ -20,6 +20,7 @@ constexpr PackageLayer kJapanBaseLayers[] = {{"01.00", "01.00", false}};
 constexpr PackageLayer kJapan102Layers[] = {{"01.00", "01.00", false}, {"01.02", "01.00", true}};
 constexpr PackageLayer kEuBaseLayers[] = {{"01.00", "01.00", false}};
 constexpr PackageLayer kEu101Layers[] = {{"01.00", "01.00", false}, {"01.01", "01.00", true}};
+constexpr PackageLayer kHkLayers[] = {{"01.00", "01.00", false}};
 
 // The render size instructions of the USA 1.00 eboot: the size of the render buffer pool its offscreen targets come
 // from, the three offscreen targets the graphics device creates, the two GPU buffer allocations sized from the same
@@ -164,6 +165,8 @@ constexpr const char* kEu101DataFiles[] = {
 };
 constexpr const char* kEu101ExtraFiles[] = {"sce_discmap_patch.plt"};
 
+constexpr const char* kHkDataFiles[] = {"Odin2_BT_CN.CPK", "Odin2_OR_CN.CPK", "Odin2_RE_CN.CPK"};
+
 constexpr GameBuild kGameBuilds[] = {
     {
         "CUSA05083",
@@ -181,6 +184,8 @@ constexpr GameBuild kGameBuilds[] = {
         &kUsaSkipIntro,
         &kUsaBookshelf,
         {},
+        ExecutableMapping::kTable,
+        TextLanguageMode::kFixed,
     },
     {
         "CUSA01290",
@@ -198,6 +203,8 @@ constexpr GameBuild kGameBuilds[] = {
         &kJapanBaseSkipIntro,
         &kJapanBaseBookshelf,
         {},
+        ExecutableMapping::kTable,
+        TextLanguageMode::kFixed,
     },
     {
         "CUSA01290",
@@ -215,6 +222,8 @@ constexpr GameBuild kGameBuilds[] = {
         &kJapan102SkipIntro,
         &kJapan102Bookshelf,
         {},
+        ExecutableMapping::kTable,
+        TextLanguageMode::kFixed,
     },
     {
         "CUSA05262",
@@ -232,6 +241,8 @@ constexpr GameBuild kGameBuilds[] = {
         &kEuBaseSkipIntro,
         &kEuBaseBookshelf,
         kEuLanguages,
+        ExecutableMapping::kTable,
+        TextLanguageMode::kSelectable,
     },
     {
         "CUSA05262",
@@ -249,6 +260,27 @@ constexpr GameBuild kGameBuilds[] = {
         &kEu101SkipIntro,
         &kEu101Bookshelf,
         kEuLanguages,
+        ExecutableMapping::kTable,
+        TextLanguageMode::kSelectable,
+    },
+    {
+        "CUSA03873",
+        "HP0177-CUSA03873_00-ODINSPHERELE0000",
+        "1.00",
+        "CUSA03873-1.00",
+        "8c483dc2c06d958ccd84bdbf726df6d23e31592c7c1bb39eb5425718b5bc1eb3",
+        {},
+        kHkDataFiles,
+        "CUSA03873 1.00 HK",
+        "HK",
+        kHkLayers,
+        {},
+        0,
+        nullptr,
+        nullptr,
+        {},
+        ExecutableMapping::kScanned,
+        TextLanguageMode::kFixed,
     },
 };
 
@@ -315,10 +347,6 @@ const GameBuild* UpdateBuildOf(const GameBuild& build, std::span<const GameBuild
         }
     }
     return found;
-}
-
-bool RestrictedToNativeResolution(const GameBuild* build) {
-    return build && build->resolution_sites.empty();
 }
 
 std::string SupportedBuildsText() {

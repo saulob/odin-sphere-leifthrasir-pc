@@ -7,7 +7,9 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <vector>
 
+#include "build_diagnostics.h"
 #include "game_profile.h"
 
 namespace osl {
@@ -70,6 +72,27 @@ std::string Sha256Hex(const std::filesystem::path& file);
 
 // The string value of a top-level-looking "key": "value" pair in JSON text; empty when absent.
 std::string JsonString(const std::string& text, const std::string& key);
+
+// The numbers of a "key": [ ... ] array in JSON text; empty when the key is absent or the array is not numbers.
+std::vector<uint64_t> JsonNumbers(const std::string& text, const std::string& key);
+
+// The executable sites the installation recorded in a boot image folder's image.json; every feature unresolved when
+// the report is absent or has none.
+ScannedMapping ScannedMappingOfImageDir(const std::filesystem::path& image_dir);
+
+// The image.json keys a scan's sites are recorded under, each with its numbers as a JSON array; a feature the scan did
+// not resolve has no key.
+std::vector<std::pair<std::string, std::string>> ScannedMappingFields(const ScannedMapping& mapping);
+
+// What the build's executable supports: from its tables, or for a scanned build from the recorded scan. A build that
+// is not known supports everything, so nothing is hidden before a game is installed.
+struct BuildFeatures {
+    bool custom_resolution = true; // Render resolution, Aspect Ratio
+    bool skip_intro = true;
+    bool unlock_bookshelf = true;
+    bool lzcnt_rewrite = true;
+};
+BuildFeatures FeaturesOf(const GameBuild* build, const std::filesystem::path& image_dir);
 
 const char* StateName(GameFileState state);
 

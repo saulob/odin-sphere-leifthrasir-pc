@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "build_diagnostics.h"
 #include "crypto.h"
 #include "osl_launcher.h"
 #include "game_files.h"
@@ -602,6 +603,7 @@ public:
     static Json Int(uint64_t v) { Json j; j.text_ = std::to_string(v); return j; }
     static Json Bool(bool v) { Json j; j.text_ = v ? "true" : "false"; return j; }
     static Json Null() { Json j; j.text_ = "null"; return j; }
+    static Json Raw(std::string v) { Json j; j.text_ = std::move(v); return j; }
     static Json Array() { Json j; j.kind_ = 'a'; return j; }
     static Json Object() { Json j; j.kind_ = 'o'; return j; }
     Json& Add(Json v) { items_.emplace_back("", std::move(v)); return *this; }
@@ -820,6 +822,9 @@ void Build(const std::filesystem::path& game, const std::filesystem::path& out) 
         .Add("unresolved_by_library", CountByLibrary(unresolved))
         .Add("unresolved_imports", StringList(unresolved))
         .Add("import_list", StringList(names));
+    for (const auto& [key, numbers] : ScannedMappingFields(ScanGameFolder(game).mapping)) {
+        report.Add(key, Json::Raw(numbers));
+    }
     std::string json = report.Dump() + "\n";
     for (size_t at = json.find('\n'); at != std::string::npos; at = json.find('\n', at + 2)) {
         json.insert(at, 1, '\r'); // prepare_image.py writes the report in Windows text mode

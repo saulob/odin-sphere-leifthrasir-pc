@@ -986,7 +986,14 @@ int main(int argc, char **argv) {
 #endif
     if (lzcnt_rewrite) {
         const char *rewritten_build="";
-        const LzcntCompatStatus status=lzcnt_compat_install(image,size,entry,image+round_page(size),lzcnt_stub_bytes,&rewritten_build);
+        LzcntCompatStatus status;
+        if (known_build && game_build.lzcnt_offsets) {
+            rewritten_build=game_build.label;
+            status=lzcnt_compat_apply(image,size,game_build.lzcnt_offsets,lzcnt_shapes,LZCNT_RANGE_COUNT,
+                                      image+round_page(size),lzcnt_stub_bytes);
+        } else {
+            status=lzcnt_compat_install(image,size,entry,image+round_page(size),lzcnt_stub_bytes,&rewritten_build);
+        }
         if (status!=LZCNT_COMPAT_OK) {
             char message[330];
             snprintf(message,sizeof(message),"This game executable cannot be adapted to this processor, which lacks LZCNT: %s.",

@@ -440,6 +440,16 @@ size_t Package::file_count() const {
     return impl_->files;
 }
 
+std::vector<PackageFile> Package::Files() const {
+    std::vector<PackageFile> files;
+    for (const Item& item : impl_->items) {
+        if (item.type != kPfsDir) {
+            files.push_back({item.path, uint64_t(impl_->inodes[item.inode].size)});
+        }
+    }
+    return files;
+}
+
 PackageResult Package::Open(const fs::path& path) {
     Impl& p = *impl_;
     std::error_code ec;
@@ -642,7 +652,8 @@ PackageResult Package::LoadFiles() {
     return {};
 }
 
-PackageResult Package::Extract(const fs::path& out, const std::function<bool(uint64_t, uint64_t)>& progress) {
+PackageResult Package::Extract(const fs::path& out, const std::function<bool(uint64_t, uint64_t)>& progress,
+                               const std::function<bool(const std::string&)>& include) {
     Impl& p = *impl_;
     // The metadata entries go to sce_sys first, as shadPS4 writes them; the file system's own copies replace them.
     for (const Entry& entry : p.entries) {
@@ -668,6 +679,9 @@ PackageResult Package::Extract(const fs::path& out, const std::function<bool(uin
     uint64_t done = 0;
     Bytes chunk;
     for (const Item& item : p.items) {
+        if (include && (item.type == kPfsDir || !include(item.path))) {
+            continue;
+        }
         const fs::path target = out / PathFromUtf8(item.path);
         fs::create_directories(item.type == kPfsDir ? target : target.parent_path(), ec);
         if (ec) {

@@ -209,7 +209,7 @@ bool LauncherWanted(bool game_ready, bool show_setting, bool shift_held, bool sk
 
 extern "C" int osl_render_resolution(const char* settings_file, const char* image_dir) {
     using namespace osl;
-    if (RestrictedToNativeResolution(BuildOfImageDir(image_dir))) {
+    if (!FeaturesOf(BuildOfImageDir(image_dir), PathFromUtf8(image_dir ? image_dir : "")).custom_resolution) {
         return 0;
     }
     const LauncherSettings settings(PathFromUtf8(settings_file ? settings_file : ""));
@@ -218,7 +218,7 @@ extern "C" int osl_render_resolution(const char* settings_file, const char* imag
 
 extern "C" int osl_aspect_ratio(const char* settings_file, const char* image_dir) {
     using namespace osl;
-    if (RestrictedToNativeResolution(BuildOfImageDir(image_dir))) {
+    if (!FeaturesOf(BuildOfImageDir(image_dir), PathFromUtf8(image_dir ? image_dir : "")).custom_resolution) {
         return 0;
     }
     const LauncherSettings settings(PathFromUtf8(settings_file ? settings_file : ""));

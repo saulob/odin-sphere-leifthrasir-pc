@@ -32,6 +32,13 @@ struct TextLanguage {
     int ps4_id;
 };
 
+// Where a build's executable sites come from: its own tables below, or the signature scan of its eboot.bin that the
+// installation records in the boot image report. A scanned build keeps the tables empty.
+enum class ExecutableMapping { kTable, kScanned };
+
+// Whether the player picks the menus-and-subtitles language (text_languages) or the build has one text set.
+enum class TextLanguageMode { kFixed, kSelectable };
+
 struct GameBuild {
     const char* title_id;
     const char* content_id;
@@ -48,6 +55,8 @@ struct GameBuild {
     const OslSkipIntroSites* skip_intro; // nullptr when Skip intro is not available for the build
     const OslBookshelfSites* bookshelf;  // nullptr when Unlock Bookshelf is not available for the build
     std::span<const TextLanguage> text_languages; // the first is the default; empty when the build has only one
+    ExecutableMapping mapping;
+    TextLanguageMode text_mode;
 };
 
 // The supported builds, USA first.
@@ -71,9 +80,6 @@ const GameBuild* BaseBuildOf(const GameBuild& build, std::span<const GameBuild> 
 // The newest build that continues this build's layers with another update, or nullptr when there is none.
 const GameBuild* UpdateBuildOf(const GameBuild& build, std::span<const GameBuild> builds = SupportedBuilds());
 
-// True when the build's executable has no verified render resolution sites: it then runs only at its native size.
-// The launcher hides and the loader refuses the custom Render resolution and Aspect Ratio for such a build.
-bool RestrictedToNativeResolution(const GameBuild* build);
 
 std::string SupportedBuildsText();
 

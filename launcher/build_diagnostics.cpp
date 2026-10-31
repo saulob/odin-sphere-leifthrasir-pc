@@ -191,6 +191,9 @@ void ScanSkipIntro(Scan& s) {
                  {"hd title check", &osl_skip_intro_hd_title_code},
                  {"classic title check", &osl_skip_intro_classic_title_code}};
     std::vector<uint64_t> classic;
+    std::array<uint64_t, 3> picked{};
+    int64_t classic_target = -1;
+    size_t kind_index = 0;
     bool complete = true;
     for (const auto& kind : kinds) {
         std::vector<uint64_t> sites = s.InEboot(PatternOf(kind.code->bytes, kind.code->count));
@@ -207,11 +210,16 @@ void ScanSkipIntro(Scan& s) {
         } else if (kind.code == &osl_skip_intro_classic_title_code) {
             classic = sites;
         }
+        if (sites.size() == 1) {
+            picked[kind_index] = sites[0];
+        }
+        ++kind_index;
     }
     if (classic.size() == 1) {
         const uint64_t site = classic[0];
         const int64_t target = static_cast<int64_t>(site) + 5 + static_cast<int32_t>(Read32(s.image(), site + 1));
         const bool consistent = target >= 0 && InRanges(s.eboot_exec, static_cast<uint64_t>(target));
+        classic_target = target;
         s.Line(Fmt("  classic button: %s %s", consistent ? "inside the code" : "OUTSIDE THE CODE",
                    Hex(static_cast<uint64_t>(target)).c_str()));
         if (!consistent) {
@@ -237,6 +245,12 @@ void ScanSkipIntro(Scan& s) {
         s.Unresolved("Skip intro stub space");
     }
     s.Line(std::string("  status: ") + (complete ? "complete" : "incomplete"));
+    if (complete) {
+        s.result.mapping.skip_intro =
+            OslSkipIntroSites{static_cast<uint32_t>(picked[0]), static_cast<uint32_t>(picked[1]),
+                              static_cast<uint32_t>(picked[2]), static_cast<uint32_t>(classic_target),
+                              static_cast<uint32_t>((code_end + 15) & ~uint64_t{15})};
+    }
 }
 
 std::vector<uint64_t> Near(const std::vector<uint64_t>& hits, bool anchored, uint64_t anchor) {
@@ -366,6 +380,15 @@ void ScanBookshelf(Scan& s) {
     }
     s.Line(Fmt("  marks: %zu/%d %s", marks.size(), OSL_BOOKSHELF_MARKS, List(marks).c_str()));
     s.Line(std::string("  status: ") + (complete ? "complete" : "incomplete"));
+    if (complete) {
+        OslBookshelfSites sites{};
+        sites.accessor = static_cast<uint32_t>(getter[0]);
+        sites.total = static_cast<uint32_t>(special[0]);
+        std::copy(reads.begin(), reads.end(), sites.reads);
+        std::copy(marks.begin(), marks.end(), sites.marks);
+        sites.in_place_page_read = in_place ? 1 : 0;
+        s.result.mapping.bookshelf = sites;
+    }
 }
 
 float FloatOf(uint32_t bits) {
@@ -411,6 +434,9 @@ void ScanSnapshotScale(Scan& s) {
         s.Unresolved("Snapshot scale");
     }
     s.Line(std::string("  status: ") + (complete ? "complete" : "incomplete"));
+    if (complete) {
+        s.result.mapping.snapshot_scale_site = static_cast<uint32_t>(hits[0]);
+    }
 }
 
 struct SiteGroup {
@@ -494,6 +520,11 @@ void ScanResolution(Scan& s, std::span<const GameBuild> templates) {
         s.Line("    " + List(mapped, expected_sites.size()));
     }
     s.Line(std::string("  status: ") + (complete ? "complete" : "incomplete"));
+    const bool ordered = std::is_sorted(expected_sites.begin(), expected_sites.end(),
+                                        [](const OslResolutionSite& a, const OslResolutionSite& b) { return a.offset < b.offset; });
+    if (complete && ordered && mapped.size() == expected_sites.size()) {
+        s.result.mapping.resolution_offsets.assign(mapped.begin(), mapped.end());
+    }
 }
 
 // The start of every LZCNT ([66] F3 [REX] 0F BD) inside `ranges`.
@@ -607,6 +638,9 @@ void ScanLzcnt(Scan& s) {
         }
     }
     s.Line(std::string("  status: ") + (unique && uncovered.empty() && rewritable ? "complete" : "incomplete"));
+    if (unique && uncovered.empty() && rewritable) {
+        s.result.mapping.lzcnt_offsets.assign(early.begin(), early.end());
+    }
 }
 
 std::string ReadSmallText(const std::filesystem::path& path) {
@@ -715,8 +749,141 @@ std::string SfoLine(const std::string& sfo) {
                SfoString(sfo, "VERSION").c_str(), SfoString(sfo, "CATEGORY").c_str());
 }
 
+bool IsOdinContent(const std::string& sfo) {
+    return SfoString(sfo, "CONTENT_ID").find("ODINSPHERE") != std::string::npos;
+}
+
+std::string EbootLines(const std::filesystem::path& eboot_path, std::uintmax_t eboot_size) {
+    const std::string sha = Sha256Hex(eboot_path);
+    std::string text = Fmt("  eboot.bin: %llu bytes\n", static_cast<unsigned long long>(eboot_size));
+    text += "  SHA-256: " + (sha.empty() ? std::string("unreadable") : sha) + "\n";
+    std::string reported = "none";
+    for (const ReportedBuild& build : kReportedBuilds) {
+        if (build.eboot_size == eboot_size && sha == build.eboot_sha256) {
+            reported = build.label;
+        }
+    }
+    return text + "  Reported build match: " + reported + " (still unsupported)\n";
+}
+
+// Maps app0's eboot.bin with the bundled modules linked after it, as the boot image does, and scans the mapping.
+ScanResult ScanFolderExecutable(const std::filesystem::path& app0, std::string& text) {
+    MappedExecutable image;
+    const std::string mapping = MapExecutable(app0 / "eboot.bin", image);
+    if (!mapping.empty()) {
+        text += "  Executable: not readable (" + mapping + ")\n";
+        ScanResult scan;
+        scan.unresolved.push_back("executable");
+        return scan;
+    }
+    text += Fmt("  Entry point: %s, mapped image: %s\n", Hex(image.entry).c_str(), Hex(image.image.size()).c_str());
+    for (const MappedSegment& s : image.segments) {
+        text += Fmt("  Segment: address %s, size %s, flags %u\n", Hex(s.vaddr).c_str(), Hex(s.memsz).c_str(), s.flags);
+    }
+    const uint64_t mapped_size = image.image.size();
+    for (const char* name : kBundledModules) {
+        const std::filesystem::path module_path = app0 / "sce_module" / name;
+        MappedExecutable module;
+        const std::string module_error = MapExecutable(module_path, module);
+        const std::string link_error = module_error.empty() ? LinkModule(image, module) : module_error;
+        text += Fmt("  Module %s: %s, SHA-256 %s\n", name, link_error.empty() ? "linked" : link_error.c_str(),
+                    Sha256Hex(module_path).c_str());
+    }
+    return ScanExecutable(image, mapped_size);
+}
+
+void DescribePackageFiles(std::span<const PackageFile> files, std::string& text) {
+    text += Fmt("Package files: %zu\n", files.size());
+    for (const PackageFile& file : files) {
+        if (file.path.find('/') == std::string::npos) {
+            text += Fmt("  %s: %llu bytes\n", file.path.c_str(), static_cast<unsigned long long>(file.size));
+        }
+    }
+    for (const char* name : kPlt) {
+        if (std::none_of(files.begin(), files.end(), [&](const PackageFile& file) { return file.path == name; })) {
+            text += Fmt("  %s: absent\n", name);
+        }
+    }
+}
+
+std::string Overall(const ScanResult& scan) {
+    std::string text = "Overall diagnostic result:\n";
+    if (scan.complete()) {
+        return text + "  Mapping appears complete\n";
+    }
+    text += "  Mapping incomplete\n  unresolved:";
+    for (size_t i = 0; i < scan.unresolved.size(); ++i) {
+        text += (i ? ", " : " ") + scan.unresolved[i];
+    }
+    return text + "\n";
+}
+
+std::vector<OslResolutionSite> ResolutionSitesFor(std::span<const GameBuild> templates,
+                                                  const std::vector<uint32_t>& offsets) {
+    const auto source = std::find_if(templates.begin(), templates.end(),
+                                     [](const GameBuild& build) { return !build.resolution_sites.empty(); });
+    std::vector<OslResolutionSite> sites;
+    if (source == templates.end() || source->resolution_sites.size() != offsets.size()) {
+        return sites;
+    }
+    sites.assign(source->resolution_sites.begin(), source->resolution_sites.end());
+    for (size_t i = 0; i < sites.size(); ++i) {
+        sites[i].offset = offsets[i];
+    }
+    return sites;
+}
+
+// The loader's patches in its order, applied to a scratch copy: a feature whose patch refuses its sites is dropped.
+void ValidateMapping(Scan& s, std::span<const GameBuild> templates) {
+    ScannedMapping& mapping = s.result.mapping;
+    const uint64_t size = s.image().size();
+    Bytes scratch(size + OSL_BOOKSHELF_STUB_BYTES, 0);
+    std::copy(s.image().begin(), s.image().end(), scratch.begin());
+    char error[320] = "";
+    const auto drop = [&](const char* feature) {
+        s.Line(Fmt("  %s patch check on a scratch copy: refused (%s)", feature, error));
+        s.Unresolved(std::string(feature) + " patch check");
+    };
+    const OslResolution target = osl_render_target(&osl_resolutions[OSL_RESOLUTION_COUNT - 1], &osl_aspect_ratios[0]);
+    if (mapping.snapshot_scale_site &&
+        !osl_apply_snapshot_scale(scratch.data(), size, mapping.snapshot_scale_site, &target, error, sizeof(error))) {
+        drop("Snapshot scale");
+        mapping.snapshot_scale_site = 0;
+    }
+    if (!mapping.resolution_offsets.empty()) {
+        const std::vector<OslResolutionSite> sites = ResolutionSitesFor(templates, mapping.resolution_offsets);
+        if (sites.empty() ||
+            !osl_apply_resolution(scratch.data(), size, sites.data(), sites.size(), &target, error, sizeof(error))) {
+            drop("Resolution");
+            mapping.resolution_offsets.clear();
+        }
+    }
+    if (mapping.skip_intro) {
+        uint64_t code_end = 0;
+        for (const MappedSegment& seg : s.mapped.segments) {
+            const uint64_t end = seg.vaddr + ((seg.memsz + 0xfff) & ~uint64_t{0xfff});
+            if ((seg.flags & 1) && mapping.skip_intro->stubs >= seg.vaddr && mapping.skip_intro->stubs < end &&
+                end <= size) {
+                code_end = end;
+            }
+        }
+        if (!code_end || !osl_apply_skip_intro(scratch.data(), code_end, &*mapping.skip_intro, 1, error, sizeof(error))) {
+            drop("Skip intro");
+            mapping.skip_intro.reset();
+        }
+    }
+    if (mapping.bookshelf &&
+        !osl_apply_bookshelf(scratch.data(), size, &*mapping.bookshelf, scratch.data() + size, OSL_BOOKSHELF_STUB_BYTES,
+                             error, sizeof(error))) {
+        drop("Unlock Bookshelf");
+        mapping.bookshelf.reset();
+    }
+}
+
 constexpr char kBegin[] = "Unsupported build diagnostics begin\n";
 constexpr char kEnd[] = "Unsupported build diagnostics end\n";
+constexpr char kMappingBegin[] = "Build mapping diagnostics begin\n";
+constexpr char kMappingEnd[] = "Build mapping diagnostics end\n";
 
 } // namespace
 
@@ -728,7 +895,49 @@ ScanResult ScanExecutable(const MappedExecutable& image, uint64_t eboot_size, st
     ScanSnapshotScale(scan);
     ScanResolution(scan, templates);
     ScanLzcnt(scan);
+    ValidateMapping(scan, templates);
     return result;
+}
+
+std::vector<OslResolutionSite> ResolutionSitesAt(std::span<const GameBuild> templates,
+                                                 const std::vector<uint32_t>& offsets) {
+    return ResolutionSitesFor(templates, offsets);
+}
+
+ScanResult ScanGameFolder(const std::filesystem::path& app0) {
+    std::string unused;
+    return ScanFolderExecutable(app0, unused);
+}
+
+std::vector<std::string> UnresolvedFeatures(const ScannedMapping& mapping) {
+    std::vector<std::string> missing;
+    if (mapping.resolution_offsets.empty() || !mapping.snapshot_scale_site) {
+        missing.push_back("Render resolution");
+    }
+    if (!mapping.skip_intro) {
+        missing.push_back("Skip intro");
+    }
+    if (!mapping.bookshelf) {
+        missing.push_back("Unlock Bookshelf");
+    }
+    if (mapping.lzcnt_offsets.empty()) {
+        missing.push_back("Legacy CPU (LZCNT)");
+    }
+    return missing;
+}
+
+bool IsOdinPackage(const std::string& sfo, std::span<const PackageFile> files) {
+    return IsOdinContent(sfo) || std::any_of(files.begin(), files.end(), [](const PackageFile& file) {
+               return file.path.find('/') == std::string::npos && IsOdinArchive(PathFromUtf8(file.path));
+           });
+}
+
+bool IsDiagnosedPackageFile(const std::string& path) {
+    if (path == "eboot.bin") {
+        return true;
+    }
+    return std::any_of(std::begin(kBundledModules), std::end(kBundledModules),
+                       [&](const char* name) { return path == std::string("sce_module/") + name; });
 }
 
 UnsupportedBuildReport DiagnoseUnsupportedBuild(const std::filesystem::path& app0, const std::string& detail,
@@ -748,76 +957,77 @@ UnsupportedBuildReport DiagnoseUnsupportedBuild(const std::filesystem::path& app
     }
 
     const std::string sfo = ReadSmallText(app0 / "sce_sys" / "param.sfo");
-    const bool odin_content = SfoString(sfo, "CONTENT_ID").find("ODINSPHERE") != std::string::npos;
-    const std::string sha = Sha256Hex(eboot_path);
-
     std::string text = kBegin;
-    text += "Identity:\n";
-    text += Fmt("  eboot.bin: %llu bytes\n", static_cast<unsigned long long>(eboot_size));
-    text += "  SHA-256: " + (sha.empty() ? std::string("unreadable") : sha) + "\n";
-    std::string reported = "none";
-    for (const ReportedBuild& build : kReportedBuilds) {
-        if (build.eboot_size == eboot_size && sha == build.eboot_sha256) {
-            reported = build.label;
-        }
-    }
-    text += "  Reported build match: " + reported + " (still unsupported)\n";
-    text += SfoLine(sfo) + "\n";
+    text += "Identity:\n" + EbootLines(eboot_path, eboot_size) + SfoLine(sfo) + "\n";
     text += "  Supported-build check: " + detail + "\n";
-
-    MappedExecutable image;
-    const std::string mapping = MapExecutable(eboot_path, image);
-    ScanResult scan;
-    if (!mapping.empty()) {
-        text += "  Executable: not readable (" + mapping + ")\n";
-        scan.unresolved.push_back("executable");
-    } else {
-        text += Fmt("  Entry point: %s, mapped image: %s\n", Hex(image.entry).c_str(), Hex(image.image.size()).c_str());
-        for (const MappedSegment& s : image.segments) {
-            text += Fmt("  Segment: address %s, size %s, flags %u\n", Hex(s.vaddr).c_str(), Hex(s.memsz).c_str(), s.flags);
-        }
-        const uint64_t mapped_size = image.image.size();
-        for (const char* name : kBundledModules) {
-            const std::filesystem::path module_path = app0 / "sce_module" / name;
-            MappedExecutable module;
-            const std::string module_error = MapExecutable(module_path, module);
-            const std::string link_error = module_error.empty() ? LinkModule(image, module) : module_error;
-            text += Fmt("  Module %s: %s, SHA-256 %s\n", name, link_error.empty() ? "linked" : link_error.c_str(),
-                        Sha256Hex(module_path).c_str());
-        }
-        scan = ScanExecutable(image, mapped_size);
-    }
-    report.odin = odin_content || scan.anything_found;
+    const ScanResult scan = ScanFolderExecutable(app0, text);
+    report.odin = IsOdinContent(sfo) || scan.anything_found;
     if (!report.odin) {
         return {};
     }
 
     DescribeArchives(app0, prompt_patch, text);
-    text += scan.text;
-    text += "Overall diagnostic result:\n";
-    if (scan.complete()) {
-        text += "  Mapping appears complete\n";
-    } else {
-        text += "  Mapping incomplete\n  unresolved:";
-        for (size_t i = 0; i < scan.unresolved.size(); ++i) {
-            text += (i ? ", " : " ") + scan.unresolved[i];
-        }
-        text += "\n";
-    }
-    text += kEnd;
+    text += scan.text + Overall(scan) + kEnd;
     report.text = std::move(text);
     return report;
 }
 
-UnsupportedBuildReport DiagnoseUnsupportedPackage(const std::string& sfo) {
+UnsupportedBuildReport DiagnoseUnsupportedPackage(const std::string& sfo, const std::string& detail,
+                                                  const std::filesystem::path& executables,
+                                                  std::span<const PackageFile> files, const std::string& note) {
     UnsupportedBuildReport report;
-    if (SfoString(sfo, "CONTENT_ID").find("ODINSPHERE") == std::string::npos) {
+    if (!IsOdinPackage(sfo, files)) {
         return report;
     }
-    report.odin = true;
-    report.text = std::string(kBegin) + "Identity:\n" + SfoLine(sfo) +
-                  "\n  The package executable was not analyzed; select the extracted game folder to analyze it.\n" + kEnd;
+    std::error_code ec;
+    const std::filesystem::path eboot_path = executables / "eboot.bin";
+    const std::uintmax_t eboot_size = executables.empty() ? 0 : std::filesystem::file_size(eboot_path, ec);
+    const bool unpacked = !executables.empty() && !ec && eboot_size <= kMaxFile;
+
+    std::string text = kBegin;
+    text += "Identity:\n";
+    text += unpacked ? EbootLines(eboot_path, eboot_size)
+                     : "  eboot.bin: not unpacked" + (note.empty() ? std::string() : " (" + note + ")") + "\n";
+    text += SfoLine(sfo) + "\n";
+    text += "  Supported-build check: " + detail + "\n";
+    ScanResult scan;
+    if (unpacked) {
+        scan = ScanFolderExecutable(executables, text);
+    } else {
+        scan.unresolved.push_back("executable");
+    }
+    report.odin = IsOdinContent(sfo) || scan.anything_found;
+    if (!report.odin) {
+        return {};
+    }
+
+    DescribePackageFiles(files, text);
+    text += scan.text + Overall(scan) + kEnd;
+    report.text = std::move(text);
     return report;
+}
+
+std::string DiagnoseBuildMapping(const std::filesystem::path& app0, const GameBuild& build,
+                                 std::span<const uint8_t> prompt_patch) {
+    std::error_code ec;
+    const std::filesystem::path eboot_path = app0 / "eboot.bin";
+    const std::uintmax_t eboot_size = std::filesystem::file_size(eboot_path, ec);
+    if (build.mapping != ExecutableMapping::kScanned || ec || eboot_size > kMaxFile) {
+        return {};
+    }
+
+    std::string text = kMappingBegin;
+    text += std::string("Identity:\n  Build: ") + build.label + "\n";
+    text += EbootLines(eboot_path, eboot_size) + SfoLine(ReadSmallText(app0 / "sce_sys" / "param.sfo")) + "\n";
+    const ScanResult scan = ScanFolderExecutable(app0, text);
+    const std::vector<std::string> missing = UnresolvedFeatures(scan.mapping);
+    text += "  Features not resolved by the scan:";
+    for (size_t i = 0; i < missing.size(); ++i) {
+        text += (i ? ", " : " ") + missing[i];
+    }
+    text += missing.empty() ? " none\n" : "\n";
+    DescribeArchives(app0, prompt_patch, text);
+    return text + scan.text + Overall(scan) + kMappingEnd;
 }
 
 } // namespace osl

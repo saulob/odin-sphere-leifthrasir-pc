@@ -1,6 +1,8 @@
 <#
 .SYNOPSIS
-  Builds and runs the focused tests: the game profile and the package identity, the settings file, the run log's
+  Builds and runs the focused tests: the game profile and the package identity, the build parity of every supported build
+  (identity, languages, display, graphics, gameplay, controls, trophies, save data and runtime patches, checked on
+  synthetic fixtures without game files), the settings file, the run log's
   retention and capture without a console, the keyboard bindings, the controller prompts patch, the cursor visibility rules, the window fit, the GPU tile layouts, the patch workflow and the
   launcher self-update (versions, release JSON, checksums, ZIP safety, the install transaction and the real update helper). They use
   synthetic data in a temporary folder: no window, no game files.
@@ -30,7 +32,7 @@ Write-Step 'Running the Windows memory tests (sparse backing, commitment, aliase
 & (Join-Path $buildDir 'bin\osl-memory-windows-tests.exe')
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-Write-Step 'Running the game, settings and keys tests'
+Write-Step 'Running the game, build parity, settings and keys tests'
 & (Join-Path $buildDir 'bin\osl-tests.exe')
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 

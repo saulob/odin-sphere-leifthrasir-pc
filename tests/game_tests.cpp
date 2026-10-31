@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cpuid.h>
 #include <chrono>
 #include <cmath>
 #include <csignal>
@@ -11,7 +12,10 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iterator>
+#include <map>
+#include <set>
 #include <string>
 #include <vector>
 #ifdef _WIN32
@@ -61,6 +65,49 @@ int g_failures = 0;
             std::printf("FAIL %s:%d: %s\n", __FILE__, __LINE__, #condition);                                  \
         }                                                                                                      \
     } while (0)
+
+struct ParityRow {
+    const GameBuild* build;
+    std::map<std::string, bool> ok;
+};
+std::vector<ParityRow> g_parity;
+
+ParityRow& ParityOf(const GameBuild& build) {
+    for (ParityRow& row : g_parity) {
+        if (row.build == &build) {
+            return row;
+        }
+    }
+    g_parity.push_back({&build, {}});
+    return g_parity.back();
+}
+
+void Parity(const GameBuild& build, const char* category, const char* expression, bool condition) {
+    ++g_checks;
+    const auto entry = ParityOf(build).ok.emplace(category, true).first;
+    if (!condition) {
+        ++g_failures;
+        entry->second = false;
+        std::printf("FAIL %s [%s]: %s\n", build.label, category, expression);
+    }
+}
+
+#define PARITY(category, condition) Parity(build, category, #condition, (condition))
+
+bool TableComplete(const GameBuild& build) {
+    return !build.resolution_sites.empty() && build.snapshot_scale_site != 0 && build.skip_intro && build.bookshelf;
+}
+
+// The builds whose executable sites are in the profile's own tables; TestBuildContract fails one with a gap.
+std::vector<GameBuild> MappedBuilds() {
+    std::vector<GameBuild> builds;
+    for (const GameBuild& build : SupportedBuilds()) {
+        if (build.mapping == ExecutableMapping::kTable && TableComplete(build)) {
+            builds.push_back(build);
+        }
+    }
+    return builds;
+}
 
 std::filesystem::path TempDir(const char* name) {
     const std::filesystem::path dir = std::filesystem::temp_directory_path() / "osl-tests" / name;
@@ -182,7 +229,7 @@ void TestBranding() {
 
 void TestProfile() {
     const std::span<const GameBuild> builds = SupportedBuilds();
-    CHECK(builds.size() == 5);
+    CHECK(builds.size() == 6);
     const GameBuild& build = builds[0];
     CHECK(std::string(kGameTitle) == "Odin Sphere Leifthrasir");
     CHECK(std::string(build.title_id) == "CUSA05083");
@@ -276,8 +323,8 @@ void TestProfile() {
     CHECK(BuildMetadataText(eu) == "APP_VER 1.01 \xC2\xB7 VERSION 1.00");
 
     CHECK(SupportedBuildsText() ==
-          "CUSA05083 1.00 USA, CUSA01290 1.00 Japan, CUSA01290 1.02 Japan, CUSA05262 1.00 Europe and CUSA05262 1.01 "
-          "Europe");
+          "CUSA05083 1.00 USA, CUSA01290 1.00 Japan, CUSA01290 1.02 Japan, CUSA05262 1.00 Europe, CUSA05262 1.01 "
+          "Europe and CUSA03873 1.00 HK");
     CHECK(std::string(kPreparedMarker) == ".osl_view.json");
     const std::vector<std::string> shared(std::begin(kSharedGameFiles), std::end(kSharedGameFiles));
     for (const char* name : {"eboot.bin", "sce_discmap.plt", "sce_module/libc.prx", "sce_module/libSceFios2.prx",
@@ -303,6 +350,7 @@ void TestBuildMetadata() {
         {"CUSA01290-1.02", "CUSA01290 1.02 Japan", "APP_VER 1.02 \xC2\xB7 VERSION 1.00", "CUSA01290-1.00"},
         {"CUSA05262-1.00", "CUSA05262 1.00 Europe", "APP_VER 1.00 \xC2\xB7 VERSION 1.00", nullptr},
         {"CUSA05262-1.01", "CUSA05262 1.01 Europe", "APP_VER 1.01 \xC2\xB7 VERSION 1.00", "CUSA05262-1.00"},
+        {"CUSA03873-1.00", "CUSA03873 1.00 HK", "APP_VER 1.00 \xC2\xB7 VERSION 1.00", nullptr},
     };
     const std::span<const GameBuild> builds = SupportedBuilds();
     CHECK(builds.size() == std::size(expected));
@@ -1387,7 +1435,6 @@ void TestBuildResolutionSites(const GameBuild& build) {
     CHECK(std::count_if(build.resolution_sites.begin(), build.resolution_sites.end(),
                         [](const OslResolutionSite& site) { return site.packed_floats; }) == 2);
     CHECK(build.resolution_sites.front().pixel_budget);
-    CHECK(!RestrictedToNativeResolution(&build));
 
     size_t image_size = 0;
     for (const OslResolutionSite& site : build.resolution_sites) {
@@ -1465,8 +1512,8 @@ void TestBuildResolutionSites(const GameBuild& build) {
 }
 
 void TestResolutionSites() {
-    CHECK(!RestrictedToNativeResolution(nullptr));
-    for (const GameBuild& build : SupportedBuilds()) {
+    CHECK(FeaturesOf(nullptr, {}).custom_resolution);
+    for (const GameBuild& build : MappedBuilds()) {
         TestBuildResolutionSites(build);
     }
 }
@@ -1627,7 +1674,7 @@ std::vector<unsigned char> BookshelfImage(const OslBookshelfSites& sites, size_t
 }
 
 void TestBookshelfSites() {
-    for (const GameBuild& build : SupportedBuilds()) {
+    for (const GameBuild& build : MappedBuilds()) {
         CHECK(build.bookshelf != nullptr);
         if (!build.bookshelf) {
             continue;
@@ -1717,7 +1764,7 @@ void TestSnapshotScale() {
         return image;
     };
     char error[320] = "";
-    for (const GameBuild& build : SupportedBuilds()) {
+    for (const GameBuild& build : MappedBuilds()) {
         const uint32_t site = build.snapshot_scale_site;
         CHECK(site != 0);
         for (const int resolution : {0, 1, 2, 3, 5}) {
@@ -1846,7 +1893,7 @@ std::array<float, 2> PatchedClearScreen(const GameBuild& build, const OslResolut
 // Scenes reusing one offscreen target (title, ATLUS logo, a corner panel) compose only what they cleared: no pixel
 // of an earlier scene survives in what a later one samples, at any render size, up to the four edges.
 void TestPartialClearCoverage() {
-    const GameBuild& build = SupportedBuilds().back();
+    const GameBuild build = MappedBuilds().back();
     const OslResolutionSite& site = ClearScreenSite(build);
     CHECK(site.opcode_length == 2 && site.opcode[0] == 0x48 && site.opcode[1] == 0xb9);
     const float title[4] = {0, 0, 1920, 1080};
@@ -2108,7 +2155,7 @@ void TestSkipIntro() {
           hd.bytes[hd.site + 3] == 0x02);
     const OslSkipIntroCode& classic = osl_skip_intro_classic_title_code;
     CHECK(classic.bytes[classic.site] == 0xe8 && classic.bytes[classic.site + 1] < 0);
-    for (const GameBuild& build : SupportedBuilds()) {
+    for (const GameBuild& build : MappedBuilds()) {
         TestBuildSkipIntro(build);
     }
 
@@ -2618,60 +2665,141 @@ constexpr size_t kPlantedNotice = 0x100, kPlantedHd = 0x200, kPlantedClassic = 0
 constexpr size_t kPlantedGetter = 0x2000, kPlantedTotal = 0x2100, kPlantedReads = 0x2200, kPlantedMarks = 0x2600;
 constexpr size_t kPlantedLzcnt = 0x3000, kPlantedData = 0x31000, kPlantedDecoy = 0x20000;
 
-// An image holding every pattern the scanner looks for exactly once, in the shapes the production patches expect.
-MappedExecutable SyntheticOdinImage() {
+struct PlantedLayout {
+    size_t notice = 0, hd = 0, classic = 0, classic_target = 0, snapshot = 0, data = 0, getter = 0, total = 0, decoy = 0;
+    std::vector<size_t> reads, marks, lzcnt;
+    bool in_place = false;
+    std::vector<OslResolutionSite> resolution; // at the offsets they are planted at
+};
+
+void PlantFeatures(MappedExecutable& image, const PlantedLayout& l) {
+    PlantPattern(image, l.notice, Shorts(osl_skip_intro_notice_code.bytes, osl_skip_intro_notice_code.count));
+    PlantPattern(image, l.hd, Shorts(osl_skip_intro_hd_title_code.bytes, osl_skip_intro_hd_title_code.count));
+    PlantPattern(image, l.classic,
+                 Shorts(osl_skip_intro_classic_title_code.bytes, osl_skip_intro_classic_title_code.count));
+    const size_t call = l.classic + osl_skip_intro_classic_title_code.site;
+    PlantRelative(image, call + 1, l.classic_target, call + 5);
+
+    PlantPattern(image, l.snapshot, Shorts(osl_snapshot_window, OSL_SNAPSHOT_WINDOW));
+    PlantRelative(image, l.snapshot + OSL_SNAPSHOT_FACTOR, l.data, l.snapshot + OSL_SNAPSHOT_FACTOR + 4);
+    PlantRelative(image, l.snapshot + OSL_SNAPSHOT_PAIR, l.data + 8, l.snapshot + OSL_SNAPSHOT_PAIR + 4);
+    PlantFloat(image, l.data, 1.5f);
+    PlantFloat(image, l.data + 8, 1280.0f);
+    PlantFloat(image, l.data + 12, 720.0f);
+
+    for (const OslResolutionSite& site : l.resolution) {
+        std::memcpy(&image.image[site.offset], site.opcode, site.opcode_length);
+        std::memcpy(&image.image[site.offset + site.opcode_length], &site.value, 4);
+        if (site.packed_floats) {
+            std::memcpy(&image.image[site.offset + site.opcode_length + 4], &site.value_high, 4);
+        }
+    }
+
+    PlantPattern(image, l.getter, Shorts(osl_bookshelf_accessor_shape, OSL_BOOKSHELF_ACCESSOR_BYTES));
+    std::memcpy(&image.image[l.total], osl_bookshelf_total_code, OSL_BOOKSHELF_TOTAL_BYTES);
+    const auto plant_call = [&](size_t at, const unsigned char* signature) {
+        image.image[at] = 0xe8;
+        PlantRelative(image, at + 1, l.getter, at + 5);
+        std::memcpy(&image.image[at + 5], signature, OSL_BOOKSHELF_SIGNATURE_BYTES);
+    };
+    for (int i = 0; i < OSL_BOOKSHELF_READS; ++i) {
+        plant_call(l.reads[i], l.in_place && i == 7 ? osl_bookshelf_in_place_page_signature
+                                                    : osl_bookshelf_read_signatures[i]);
+    }
+    for (int i = 0; i < OSL_BOOKSHELF_MARKS; ++i) {
+        plant_call(l.marks[i], osl_bookshelf_mark_signatures[i]);
+    }
+    if (l.decoy) {
+        plant_call(l.decoy, osl_bookshelf_read_signatures[7]);
+    }
+
+    for (size_t i = 0; i < l.lzcnt.size(); ++i) {
+        std::memcpy(&image.image[l.lzcnt[i]], lzcnt_shapes[i].bytes, lzcnt_shapes[i].length);
+    }
+}
+
+PlantedLayout SyntheticLayout(size_t skew) {
+    PlantedLayout l;
+    l.notice = kPlantedNotice + skew;
+    l.hd = kPlantedHd + skew;
+    l.classic = kPlantedClassic + skew;
+    l.classic_target = 0x1000;
+    l.snapshot = kPlantedSnapshot + skew;
+    l.data = kPlantedData + skew;
+    l.getter = kPlantedGetter + skew;
+    l.total = kPlantedTotal + skew;
+    l.decoy = kPlantedDecoy + skew;
+    for (int i = 0; i < OSL_BOOKSHELF_READS; ++i) {
+        l.reads.push_back(kPlantedReads + skew + i * 0x20);
+    }
+    for (int i = 0; i < OSL_BOOKSHELF_MARKS; ++i) {
+        l.marks.push_back(kPlantedMarks + skew + i * 0x20);
+    }
+    for (int i = 0; i < LZCNT_RANGE_COUNT; ++i) {
+        l.lzcnt.push_back(kPlantedLzcnt + skew + i * 0x20);
+    }
+    size_t cursor = 0x1100 + skew;
+    uint32_t previous_end = 0;
+    for (OslResolutionSite site : SupportedBuilds()[0].resolution_sites) {
+        if (site.offset != previous_end) {
+            cursor += 0x40;
+        }
+        const uint32_t template_offset = site.offset;
+        site.offset = static_cast<uint32_t>(cursor);
+        const size_t length = site.opcode_length + (site.packed_floats ? 8u : 4u);
+        l.resolution.push_back(site);
+        cursor += length;
+        previous_end = template_offset + static_cast<uint32_t>(length);
+    }
+    return l;
+}
+
+// An image holding every pattern the scanner looks for exactly once, in the shapes the production patches expect. A
+// skew moves the whole layout, as another build's code would sit elsewhere.
+MappedExecutable SyntheticOdinImage(size_t skew = 0) {
     MappedExecutable image;
     image.image.assign(0x40000, 0);
     image.segments = {{0, 0x2f800, 5}, {0x30000, 0x8000, 4}};
     image.entry = 0x1234;
-    PlantPattern(image, kPlantedNotice, Shorts(osl_skip_intro_notice_code.bytes, osl_skip_intro_notice_code.count));
-    PlantPattern(image, kPlantedHd, Shorts(osl_skip_intro_hd_title_code.bytes, osl_skip_intro_hd_title_code.count));
-    PlantPattern(image, kPlantedClassic,
-                 Shorts(osl_skip_intro_classic_title_code.bytes, osl_skip_intro_classic_title_code.count));
-    PlantRelative(image, kPlantedClassic + 45, 0x1000, kPlantedClassic + 49);
+    PlantFeatures(image, SyntheticLayout(skew));
+    return image;
+}
 
-    PlantPattern(image, kPlantedSnapshot, Shorts(osl_snapshot_window, OSL_SNAPSHOT_WINDOW));
-    PlantRelative(image, kPlantedSnapshot + OSL_SNAPSHOT_FACTOR, kPlantedData, kPlantedSnapshot + OSL_SNAPSHOT_FACTOR + 4);
-    PlantRelative(image, kPlantedSnapshot + OSL_SNAPSHOT_PAIR, kPlantedData + 8, kPlantedSnapshot + OSL_SNAPSHOT_PAIR + 4);
-    PlantFloat(image, kPlantedData, 1.5f);
-    PlantFloat(image, kPlantedData + 8, 1280.0f);
-    PlantFloat(image, kPlantedData + 12, 720.0f);
-
-    size_t cursor = 0x1100;
-    uint32_t previous_end = 0;
-    for (const OslResolutionSite& site : SupportedBuilds()[0].resolution_sites) {
-        if (site.offset != previous_end) {
-            cursor += 0x40;
+// A build's profile tables laid out at their own offsets in an image the size of its executable. The image's eboot
+// part ends at `eboot_size`; its linked module code follows.
+MappedExecutable TableOdinImage(const GameBuild& build, uint64_t& eboot_size) {
+    const LzcntBuild* lzcnt = nullptr;
+    for (const LzcntBuild& candidate : lzcnt_builds) {
+        if (std::string_view(candidate.build) == build.label) {
+            lzcnt = &candidate;
         }
-        std::memcpy(&image.image[cursor], site.opcode, site.opcode_length);
-        std::memcpy(&image.image[cursor + site.opcode_length], &site.value, 4);
-        size_t length = site.opcode_length + 4u;
-        if (site.packed_floats) {
-            std::memcpy(&image.image[cursor + length], &site.value_high, 4);
-            length += 4;
-        }
-        cursor += length;
-        previous_end = site.offset + static_cast<uint32_t>(length);
     }
-
-    PlantPattern(image, kPlantedGetter, Shorts(osl_bookshelf_accessor_shape, OSL_BOOKSHELF_ACCESSOR_BYTES));
-    std::memcpy(&image.image[kPlantedTotal], osl_bookshelf_total_code, OSL_BOOKSHELF_TOTAL_BYTES);
-    const auto plant_call = [&](size_t at, const unsigned char* signature) {
-        image.image[at] = 0xe8;
-        PlantRelative(image, at + 1, kPlantedGetter, at + 5);
-        std::memcpy(&image.image[at + 5], signature, OSL_BOOKSHELF_SIGNATURE_BYTES);
-    };
-    for (int i = 0; i < OSL_BOOKSHELF_READS; ++i) {
-        plant_call(kPlantedReads + i * 0x20, osl_bookshelf_read_signatures[i]);
+    PlantedLayout l;
+    l.notice = build.skip_intro->notice_scene - osl_skip_intro_notice_code.site;
+    l.hd = build.skip_intro->hd_title_check - osl_skip_intro_hd_title_code.site;
+    l.classic = build.skip_intro->classic_title_check - osl_skip_intro_classic_title_code.site;
+    l.classic_target = build.skip_intro->classic_button;
+    l.snapshot = build.snapshot_scale_site;
+    l.getter = build.bookshelf->accessor;
+    l.total = build.bookshelf->total;
+    l.reads.assign(build.bookshelf->reads, build.bookshelf->reads + OSL_BOOKSHELF_READS);
+    l.marks.assign(build.bookshelf->marks, build.bookshelf->marks + OSL_BOOKSHELF_MARKS);
+    l.in_place = build.bookshelf->in_place_page_read != 0;
+    l.resolution.assign(build.resolution_sites.begin(), build.resolution_sites.end());
+    const size_t code_end = build.skip_intro->stubs;
+    const size_t data_at = ((code_end + 0xfff) & ~size_t{0xfff});
+    eboot_size = data_at + 0x2000;
+    l.data = data_at + 0x800;
+    size_t image_size = eboot_size + 0x1000;
+    for (int i = 0; lzcnt && i < LZCNT_RANGE_COUNT; ++i) {
+        l.lzcnt.push_back(lzcnt->offsets[i]);
+        image_size = std::max<size_t>(image_size, (lzcnt->offsets[i] + 0x1000) & ~size_t{0xfff});
     }
-    for (int i = 0; i < OSL_BOOKSHELF_MARKS; ++i) {
-        plant_call(kPlantedMarks + i * 0x20, osl_bookshelf_mark_signatures[i]);
-    }
-    plant_call(kPlantedDecoy, osl_bookshelf_read_signatures[7]);
-
-    for (int i = 0; i < LZCNT_RANGE_COUNT; ++i) {
-        std::memcpy(&image.image[kPlantedLzcnt + i * 0x20], lzcnt_shapes[i].bytes, lzcnt_shapes[i].length);
-    }
+    MappedExecutable image;
+    image.image.assign(image_size, 0);
+    image.segments = {{0, code_end, 5}, {data_at, 0x2000, 4}, {eboot_size, image_size - eboot_size, 5}};
+    image.entry = lzcnt ? lzcnt->entry : 0;
+    PlantFeatures(image, l);
     return image;
 }
 
@@ -2847,9 +2975,11 @@ void TestUnsupportedBuildFlow() {
               {"APP_VER", "01.01"},
               {"VERSION", "01.01"},
               {"CATEGORY", "gp"}});
-    const UnsupportedBuildReport package = DiagnoseUnsupportedPackage(ReadFile(game / "sce_sys" / "param.sfo"));
+    const UnsupportedBuildReport package =
+        DiagnoseUnsupportedPackage(ReadFile(game / "sce_sys" / "param.sfo"), "detail", {}, {}, "encrypted");
     CHECK(package.odin && Contains(package.text, "APP_VER 01.01") && Contains(package.text, "CATEGORY gp"));
-    CHECK(!DiagnoseUnsupportedPackage("").odin);
+    CHECK(Contains(package.text, "eboot.bin: not unpacked (encrypted)"));
+    CHECK(!DiagnoseUnsupportedPackage("", "detail", {}, {}).odin);
 
     const std::filesystem::path supported = root / "supported";
     std::filesystem::create_directories(supported / "sce_sys");
@@ -2915,6 +3045,706 @@ void TestBuildDiagnosticsKnownBuild() {
     CHECK(std::filesystem::last_write_time(game / "eboot.bin", ec) == time_before);
 }
 
+const GameBuild* BuildWithLabel(std::string_view label) {
+    for (const GameBuild& build : SupportedBuilds()) {
+        if (build.label == label) {
+            return &build;
+        }
+    }
+    return nullptr;
+}
+
+std::string SfoText(const std::filesystem::path& dir, const std::vector<std::pair<std::string, std::string>>& values) {
+    WriteSfo(dir / "param.sfo", values);
+    return ReadFile(dir / "param.sfo");
+}
+
+std::string MappingExtra(const ScannedMapping& mapping) {
+    std::string extra;
+    for (const auto& [key, numbers] : ScannedMappingFields(mapping)) {
+        extra += ",\n  \"" + key + "\": " + numbers;
+    }
+    return extra;
+}
+
+void WriteImageReport(const std::filesystem::path& dir, const GameBuild& build, const std::string& extra = {}) {
+    std::filesystem::create_directories(dir);
+    std::ofstream(dir / "image.json") << "{\n  \"title_id\": \"" << build.title_id << "\",\n  \"app_ver\": \""
+                                      << FinishedLayer(build).app_ver << "\",\n  \"eboot_sha256\": \""
+                                      << build.eboot_sha256 << "\"" << extra << "\n}\n";
+}
+
+bool SameSkipIntro(const std::optional<OslSkipIntroSites>& a, const OslSkipIntroSites* b) {
+    return a && b && std::memcmp(&*a, b, sizeof(OslSkipIntroSites)) == 0;
+}
+
+bool SameBookshelf(const std::optional<OslBookshelfSites>& a, const OslBookshelfSites* b) {
+    return a && b && std::memcmp(&*a, b, sizeof(OslBookshelfSites)) == 0;
+}
+
+bool SameResolution(const std::vector<uint32_t>& offsets, std::span<const OslResolutionSite> sites) {
+    return offsets.size() == sites.size() &&
+           std::equal(offsets.begin(), offsets.end(), sites.begin(),
+                      [](uint32_t offset, const OslResolutionSite& site) { return offset == site.offset; });
+}
+
+bool SameLzcnt(const std::vector<uint32_t>& offsets, const GameBuild& build) {
+    for (const LzcntBuild& lzcnt : lzcnt_builds) {
+        if (std::string_view(lzcnt.build) == build.label) {
+            return offsets.size() == LZCNT_RANGE_COUNT &&
+                   std::equal(offsets.begin(), offsets.end(), std::begin(lzcnt.offsets));
+        }
+    }
+    return false;
+}
+
+bool SameMapping(const ScannedMapping& a, const ScannedMapping& b) {
+    return a.resolution_offsets == b.resolution_offsets && a.snapshot_scale_site == b.snapshot_scale_site &&
+           a.skip_intro.has_value() == b.skip_intro.has_value() &&
+           (!a.skip_intro || SameSkipIntro(a.skip_intro, &*b.skip_intro)) &&
+           a.bookshelf.has_value() == b.bookshelf.has_value() &&
+           (!a.bookshelf || SameBookshelf(a.bookshelf, &*b.bookshelf)) && a.lzcnt_offsets == b.lzcnt_offsets;
+}
+
+bool IsHexSha(std::string_view text) {
+    return text.size() == 64 && std::all_of(text.begin(), text.end(), [](char c) {
+               return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
+           });
+}
+
+bool SourceHasNoBuildLiterals(const std::filesystem::path& root) {
+    const std::set<std::string> allowed = {"launcher/game_profile.cpp", "launcher/build_diagnostics.cpp",
+                                           "src/lzcnt_compat.c"};
+    bool clean = true;
+    for (const char* folder : {"src", "launcher", "gpu/shim"}) {
+        std::error_code ec;
+        for (std::filesystem::recursive_directory_iterator it(root / folder, ec), end; !ec && it != end; it.increment(ec)) {
+            const std::string name = it->path().extension().string();
+            if (!it->is_regular_file(ec) || (name != ".c" && name != ".cpp" && name != ".h")) {
+                continue;
+            }
+            const std::string relative = std::filesystem::relative(it->path(), root).generic_string();
+            const std::string text = ReadFile(it->path());
+            if (!allowed.contains(relative) && (Contains(text, "CUSA0") || Contains(text, "NPWR0"))) {
+                std::printf("hardcoded build id in %s\n", relative.c_str());
+                clean = false;
+            }
+        }
+    }
+    return clean;
+}
+
+// The sites of two features never share a byte, whichever build they come from.
+bool SitesAreDisjoint(const GameBuild& build) {
+    struct Span {
+        uint64_t begin, end;
+    };
+    std::vector<Span> spans;
+    for (const OslResolutionSite& site : build.resolution_sites) {
+        spans.push_back({site.offset, site.offset + site.opcode_length + (site.packed_floats ? 8u : 4u)});
+    }
+    if (build.snapshot_scale_site) {
+        spans.push_back({build.snapshot_scale_site, build.snapshot_scale_site + OSL_SNAPSHOT_WINDOW});
+    }
+    if (const OslSkipIntroSites* skip = build.skip_intro) {
+        spans.push_back({skip->notice_scene - osl_skip_intro_notice_code.site,
+                         skip->notice_scene - osl_skip_intro_notice_code.site + osl_skip_intro_notice_code.count});
+        spans.push_back({skip->hd_title_check - osl_skip_intro_hd_title_code.site,
+                         skip->hd_title_check - osl_skip_intro_hd_title_code.site + osl_skip_intro_hd_title_code.count});
+        spans.push_back({skip->classic_title_check - osl_skip_intro_classic_title_code.site,
+                         skip->classic_title_check - osl_skip_intro_classic_title_code.site +
+                             osl_skip_intro_classic_title_code.count});
+        spans.push_back({skip->stubs, skip->stubs + OSL_SKIP_INTRO_STUB_BYTES});
+    }
+    std::sort(spans.begin(), spans.end(), [](const Span& a, const Span& b) { return a.begin < b.begin; });
+    for (size_t i = 1; i < spans.size(); ++i) {
+        if (spans[i].begin < spans[i - 1].end) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool OffsetsAscend(const uint32_t* values, size_t count) {
+    for (size_t i = 1; i < count; ++i) {
+        if (values[i] <= values[i - 1]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Xbox prompts apply only to archives whose entries are the ones the patch was made for; any other archive leaves
+// every archive of the build as it was.
+bool PromptsRollBackOnUnknownArchives(const GameBuild& build, const std::filesystem::path& base) {
+    using namespace cpk_test;
+    namespace fs = std::filesystem;
+    const fs::path app0 = base / build.folder;
+    fs::remove_all(app0);
+    fs::create_directories(app0);
+    const std::string known = Pattern(20480, 3), painted = Painted(known, {0x340}, 'X'), unknown = Pattern(20480, 5);
+    const std::string patch = MakePatch({{"Interface.ftx", {known, painted}}});
+    const std::string matching = BuildCpk({{"Interface.ftx", known, true}}, true);
+    const std::string foreign = BuildCpk({{"Interface.ftx", unknown, false}}, false);
+    const std::string first = build.data_files[0], second = build.data_files[1];
+    WriteAll(app0 / first, matching);
+    WriteAll(app0 / second, foreign);
+    bool ok = InstalledPromptStyle(app0, build, Span(patch)) == PromptStyle::kPlayStation;
+    const PromptsResult refused = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch));
+    ok = ok && !refused.ok && ReadFile(app0 / first) == matching && ReadFile(app0 / second) == foreign &&
+         !AnyPromptPatch(app0, build) && InstalledPromptStyle(app0, build, Span(patch)) == PromptStyle::kPlayStation;
+    WriteAll(app0 / second, matching);
+    const PromptsResult applied = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch));
+    ok = ok && applied.ok && InstalledPromptStyle(app0, build, Span(patch)) == PromptStyle::kXbox;
+    const PromptsResult reverted = SetPromptStyle(app0, build, PromptStyle::kPlayStation, {});
+    return ok && reverted.ok && ReadFile(app0 / first) == matching && ReadFile(app0 / second) == matching &&
+           !AnyPromptPatch(app0, build);
+}
+
+// The fixture every scanned build is checked against: the production patterns at offsets no profile has.
+constexpr size_t kFixtureSkew = 0x500;
+
+void TestBuildContract() {
+    const std::filesystem::path root(OSL_SOURCE_DIR);
+    const std::string mirror = ReadFile(root / "scripts" / "game_profiles.py");
+    const std::filesystem::path dir = TempDir("contract");
+    const MappedExecutable fixture_image = SyntheticOdinImage(kFixtureSkew);
+    const ScanResult fixture = ScanExecutable(fixture_image, fixture_image.image.size());
+    CHECK(fixture.complete());
+    const bool no_build_literals = SourceHasNoBuildLiterals(root);
+    CHECK(no_build_literals);
+    const std::string loader = ReadFile(root / "src" / "loader.c");
+    const bool save_from_sfo = Contains(loader, "sfo_value(sfo,\"TITLE_ID\"") &&
+                                Contains(loader, "runtime_savedata_configure(id)");
+    CHECK(save_from_sfo);
+    CHECK(lzcnt_compat_needed(IsaHostFeatures{0, 0, bit_LZCNT}) == 0 && lzcnt_compat_needed(IsaHostFeatures{0, 0, 0}) == 1);
+
+    std::set<std::string> shas, folders, labels, contents;
+    std::map<std::string, std::string> content_of_title;
+    const size_t table_resolution_sites = SupportedBuilds()[0].resolution_sites.size();
+    for (const GameBuild& build : SupportedBuilds()) {
+        const std::string title = build.title_id, version = build.version, folder = build.folder;
+        const PackageLayer& finished = FinishedLayer(build);
+        const std::filesystem::path image_dir = dir / "image" / folder;
+
+        // Installation
+        PARITY("Installation", title.size() == 9 && title.starts_with("CUSA") &&
+                                   std::all_of(title.begin() + 4, title.end(), [](char c) { return c >= '0' && c <= '9'; }));
+        PARITY("Installation", std::string_view(build.content_id).ends_with("_00-ODINSPHERELE0000") &&
+                                   Contains(build.content_id, title));
+        PARITY("Installation", IsHexSha(build.eboot_sha256) && shas.insert(build.eboot_sha256).second);
+        PARITY("Installation", folder == title + "-" + version && folders.insert(folder).second);
+        PARITY("Installation", std::string(build.label) == title + " " + version + " " + build.region &&
+                                   labels.insert(build.label).second && std::string(build.region).size() >= 2);
+        PARITY("Installation", !build.layers.empty() && finished.update == (build.layers.size() > 1) &&
+                                   std::string(finished.app_ver).substr(1) == version);
+        PARITY("Installation", (build.layers.size() > 1) == !build.extra_files.empty());
+        std::set<std::string> data(build.data_files.begin(), build.data_files.end());
+        PARITY("Installation", !build.data_files.empty() && data.size() == build.data_files.size() &&
+                                   std::all_of(data.begin(), data.end(), [](const std::string& name) {
+                                       return name.starts_with("Odin2_") && name.ends_with(".CPK");
+                                   }));
+        PARITY("Installation", std::all_of(build.extra_files.begin(), build.extra_files.end(), [](const char* name) {
+                                   return std::string_view(name).ends_with(".plt");
+                               }));
+        const std::string sfo = SfoText(dir, {{"TITLE_ID", title}, {"CONTENT_ID", build.content_id},
+                                              {"CATEGORY", finished.update ? "gp" : "gd"}, {"APP_VER", finished.app_ver},
+                                              {"VERSION", finished.sfo_version}});
+        const GameCheck package = CheckPackageIdentity(sfo);
+        PARITY("Installation", package.state == GameFileState::kValid && package.build == &build &&
+                                   package.layer == build.layers.size() - 1);
+        PARITY("Installation", CheckSfoIdentity(sfo).build == &build);
+        PARITY("Installation", BuildPaths({"prepared", "image"}, build).app0.filename() == folder &&
+                                   BuildPaths({"prepared", "image"}, build).image_dir.filename() == folder);
+        const GameBuild* base = BaseBuildOf(build);
+        PARITY("Installation", build.layers.size() > 1 ? base && std::string_view(base->title_id) == title &&
+                                                             base->layers.size() == 1
+                                                       : base == nullptr);
+        PARITY("Installation", Contains(mirror, "'" + title + "': {") && Contains(mirror, build.content_id) &&
+                                   Contains(mirror, build.eboot_sha256) && Contains(mirror, "'folder': '" + folder + "'") &&
+                                   Contains(mirror, "'region': '" + std::string(build.region) + "'"));
+        PARITY("Installation", std::all_of(data.begin(), data.end(), [&](const std::string& name) {
+                                   return Contains(mirror, "'" + name + "'");
+                               }));
+
+        // Languages
+        const std::span<const TextLanguage> languages = TextLanguagesOf(&build);
+        WriteImageReport(image_dir, build);
+        const std::filesystem::path ini = dir / (folder + ".ini");
+        PARITY("Languages", (build.text_mode == TextLanguageMode::kSelectable) == !languages.empty());
+        if (build.text_mode == TextLanguageMode::kSelectable) {
+            std::set<int> ids;
+            std::set<std::string_view> keys;
+            bool resolved = true;
+            for (const TextLanguage& language : languages) {
+                ids.insert(language.ps4_id);
+                keys.insert(language.key);
+                std::ofstream(ini) << "text_language = " << language.key << "\n";
+                resolved = resolved && IsValidSetting(kTextLanguageKey, std::string(language.key)) &&
+                           osl_text_language(ini.string().c_str(), image_dir.string().c_str()) == language.ps4_id;
+            }
+            PARITY("Languages", languages.size() >= 2 && languages.front().key == "english" &&
+                                    languages.front().ps4_id == 1 && ids.size() == languages.size() &&
+                                    keys.size() == languages.size() && resolved);
+        } else {
+            std::ofstream(ini) << "text_language = german\n";
+            PARITY("Languages", ResolveTextLanguage(&build, "german").ps4_id == 1 &&
+                                    ResolveTextLanguage(&build, "").ps4_id == 1 &&
+                                    osl_text_language(ini.string().c_str(), image_dir.string().c_str()) == 1);
+        }
+
+        // Display, Graphics, Gameplay and Runtime Patches: the executable's sites, from tables or from the scan.
+        const std::string last_resolution = osl_resolutions[OSL_RESOLUTION_COUNT - 1].key;
+        const std::string last_aspect = osl_aspect_ratios[OSL_ASPECT_COUNT - 1].key;
+        std::ofstream(ini) << "render_resolution = " << last_resolution << "\naspect_ratio = " << last_aspect << "\n";
+        OslGameBuild loaded{};
+        if (build.mapping == ExecutableMapping::kTable) {
+            const BuildFeatures features = FeaturesOf(&build, image_dir);
+            PARITY("Display", features.custom_resolution &&
+                                  osl_aspect_ratio(ini.string().c_str(), image_dir.string().c_str()) == OSL_ASPECT_COUNT - 1);
+            PARITY("Graphics", build.resolution_sites.size() == table_resolution_sites && build.snapshot_scale_site != 0 &&
+                                   osl_render_resolution(ini.string().c_str(), image_dir.string().c_str()) ==
+                                       OSL_RESOLUTION_COUNT - 1);
+            PARITY("Graphics", TableComplete(build) && std::is_sorted(build.resolution_sites.begin(), build.resolution_sites.end(),
+                                              [](const OslResolutionSite& a, const OslResolutionSite& b) {
+                                                  return a.offset < b.offset;
+                                              }) &&
+                                   SitesAreDisjoint(build));
+            PARITY("Gameplay", TableComplete(build) && features.skip_intro && features.unlock_bookshelf);
+            PARITY("Gameplay", TableComplete(build) && build.skip_intro->stubs % 16 == 0 &&
+                                   OffsetsAscend(build.bookshelf->reads, OSL_BOOKSHELF_READS) &&
+                                   OffsetsAscend(build.bookshelf->marks, OSL_BOOKSHELF_MARKS));
+            PARITY("Runtime Patches", osl_game_build(image_dir.string().c_str(), &loaded) &&
+                                          loaded.resolution_sites == build.resolution_sites.data() &&
+                                          loaded.skip_intro == build.skip_intro && loaded.bookshelf == build.bookshelf &&
+                                          loaded.lzcnt_offsets == nullptr);
+            size_t entries = 0;
+            for (const LzcntBuild& lzcnt : lzcnt_builds) {
+                if (std::string_view(lzcnt.build) == build.label) {
+                    ++entries;
+                    PARITY("Runtime Patches", lzcnt.size > 0 && lzcnt.entry > 0 &&
+                                                  OffsetsAscend(lzcnt.offsets, LZCNT_RANGE_COUNT));
+                }
+            }
+            PARITY("Runtime Patches", entries == 1);
+        } else {
+            PARITY("Graphics", build.resolution_sites.empty() && build.snapshot_scale_site == 0);
+            PARITY("Gameplay", build.skip_intro == nullptr && build.bookshelf == nullptr);
+            PARITY("Runtime Patches", std::none_of(std::begin(lzcnt_builds), std::end(lzcnt_builds),
+                                                   [&](const LzcntBuild& lzcnt) {
+                                                       return std::string_view(lzcnt.build) == build.label;
+                                                   }));
+            const BuildFeatures before = FeaturesOf(&build, image_dir);
+            PARITY("Display", !before.custom_resolution &&
+                                  osl_aspect_ratio(ini.string().c_str(), image_dir.string().c_str()) == 0);
+            PARITY("Graphics", osl_render_resolution(ini.string().c_str(), image_dir.string().c_str()) == 0);
+            PARITY("Gameplay", !before.skip_intro && !before.unlock_bookshelf);
+            PARITY("Runtime Patches", osl_game_build(image_dir.string().c_str(), &loaded) &&
+                                          loaded.resolution_site_count == 0 && loaded.skip_intro == nullptr &&
+                                          loaded.bookshelf == nullptr && loaded.lzcnt_offsets == nullptr &&
+                                          !before.lzcnt_rewrite);
+            WriteImageReport(image_dir, build, MappingExtra(fixture.mapping));
+            const BuildFeatures after = FeaturesOf(&build, image_dir);
+            PARITY("Display", after.custom_resolution &&
+                                  osl_aspect_ratio(ini.string().c_str(), image_dir.string().c_str()) == OSL_ASPECT_COUNT - 1);
+            PARITY("Graphics", osl_render_resolution(ini.string().c_str(), image_dir.string().c_str()) ==
+                                   OSL_RESOLUTION_COUNT - 1);
+            PARITY("Gameplay", after.skip_intro && after.unlock_bookshelf);
+            OslGameBuild scanned{};
+            PARITY("Runtime Patches", osl_game_build(image_dir.string().c_str(), &scanned) && after.lzcnt_rewrite &&
+                                          scanned.resolution_site_count == table_resolution_sites &&
+                                          SameSkipIntro(fixture.mapping.skip_intro, scanned.skip_intro) &&
+                                          SameBookshelf(fixture.mapping.bookshelf, scanned.bookshelf) &&
+                                          scanned.snapshot_scale_site == fixture.mapping.snapshot_scale_site &&
+                                          scanned.lzcnt_offsets &&
+                                          std::equal(fixture.mapping.lzcnt_offsets.begin(),
+                                                     fixture.mapping.lzcnt_offsets.end(), scanned.lzcnt_offsets));
+        }
+
+        // Controls
+        PARITY("Controls", PromptsRollBackOnUnknownArchives(build, dir / "prompts"));
+
+        // Trophies and Save Data: read from the game's own files, never from the profile.
+        PARITY("Trophies", no_build_literals);
+        PARITY("Save Data", save_from_sfo && no_build_literals);
+        const auto [position, inserted] = content_of_title.emplace(title, build.content_id);
+        PARITY("Save Data", inserted || position->second == build.content_id);
+    }
+    std::map<std::string, std::string> title_of_content;
+    for (const GameBuild& build : SupportedBuilds()) {
+        const auto [position, inserted] = title_of_content.emplace(build.content_id, build.title_id);
+        CHECK(inserted || position->second == build.title_id);
+    }
+}
+
+// Each supported table build's own tables, laid out in an executable-sized image, are found again by the scan and
+// accepted by every patch: the scan and the tables describe the same code.
+void TestScannerReproducesTables() {
+    for (const GameBuild& build : SupportedBuilds()) {
+        if (build.mapping != ExecutableMapping::kTable || !TableComplete(build)) {
+            continue;
+        }
+        uint64_t eboot_size = 0;
+        const MappedExecutable image = TableOdinImage(build, eboot_size);
+        const ScanResult scan = ScanExecutable(image, eboot_size);
+        PARITY("Runtime Patches", scan.complete());
+        PARITY("Runtime Patches", SameResolution(scan.mapping.resolution_offsets, build.resolution_sites) &&
+                                      scan.mapping.snapshot_scale_site == build.snapshot_scale_site &&
+                                      SameSkipIntro(scan.mapping.skip_intro, build.skip_intro) &&
+                                      SameBookshelf(scan.mapping.bookshelf, build.bookshelf) &&
+                                      SameLzcnt(scan.mapping.lzcnt_offsets, build));
+    }
+}
+
+void TestScannedMappingFixtures() {
+    const MappedExecutable image = SyntheticOdinImage(kFixtureSkew);
+    const uint64_t eboot_size = image.image.size();
+    const ScanResult scan = ScanExecutable(image, eboot_size);
+    CHECK(scan.complete());
+    const ScannedMapping& mapping = scan.mapping;
+    CHECK(mapping.resolution_offsets.size() == SupportedBuilds()[0].resolution_sites.size());
+    CHECK(mapping.snapshot_scale_site == kPlantedSnapshot + kFixtureSkew);
+    CHECK(mapping.skip_intro && mapping.bookshelf && mapping.lzcnt_offsets.size() == LZCNT_RANGE_COUNT);
+    CHECK(UnresolvedFeatures(mapping).empty());
+
+    // No table of any build describes the fixture's layout, so a scanned build never reuses another build's addresses.
+    for (const GameBuild& build : SupportedBuilds()) {
+        if (build.mapping != ExecutableMapping::kTable || !TableComplete(build)) {
+            continue;
+        }
+        CHECK(!SameResolution(mapping.resolution_offsets, build.resolution_sites));
+        CHECK(!SameSkipIntro(mapping.skip_intro, build.skip_intro) && !SameBookshelf(mapping.bookshelf, build.bookshelf));
+        CHECK(!SameLzcnt(mapping.lzcnt_offsets, build) && mapping.snapshot_scale_site != build.snapshot_scale_site);
+    }
+
+    // The patches accept the scanned sites and refuse every table's, writing nothing.
+    const OslResolution target = osl_render_target(&osl_resolutions[OSL_RESOLUTION_COUNT - 1], &osl_aspect_ratios[0]);
+    const std::vector<OslResolutionSite> sites = ResolutionSitesAt(SupportedBuilds(), mapping.resolution_offsets);
+    std::vector<unsigned char> scratch = image.image;
+    scratch.resize(0x1100000, 0);
+    char error[320] = "";
+    CHECK(osl_apply_snapshot_scale(scratch.data(), scratch.size(), mapping.snapshot_scale_site, &target, error, sizeof(error)));
+    CHECK(osl_apply_resolution(scratch.data(), scratch.size(), sites.data(), sites.size(), &target, error, sizeof(error)));
+    CHECK(osl_apply_skip_intro(scratch.data(), 0x30000, &*mapping.skip_intro, 1, error, sizeof(error)));
+    for (const GameBuild& build : SupportedBuilds()) {
+        if (build.mapping != ExecutableMapping::kTable || !TableComplete(build)) {
+            continue;
+        }
+        std::vector<unsigned char> foreign = image.image;
+        foreign.resize(0x1100000, 0);
+        const std::vector<unsigned char> before = foreign;
+        CHECK(!osl_apply_resolution(foreign.data(), foreign.size(), build.resolution_sites.data(),
+                                    build.resolution_sites.size(), &target, error, sizeof(error)));
+        CHECK(!osl_apply_snapshot_scale(foreign.data(), foreign.size(), build.snapshot_scale_site, &target, error, sizeof(error)));
+        CHECK(!osl_apply_skip_intro(foreign.data(), foreign.size(), build.skip_intro, 1, error, sizeof(error)));
+        CHECK(!osl_apply_bookshelf(foreign.data(), foreign.size() - OSL_BOOKSHELF_STUB_BYTES, build.bookshelf,
+                                   foreign.data() + foreign.size() - OSL_BOOKSHELF_STUB_BYTES, OSL_BOOKSHELF_STUB_BYTES,
+                                   error, sizeof(error)));
+        for (const LzcntBuild& lzcnt : lzcnt_builds) {
+            if (std::string_view(lzcnt.build) == build.label) {
+                CHECK(lzcnt_compat_apply(foreign.data(), foreign.size() - 0x10000, lzcnt.offsets, lzcnt_shapes,
+                                         LZCNT_RANGE_COUNT, foreign.data() + foreign.size() - 0x10000, 0x10000) !=
+                      LZCNT_COMPAT_OK);
+            }
+        }
+        CHECK(foreign == before);
+    }
+
+    // The LZCNT rewrite on the scanned sites: the instructions become jumps to stubs.
+    std::vector<unsigned char> rewritten = image.image;
+    const size_t stub_bytes = lzcnt_compat_stub_bytes();
+    rewritten.resize(image.image.size() + stub_bytes, 0);
+    CHECK(lzcnt_compat_apply(rewritten.data(), image.image.size(), mapping.lzcnt_offsets.data(), lzcnt_shapes,
+                             LZCNT_RANGE_COUNT, rewritten.data() + image.image.size(), stub_bytes) == LZCNT_COMPAT_OK);
+    for (size_t i = 0; i < LZCNT_RANGE_COUNT; ++i) {
+        CHECK(rewritten[mapping.lzcnt_offsets[i]] == 0xe9);
+    }
+    CHECK(rewritten != image.image);
+
+    // Persisted in the boot image report and read back unchanged; a report without the keys maps nothing.
+    const std::filesystem::path dir = TempDir("scanned-mapping");
+    const GameBuild* hk = BuildWithLabel("CUSA03873 1.00 HK");
+    CHECK(hk != nullptr);
+    if (!hk) {
+        return;
+    }
+    WriteImageReport(dir, *hk, MappingExtra(mapping));
+    CHECK(SameMapping(ScannedMappingOfImageDir(dir), mapping));
+    WriteImageReport(dir, *hk);
+    const ScannedMapping none = ScannedMappingOfImageDir(dir);
+    CHECK(none.resolution_offsets.empty() && !none.skip_intro && !none.bookshelf && none.lzcnt_offsets.empty());
+    WriteImageReport(dir, *hk, ",\n  \"map_lzcnt\": [1, 2, 3],\n  \"map_skip_intro\": [1, 2],\n  \"map_bookshelf\": [4]");
+    const ScannedMapping short_lists = ScannedMappingOfImageDir(dir);
+    CHECK(short_lists.lzcnt_offsets.empty() && !short_lists.skip_intro && !short_lists.bookshelf);
+    CHECK(JsonNumbers("{\"k\": [1, 22,\n 333]}", "k") == (std::vector<uint64_t>{1, 22, 333}));
+    CHECK(JsonNumbers("{\"k\": [1, x]}", "k").empty() && JsonNumbers("{\"k\": 5}", "k").empty() &&
+          JsonNumbers("{}", "k").empty());
+
+    // Missing, duplicated, occupied and corrupted sites: the feature is left unmapped, the others are not affected.
+    const auto scanned = [&](const std::function<void(MappedExecutable&)>& damage) {
+        MappedExecutable copy = image;
+        damage(copy);
+        return ScanExecutable(copy, copy.image.size());
+    };
+    const size_t first_site = mapping.resolution_offsets[3];
+    const ScanResult missing = scanned([&](MappedExecutable& m) { std::fill_n(m.image.begin() + first_site, 5, uint8_t{0x90}); });
+    CHECK(!missing.complete() && missing.mapping.resolution_offsets.empty() && missing.mapping.skip_intro &&
+          missing.mapping.bookshelf && !missing.mapping.lzcnt_offsets.empty());
+    const ScanResult duplicate = scanned([&](MappedExecutable& m) {
+        std::copy_n(m.image.begin() + first_site, 10, m.image.begin() + 0x2e000);
+    });
+    CHECK(!duplicate.complete() && duplicate.mapping.resolution_offsets.empty() && duplicate.mapping.skip_intro);
+    const ScanResult occupied = scanned([&](MappedExecutable& m) { m.image[mapping.skip_intro->stubs + 8] = 0x90; });
+    CHECK(!occupied.complete() && !occupied.mapping.skip_intro && Unresolved(occupied, "Skip intro stub space") &&
+          occupied.mapping.bookshelf);
+    const struct {
+        size_t at;
+        const char* feature;
+    } corrupted[] = {{kPlantedNotice, "skip"}, {kPlantedHd, "skip"}, {kPlantedClassic, "skip"},
+                     {kPlantedSnapshot, "snapshot"}, {kPlantedGetter, "bookshelf"}, {kPlantedTotal, "bookshelf"},
+                     {kPlantedLzcnt, "lzcnt"}};
+    for (const auto& item : corrupted) {
+        const ScanResult damaged = scanned([&](MappedExecutable& m) { m.image[item.at + kFixtureSkew] ^= 0x55; });
+        const std::string feature = item.feature;
+        CHECK(!damaged.complete());
+        CHECK((feature == "skip") == !damaged.mapping.skip_intro);
+        CHECK((feature == "snapshot") == (damaged.mapping.snapshot_scale_site == 0));
+        CHECK((feature == "bookshelf") == !damaged.mapping.bookshelf);
+        CHECK((feature == "lzcnt") == damaged.mapping.lzcnt_offsets.empty());
+    }
+    const ScanResult rejected_site = scanned([&](MappedExecutable& m) {
+        m.image[mapping.bookshelf->reads[2] + 5] ^= 0x01;
+    });
+    CHECK(!rejected_site.complete() && !rejected_site.mapping.bookshelf);
+
+    // A patch that refuses its site writes nothing.
+    std::vector<unsigned char> damaged_image = image.image;
+    damaged_image[mapping.resolution_offsets[5]] ^= 0xff;
+    const std::vector<unsigned char> untouched = damaged_image;
+    CHECK(!osl_apply_resolution(damaged_image.data(), damaged_image.size(), sites.data(), sites.size(), &target, error, sizeof(error)));
+    CHECK(damaged_image == untouched);
+}
+
+void TestHongKongBuild() {
+    const GameBuild* found = BuildWithLabel("CUSA03873 1.00 HK");
+    CHECK(found && found == &SupportedBuilds().back());
+    if (!found) {
+        return;
+    }
+    const GameBuild& hk = *found;
+    CHECK(std::string(hk.title_id) == "CUSA03873");
+    CHECK(std::string(hk.content_id) == "HP0177-CUSA03873_00-ODINSPHERELE0000");
+    CHECK(std::string(hk.version) == "1.00" && std::string(hk.folder) == "CUSA03873-1.00");
+    CHECK(std::string(hk.eboot_sha256) == "8c483dc2c06d958ccd84bdbf726df6d23e31592c7c1bb39eb5425718b5bc1eb3");
+    CHECK(std::string(hk.region) == "HK" && hk.extra_files.empty() && hk.layers.size() == 1);
+    const std::vector<std::string> data(hk.data_files.begin(), hk.data_files.end());
+    CHECK((data == std::vector<std::string>{"Odin2_BT_CN.CPK", "Odin2_OR_CN.CPK", "Odin2_RE_CN.CPK"}));
+    CHECK(hk.mapping == ExecutableMapping::kScanned && hk.text_mode == TextLanguageMode::kFixed);
+    CHECK(BuildMetadataText(hk) == "APP_VER 1.00 \xC2\xB7 VERSION 1.00");
+    CHECK(InstalledGameName(GameFileState::kValid, &hk) == "PS4 CUSA03873 1.00 HK");
+
+    const std::filesystem::path dir = TempDir("hong-kong");
+    const std::vector<std::pair<std::string, std::string>> base = {
+        {"TITLE_ID", "CUSA03873"}, {"CONTENT_ID", "HP0177-CUSA03873_00-ODINSPHERELE0000"},
+        {"CATEGORY", "gd"},        {"APP_VER", "01.00"},
+        {"VERSION", "01.00"},
+    };
+    auto update = base;
+    update[2].second = "gp";
+    update[3].second = "01.01";
+    const GameCheck unknown_update = CheckPackageIdentity(SfoText(dir, update));
+    CHECK(unknown_update.state == GameFileState::kDifferentVersion && unknown_update.build == &hk);
+    auto other_content = base;
+    other_content[1].second = "HP0177-CUSA03873_00-OTHERGAME0000000";
+    const GameCheck foreign = CheckPackageIdentity(SfoText(dir, other_content));
+    CHECK(foreign.state == GameFileState::kDifferentVersion && foreign.detail.starts_with("param.sfo CONTENT_ID"));
+
+    const std::filesystem::path game = dir / "game";
+    std::filesystem::create_directories(game / "sce_sys");
+    std::filesystem::create_directories(game / "sce_module");
+    WriteSfo(game / "sce_sys" / "param.sfo", base);
+    for (const char* name : {"eboot.bin", "sce_discmap.plt", "sce_module/libc.prx", "sce_module/libSceFios2.prx",
+                             "Odin2_BT_CN.CPK", "Odin2_OR_CN.CPK"}) {
+        std::ofstream(game / name, std::ios::binary) << "x";
+    }
+    const GameCheck tree = CheckGameTree(game);
+    CHECK(tree.state == GameFileState::kMissing && tree.build == &hk && tree.detail == "missing Odin2_RE_CN.CPK");
+    std::ofstream(game / "Odin2_RE_CN.CPK", std::ios::binary) << "x";
+    const GameCheck other_eboot = CheckGameTree(game);
+    CHECK(other_eboot.state == GameFileState::kDifferentVersion && other_eboot.build == &hk);
+    const GameRoots roots{dir / "prepared", dir / "image"};
+    const InstallResult diagnosed = InstallFromFolder(game, roots);
+    CHECK(diagnosed.status == InstallStatus::kUnsupportedBuild);
+    CHECK(Contains(diagnosed.report, "Supported-build check: eboot.bin is not the supported build"));
+    CHECK(Contains(diagnosed.report, "TITLE_ID CUSA03873"));
+    CHECK(!std::filesystem::exists(roots.prepared) && !std::filesystem::exists(roots.image));
+}
+
+void TestBuildMappingDiagnostics() {
+    const GameBuild* hk = BuildWithLabel("CUSA03873 1.00 HK");
+    CHECK(hk != nullptr);
+    if (!hk) {
+        return;
+    }
+    const std::filesystem::path game = TempDir("build-mapping");
+    std::filesystem::create_directories(game / "sce_sys");
+    CHECK(DiagnoseBuildMapping(game, *hk).empty());
+    std::ofstream(game / "eboot.bin", std::ios::binary) << std::string(64, 'x');
+    WriteSfo(game / "sce_sys" / "param.sfo", {{"TITLE_ID", "CUSA03873"}, {"CONTENT_ID", hk->content_id}});
+    const std::string text = DiagnoseBuildMapping(game, *hk);
+    CHECK(text.starts_with("Build mapping diagnostics begin\nIdentity:\n  Build: CUSA03873 1.00 HK\n"));
+    CHECK(text.ends_with("Build mapping diagnostics end\n"));
+    CHECK(Contains(text, "Features not resolved by the scan: Render resolution, Skip intro, Unlock Bookshelf, "
+                         "Legacy CPU (LZCNT)\n"));
+    CHECK(Contains(text, "Executable: not readable"));
+    for (const GameBuild& build : SupportedBuilds()) {
+        if (build.mapping == ExecutableMapping::kTable) {
+            CHECK(DiagnoseBuildMapping(game, build).empty());
+        }
+    }
+
+    // The same scan on a local game folder, when there is one, and every local package as an unsupported source.
+    const std::filesystem::path root(OSL_SOURCE_DIR);
+    size_t real_builds = 0, real_packages = 0;
+    for (const GameBuild& build : SupportedBuilds()) {
+        const std::filesystem::path app0 = root / "game" / "prepared" / build.folder;
+        std::error_code ec;
+        if (build.mapping != ExecutableMapping::kTable || !TableComplete(build) ||
+            !std::filesystem::is_regular_file(app0 / "eboot.bin", ec) ||
+            Sha256Hex(app0 / "eboot.bin") != build.eboot_sha256) {
+            continue;
+        }
+        const ScanResult scan = ScanGameFolder(app0);
+        PARITY("Runtime Patches", scan.complete() && SameResolution(scan.mapping.resolution_offsets, build.resolution_sites) &&
+                                      scan.mapping.snapshot_scale_site == build.snapshot_scale_site &&
+                                      SameSkipIntro(scan.mapping.skip_intro, build.skip_intro) &&
+                                      SameBookshelf(scan.mapping.bookshelf, build.bookshelf) &&
+                                      SameLzcnt(scan.mapping.lzcnt_offsets, build));
+        ++real_builds;
+    }
+    std::error_code ec;
+    for (std::filesystem::directory_iterator it(root / "game", ec), end; !ec && it != end; it.increment(ec)) {
+        if (it->path().extension() != ".pkg" || !it->is_regular_file(ec)) {
+            continue;
+        }
+        const std::filesystem::path scratch = TempDir("real-package");
+        const GameRoots roots{scratch / "prepared", scratch / "image"};
+        const std::uintmax_t size = std::filesystem::file_size(it->path(), ec);
+        const InstallResult result = InstallFromPackage(it->path(), roots, {}, std::span<const GameBuild>{});
+        CHECK(result.status == InstallStatus::kUnsupportedBuild || result.status == InstallStatus::kWrongGame);
+        CHECK(result.status != InstallStatus::kUnsupportedBuild || Contains(result.report, "SHA-256: "));
+        CHECK(!std::filesystem::exists(roots.image) && std::filesystem::file_size(it->path(), ec) == size);
+        ++real_packages;
+    }
+    std::printf("Additional validation with local game data: %zu prepared build(s) scanned, %zu package(s) diagnosed\n",
+                real_builds, real_packages);
+}
+
+void PrintParitySummary() {
+    static const char* const kCategories[] = {"Installation", "Languages", "Display",       "Graphics",
+                                              "Gameplay",     "Controls",  "Trophies",      "Save Data",
+                                              "Runtime Patches"};
+    std::printf("\nBuild parity\n");
+    for (const GameBuild& build : SupportedBuilds()) {
+        const ParityRow& row = ParityOf(build);
+        bool pass = true;
+        for (const char* category : kCategories) {
+            const auto found = row.ok.find(category);
+            pass = pass && found != row.ok.end() && found->second;
+            if (found == row.ok.end()) {
+                ++g_failures;
+                std::printf("FAIL %s [%s]: no check ran\n", build.label, category);
+            }
+        }
+        std::printf("  %-24s %s\n", build.label, pass ? "PASS" : "FAIL");
+    }
+    std::printf("\nFeature parity\n  %-24s", "");
+    for (const char* category : kCategories) {
+        std::printf(" %-15s", category);
+    }
+    std::printf("\n");
+    for (const GameBuild& build : SupportedBuilds()) {
+        const ParityRow& row = ParityOf(build);
+        std::printf("  %-24s", build.label);
+        for (const char* category : kCategories) {
+            const auto found = row.ok.find(category);
+            std::printf(" %-15s", found != row.ok.end() && found->second ? "PASS" : "FAIL");
+        }
+        std::printf("\n");
+    }
+    std::printf("\n");
+}
+
+// Issue #4: v0.2.0 diagnosed a package only when its TITLE_ID was a supported one, so a new regional build of the game
+// got none. Any package whose CONTENT_ID or archives are the game's now reaches the diagnostics, with its executable.
+void TestUnsupportedPackageDiagnostics() {
+    const std::filesystem::path dir = TempDir("unsupported-package");
+    const std::string variant = SfoText(dir, {{"TITLE_ID", "CUSA99998"},
+                                              {"CONTENT_ID", "HP0177-CUSA99998_00-ODINSPHERELE0000"},
+                                              {"CATEGORY", "gd"},
+                                              {"APP_VER", "01.00"},
+                                              {"VERSION", "01.00"}});
+    const GameCheck identity = CheckPackageIdentity(variant);
+    CHECK(identity.state == GameFileState::kDifferentVersion && identity.build == nullptr);
+    CHECK(identity.detail == "param.sfo TITLE_ID is CUSA99998");
+
+    const std::vector<PackageFile> files = {
+        {"Odin2_BT_XX.CPK", 123}, {"eboot.bin", 2048}, {"sce_module/libc.prx", 9}, {"sce_sys/param.sfo", 64}};
+    CHECK(IsOdinPackage(variant, files) && IsOdinPackage(variant, {}));
+    const std::filesystem::path executables = dir / "executables";
+    std::filesystem::create_directories(executables);
+    std::ofstream(executables / "eboot.bin", std::ios::binary) << std::string(2048, 'x');
+    const UnsupportedBuildReport report = DiagnoseUnsupportedPackage(variant, identity.detail, executables, files);
+    CHECK(report.odin);
+    CHECK(report.text.starts_with("Unsupported build diagnostics begin\n"));
+    CHECK(report.text.ends_with("Unsupported build diagnostics end\n"));
+    CHECK(Contains(report.text, "eboot.bin: 2048 bytes"));
+    CHECK(Contains(report.text, "SHA-256: " + Sha256Hex(executables / "eboot.bin")));
+    CHECK(Contains(report.text, "TITLE_ID CUSA99998, CONTENT_ID HP0177-CUSA99998_00-ODINSPHERELE0000"));
+    CHECK(Contains(report.text, "Supported-build check: param.sfo TITLE_ID is CUSA99998"));
+    CHECK(Contains(report.text, "Executable: not readable"));
+    CHECK(Contains(report.text, "Package files: 4\n  Odin2_BT_XX.CPK: 123 bytes\n  eboot.bin: 2048 bytes\n"));
+    CHECK(Contains(report.text, "sce_discmap.plt: absent"));
+    CHECK(Contains(report.text, "Mapping incomplete"));
+
+    const std::string relabeled =
+        SfoText(dir, {{"TITLE_ID", "CUSA99997"}, {"CONTENT_ID", "XX0000-CUSA99997_00-OSL0000000000000"}});
+    CHECK(IsOdinPackage(relabeled, files));
+    CHECK(!IsOdinPackage(relabeled, {}));
+    CHECK(!DiagnoseUnsupportedPackage(relabeled, "detail", executables, files).odin);
+    const std::vector<PackageFile> nested = {{"data/Odin2_BT_XX.CPK", 1}, {"eboot.bin", 1}};
+    CHECK(!IsOdinPackage(relabeled, nested));
+
+    const std::string other_game =
+        SfoText(dir, {{"TITLE_ID", "CUSA99999"}, {"CONTENT_ID", "UP0000-CUSA99999_00-OTHERGAME000000"}});
+    const std::vector<PackageFile> other_files = {{"game.dat", 10}, {"eboot.bin", 2048}};
+    CHECK(!IsOdinPackage(other_game, other_files));
+    const UnsupportedBuildReport other = DiagnoseUnsupportedPackage(other_game, "detail", executables, other_files);
+    CHECK(!other.odin && other.text.empty());
+
+    CHECK(IsDiagnosedPackageFile("eboot.bin"));
+    CHECK(IsDiagnosedPackageFile("sce_module/libc.prx") && IsDiagnosedPackageFile("sce_module/libSceFios2.prx"));
+    CHECK(!IsDiagnosedPackageFile("Odin2_BT_US.CPK") && !IsDiagnosedPackageFile("sce_sys/param.sfo"));
+    CHECK(!IsDiagnosedPackageFile("sce_module/libSceNpToolkit.prx") && !IsDiagnosedPackageFile("sub/eboot.bin"));
+
+    const std::string source = ReadFile(std::filesystem::path(OSL_SOURCE_DIR) / "launcher" / "game_install.cpp");
+    CHECK(Contains(source, "DiagnosePackage(package, roots, hooks, identity.detail)"));
+    CHECK(!Contains(source, "if (identity.build) {"));
+    CHECK(Contains(source, "return StagedFailure(layout.app0_stage, unpacked, hooks);"));
+    CHECK(Contains(source, "return StagedFailure(layout.app0_stage, merged, hooks);"));
+    CHECK(Contains(source, "result.report = DiagnoseBuildMapping(layout.app0, build, hooks.prompt_patch);"));
+
+    const std::filesystem::path usa = std::filesystem::path(OSL_SOURCE_DIR) / "game" / "prepared" / "CUSA05083-1.00";
+    std::error_code ec;
+    if (!std::filesystem::is_regular_file(usa / "eboot.bin", ec) ||
+        Sha256Hex(usa / "eboot.bin") != SupportedBuilds()[0].eboot_sha256) {
+        std::printf("skipped: no local CUSA05083 1.00 eboot for the package executable scan\n");
+        return;
+    }
+    const UnsupportedBuildReport scanned = DiagnoseUnsupportedPackage(relabeled, "detail", usa, files);
+    CHECK(scanned.odin && Contains(scanned.text, "Mapping appears complete"));
+}
+
 } // namespace
 
 int main() {
@@ -2965,6 +3795,13 @@ int main() {
     TestMapExecutableRejectsMalformedFiles();
     TestUnsupportedBuildFlow();
     TestBuildDiagnosticsKnownBuild();
+    TestHongKongBuild();
+    TestBuildContract();
+    TestScannerReproducesTables();
+    TestScannedMappingFixtures();
+    TestUnsupportedPackageDiagnostics();
+    TestBuildMappingDiagnostics();
+    PrintParitySummary();
     std::printf("%s (%d checks, %d failures)\n", g_failures ? "FAILED" : "OK", g_checks, g_failures);
     runtime_log_flush();
     return g_failures ? 1 : 0;

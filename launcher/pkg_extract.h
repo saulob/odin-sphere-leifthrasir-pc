@@ -10,6 +10,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace osl {
 
@@ -18,6 +19,12 @@ struct PackageResult {
     Code code = kOk;
     std::string detail; // for the log, not the UI
     bool ok() const { return code == kOk; }
+};
+
+// A regular file of the package's inner file system.
+struct PackageFile {
+    std::string path; // relative to the game folder, '/' separated
+    uint64_t size;
 };
 
 class Package {
@@ -32,9 +39,13 @@ public:
     // The keys and the inner file system's file list. Packages encrypted for a console are kUnsupported.
     PackageResult LoadFiles();
     // The metadata entries into sce_sys, then every file of the package, into `out`. `progress` returns false to
-    // cancel.
+    // cancel. When `include` is given, only the files it accepts are written.
     PackageResult Extract(const std::filesystem::path& out,
-                          const std::function<bool(uint64_t done, uint64_t total)>& progress);
+                          const std::function<bool(uint64_t done, uint64_t total)>& progress,
+                          const std::function<bool(const std::string& path)>& include = {});
+
+    // The inner file system's files, once LoadFiles succeeded.
+    std::vector<PackageFile> Files() const;
 
     const std::string& content_id() const;
     const std::string& sfo() const;
