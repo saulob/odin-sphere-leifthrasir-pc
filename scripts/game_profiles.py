@@ -20,6 +20,14 @@ PROFILES = {
                 'folder': 'CUSA05083-1.00', 'extra_files': (),
                 'data_files': ('Odin2_BT_US.CPK', 'Odin2_OR_US.CPK', 'Odin2_RE_US.CPK'),
             },
+            # The 1.01 patch is laid over the base package; it replaces eboot.bin and adds a patch archive.
+            '1.01': {
+                'layers': ({'app_ver': '01.00', 'sfo_version': '01.01', 'update': False},
+                           {'app_ver': '01.01', 'sfo_version': '01.01', 'update': True}),
+                'eboot_sha256': '2865b6cec33f2515def173c1ed0c03afc27a1cd5fad1b0d0f516b4527aba9a88',
+                'folder': 'CUSA05083-1.01', 'extra_files': ('sce_discmap_patch.plt',),
+                'data_files': ('Odin2_BT_US.CPK', 'Odin2_OR_US.CPK', 'Odin2_RE_US.CPK', 'Odin2_US_PATCH1_RE_US.CPK'),
+            },
         },
         'entry': 'eboot.bin',
         'extra_executables': (),

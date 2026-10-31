@@ -505,7 +505,7 @@ std::optional<InstallResult> ReuseInstalledBuild(const GameRoots& roots, std::sp
     return result;
 }
 
-// A package that finishes its build by itself: the base package of a build without updates.
+// A package that finishes its build by itself: a base package, or a merged package of an update's version.
 InstallResult InstallBasePackage(const fs::path& source, Package& package, const Layout& layout,
                                  const InstallHooks& hooks, std::span<const GameBuild> builds, const GameBuild& build) {
     const auto phase = [&](const char* text) {

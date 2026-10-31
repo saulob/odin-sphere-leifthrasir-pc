@@ -18,11 +18,12 @@
 
 **v0.2.0** is the current release. The loader and runtime map and run the game's own x86-64 code, with the
 shadPS4-derived Vulkan video core, the launcher and installer, local trophies, the self-updater and the diagnostics.
-The USA 1.00 base package (`CUSA05083`), the Japanese release (`CUSA01290` base 1.00 plus its 1.02 update) and the
-European release (`CUSA05262` base 1.00 plus its 1.01 update) are supported. The Hong Kong 1.00 base package
-(`CUSA03873`) is supported too. Its executable sites are found by scanning its `eboot.bin` when it is installed,
-instead of from a fixed table; a feature whose sites the scan cannot find uniquely is hidden, and the log holds the
-scan. Any other version is refused, and the log then holds diagnostic information useful for adding it.
+The USA release (`CUSA05083` base 1.00 plus its 1.01 update), the Japanese release (`CUSA01290` base 1.00 plus its 1.02
+update) and the European release (`CUSA05262` base 1.00 plus its 1.01 update) are supported. The Hong Kong 1.00 base
+package (`CUSA03873`) is supported too. The executable sites of the USA 1.01 and the Hong Kong 1.00 are found by
+scanning their `eboot.bin` when they are installed, instead of from a fixed table; a feature whose sites the scan cannot
+find uniquely is hidden, and the log holds the scan. Any other version is refused, and the log then holds diagnostic
+information useful for adding it.
 
 Windows is the supported platform. The native Linux build, shipped as an AppImage, is **experimental**: it is built and
 checked by scripts, but it has not yet been tested on real Linux PCs or a Steam Deck.
@@ -77,6 +78,7 @@ checked by scripts, but it has not yet been tested on real Linux PCs or a Steam 
 | Game | Odin Sphere Leifthrasir |
 | Platform | PlayStation 4 |
 | USA build | Title ID `CUSA05083`, Content ID `UP0177-CUSA05083_00-ODINSPHERELE0000`, `APP_VER` `01.00`, `VERSION` `01.01`, `eboot.bin` SHA-256 `7c517194aba4e5eea55d9197efae47d1567bd785b8c0dced7d1b0f4028d3eed6` |
+| USA 1.01 update | Same Title and Content ID, `APP_VER` `01.01`, `VERSION` `01.01`, `eboot.bin` SHA-256 `2865b6cec33f2515def173c1ed0c03afc27a1cd5fad1b0d0f516b4527aba9a88` |
 | Japanese base | Title ID `CUSA01290`, Content ID `JP0005-CUSA01290_00-ODINSPHERELE0000`, `APP_VER` `01.00`, `VERSION` `01.00`, `eboot.bin` SHA-256 `d0add7e35bc5f58d5c9017fdce0878006c32f944fa8eb3d7ce62671257f5bcc7` |
 | Japanese 1.02 update | Same Title and Content ID, `APP_VER` `01.02`, `VERSION` `01.00`, `eboot.bin` SHA-256 `db96b839fe31adba4b3eb3547202f761d34881325c2fea650c4c020eded5d071` |
 | European base | Title ID `CUSA05262`, Content ID `EP1063-CUSA05262_00-ODINSPHERELE0000`, `APP_VER` `01.00`, `VERSION` `01.00`, `eboot.bin` SHA-256 `3e6b1741e8a404d0f8fbe10bce93c6887974566f5be09ef1bddc22a00ba29feb` |
@@ -100,8 +102,9 @@ with the same Title ID and Content ID. A package encrypted for a PS4 console can
 3. On the **Play** page click **Install game...** and select your own Odin Sphere Leifthrasir `.pkg` file.
 4. Wait until **Ready to play** appears. The package is unpacked on your PC into the `game` folder next to the program
    (about 3.3 GB). The `.pkg` file is only read, and you can delete it afterwards.
-5. Japanese 1.02 or European 1.01: install the base package of that region first, then install its update package the
-   same way. The update is laid over the base and becomes the active build.
+5. USA 1.01, Japanese 1.02 or European 1.01: install the base package of that region first, then install its update
+   package the same way. The update is laid over the base and becomes the active build. A complete USA 1.01 package
+   (`CATEGORY` `gd`, `APP_VER` `01.01`) installs by itself, without the base.
 6. Press **PLAY**.
 
 **Reinstall game...** on the Play page repairs the game files and keeps your settings and saves.
@@ -158,8 +161,8 @@ in X11 sessions; anywhere, starting with `--launcher` (or the desktop entry's **
 The Render resolution and Aspect Ratio options change the game's verified internal render-target sites. Only
 **16:9 Original** is undistorted: the game's 2D scene is still laid out for its original 16:9 canvas, so
 21:9 and 32:9 stretch the gameplay horizontally instead of showing more of the world, and 16:10, 4:3 and
-5:4 squeeze it. The HUD, menus and prerendered videos are not adjusted either. CUSA03873 1.00 HK offers them when its
-installation scan found their sites.
+5:4 squeeze it. The HUD, menus and prerendered videos are not adjusted either. CUSA05083 1.01 USA and CUSA03873 1.00 HK
+offer them when their installation scan found their sites.
 
 Cheats are not exposed: Odin Sphere's gameplay values have not yet been verified for a launcher option. Each build's own
 text is used, and no region's assets are ever mixed.
@@ -235,7 +238,7 @@ for 15 seconds while the game is in front and not minimized. The game keeps runn
 
 1. Install [MSYS2](https://www.msys2.org) with the CLANG64 toolchain. `.\tools\setup.ps1` checks it and prints the `pacman` command for anything missing.
 2. `.\tools\build.ps1` fetches the pinned dependencies (TRG Launcher, Dear ImGui and a few small libraries) and builds `build\cmake\clang64\bin\odin_sphere_leifthrasir.exe`.
-3. `.\tools\build.ps1 -Run` also starts it. Install the game from the launcher's Play page, as in a release; the development build keeps it in `game\prepared\<build folder>` and the boot image in `build\image\<build folder>` of the repository (`CUSA05083-1.00`, `CUSA01290-1.00`, `CUSA01290-1.02`, `CUSA05262-1.00`, `CUSA05262-1.01` or `CUSA03873-1.00`).
+3. `.\tools\build.ps1 -Run` also starts it. Install the game from the launcher's Play page, as in a release; the development build keeps it in `game\prepared\<build folder>` and the boot image in `build\image\<build folder>` of the repository (`CUSA05083-1.00`, `CUSA05083-1.01`, `CUSA01290-1.00`, `CUSA01290-1.02`, `CUSA05262-1.00`, `CUSA05262-1.01` or `CUSA03873-1.00`).
 4. `.\tools\test.ps1` builds and runs the focused headless tests (game profile, settings, keys, window fit, GPU tiling, patch workflow, updater and update helper). Python is not needed to build, test or play; the optional development scripts in `scripts\` use it (`.\tools\setup.ps1 -InstallPython`).
 5. `.\tools\package.ps1` builds the Release configuration (`.\tools\build.ps1 -Release`, in `build\cmake\clang64-release`: `-O3` with ThinLTO across the program and its own libraries, without a symbol table or build id) and the release update helper (`.\tools\build-updater.ps1`: MSYS2 CLANG64 clang++ and LLD, static, only Windows system DLLs, its debug information split into `trg-updater.debug`), then packages `dist\OdinSphereLeifthrasirPC-v<version>-windows-x64.zip`, which holds one folder of that name, and its `.sha256` file. The ZIP is extracted again, compared file by file with the staging folder and scanned, checked with the updater's own rules, and the update helper tests run against the packaged `trg-updater.exe`; `trg-updater.debug` goes to `dist\OdinSphereLeifthrasirPC-v<version>-windows-x64-symbols\`, outside the ZIP. `.\tools\package.ps1 -VerifyOnly <ZIP>` checks a finished ZIP, and `.\tools\test-release-check.ps1` checks that the release check refuses player files, game data, symbols, local paths and leftovers. Nothing is published.
 6. Linux: `tools/build.sh` builds on Linux x86_64 (`--release` for the Release configuration in `build/cmake/linux-release`), and `tools/package-linux.sh` packages `dist/OdinSphereLeifthrasirPC-v<version>-x86_64.AppImage` and its `.sha256` on Ubuntu 20.04 (in WSL2 from this Windows checkout: `tools/package-release-linux.sh`); `--verify-only <AppImage>` checks a finished one. See [docs/LINUX.md](docs/LINUX.md).

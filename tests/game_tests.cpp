@@ -229,7 +229,7 @@ void TestBranding() {
 
 void TestProfile() {
     const std::span<const GameBuild> builds = SupportedBuilds();
-    CHECK(builds.size() == 6);
+    CHECK(builds.size() == 7);
     const GameBuild& build = builds[0];
     CHECK(std::string(kGameTitle) == "Odin Sphere Leifthrasir");
     CHECK(std::string(build.title_id) == "CUSA05083");
@@ -247,11 +247,11 @@ void TestProfile() {
     CHECK(std::string(FinishedLayer(build).sfo_version) == "01.01");
     CHECK(!FinishedLayer(build).update);
     CHECK(BaseBuildOf(build) == nullptr);
-    CHECK(UpdateBuildOf(build) == nullptr);
+    CHECK(UpdateBuildOf(build) == &builds[1]);
     CHECK(BuildMetadataText(build) == "APP_VER 1.00 \xC2\xB7 VERSION 1.01");
 
-    const GameBuild& japan_base = builds[1];
-    const GameBuild& japan = builds[2];
+    const GameBuild& japan_base = builds[2];
+    const GameBuild& japan = builds[3];
     CHECK(std::string(japan_base.title_id) == "CUSA01290");
     CHECK(std::string(japan_base.content_id) == "JP0005-CUSA01290_00-ODINSPHERELE0000");
     CHECK(std::string(japan_base.version) == "1.00");
@@ -284,8 +284,8 @@ void TestProfile() {
     CHECK(japan.extra_files.size() == 1);
     CHECK(BuildMetadataText(japan) == "APP_VER 1.02 \xC2\xB7 VERSION 1.00");
 
-    const GameBuild& eu_base = builds[3];
-    const GameBuild& eu = builds[4];
+    const GameBuild& eu_base = builds[4];
+    const GameBuild& eu = builds[5];
     CHECK(std::string(eu_base.title_id) == "CUSA05262");
     CHECK(std::string(eu_base.content_id) == "EP1063-CUSA05262_00-ODINSPHERELE0000");
     CHECK(std::string(eu_base.version) == "1.00");
@@ -323,8 +323,8 @@ void TestProfile() {
     CHECK(BuildMetadataText(eu) == "APP_VER 1.01 \xC2\xB7 VERSION 1.00");
 
     CHECK(SupportedBuildsText() ==
-          "CUSA05083 1.00 USA, CUSA01290 1.00 Japan, CUSA01290 1.02 Japan, CUSA05262 1.00 Europe, CUSA05262 1.01 "
-          "Europe and CUSA03873 1.00 HK");
+          "CUSA05083 1.00 USA, CUSA05083 1.01 USA, CUSA01290 1.00 Japan, CUSA01290 1.02 Japan, CUSA05262 1.00 Europe, "
+          "CUSA05262 1.01 Europe and CUSA03873 1.00 HK");
     CHECK(std::string(kPreparedMarker) == ".osl_view.json");
     const std::vector<std::string> shared(std::begin(kSharedGameFiles), std::end(kSharedGameFiles));
     for (const char* name : {"eboot.bin", "sce_discmap.plt", "sce_module/libc.prx", "sce_module/libSceFios2.prx",
@@ -346,6 +346,7 @@ void TestBuildMetadata() {
     };
     const Expected expected[] = {
         {"CUSA05083-1.00", "CUSA05083 1.00 USA", "APP_VER 1.00 \xC2\xB7 VERSION 1.01", nullptr},
+        {"CUSA05083-1.01", "CUSA05083 1.01 USA", "APP_VER 1.01 \xC2\xB7 VERSION 1.01", "CUSA05083-1.00"},
         {"CUSA01290-1.00", "CUSA01290 1.00 Japan", "APP_VER 1.00 \xC2\xB7 VERSION 1.00", nullptr},
         {"CUSA01290-1.02", "CUSA01290 1.02 Japan", "APP_VER 1.02 \xC2\xB7 VERSION 1.00", "CUSA01290-1.00"},
         {"CUSA05262-1.00", "CUSA05262 1.00 Europe", "APP_VER 1.00 \xC2\xB7 VERSION 1.00", nullptr},
@@ -422,7 +423,7 @@ void TestSfoIdentity() {
     std::ifstream base_file(sfo, std::ios::binary);
     const std::string japan_base((std::istreambuf_iterator<char>(base_file)), {});
     CHECK(CheckSfoIdentity(japan_base).state == GameFileState::kValid);
-    CHECK(CheckSfoIdentity(japan_base).build == &SupportedBuilds()[1]);
+    CHECK(CheckSfoIdentity(japan_base).build == &SupportedBuilds()[2]);
     CHECK(CheckPackageIdentity(japan_base).state == GameFileState::kValid);
     CHECK(CheckPackageIdentity(japan_base).layer == 0);
 
@@ -435,9 +436,9 @@ void TestSfoIdentity() {
     std::ifstream update_file(sfo, std::ios::binary);
     const std::string update((std::istreambuf_iterator<char>(update_file)), {});
     CHECK(CheckSfoIdentity(update).state == GameFileState::kValid);
-    CHECK(CheckSfoIdentity(update).build == &SupportedBuilds()[2]);
+    CHECK(CheckSfoIdentity(update).build == &SupportedBuilds()[3]);
     CHECK(CheckPackageIdentity(update).state == GameFileState::kValid);
-    CHECK(CheckPackageIdentity(update).build == &SupportedBuilds()[2]);
+    CHECK(CheckPackageIdentity(update).build == &SupportedBuilds()[3]);
     CHECK(CheckPackageIdentity(update).layer == 1);
 
     const std::vector<std::pair<std::string, std::string>> europe = {
@@ -449,7 +450,7 @@ void TestSfoIdentity() {
     std::ifstream eu_base_file(sfo, std::ios::binary);
     const std::string eu_base((std::istreambuf_iterator<char>(eu_base_file)), {});
     CHECK(CheckSfoIdentity(eu_base).state == GameFileState::kValid);
-    CHECK(CheckSfoIdentity(eu_base).build == &SupportedBuilds()[3]);
+    CHECK(CheckSfoIdentity(eu_base).build == &SupportedBuilds()[4]);
     CHECK(CheckPackageIdentity(eu_base).state == GameFileState::kValid);
     CHECK(CheckPackageIdentity(eu_base).layer == 0);
 
@@ -462,13 +463,13 @@ void TestSfoIdentity() {
     std::ifstream eu_update_file(sfo, std::ios::binary);
     const std::string eu_patch((std::istreambuf_iterator<char>(eu_update_file)), {});
     CHECK(CheckSfoIdentity(eu_patch).state == GameFileState::kValid);
-    CHECK(CheckSfoIdentity(eu_patch).build == &SupportedBuilds()[4]);
+    CHECK(CheckSfoIdentity(eu_patch).build == &SupportedBuilds()[5]);
     CHECK(CheckPackageIdentity(eu_patch).state == GameFileState::kValid);
-    CHECK(CheckPackageIdentity(eu_patch).build == &SupportedBuilds()[4]);
+    CHECK(CheckPackageIdentity(eu_patch).build == &SupportedBuilds()[5]);
     CHECK(CheckPackageIdentity(eu_patch).layer == 1);
-    CHECK(BaseBuildOf(SupportedBuilds()[4]) == &SupportedBuilds()[3]);
-    CHECK(BaseBuildOf(SupportedBuilds()[3]) == nullptr);
-    CHECK(UpdateBuildOf(SupportedBuilds()[3]) == &SupportedBuilds()[4]);
+    CHECK(BaseBuildOf(SupportedBuilds()[5]) == &SupportedBuilds()[4]);
+    CHECK(BaseBuildOf(SupportedBuilds()[4]) == nullptr);
+    CHECK(UpdateBuildOf(SupportedBuilds()[4]) == &SupportedBuilds()[5]);
 
     auto eu_wrong_version = eu_update;
     for (auto& [key, value] : eu_wrong_version) {
@@ -506,7 +507,7 @@ void TestGameTree() {
     CHECK(missing.detail == "missing eboot.bin");
     CHECK(missing.build == &SupportedBuilds()[0]);
     CHECK(InstalledGameName(GameFileState::kValid, missing.build) == "PS4 CUSA05083 1.00 USA");
-    CHECK(InstalledGameName(GameFileState::kValid, &SupportedBuilds()[2]) == "PS4 CUSA01290 1.02 Japan");
+    CHECK(InstalledGameName(GameFileState::kValid, &SupportedBuilds()[3]) == "PS4 CUSA01290 1.02 Japan");
     CHECK(InstalledGameName(GameFileState::kMissing, missing.build) == "Not installed");
     CHECK(std::string(StateName(GameFileState::kDifferentVersion)) == "different version");
 }
@@ -527,14 +528,14 @@ void TestBuildSelection() {
                                          std::filesystem::file_time_type(std::chrono::seconds(seconds)));
     };
     write_marker(builds[0], 10);
-    write_marker(builds[1], 20);
-    write_marker(builds[2], 30);
-    CHECK(LastPreparedBuild(roots) == &builds[2]);
-    CHECK(ActiveBuildPaths(roots).app0 == BuildPaths(roots, builds[2]).app0);
+    write_marker(builds[2], 20);
+    write_marker(builds[3], 30);
+    CHECK(LastPreparedBuild(roots) == &builds[3]);
+    CHECK(ActiveBuildPaths(roots).app0 == BuildPaths(roots, builds[3]).app0);
 
-    write_marker(builds[1], 40);
-    CHECK(LastPreparedBuild(roots) == &builds[1]);
-    CHECK(UpdateBuildOf(*LastPreparedBuild(roots)) == &builds[2]);
+    write_marker(builds[2], 40);
+    CHECK(LastPreparedBuild(roots) == &builds[2]);
+    CHECK(UpdateBuildOf(*LastPreparedBuild(roots)) == &builds[3]);
 }
 
 void TestSettings() {
@@ -892,9 +893,10 @@ void TestGraphicsCard() {
 
 void TestTextLanguages() {
     const std::span<const GameBuild> builds = SupportedBuilds();
-    const GameBuild& eu = builds[4];
+    const GameBuild& eu = builds[5];
     const GameBuild& usa = builds[0];
-    const GameBuild& japan = builds[2];
+    const GameBuild& usa_update = builds[1];
+    const GameBuild& japan = builds[3];
 
     const std::span<const TextLanguage> languages = TextLanguagesOf(&eu);
     CHECK(languages.size() == 5);
@@ -906,10 +908,11 @@ void TestTextLanguages() {
         CHECK(languages[i].name == names[i]);
         CHECK(languages[i].ps4_id == ids[i]);
     }
-    CHECK(TextLanguagesOf(&builds[3]).size() == 5);
+    CHECK(TextLanguagesOf(&builds[4]).size() == 5);
     CHECK(TextLanguagesOf(&usa).empty());
+    CHECK(TextLanguagesOf(&usa_update).empty());
     CHECK(TextLanguagesOf(&japan).empty());
-    CHECK(TextLanguagesOf(&builds[1]).empty());
+    CHECK(TextLanguagesOf(&builds[2]).empty());
     CHECK(TextLanguagesOf(nullptr).empty());
 
     CHECK(ResolveTextLanguage(&eu, "french").ps4_id == 2);
@@ -917,6 +920,7 @@ void TestTextLanguages() {
     CHECK(ResolveTextLanguage(&eu, "bogus").ps4_id == 1);
     CHECK(std::string(ResolveTextLanguage(&eu, "").key) == "english");
     CHECK(ResolveTextLanguage(&usa, "french").ps4_id == 1);
+    CHECK(ResolveTextLanguage(&usa_update, "french").ps4_id == 1);
     CHECK(ResolveTextLanguage(&japan, "english").ps4_id == 1);
     CHECK(ResolveTextLanguage(nullptr, "spanish").ps4_id == 1);
 
@@ -945,6 +949,8 @@ void TestTextLanguages() {
     CHECK(osl_text_language(ini.string().c_str(), dir.string().c_str()) == 1);
     write_image(usa);
     std::ofstream(ini) << "text_language = french\n";
+    CHECK(osl_text_language(ini.string().c_str(), dir.string().c_str()) == 1);
+    write_image(usa_update);
     CHECK(osl_text_language(ini.string().c_str(), dir.string().c_str()) == 1);
     write_image(japan);
     CHECK(osl_text_language(ini.string().c_str(), dir.string().c_str()) == 1);
@@ -975,7 +981,7 @@ void TestVoicePolicy() {
         CHECK(key.find("voice") == std::string::npos);
     }
     const std::span<const GameBuild> builds = SupportedBuilds();
-    for (const GameBuild& eu : {builds[3], builds[4]}) {
+    for (const GameBuild& eu : {builds[4], builds[5]}) {
         const auto has = [&](const char* name) {
             return std::any_of(eu.data_files.begin(), eu.data_files.end(),
                                [&](const char* file) { return std::string_view(file) == name; });
@@ -2934,7 +2940,7 @@ void TestUnsupportedBuildFlow() {
              {{"TITLE_ID", "CUSA05083"},
               {"CONTENT_ID", "UP0177-CUSA05083_00-ODINSPHERELE0000"},
               {"CATEGORY", "gd"},
-              {"APP_VER", "01.01"},
+              {"APP_VER", "01.02"},
               {"VERSION", "01.01"}});
     const GameRoots roots{root / "prepared", root / "image"};
 
@@ -2946,7 +2952,7 @@ void TestUnsupportedBuildFlow() {
     CHECK(Contains(result.report, "eboot.bin: 2048 bytes"));
     CHECK(Contains(result.report, "SHA-256: " + Sha256Hex(game / "eboot.bin")));
     CHECK(Contains(result.report, "Reported build match: none (still unsupported)"));
-    CHECK(Contains(result.report, "TITLE_ID CUSA05083, CONTENT_ID UP0177-CUSA05083_00-ODINSPHERELE0000, APP_VER 01.01"));
+    CHECK(Contains(result.report, "TITLE_ID CUSA05083, CONTENT_ID UP0177-CUSA05083_00-ODINSPHERELE0000, APP_VER 01.02"));
     CHECK(Contains(result.report, "Executable: not readable"));
     CHECK(Contains(result.report, "Odin2_BT_US.CPK: 9 bytes, CPK NOT READABLE"));
     CHECK(Contains(result.report, "sce_discmap_patch.plt: absent"));
@@ -2972,12 +2978,12 @@ void TestUnsupportedBuildFlow() {
     WriteSfo(game / "sce_sys" / "param.sfo",
              {{"TITLE_ID", "CUSA05083"},
               {"CONTENT_ID", "UP0177-CUSA05083_00-ODINSPHERELE0000"},
-              {"APP_VER", "01.01"},
+              {"APP_VER", "01.02"},
               {"VERSION", "01.01"},
               {"CATEGORY", "gp"}});
     const UnsupportedBuildReport package =
         DiagnoseUnsupportedPackage(ReadFile(game / "sce_sys" / "param.sfo"), "detail", {}, {}, "encrypted");
-    CHECK(package.odin && Contains(package.text, "APP_VER 01.01") && Contains(package.text, "CATEGORY gp"));
+    CHECK(package.odin && Contains(package.text, "APP_VER 01.02") && Contains(package.text, "CATEGORY gp"));
     CHECK(Contains(package.text, "eboot.bin: not unpacked (encrypted)"));
     CHECK(!DiagnoseUnsupportedPackage("", "detail", {}, {}).odin);
 
@@ -3201,6 +3207,32 @@ bool PromptsRollBackOnUnknownArchives(const GameBuild& build, const std::filesys
            !AnyPromptPatch(app0, build);
 }
 
+// The build's patch archive is held to the same rule as its base archives: a copy the patch was not made for refuses
+// Xbox for the whole build and leaves every archive as it was; the copy it was made for is patched and restored.
+bool PromptsFollowPatchArchive(const GameBuild& build, const std::filesystem::path& base) {
+    using namespace cpk_test;
+    namespace fs = std::filesystem;
+    const fs::path app0 = base / build.folder;
+    fs::remove_all(app0);
+    fs::create_directories(app0);
+    const std::string known = Pattern(20480, 3), painted = Painted(known, {0x340}, 'X'), unknown = Pattern(20480, 5);
+    const std::string patch = MakePatch({{"Interface.ftx", {known, painted}}});
+    const std::string matching = BuildCpk({{"Interface.ftx", known, true}}, true);
+    const std::string foreign = BuildCpk({{"Interface.ftx", unknown, false}}, false);
+    const std::string first = build.data_files.front(), last = build.data_files.back();
+    WriteAll(app0 / first, matching);
+    WriteAll(app0 / last, foreign);
+    const PromptsResult refused = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch));
+    bool ok = !refused.ok && ReadFile(app0 / first) == matching && ReadFile(app0 / last) == foreign &&
+              !AnyPromptPatch(app0, build);
+    WriteAll(app0 / last, matching);
+    const PromptsResult applied = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch));
+    ok = ok && applied.ok && InstalledPromptStyle(app0, build, Span(patch)) == PromptStyle::kXbox;
+    const PromptsResult reverted = SetPromptStyle(app0, build, PromptStyle::kPlayStation, {});
+    return ok && reverted.ok && ReadFile(app0 / first) == matching && ReadFile(app0 / last) == matching &&
+           !AnyPromptPatch(app0, build);
+}
+
 // The fixture every scanned build is checked against: the production patterns at offsets no profile has.
 constexpr size_t kFixtureSkew = 0x500;
 
@@ -3253,6 +3285,13 @@ void TestBuildContract() {
         const GameCheck package = CheckPackageIdentity(sfo);
         PARITY("Installation", package.state == GameFileState::kValid && package.build == &build &&
                                    package.layer == build.layers.size() - 1);
+        if (finished.update) {
+            const GameCheck complete = CheckPackageIdentity(
+                SfoText(dir, {{"TITLE_ID", title}, {"CONTENT_ID", build.content_id}, {"CATEGORY", "gd"},
+                              {"APP_VER", finished.app_ver}, {"VERSION", finished.sfo_version}}));
+            PARITY("Installation", build.merged_package == (complete.state == GameFileState::kValid &&
+                                                            complete.build == &build && complete.layer == 0));
+        }
         PARITY("Installation", CheckSfoIdentity(sfo).build == &build);
         PARITY("Installation", BuildPaths({"prepared", "image"}, build).app0.filename() == folder &&
                                    BuildPaths({"prepared", "image"}, build).image_dir.filename() == folder);
@@ -3269,6 +3308,15 @@ void TestBuildContract() {
 
         // Languages
         const std::span<const TextLanguage> languages = TextLanguagesOf(&build);
+        if (base) {
+            PARITY("Languages", base->text_mode == build.text_mode && languages.size() == TextLanguagesOf(base).size() &&
+                                    std::all_of(base->data_files.begin(), base->data_files.end(), [&](const char* name) {
+                                        return std::find_if(build.data_files.begin(), build.data_files.end(),
+                                                            [&](const char* file) {
+                                                                return std::string_view(file) == name;
+                                                            }) != build.data_files.end();
+                                    }));
+        }
         WriteImageReport(image_dir, build);
         const std::filesystem::path ini = dir / (folder + ".ini");
         PARITY("Languages", (build.text_mode == TextLanguageMode::kSelectable) == !languages.empty());
@@ -3363,12 +3411,16 @@ void TestBuildContract() {
 
         // Controls
         PARITY("Controls", PromptsRollBackOnUnknownArchives(build, dir / "prompts"));
+        PARITY("Controls", PromptsFollowPatchArchive(build, dir / "prompts-patch"));
 
         // Trophies and Save Data: read from the game's own files, never from the profile.
         PARITY("Trophies", no_build_literals);
         PARITY("Save Data", save_from_sfo && no_build_literals);
         const auto [position, inserted] = content_of_title.emplace(title, build.content_id);
         PARITY("Save Data", inserted || position->second == build.content_id);
+        PARITY("Save Data", !base || (std::string_view(base->title_id) == title &&
+                                      std::string_view(base->content_id) == build.content_id &&
+                                      std::string_view(base->folder) != folder));
     }
     std::map<std::string, std::string> title_of_content;
     for (const GameBuild& build : SupportedBuilds()) {
@@ -3578,6 +3630,391 @@ void TestHongKongBuild() {
     CHECK(Contains(diagnosed.report, "Supported-build check: eboot.bin is not the supported build"));
     CHECK(Contains(diagnosed.report, "TITLE_ID CUSA03873"));
     CHECK(!std::filesystem::exists(roots.prepared) && !std::filesystem::exists(roots.image));
+}
+
+std::vector<std::pair<std::string, std::string>> UsaSfo(const char* category, const char* app_ver, const char* version) {
+    return {{"TITLE", "Odin Sphere Leifthrasir"}, {"TITLE_ID", "CUSA05083"},
+            {"CONTENT_ID", "UP0177-CUSA05083_00-ODINSPHERELE0000"}, {"CATEGORY", category},
+            {"APP_VER", app_ver}, {"VERSION", version}};
+}
+
+void WriteGameFile(const std::filesystem::path& root, const std::string& name, const std::string& content) {
+    std::filesystem::create_directories((root / name).parent_path());
+    std::ofstream(root / name, std::ios::binary | std::ios::trunc) << content;
+}
+
+std::map<std::string, std::string> TreeContents(const std::filesystem::path& root) {
+    std::map<std::string, std::string> files;
+    std::error_code ec;
+    for (std::filesystem::recursive_directory_iterator it(root, ec), end; !ec && it != end; it.increment(ec)) {
+        if (it->is_regular_file(ec)) {
+            files[std::filesystem::relative(it->path(), root).generic_string()] = ReadFile(it->path());
+        }
+    }
+    return files;
+}
+
+void TestUsa101Identity() {
+    const GameBuild* base_found = BuildWithLabel("CUSA05083 1.00 USA");
+    const GameBuild* update_found = BuildWithLabel("CUSA05083 1.01 USA");
+    CHECK(base_found && update_found);
+    if (!base_found || !update_found) {
+        return;
+    }
+    const GameBuild& base = *base_found;
+    const GameBuild& update = *update_found;
+    CHECK(std::string(update.title_id) == "CUSA05083" && std::string(update.content_id) == base.content_id);
+    CHECK(std::string(update.version) == "1.01" && std::string(update.folder) == "CUSA05083-1.01");
+    CHECK(std::string(update.region) == "USA" && std::string(update.eboot_sha256) !=
+                                                     std::string(base.eboot_sha256));
+    CHECK(std::string(update.eboot_sha256) == "2865b6cec33f2515def173c1ed0c03afc27a1cd5fad1b0d0f516b4527aba9a88");
+    CHECK(update.layers.size() == 2 && !update.layers[0].update && update.layers[1].update);
+    CHECK(std::string(update.layers[0].app_ver) == base.layers[0].app_ver &&
+          std::string(update.layers[0].sfo_version) == base.layers[0].sfo_version);
+    CHECK(std::string(update.layers[1].app_ver) == "01.01" && std::string(update.layers[1].sfo_version) == "01.01");
+    CHECK(BaseBuildOf(update) == &base && BaseBuildOf(base) == nullptr);
+    CHECK(UpdateBuildOf(base) == &update && UpdateBuildOf(update) == nullptr);
+    CHECK(BuildMetadataText(update) == "APP_VER 1.01 \xC2\xB7 VERSION 1.01");
+    CHECK(InstalledGameName(GameFileState::kValid, &update) == "PS4 CUSA05083 1.01 USA");
+
+    CHECK(update.mapping == ExecutableMapping::kScanned && update.resolution_sites.empty() &&
+          update.snapshot_scale_site == 0 && !update.skip_intro && !update.bookshelf);
+    CHECK(base.mapping == ExecutableMapping::kTable && update.merged_package && !base.merged_package);
+
+    const std::vector<std::string> data(update.data_files.begin(), update.data_files.end());
+    CHECK((data == std::vector<std::string>{"Odin2_BT_US.CPK", "Odin2_OR_US.CPK", "Odin2_RE_US.CPK",
+                                            "Odin2_US_PATCH1_RE_US.CPK"}));
+    const std::vector<std::string> extra(update.extra_files.begin(), update.extra_files.end());
+    CHECK((extra == std::vector<std::string>{"sce_discmap_patch.plt"}));
+    for (const char* name : base.data_files) {
+        CHECK(std::find(data.begin(), data.end(), name) != data.end());
+    }
+    CHECK(update.text_mode == base.text_mode && TextLanguagesOf(&update).empty() && TextLanguagesOf(&base).empty());
+
+    const std::filesystem::path dir = TempDir("usa-101-identity");
+    const GameCheck update_package = CheckPackageIdentity(SfoText(dir, UsaSfo("gp", "01.01", "01.01")));
+    CHECK(update_package.state == GameFileState::kValid && update_package.build == &update && update_package.layer == 1);
+    const GameCheck merged = CheckPackageIdentity(SfoText(dir, UsaSfo("gd", "01.01", "01.01")));
+    CHECK(merged.state == GameFileState::kValid && merged.build == &update && merged.layer == 0);
+    const GameCheck base_package = CheckPackageIdentity(SfoText(dir, UsaSfo("gd", "01.00", "01.01")));
+    CHECK(base_package.state == GameFileState::kValid && base_package.build == &base && base_package.layer == 0);
+    CHECK(CheckPackageIdentity(SfoText(dir, UsaSfo("gp", "01.00", "01.01"))).state == GameFileState::kDifferentVersion);
+    for (const char* category : {"gd", "gp"}) {
+        const GameCheck future = CheckPackageIdentity(SfoText(dir, UsaSfo(category, "01.02", "01.01")));
+        CHECK(future.state == GameFileState::kDifferentVersion && future.detail.find("APP_VER 01.02") != std::string::npos);
+        CHECK(CheckPackageIdentity(SfoText(dir, UsaSfo(category, "01.01", "01.02"))).state ==
+              GameFileState::kDifferentVersion);
+    }
+    CHECK(CheckSfoIdentity(SfoText(dir, UsaSfo("gp", "01.01", "01.01"))).build == &update);
+    CHECK(CheckSfoIdentity(SfoText(dir, UsaSfo("gd", "01.01", "01.01"))).build == &update);
+    CHECK(CheckSfoIdentity(SfoText(dir, UsaSfo("gd", "01.00", "01.01"))).build == &base);
+    CHECK(CheckSfoIdentity(SfoText(dir, UsaSfo("gd", "01.02", "01.01"))).state == GameFileState::kDifferentVersion);
+
+    // A complete package of an update's version is accepted for this build only.
+    for (const GameBuild& other : SupportedBuilds()) {
+        if (&other == &update || !FinishedLayer(other).update) {
+            continue;
+        }
+        const PackageLayer& layer = FinishedLayer(other);
+        const GameCheck as_complete = CheckPackageIdentity(SfoText(
+            dir, {{"TITLE_ID", other.title_id}, {"CONTENT_ID", other.content_id}, {"CATEGORY", "gd"},
+                  {"APP_VER", layer.app_ver}, {"VERSION", layer.sfo_version}}));
+        CHECK(as_complete.state == GameFileState::kDifferentVersion);
+    }
+}
+
+// The USA 1.01 update laid over the USA 1.00 base, checked on synthetic game folders: a build list whose executable
+// hashes are the synthetic executables' stands in for the real ones.
+void TestUsa101Layering() {
+    const GameBuild* base_found = BuildWithLabel("CUSA05083 1.00 USA");
+    const GameBuild* update_found = BuildWithLabel("CUSA05083 1.01 USA");
+    CHECK(base_found && update_found);
+    if (!base_found || !update_found) {
+        return;
+    }
+    using namespace cpk_test;
+    namespace fs = std::filesystem;
+    const fs::path root = TempDir("usa-101-layering");
+    const GameRoots roots{root / "prepared", root / "image"};
+
+    const std::string known = Pattern(20480, 3), painted = Painted(known, {0x340}, 'X'), other = "BOOT" + std::string(600, '\0');
+    const std::string patch = MakePatch({{"Interface.ftx", {known, painted}}, {"GUI/HD_Interface.ftx", {known, painted}}});
+    const std::string bt = BuildCpk({{"other/x.bin", other, false}}, false);
+    const std::string original_or = BuildCpk({{"Interface.ftx", known, true}}, true);
+    const std::string re = BuildCpk({{"other/y.bin", other, true}}, false);
+    const std::string patch_re = BuildCpk({{"GUI/HD_Interface.ftx", known, false}}, false);
+
+    const fs::path base_dir = roots.prepared / base_found->folder;
+    fs::create_directories(base_dir / "sce_sys");
+    WriteSfo(base_dir / "sce_sys" / "param.sfo", UsaSfo("gd", "01.00", "01.01"));
+    WriteGameFile(base_dir, "eboot.bin", "usa-1.00-eboot");
+    WriteGameFile(base_dir, "sce_discmap.plt", "plt");
+    WriteGameFile(base_dir, "sce_module/libc.prx", "libc");
+    WriteGameFile(base_dir, "sce_module/libSceFios2.prx", "fios");
+    WriteGameFile(base_dir, "Odin2_BT_US.CPK", bt);
+    WriteGameFile(base_dir, "Odin2_OR_US.CPK", original_or);
+    WriteGameFile(base_dir, "Odin2_RE_US.CPK", re);
+
+    const fs::path update_files = root / "update-files";
+    fs::create_directories(update_files / "sce_sys");
+    WriteSfo(update_files / "sce_sys" / "param.sfo", UsaSfo("gp", "01.01", "01.01"));
+    WriteGameFile(update_files, "eboot.bin", "usa-1.01-eboot");
+    WriteGameFile(update_files, "sce_discmap_patch.plt", "patch plt");
+    WriteGameFile(update_files, "Odin2_US_PATCH1_RE_US.CPK", patch_re);
+
+    const std::string base_sha = Sha256Hex(base_dir / "eboot.bin"), update_sha = Sha256Hex(update_files / "eboot.bin");
+    std::vector<GameBuild> builds = {*base_found, *update_found};
+    builds[0].eboot_sha256 = base_sha.c_str();
+    builds[1].eboot_sha256 = update_sha.c_str();
+    const GameBuild& base = builds[0];
+    const GameBuild& update = builds[1];
+    CHECK(BaseBuildOf(update, builds) == &base && UpdateBuildOf(base, builds) == &update);
+
+    const GameCheck base_check = CheckGameTree(base_dir, builds);
+    CHECK(base_check.state == GameFileState::kValid && base_check.build == &base);
+
+    // The Xbox prompts of the base are not carried into the update; the base keeps them.
+    CHECK(SetPromptStyle(base_dir, base, PromptStyle::kXbox, Span(patch)).ok);
+    CHECK(InstalledPromptStyle(base_dir, base, Span(patch)) == PromptStyle::kXbox);
+    const std::map<std::string, std::string> base_before = TreeContents(base_dir);
+
+    const fs::path staged = roots.prepared / update.folder;
+    CHECK(StageUpdate(base_dir, update_files, staged).ok());
+    CHECK(TreeContents(base_dir) == base_before);
+    CHECK(CheckGameTree(base_dir, builds).build == &base && CheckGameTree(base_dir, builds).state == GameFileState::kValid);
+    const GameCheck merged = CheckGameTree(staged, builds);
+    CHECK(merged.state == GameFileState::kValid && merged.build == &update);
+    CHECK(ReadFile(staged / "eboot.bin") == "usa-1.01-eboot" && ReadFile(staged / "Odin2_BT_US.CPK") == bt);
+    CHECK(ReadFile(staged / "Odin2_OR_US.CPK") == original_or && ReadFile(staged / "Odin2_US_PATCH1_RE_US.CPK") == patch_re);
+    CHECK(InstalledPromptStyle(staged, update, Span(patch)) == PromptStyle::kPlayStation);
+    CHECK(InstalledPromptStyle(base_dir, base, Span(patch)) == PromptStyle::kXbox);
+
+    // The update's own archive is patched and restored with the base build's archive; the base is not touched.
+    const PromptsResult xbox = SetPromptStyle(staged, update, PromptStyle::kXbox, Span(patch));
+    CHECK(xbox.ok && InstalledPromptStyle(staged, update, Span(patch)) == PromptStyle::kXbox);
+    CHECK(ReadFile(staged / "Odin2_US_PATCH1_RE_US.CPK") != patch_re && TreeContents(base_dir) == base_before);
+    CHECK(SetPromptStyle(staged, update, PromptStyle::kPlayStation, {}).ok);
+    CHECK(ReadFile(staged / "Odin2_OR_US.CPK") == original_or && ReadFile(staged / "Odin2_US_PATCH1_RE_US.CPK") == patch_re);
+    CHECK(!AnyPromptPatch(staged, update) && TreeContents(base_dir) == base_before);
+
+    // Save data and trophies are keyed by the TITLE_ID the two layers share.
+    CHECK(SfoString(ReadFile(base_dir / "sce_sys" / "param.sfo"), "TITLE_ID") ==
+          SfoString(ReadFile(staged / "sce_sys" / "param.sfo"), "TITLE_ID"));
+    CHECK(std::string(base.title_id) == update.title_id && std::string(base.content_id) == update.content_id);
+
+    // Pieces of the update missing from the staged game are named, never accepted.
+    fs::remove(staged / "Odin2_US_PATCH1_RE_US.CPK");
+    CHECK(CheckGameTree(staged, builds).detail == "missing Odin2_US_PATCH1_RE_US.CPK");
+    WriteGameFile(staged, "Odin2_US_PATCH1_RE_US.CPK", patch_re);
+    fs::remove(staged / "sce_discmap_patch.plt");
+    CHECK(CheckGameTree(staged, builds).detail == "missing sce_discmap_patch.plt");
+    WriteGameFile(staged, "sce_discmap_patch.plt", "patch plt");
+    WriteGameFile(staged, "eboot.bin", "usa-1.00-eboot");
+    const GameCheck old_eboot = CheckGameTree(staged, builds);
+    CHECK(old_eboot.state == GameFileState::kDifferentVersion && old_eboot.build == &update);
+    WriteGameFile(staged, "eboot.bin", "usa-1.01-eboot");
+    CHECK(CheckGameTree(staged, builds).state == GameFileState::kValid);
+
+    // Both builds prepared: the active build follows the last one installed, in either direction, without touching files.
+    const auto prepare = [&](const GameBuild& build, int seconds) {
+        const GamePaths paths = BuildPaths(roots, build);
+        std::ofstream(paths.app0 / kPreparedMarker)
+            << "{\"version\": \"" << build.version << "\", \"scope\": \"full\"}\n";
+        std::filesystem::last_write_time(paths.app0 / kPreparedMarker,
+                                         std::filesystem::file_time_type(std::chrono::seconds(seconds)));
+        WriteGameFile(paths.image_dir, "boot.bin", "image");
+        WriteImageReport(paths.image_dir, build);
+    };
+    prepare(base, 10);
+    prepare(update, 20);
+    CHECK(CheckGameFiles(BuildPaths(roots, base), builds).state == GameFileState::kValid);
+    CHECK(CheckGameFiles(BuildPaths(roots, base), builds).build == &base);
+    CHECK(CheckGameFiles(BuildPaths(roots, update), builds).state == GameFileState::kValid);
+    CHECK(CheckGameFiles(BuildPaths(roots, update), builds).build == &update);
+    CHECK(LastPreparedBuild(roots, builds) == &update);
+
+    const fs::path update_source = root / "sources" / "usa-101", base_source = root / "sources" / "usa-100";
+    fs::create_directories(update_source.parent_path());
+    fs::copy(staged, update_source, fs::copy_options::recursive);
+    fs::copy(base_dir, base_source, fs::copy_options::recursive);
+    fs::remove(base_source / kPreparedMarker);
+    fs::remove(update_source / kPreparedMarker);
+    const std::map<std::string, std::string> update_before = TreeContents(staged);
+    const std::map<std::string, std::string> base_prepared = TreeContents(base_dir);
+
+    CHECK(InstallFromFolder(update_source, roots, {}, builds).status == InstallStatus::kUpToDate);
+    const InstallResult back = InstallFromFolder(base_source, roots, {}, builds);
+    CHECK(back.status == InstallStatus::kActivated && back.build == &base);
+    CHECK(LastPreparedBuild(roots, builds) == &base && ActiveBuildPaths(roots, builds).app0 == BuildPaths(roots, base).app0);
+    CHECK(InstallFromFolder(base_source, roots, {}, builds).status == InstallStatus::kUpToDate);
+    const InstallResult forward = InstallFromFolder(update_source, roots, {}, builds);
+    CHECK(forward.status == InstallStatus::kActivated && forward.build == &update);
+    CHECK(LastPreparedBuild(roots, builds) == &update);
+    CHECK(TreeContents(staged) == update_before && TreeContents(base_dir) == base_prepared);
+}
+
+// The USA 1.01 executable has no table, so its features come from the scan recorded at installation, one by one.
+void TestUsa101Scanned() {
+    const GameBuild* update_found = BuildWithLabel("CUSA05083 1.01 USA");
+    const GameBuild* base_found = BuildWithLabel("CUSA05083 1.00 USA");
+    CHECK(update_found && base_found);
+    if (!update_found || !base_found) {
+        return;
+    }
+    const GameBuild& update = *update_found;
+    const GameBuild& base = *base_found;
+    const std::filesystem::path dir = TempDir("usa-101-scanned");
+    const std::filesystem::path image_dir = dir / "image";
+    const std::string image_text = image_dir.string();
+
+    WriteImageReport(image_dir, update);
+    const BuildFeatures unscanned = FeaturesOf(&update, image_dir);
+    CHECK(!unscanned.custom_resolution && !unscanned.skip_intro && !unscanned.unlock_bookshelf && !unscanned.lzcnt_rewrite);
+    OslGameBuild loaded{};
+    CHECK(osl_game_build(image_text.c_str(), &loaded) && std::string(loaded.label) == update.label);
+    CHECK(loaded.resolution_site_count == 0 && loaded.snapshot_scale_site == 0 && !loaded.skip_intro && !loaded.bookshelf &&
+          !loaded.lzcnt_offsets);
+
+    const MappedExecutable image = SyntheticOdinImage(kFixtureSkew);
+    const ScanResult scan = ScanExecutable(image, image.image.size());
+    CHECK(scan.complete() && UnresolvedFeatures(scan.mapping).empty());
+    WriteImageReport(image_dir, update, MappingExtra(scan.mapping));
+    const BuildFeatures scanned = FeaturesOf(&update, image_dir);
+    CHECK(scanned.custom_resolution && scanned.skip_intro && scanned.unlock_bookshelf && scanned.lzcnt_rewrite);
+    OslGameBuild mapped{};
+    CHECK(osl_game_build(image_text.c_str(), &mapped) && mapped.resolution_site_count == base.resolution_sites.size());
+    for (size_t i = 0; i < mapped.resolution_site_count; ++i) {
+        CHECK(mapped.resolution_sites[i].offset == scan.mapping.resolution_offsets[i]);
+        CHECK(mapped.resolution_sites[i].value == base.resolution_sites[i].value);
+    }
+    CHECK(SameSkipIntro(scan.mapping.skip_intro, mapped.skip_intro) && SameBookshelf(scan.mapping.bookshelf, mapped.bookshelf));
+    CHECK(mapped.snapshot_scale_site == scan.mapping.snapshot_scale_site && mapped.lzcnt_offsets &&
+          std::equal(scan.mapping.lzcnt_offsets.begin(), scan.mapping.lzcnt_offsets.end(), mapped.lzcnt_offsets));
+
+    // None of the USA 1.00 table's addresses is the scan's, and every USA 1.00 patch refuses this layout.
+    CHECK(!SameResolution(scan.mapping.resolution_offsets, base.resolution_sites) &&
+          !SameSkipIntro(scan.mapping.skip_intro, base.skip_intro) && !SameBookshelf(scan.mapping.bookshelf, base.bookshelf) &&
+          !SameLzcnt(scan.mapping.lzcnt_offsets, base) && scan.mapping.snapshot_scale_site != base.snapshot_scale_site);
+    const OslResolution target = osl_render_target(&osl_resolutions[OSL_RESOLUTION_COUNT - 1], &osl_aspect_ratios[0]);
+    std::vector<unsigned char> foreign = image.image;
+    foreign.resize(0x1100000, 0);
+    const std::vector<unsigned char> before = foreign;
+    char error[320] = "";
+    CHECK(!osl_apply_resolution(foreign.data(), foreign.size(), base.resolution_sites.data(), base.resolution_sites.size(),
+                                &target, error, sizeof(error)));
+    CHECK(!osl_apply_snapshot_scale(foreign.data(), foreign.size(), base.snapshot_scale_site, &target, error, sizeof(error)));
+    CHECK(!osl_apply_skip_intro(foreign.data(), foreign.size(), base.skip_intro, 1, error, sizeof(error)));
+    CHECK(!osl_apply_bookshelf(foreign.data(), foreign.size() - OSL_BOOKSHELF_STUB_BYTES, base.bookshelf,
+                               foreign.data() + foreign.size() - OSL_BOOKSHELF_STUB_BYTES, OSL_BOOKSHELF_STUB_BYTES, error,
+                               sizeof(error)));
+    CHECK(foreign == before);
+
+    // The scan's sites never overlap; a colliding stub is detected.
+    GameBuild with_scan = update;
+    const std::vector<OslResolutionSite> sites = ResolutionSitesAt(SupportedBuilds(), scan.mapping.resolution_offsets);
+    with_scan.resolution_sites = sites;
+    with_scan.snapshot_scale_site = scan.mapping.snapshot_scale_site;
+    OslSkipIntroSites skip = *scan.mapping.skip_intro;
+    with_scan.skip_intro = &skip;
+    CHECK(!sites.empty() && SitesAreDisjoint(with_scan));
+    skip.stubs = sites[0].offset;
+    CHECK(!SitesAreDisjoint(with_scan));
+
+    // A feature that cannot be mapped is hidden alone; the rest of the build keeps its features.
+    const struct {
+        const char* what;
+        std::function<void(MappedExecutable&)> damage;
+        BuildFeatures expected;
+    } cases[] = {
+        {"a missing resolution site",
+         [&](MappedExecutable& m) { std::fill_n(m.image.begin() + scan.mapping.resolution_offsets[3], 5, uint8_t{0x90}); },
+         {false, true, true, true}},
+        {"a duplicated resolution site",
+         [&](MappedExecutable& m) {
+             std::copy_n(m.image.begin() + scan.mapping.resolution_offsets[3], 10, m.image.begin() + 0x2e000);
+         },
+         {false, true, true, true}},
+        {"a corrupted snapshot scale fingerprint",
+         [&](MappedExecutable& m) { m.image[kPlantedSnapshot + kFixtureSkew] ^= 0x55; },
+         {false, true, true, true}},
+        {"a corrupted skip intro fingerprint",
+         [&](MappedExecutable& m) { m.image[kPlantedHd + kFixtureSkew] ^= 0x55; },
+         {true, false, true, true}},
+        {"an occupied skip intro stub",
+         [&](MappedExecutable& m) { m.image[scan.mapping.skip_intro->stubs + 8] = 0x90; },
+         {true, false, true, true}},
+        {"a corrupted bookshelf getter", [&](MappedExecutable& m) { m.image[kPlantedGetter + kFixtureSkew] ^= 0x55; },
+         {true, true, false, true}},
+        {"a bookshelf site its patch refuses",
+         [&](MappedExecutable& m) { m.image[scan.mapping.bookshelf->reads[2] + 5] ^= 0x01; },
+         {true, true, false, true}},
+        {"a corrupted LZCNT shape", [&](MappedExecutable& m) { m.image[kPlantedLzcnt + kFixtureSkew] ^= 0x55; },
+         {true, true, true, false}},
+    };
+    for (const auto& item : cases) {
+        MappedExecutable damaged = image;
+        item.damage(damaged);
+        const ScanResult partial = ScanExecutable(damaged, damaged.image.size());
+        WriteImageReport(image_dir, update, MappingExtra(partial.mapping));
+        const BuildFeatures features = FeaturesOf(&update, image_dir);
+        const bool as_expected = !partial.complete() && features.custom_resolution == item.expected.custom_resolution &&
+                                 features.skip_intro == item.expected.skip_intro &&
+                                 features.unlock_bookshelf == item.expected.unlock_bookshelf &&
+                                 features.lzcnt_rewrite == item.expected.lzcnt_rewrite;
+        if (!as_expected) {
+            std::printf("unexpected features for %s\n", item.what);
+        }
+        CHECK(as_expected);
+        CHECK(!UnresolvedFeatures(partial.mapping).empty() && Contains(partial.text, "status: incomplete"));
+    }
+
+    // Nothing mapped at all: the log names every feature, and the game is still usable at its native settings.
+    const std::filesystem::path game = dir / "game";
+    std::filesystem::create_directories(game / "sce_sys");
+    std::ofstream(game / "eboot.bin", std::ios::binary) << std::string(64, 'x');
+    WriteSfo(game / "sce_sys" / "param.sfo", {{"TITLE_ID", "CUSA05083"}, {"CONTENT_ID", update.content_id}});
+    const std::string diagnosed = DiagnoseBuildMapping(game, update);
+    CHECK(diagnosed.starts_with("Build mapping diagnostics begin\nIdentity:\n  Build: CUSA05083 1.01 USA\n"));
+    CHECK(Contains(diagnosed, "Features not resolved by the scan: Render resolution, Skip intro, Unlock Bookshelf, "
+                              "Legacy CPU (LZCNT)\n"));
+    CHECK(DiagnoseBuildMapping(game, base).empty());
+    WriteImageReport(image_dir, update);
+    std::ofstream(dir / "none.ini") << "render_resolution = 4K" << std::endl << "aspect_ratio = 32:9" << std::endl;
+    CHECK(osl_render_resolution((dir / "none.ini").string().c_str(), image_text.c_str()) == 0);
+    CHECK(osl_aspect_ratio((dir / "none.ini").string().c_str(), image_text.c_str()) == 0);
+}
+
+// Issue #5's 1.01 is a supported build now; a version after it still reaches the unsupported-build diagnostics.
+void TestUsa101FutureVersionDiagnostics() {
+    const std::filesystem::path root = TempDir("usa-future");
+    const std::filesystem::path game = root / "game";
+    std::filesystem::create_directories(game / "sce_sys");
+    std::ofstream(game / "eboot.bin", std::ios::binary) << std::string(2048, 'x');
+    std::ofstream(game / "Odin2_BT_US.CPK", std::ios::binary) << "not a cpk";
+    std::ofstream(game / "sce_discmap.plt", std::ios::binary) << "plt";
+    const GameRoots roots{root / "prepared", root / "image"};
+
+    WriteSfo(game / "sce_sys" / "param.sfo", UsaSfo("gd", "01.01", "01.01"));
+    const InstallResult supported = InstallFromFolder(game, roots);
+    CHECK(supported.status == InstallStatus::kIncomplete && supported.report.empty());
+
+    WriteSfo(game / "sce_sys" / "param.sfo", UsaSfo("gd", "01.02", "01.01"));
+    const InstallResult future = InstallFromFolder(game, roots);
+    CHECK(future.status == InstallStatus::kUnsupportedBuild);
+    CHECK(future.report.starts_with("Unsupported build diagnostics begin\n") &&
+          future.report.ends_with("Unsupported build diagnostics end\n"));
+    CHECK(Contains(future.report, "APP_VER 01.02") && Contains(future.report, "Reported build match: none"));
+    CHECK(!std::filesystem::exists(roots.prepared) && !std::filesystem::exists(roots.image));
+
+    for (const char* category : {"gd", "gp"}) {
+        const std::string sfo = SfoText(root, UsaSfo(category, "01.02", "01.02"));
+        const GameCheck identity = CheckPackageIdentity(sfo);
+        CHECK(identity.state == GameFileState::kDifferentVersion);
+        const UnsupportedBuildReport package = DiagnoseUnsupportedPackage(sfo, identity.detail, {}, {}, "encrypted");
+        CHECK(package.odin && Contains(package.text, "APP_VER 01.02") &&
+              Contains(package.text, std::string("CATEGORY ") + category));
+        CHECK(Contains(package.text, "Supported-build check: param.sfo APP_VER 01.02 / VERSION 01.02"));
+    }
 }
 
 void TestBuildMappingDiagnostics() {
@@ -3796,6 +4233,10 @@ int main() {
     TestUnsupportedBuildFlow();
     TestBuildDiagnosticsKnownBuild();
     TestHongKongBuild();
+    TestUsa101Identity();
+    TestUsa101Layering();
+    TestUsa101Scanned();
+    TestUsa101FutureVersionDiagnostics();
     TestBuildContract();
     TestScannerReproducesTables();
     TestScannedMappingFixtures();

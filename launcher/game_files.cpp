@@ -405,6 +405,13 @@ GameCheck CheckPackageIdentity(const std::string& sfo, std::span<const GameBuild
             return check;
         }
     }
+    for (const GameBuild& build : builds) {
+        PackageLayer complete = FinishedLayer(build);
+        complete.update = false;
+        if (title == build.title_id && build.merged_package && SameIdentity(sfo, complete)) {
+            return Result(GameFileState::kValid, {}, {}, &build);
+        }
+    }
     return Result(GameFileState::kDifferentVersion,
                   "param.sfo APP_VER " + Shown(SfoString(sfo, "APP_VER")) + " / VERSION " +
                       Shown(SfoString(sfo, "VERSION")) + " is not part of a supported build",

@@ -1,6 +1,6 @@
 # First boot
 
-The project builds and the installed USA 1.00, Japanese 1.02 and European 1.01 games are recognized and prepared.
+The project builds and the installed USA 1.00 and 1.01, Japanese 1.02 and European 1.01 games are recognized and prepared.
 These checks run without a window and without executing game code:
 
 ```powershell

@@ -35,9 +35,7 @@ struct ReportedBuild {
 };
 
 // Builds reported by players that are not supported yet; the log names them, nothing else treats them as known.
-constexpr ReportedBuild kReportedBuilds[] = {
-    {"CUSA05083 1.01 USA", 18591996, "2865b6cec33f2515def173c1ed0c03afc27a1cd5fad1b0d0f516b4527aba9a88"},
-};
+constexpr std::array<ReportedBuild, 0> kReportedBuilds{};
 
 constexpr uint64_t kMaxFile = 256ull << 20;
 constexpr uint64_t kClusterSpan = 0x4000;

@@ -2,7 +2,8 @@
 .SYNOPSIS
   Builds and runs the focused tests: the game profile and the package identity, the build parity of every supported build
   (identity, languages, display, graphics, gameplay, controls, trophies, save data and runtime patches, checked on
-  synthetic fixtures without game files), the settings file, the run log's
+  synthetic fixtures without game files; the script requires a PASS row for each build, CUSA05083 1.01 USA included),
+  the layering of an update over its base, the settings file, the run log's
   retention and capture without a console, the keyboard bindings, the controller prompts patch, the cursor visibility rules, the window fit, the GPU tile layouts, the patch workflow and the
   launcher self-update (versions, release JSON, checksums, ZIP safety, the install transaction and the real update helper). They use
   synthetic data in a temporary folder: no window, no game files.
@@ -33,8 +34,13 @@ Write-Step 'Running the Windows memory tests (sparse backing, commitment, aliase
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step 'Running the game, build parity, settings and keys tests'
-& (Join-Path $buildDir 'bin\osl-tests.exe')
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+$gameTests = (& (Join-Path $buildDir 'bin\osl-tests.exe') | Out-String)
+$gameTestsExit = $LASTEXITCODE
+Write-Host $gameTests
+if ($gameTestsExit -ne 0) { exit $gameTestsExit }
+foreach ($label in 'CUSA05083 1.00 USA', 'CUSA05083 1.01 USA', 'CUSA01290 1.00 Japan', 'CUSA01290 1.02 Japan', 'CUSA05262 1.00 Europe', 'CUSA05262 1.01 Europe', 'CUSA03873 1.00 HK') {
+    if ($gameTests -notmatch "(?m)^  $([regex]::Escape($label))\s+PASS\s*$") { Stop-Tool "Build parity has no PASS row for $label" }
+}
 
 Write-Step 'Running the log tests (retention, and capture in a Windows-subsystem process without standard handles)'
 & (Join-Path $buildDir 'bin\osl-log-tests.exe')

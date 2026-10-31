@@ -57,6 +57,7 @@ struct GameBuild {
     std::span<const TextLanguage> text_languages; // the first is the default; empty when the build has only one
     ExecutableMapping mapping;
     TextLanguageMode text_mode;
+    bool merged_package = false; // a complete (CATEGORY gd) package of the finished version installs without the base
 };
 
 // The supported builds, USA first.

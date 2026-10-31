@@ -16,6 +16,7 @@ std::string DisplayVersion(std::string_view version) {
 }
 
 constexpr PackageLayer kUsaLayers[] = {{"01.00", "01.01", false}};
+constexpr PackageLayer kUsa101Layers[] = {{"01.00", "01.01", false}, {"01.01", "01.01", true}};
 constexpr PackageLayer kJapanBaseLayers[] = {{"01.00", "01.00", false}};
 constexpr PackageLayer kJapan102Layers[] = {{"01.00", "01.00", false}, {"01.02", "01.00", true}};
 constexpr PackageLayer kEuBaseLayers[] = {{"01.00", "01.00", false}};
@@ -145,6 +146,9 @@ constexpr TextLanguage kEuLanguages[] = {
 };
 
 constexpr const char* kUsaDataFiles[] = {"Odin2_BT_US.CPK", "Odin2_OR_US.CPK", "Odin2_RE_US.CPK"};
+constexpr const char* kUsa101DataFiles[] = {"Odin2_BT_US.CPK", "Odin2_OR_US.CPK", "Odin2_RE_US.CPK",
+                                            "Odin2_US_PATCH1_RE_US.CPK"};
+constexpr const char* kUsa101ExtraFiles[] = {"sce_discmap_patch.plt"};
 constexpr const char* kJapanBaseDataFiles[] = {"Odin2_BOOT.CPK", "Odin2_OR.CPK", "Odin2_ORHD.CPK", "Odin2_RE.CPK"};
 constexpr const char* kJapan102DataFiles[] = {"Odin2_BOOT.CPK", "Odin2_OR.CPK", "Odin2_ORHD.CPK", "Odin2_RE.CPK",
                                               "Odin2_PATCH1_OR.CPK", "Odin2_PATCH1_RE.CPK"};
@@ -186,6 +190,26 @@ constexpr GameBuild kGameBuilds[] = {
         {},
         ExecutableMapping::kTable,
         TextLanguageMode::kFixed,
+    },
+    {
+        "CUSA05083",
+        "UP0177-CUSA05083_00-ODINSPHERELE0000",
+        "1.01",
+        "CUSA05083-1.01",
+        "2865b6cec33f2515def173c1ed0c03afc27a1cd5fad1b0d0f516b4527aba9a88",
+        kUsa101ExtraFiles,
+        kUsa101DataFiles,
+        "CUSA05083 1.01 USA",
+        "USA",
+        kUsa101Layers,
+        {},
+        0,
+        nullptr,
+        nullptr,
+        {},
+        ExecutableMapping::kScanned,
+        TextLanguageMode::kFixed,
+        true,
     },
     {
         "CUSA01290",

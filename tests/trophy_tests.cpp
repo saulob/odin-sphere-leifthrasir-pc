@@ -696,6 +696,26 @@ void TestRegionsAndMissingData(const fs::path& base) {
         CHECK(s.Count(flags) == 5 && flags.bits[0] == 6);
     }
 
+    // An update of the same title names the same NP Communication ID, so its game continues the base game's progress.
+    const fs::path trophy_root = TrophyDirectory(user, kNpId).parent_path();
+    const auto count_sets = [&] {
+        size_t sets = 0;
+        std::error_code ec;
+        for (fs::directory_iterator it(trophy_root, ec), end; !ec && it != end; it.increment(ec)) {
+            sets += it->is_directory(ec);
+        }
+        return sets;
+    };
+    const size_t sets_before = count_sets();
+    const fs::path updated = MakeGame(base, "region-us-update", BuildTrp(StandardEntries()));
+    CHECK(ReadNpCommId(updated / "sce_sys" / "npbind.dat") == ReadNpCommId(reinstalled / "sce_sys" / "npbind.dat"));
+    {
+        Session s(updated, user);
+        FlagArray flags{};
+        CHECK(s.Count(flags) == 5 && flags.bits[0] == 6);
+    }
+    CHECK(count_sets() == sets_before);
+
     const fs::path hk = MakeGame(base, "region-hk", BuildTrp(StandardEntries()), "NPWR07394_00");
     CHECK(ReadNpCommId(hk / "sce_sys" / "npbind.dat") == std::string("NPWR07394_00"));
     CHECK(PrepareTrophyPack(hk, user).np_comm_id == "NPWR07394_00");
