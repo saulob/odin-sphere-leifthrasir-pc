@@ -1400,6 +1400,233 @@ void TestResolutionSites() {
     }
 }
 
+void TestUnlockBookshelfSetting() {
+    bool managed = false;
+    for (const ManagedSetting& setting : ManagedSettings()) {
+        managed |= setting.key == kUnlockBookshelfKey && setting.default_value == "0";
+    }
+    CHECK(managed);
+
+    const std::filesystem::path dir = TempDir("unlock-bookshelf");
+    const std::filesystem::path file = dir / "osl.ini";
+    LauncherSettings defaults(file);
+    defaults.ResetToDefaults();
+    CHECK(defaults.Get(kUnlockBookshelfKey, "") == "0");
+    CHECK(osl_unlock_bookshelf(file.string().c_str()) == 0);
+    CHECK(osl_unlock_bookshelf(nullptr) == 0);
+
+    {
+        LauncherSettings settings(file);
+        settings.SetBool(kUnlockBookshelfKey, true);
+        CHECK(settings.Save());
+    }
+    CHECK(ReadFile(file).find("unlock_bookshelf = 1\n") != std::string::npos);
+    CHECK(osl_unlock_bookshelf(file.string().c_str()) == 1);
+    CHECK(osl_skip_intro(file.string().c_str()) == 0);
+    {
+        LauncherSettings settings(file);
+        CHECK(settings.GetBool(kUnlockBookshelfKey, false));
+        settings.ResetToDefaults();
+        CHECK(settings.Save());
+    }
+    CHECK(osl_unlock_bookshelf(file.string().c_str()) == 0);
+    std::ofstream(file) << "skip_intro = 1\n";
+    CHECK(osl_unlock_bookshelf(file.string().c_str()) == 0);
+    std::ofstream(file) << "unlock_bookshelf = on\n";
+    CHECK(osl_unlock_bookshelf(file.string().c_str()) == 1);
+    std::ofstream(file) << "unlock_bookshelf = garbage\n";
+    CHECK(osl_unlock_bookshelf(file.string().c_str()) == 0);
+}
+
+void TestUnlockBookshelfWiring() {
+    const std::filesystem::path root(OSL_SOURCE_DIR);
+    const std::string launcher = ReadFile(root / "launcher" / "launcher.cpp");
+    const size_t page = launcher.find("void PageGameplay(trg::Ui& ui) {");
+    const size_t page_end = launcher.find("void PageControls(trg::Ui& ui) {");
+    CHECK(page != std::string::npos && page_end != std::string::npos && page < page_end);
+    const std::string gameplay = launcher.substr(page, page_end - page);
+    const size_t skip = gameplay.find("ui.Toggle(\"Skip intro\"");
+    const size_t unlock = gameplay.find(
+        "ui.Toggle(\"Unlock Bookshelf\", kUnlockBookshelfHelp, kUnlockBookshelfKey, false, \"Off\", \"On\");");
+    const size_t frame_rate = gameplay.find("ui.Toggle(\"Frame rate in title\"");
+    CHECK(skip != std::string::npos && unlock != std::string::npos && frame_rate != std::string::npos);
+    CHECK(skip < unlock && unlock < frame_rate);
+    CHECK(launcher.find("\"Unlocks the Bookshelf from the start of the game and unlocks every entry, including "
+                        "Prophecies, Alchemy, Notes, \"\n"
+                        "    \"Cafe and Kitchen recipes, and Special artwork\";") != std::string::npos);
+
+    // Only an On setting patches, in the pages the loader reserves for it and before the red-zone pass reads the code.
+    const std::string loader = ReadFile(root / "src" / "loader.c");
+    const size_t apply = loader.find("if (bookshelf_unlock)\n        apply_unlock_bookshelf(");
+    const size_t redzone = loader.find("runtime_redzone_install(image,");
+    const size_t reserve = loader.find("bookshelf_unlock ? round_page(OSL_BOOKSHELF_STUB_BYTES) : 0");
+    CHECK(apply != std::string::npos && redzone != std::string::npos && reserve != std::string::npos);
+    CHECK(reserve < apply && apply < redzone);
+}
+
+// Every real entry of the Bookshelf, by the game's slot numbers (the list in ArchiveListBookShelf.txt).
+void TestBookshelfEntries() {
+    struct Category {
+        int first, last, count, pages;
+    };
+    const Category categories[] = {{0, 5, 6, 8}, {6, 31, 26, 26}, {32, 54, 23, 26}, {102, 127, 26, 26},
+                                   {128, 161, 34, 34}, {162, 162, 1, 0}};
+    int entries = 0;
+    for (const Category& category : categories) {
+        int count = 0, pages = 0;
+        for (int slot = category.first; slot <= category.last; ++slot) {
+            count += osl_bookshelf_entry(slot);
+            pages += osl_bookshelf_pages(slot);
+        }
+        CHECK(count == category.count && pages == category.pages);
+        entries += count;
+    }
+    CHECK(entries == 116);
+    for (int slot = 55; slot <= 101; ++slot) {
+        CHECK(!osl_bookshelf_entry(slot) && osl_bookshelf_pages(slot) == 0);
+    }
+    CHECK(!osl_bookshelf_entry(-1) && !osl_bookshelf_entry(OSL_BOOKSHELF_SLOTS));
+
+    // The view opens every entry and page and keeps what the save holds.
+    unsigned char unlocked[OSL_BOOKSHELF_SLOTS] = {};
+    unsigned char pages[OSL_BOOKSHELF_SLOTS] = {};
+    unlocked[1] = 1;
+    pages[1] = 1;
+    unlocked[34] = 2;
+    pages[34] = 1;
+    unlocked[60] = 1;
+    const std::vector<unsigned char> saved_unlocked(unlocked, unlocked + OSL_BOOKSHELF_SLOTS);
+    const std::vector<unsigned char> saved_pages(pages, pages + OSL_BOOKSHELF_SLOTS);
+    unsigned char view[2 * OSL_BOOKSHELF_SLOTS];
+    osl_bookshelf_fill_view(view, unlocked, pages);
+    for (int slot = 0; slot < OSL_BOOKSHELF_SLOTS; ++slot) {
+        const bool entry = osl_bookshelf_entry(slot);
+        CHECK(entry ? view[slot] != 0 : view[slot] == unlocked[slot]);
+        CHECK(view[OSL_BOOKSHELF_SLOTS + slot] == (entry ? osl_bookshelf_pages(slot) : pages[slot]));
+    }
+    CHECK(view[1] == 1 && view[34] == 2 && view[60] == 1 && view[0] == 2 && view[OSL_BOOKSHELF_SPECIAL_SLOT] == 2);
+    CHECK(view[70] == 0 && view[OSL_BOOKSHELF_SLOTS + 70] == 0 && view[OSL_BOOKSHELF_SLOTS + 34] == 3);
+    CHECK(std::equal(saved_unlocked.begin(), saved_unlocked.end(), unlocked));
+    CHECK(std::equal(saved_pages.begin(), saved_pages.end(), pages));
+
+    // The view is built from a save, never into it; opening only marks what the save already holds.
+    std::vector<unsigned char> save(0x18610, 0);
+    save[0x184c5 + 34] = 1;
+    const std::vector<unsigned char> before = save;
+    const auto* shown = static_cast<const unsigned char*>(osl_bookshelf_view(save.data()));
+    CHECK(shown && shown[0x184c5 + 0] == 2 && shown[0x184c5 + 34] == 1 && shown[0x184c5 + 70] == 0);
+    CHECK(shown[0x18568 + 34] == 3 && shown[0x18568 + OSL_BOOKSHELF_SPECIAL_SLOT] == 0);
+    CHECK(osl_bookshelf_view(nullptr) == nullptr);
+    CHECK(osl_bookshelf_mark(save.data(), 34) == save.data());
+    CHECK(osl_bookshelf_mark(save.data(), 0) == nullptr && osl_bookshelf_mark(save.data(), 162) == nullptr);
+    CHECK(osl_bookshelf_mark(save.data(), -1) == nullptr && osl_bookshelf_mark(nullptr, 34) == nullptr);
+    CHECK(osl_bookshelf_mark(save.data(), OSL_BOOKSHELF_SLOTS) == nullptr);
+    CHECK(save == before);
+}
+
+// A build's Bookshelf code as the patch expects it: the getter, each call with what follows, the entry count's term.
+std::vector<unsigned char> BookshelfImage(const OslBookshelfSites& sites, size_t* image_size) {
+    uint32_t end = std::max(sites.accessor, sites.total);
+    for (const uint32_t site : sites.reads) {
+        end = std::max(end, site);
+    }
+    for (const uint32_t site : sites.marks) {
+        end = std::max(end, site);
+    }
+    *image_size = (uint64_t{end} | 0xfff) + 1;
+    std::vector<unsigned char> image(*image_size + OSL_BOOKSHELF_STUB_BYTES, 0xcc);
+    static constexpr unsigned char kGetter[22] = {0x48, 0x8d, 0x05, 0,    0,    0,    0, 0x48, 0x8b, 0x00, 0x48,
+                                                  0x8b, 0xb8, 0x88, 0x01, 0x00, 0x00, 0xe9, 0, 0,    0,    0};
+    std::memcpy(image.data() + sites.accessor, kGetter, sizeof(kGetter));
+    const auto call = [&](uint32_t site, const unsigned char* signature) {
+        const int32_t rel = static_cast<int32_t>(int64_t{sites.accessor} - int64_t{site} - 5);
+        image[site] = 0xe8;
+        std::memcpy(image.data() + site + 1, &rel, 4);
+        std::memcpy(image.data() + site + 5, signature, OSL_BOOKSHELF_SIGNATURE_BYTES);
+    };
+    for (int i = 0; i < OSL_BOOKSHELF_READS; ++i) {
+        call(sites.reads[i], i == 7 && sites.in_place_page_read ? osl_bookshelf_in_place_page_signature
+                                                                 : osl_bookshelf_read_signatures[i]);
+    }
+    for (int i = 0; i < OSL_BOOKSHELF_MARKS; ++i) {
+        call(sites.marks[i], osl_bookshelf_mark_signatures[i]);
+    }
+    std::memcpy(image.data() + sites.total, osl_bookshelf_total_code, OSL_BOOKSHELF_TOTAL_BYTES);
+    return image;
+}
+
+void TestBookshelfSites() {
+    for (const GameBuild& build : SupportedBuilds()) {
+        CHECK(build.bookshelf != nullptr);
+        if (!build.bookshelf) {
+            continue;
+        }
+        const OslBookshelfSites& sites = *build.bookshelf;
+        size_t size = 0;
+        const std::vector<unsigned char> original = BookshelfImage(sites, &size);
+        std::vector<uint32_t> calls(sites.reads, sites.reads + OSL_BOOKSHELF_READS);
+        calls.insert(calls.end(), sites.marks, sites.marks + OSL_BOOKSHELF_MARKS);
+        std::sort(calls.begin(), calls.end());
+        CHECK(std::adjacent_find(calls.begin(), calls.end()) == calls.end());
+        CHECK(sites.in_place_page_read == (std::string_view(build.label) == "CUSA01290 1.00 Japan" ? 1 : 0));
+
+        std::vector<unsigned char> image = original;
+        unsigned char* stubs = image.data() + size;
+        char error[320] = "";
+        CHECK(osl_apply_bookshelf(image.data(), size, &sites, stubs, OSL_BOOKSHELF_STUB_BYTES, error, sizeof(error)));
+        for (const uint32_t site : sites.reads) {
+            int32_t rel = 0;
+            std::memcpy(&rel, image.data() + site + 1, 4);
+            CHECK(image[site] == 0xe8 && int64_t{site} + 5 + rel == static_cast<int64_t>(size));
+            CHECK(std::equal(original.begin() + site + 5, original.begin() + site + 14, image.begin() + site + 5));
+        }
+        for (int i = 0; i < OSL_BOOKSHELF_MARKS; ++i) {
+            int32_t rel = 0;
+            std::memcpy(&rel, image.data() + sites.marks[i] + 1, 4);
+            CHECK(int64_t{sites.marks[i]} + 5 + rel == static_cast<int64_t>(size) + 0x400 * (i + 1));
+        }
+        CHECK(image[sites.total] == 0xf8);
+        size_t changed = 0;
+        for (size_t i = 0; i < size; ++i) {
+            changed += image[i] != original[i];
+        }
+        CHECK(changed > 0 && changed <= 16 * 4 + 7);
+
+        // A second patch, other code at a site, a short stub area: refused with nothing written.
+        const std::vector<unsigned char> once = image;
+        CHECK(!osl_apply_bookshelf(image.data(), size, &sites, stubs, OSL_BOOKSHELF_STUB_BYTES, error, sizeof(error)));
+        CHECK(image == once);
+        const auto refused = [&](const OslBookshelfSites& changed_sites, uint32_t at, size_t stub_bytes) {
+            std::vector<unsigned char> fresh = original;
+            if (at) {
+                fresh[at] ^= 0x01;
+            }
+            const std::vector<unsigned char> expected = fresh;
+            char message[320] = "";
+            const bool applied = osl_apply_bookshelf(fresh.data(), size, &changed_sites, fresh.data() + size,
+                                                     stub_bytes, message, sizeof(message));
+            return !applied && message[0] != 0 && fresh == expected;
+        };
+        CHECK(refused(sites, sites.accessor, OSL_BOOKSHELF_STUB_BYTES));
+        CHECK(refused(sites, sites.total, OSL_BOOKSHELF_STUB_BYTES));
+        CHECK(refused(sites, sites.total + 11, OSL_BOOKSHELF_STUB_BYTES));
+        CHECK(refused(sites, sites.reads[0] + 5, OSL_BOOKSHELF_STUB_BYTES));
+        CHECK(refused(sites, sites.reads[OSL_BOOKSHELF_READS - 1] + 13, OSL_BOOKSHELF_STUB_BYTES));
+        CHECK(refused(sites, sites.marks[1] + 1, OSL_BOOKSHELF_STUB_BYTES));
+        CHECK(refused(sites, sites.marks[1] + 13, OSL_BOOKSHELF_STUB_BYTES));
+        CHECK(refused(sites, 0, OSL_BOOKSHELF_STUB_BYTES - 1));
+        OslBookshelfSites moved = sites;
+        moved.reads[3] += 1;
+        CHECK(refused(moved, 0, OSL_BOOKSHELF_STUB_BYTES));
+        moved = sites;
+        moved.in_place_page_read = !sites.in_place_page_read;
+        CHECK(refused(moved, 0, OSL_BOOKSHELF_STUB_BYTES));
+        moved = sites;
+        moved.total = static_cast<uint32_t>(size);
+        CHECK(refused(moved, 0, OSL_BOOKSHELF_STUB_BYTES));
+    }
+}
+
 // The snapshot scale patch rewrites the Text Archive's 1080p factor 1.5 with the target's width / 1280 and height / 720
 // and refuses anything else without writing.
 void TestSnapshotScale() {
@@ -1719,7 +1946,8 @@ void TestBuildSkipIntro(const GameBuild& build) {
                                       << FinishedLayer(build).app_ver << "\",\n  \"eboot_sha256\": \""
                                       << build.eboot_sha256 << "\"\n}\n";
     OslGameBuild loaded{};
-    CHECK(osl_game_build(dir.string().c_str(), &loaded) && loaded.skip_intro == build.skip_intro);
+    CHECK(osl_game_build(dir.string().c_str(), &loaded) && loaded.skip_intro == build.skip_intro &&
+          loaded.bookshelf == build.bookshelf);
 
     // The Skip intro sites, their stubs and the render resolution sites share no byte.
     struct Range {
@@ -2324,6 +2552,10 @@ int main() {
     TestRenderBufferBudget();
     TestSkipIntroSetting();
     TestSkipIntroWiring();
+    TestUnlockBookshelfSetting();
+    TestUnlockBookshelfWiring();
+    TestBookshelfEntries();
+    TestBookshelfSites();
     TestSkipIntro();
     TestLogRetention();
     TestControllerPromptsSetting();

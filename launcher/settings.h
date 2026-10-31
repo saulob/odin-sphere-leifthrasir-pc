@@ -31,6 +31,7 @@ inline constexpr char kAntiAliasingKey[] = "smaa";
 inline constexpr char kAnisotropyKey[] = "anisotropy";
 inline constexpr char kTextLanguageKey[] = "text_language";
 inline constexpr char kSkipIntroKey[] = "skip_intro";
+inline constexpr char kUnlockBookshelfKey[] = "unlock_bookshelf";
 inline constexpr char kShowFpsTitleKey[] = "show_fps_title";
 inline constexpr char kShowResolutionTitleKey[] = "show_resolution_title";
 inline constexpr char kShowFrameCounterKey[] = "show_fps";

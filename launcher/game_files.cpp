@@ -407,6 +407,7 @@ extern "C" int osl_game_build(const char* image_dir, OslGameBuild* out) {
     out->resolution_site_count = build->resolution_sites.size();
     out->snapshot_scale_site = build->snapshot_scale_site;
     out->skip_intro = build->skip_intro;
+    out->bookshelf = build->bookshelf;
     return 1;
 }
 

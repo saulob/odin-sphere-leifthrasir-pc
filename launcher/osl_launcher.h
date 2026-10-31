@@ -5,6 +5,7 @@
 #include <stddef.h>
 
 #include "osl_resolution.h"
+#include "osl_bookshelf.h"
 #include "osl_skip_intro.h"
 
 #ifdef __cplusplus
@@ -66,6 +67,9 @@ void osl_log_gameplay_settings(const char* settings_file, const char* image_dir)
 /* 1 when the settings file turns Skip intro on (skip_intro; 0 by default). */
 int osl_skip_intro(const char *settings_file);
 
+/* 1 when the settings file turns Unlock Bookshelf on (unlock_bookshelf; 0 by default). */
+int osl_unlock_bookshelf(const char *settings_file);
+
 /* 1 when the settings file keeps the logs of normal sessions (detailed_logging; 1 by default). */
 int osl_detailed_logging(const char *settings_file);
 
@@ -91,6 +95,7 @@ typedef struct {
     size_t resolution_site_count;
     uint32_t snapshot_scale_site;
     const OslSkipIntroSites *skip_intro; /* NULL: not available for the build */
+    const OslBookshelfSites *bookshelf;  /* NULL: not available for the build */
 } OslGameBuild;
 
 /* The supported game build a boot image folder was built from (its image.json); 0 when it is not one. */

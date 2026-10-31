@@ -99,6 +99,43 @@ constexpr OslSkipIntroSites kJapan102SkipIntro{0x51d, 0x669c6b, 0x1784bd, 0x145d
 constexpr OslSkipIntroSites kEuBaseSkipIntro{0x52d, 0x66d5bb, 0x17993d, 0x146e80, 0x965780};
 constexpr OslSkipIntroSites kEu101SkipIntro{0x52d, 0x66d770, 0x179a1d, 0x146f60, 0x965950};
 
+// Unlock Bookshelf: the Bookshelf code's calls to the save data getter, and the entry count's Special test.
+constexpr OslBookshelfSites kUsaBookshelf{
+    0x5c3050,
+    0x576be7,
+    {0x5e9bde, 0x5eaa36, 0x5eaa83, 0x5eb4de, 0x5eb536, 0x5eb626, 0x5eb676, 0x5eba04, 0x5eba74, 0x5ebc28, 0x5ebc7c,
+     0x5ebd8c, 0x5ebed6, 0x5ec412},
+    {0x5ec2c1, 0x5ec576},
+    0};
+constexpr OslBookshelfSites kJapanBaseBookshelf{
+    0x5ba6e0,
+    0x56f217,
+    {0x5e11fe, 0x5e2056, 0x5e20a3, 0x5e2afe, 0x5e2b56, 0x5e2c46, 0x5e2c96, 0x5e3024, 0x5e308b, 0x5e323f, 0x5e3293,
+     0x5e33a3, 0x5e34e6, 0x5e3a22},
+    {0x5e38d1, 0x5e3b86},
+    1};
+constexpr OslBookshelfSites kJapan102Bookshelf{
+    0x5c0c90,
+    0x574f97,
+    {0x5e786e, 0x5e86c6, 0x5e8713, 0x5e916e, 0x5e91c6, 0x5e92b6, 0x5e9306, 0x5e9694, 0x5e9704, 0x5e98b8, 0x5e990c,
+     0x5e9a1c, 0x5e9b66, 0x5ea0a2},
+    {0x5e9f51, 0x5ea206},
+    0};
+constexpr OslBookshelfSites kEuBaseBookshelf{
+    0x5c3b70,
+    0x577597,
+    {0x5ea5fe, 0x5eb456, 0x5eb4a3, 0x5ebefe, 0x5ebf56, 0x5ec046, 0x5ec096, 0x5ec424, 0x5ec494, 0x5ec648, 0x5ec69c,
+     0x5ec7ac, 0x5ec8f6, 0x5ece32},
+    {0x5ecce1, 0x5ecf96},
+    0};
+constexpr OslBookshelfSites kEu101Bookshelf{
+    0x5c3d10,
+    0x577737,
+    {0x5ea79e, 0x5eb5f6, 0x5eb643, 0x5ec09e, 0x5ec0f6, 0x5ec1e6, 0x5ec236, 0x5ec5c4, 0x5ec634, 0x5ec7e8, 0x5ec83c,
+     0x5ec94c, 0x5eca96, 0x5ecfd2},
+    {0x5ece81, 0x5ed136},
+    0};
+
 // The European executable picks its menu and subtitle archives from the system language; these are the languages it
 // maps (UK is its English). The USA and Japanese builds ship one text language each and list none.
 constexpr TextLanguage kEuLanguages[] = {
@@ -142,6 +179,7 @@ constexpr GameBuild kGameBuilds[] = {
         kUsaResolutionSites,
         0x5441b7,
         &kUsaSkipIntro,
+        &kUsaBookshelf,
         {},
     },
     {
@@ -158,6 +196,7 @@ constexpr GameBuild kGameBuilds[] = {
         kJapanBaseResolutionSites,
         0x53cea7,
         &kJapanBaseSkipIntro,
+        &kJapanBaseBookshelf,
         {},
     },
     {
@@ -174,6 +213,7 @@ constexpr GameBuild kGameBuilds[] = {
         kJapan102ResolutionSites,
         0x542827,
         &kJapan102SkipIntro,
+        &kJapan102Bookshelf,
         {},
     },
     {
@@ -190,6 +230,7 @@ constexpr GameBuild kGameBuilds[] = {
         kEuBaseResolutionSites,
         0x544ba7,
         &kEuBaseSkipIntro,
+        &kEuBaseBookshelf,
         kEuLanguages,
     },
     {
@@ -206,6 +247,7 @@ constexpr GameBuild kGameBuilds[] = {
         kEu101ResolutionSites,
         0x544c87,
         &kEu101SkipIntro,
+        &kEu101Bookshelf,
         kEuLanguages,
     },
 };

@@ -429,6 +429,15 @@ static void apply_skip_intro(const OslGameBuild *build, const Segment *segments,
     }
     osl_skip_intro_arm();
 }
+static void apply_unlock_bookshelf(const OslGameBuild *build, unsigned char *stubs, size_t stub_bytes, uint64_t size) {
+    char error[320]="";
+    if (!build || !build->bookshelf ||
+        !osl_apply_bookshelf(image,size,build->bookshelf,stubs,stub_bytes,error,sizeof(error))) {
+        printf("Unlock Bookshelf: unavailable for this game build%s%s\n",error[0] ? ": " : "",error);
+        return;
+    }
+    protect(stubs,stub_bytes,5);
+}
 #ifndef _WIN32
 static void fault(int sig, siginfo_t *info, void *context) {
     /* GPU page tracking (write-protected guest pages) is resolved first, except during a speculative
@@ -859,7 +868,9 @@ int main(int argc, char **argv) {
     }
     const int lzcnt_rewrite = lzcnt_compat_needed(isa_host_features()) || lzcnt_forced();
     const size_t lzcnt_stub_bytes = lzcnt_rewrite ? round_page(lzcnt_compat_stub_bytes()) : 0;
-    image = allocate(round_page(size) + lzcnt_stub_bytes);
+    const int bookshelf_unlock = osl_unlock_bookshelf(settings_file);
+    const size_t bookshelf_stub_bytes = bookshelf_unlock ? round_page(OSL_BOOKSHELF_STUB_BYTES) : 0;
+    image = allocate(round_page(size) + lzcnt_stub_bytes + bookshelf_stub_bytes);
     if (fread(image, 1, size, f) != size || fgetc(f) != EOF) fail("incorrect memory image size");
     fclose(f);
     if (runtime_memory_prepare()) {
@@ -957,6 +968,8 @@ int main(int argc, char **argv) {
     printf("OSL: render resolution %dx%d (%s)\n",render_target.width,render_target.height,render_resolution->key);
     printf("OSL: Aspect ratio: %s, render target %dx%d\n",aspect_ratio->name,render_target.width,render_target.height);
     if (osl_skip_intro(settings_file)) apply_skip_intro(known_build ? &game_build : NULL,segments,ns,size);
+    if (bookshelf_unlock)
+        apply_unlock_bookshelf(known_build ? &game_build : NULL,image+round_page(size)+lzcnt_stub_bytes,bookshelf_stub_bytes,size);
 #ifdef _WIN32
     printf("Guest TCB loads redirected to the TEB TLS slot: %" PRIu64 "\n", patch_tcb_loads(segments, ns));
     /* After every other change to guest code except the LZCNT rewrite, whose ranges the stubs keep clear of. Only GPU

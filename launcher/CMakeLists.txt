@@ -29,7 +29,7 @@ target_link_libraries(osl_imgui_sdl PUBLIC SDL3::SDL3)
 # Game files (check, PKG unpacking, install, boot image), the trophies (src/trophies), the settings file and the
 # Display options: no window needed (tests link only this).
 find_package(ZLIB REQUIRED)
-add_library(osl_launcher_core STATIC boot_image.cpp controller_prompts.cpp cpk_patch.cpp file_browser.cpp game_files.cpp
+add_library(osl_launcher_core STATIC bookshelf.c boot_image.cpp controller_prompts.cpp cpk_patch.cpp file_browser.cpp game_files.cpp
     game_install.cpp game_profile.cpp options.cpp paths.cpp pkg_extract.cpp resolution.c settings.cpp skip_intro.c
     trophy_content.cpp
     ${PROJECT_SOURCE_DIR}/src/trophies/trophy_data.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trophy_key.cpp

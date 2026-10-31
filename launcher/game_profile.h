@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 
+#include "osl_bookshelf.h"
 #include "osl_resolution.h"
 #include "osl_skip_intro.h"
 
@@ -45,6 +46,7 @@ struct GameBuild {
     std::span<const OslResolutionSite> resolution_sites;
     uint32_t snapshot_scale_site; // image offset of the Text Archive snapshot scale code (osl_apply_snapshot_scale)
     const OslSkipIntroSites* skip_intro; // nullptr when Skip intro is not available for the build
+    const OslBookshelfSites* bookshelf;  // nullptr when Unlock Bookshelf is not available for the build
     std::span<const TextLanguage> text_languages; // the first is the default; empty when the build has only one
 };
 

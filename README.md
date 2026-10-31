@@ -140,7 +140,7 @@ Everything is kept next to the program (next to the AppImage on Linux):
 - **Play**: install or reinstall the game from your `.pkg`, the **Ready to play** status and **Show this launcher**
 - **Display**: display mode, window size, monitor, Aspect Ratio, graphics card, VSync, Presentation, FSR 1 upscaling and RCAS sharpening
 - **Graphics**: Render resolution, SMAA anti-aliasing and anisotropic texture filtering
-- **Gameplay**: Menu & Subtitles language (the European build only), **Skip intro**, frame rate and render resolution in the title, and the in-game frame counter
+- **Gameplay**: Menu & Subtitles language (the European build only), **Skip intro**, **Unlock Bookshelf**, frame rate and render resolution in the title, and the in-game frame counter
 - **Controls**: **Controller prompts** (PlayStation or Xbox), every keyboard binding and the port hotkeys, with **Reset to defaults**. Xbox changes the button pictures the game shows (A/B/X/Y, LB/RB, LT/RT, MENU and VIEW) in the port's own copy of the game; the touchpad prompt becomes VIEW. PlayStation puts the originals back. Your `.pkg` file is never changed.
 - **Trophies**: your local PS4 trophy progress, the trophy list and the Trophy Key setup
 - **About**: the port version, the game, the renderer and the library versions, the game, saves and logs folders, the settings file, **Reset all settings**, and **Diagnostics** with Detailed logging and a button that opens the logs folder
@@ -173,6 +173,12 @@ change the game's choice; Menu & Subtitles affects text only.
 at the title's PRESS START, in both Refined and Classic mode. It acts once per start of the game: returning to the title,
 switching mode and the title's own demo play as usual. The save data and trophy checks before the title still run. It is
 stored in `user\osl.ini` as `skip_intro`, and it is available for every supported build.
+
+**Unlock Bookshelf** (Gameplay, Off by default) makes the attic Bookshelf usable from the start of the game and shows
+every entry in it: the Prophecies, Alchemy, Notes, Cafe and Kitchen recipes, and the Special artwork. It only changes
+what the Bookshelf shows. Your save is not changed, nothing is marked as found, no trophy is affected, and turning the
+option Off puts the Bookshelf back to what your save has earned. It is stored in `user\osl.ini` as `unlock_bookshelf`,
+and it is available for every supported build.
 
 ## Screenshots
 
