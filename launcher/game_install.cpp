@@ -546,7 +546,7 @@ InstallResult InstallBasePackage(const fs::path& source, Package& package, const
     result.bytes = total;
     result.files = package.file_count();
     result.build = &build;
-    result.report = DiagnoseBuildMapping(layout.app0, build, hooks.prompt_patch);
+    result.report = DiagnoseBuildMapping(layout.app0, build, hooks.prompt_patch, &result.unmapped);
     return result;
 }
 
@@ -610,7 +610,7 @@ InstallResult InstallUpdatePackage(const fs::path& source, Package& package, con
     result.bytes = total;
     result.files = package.file_count();
     result.build = &build;
-    result.report = DiagnoseBuildMapping(layout.app0, build, hooks.prompt_patch);
+    result.report = DiagnoseBuildMapping(layout.app0, build, hooks.prompt_patch, &result.unmapped);
     return result;
 }
 
@@ -688,21 +688,26 @@ InstallResult InstallFromPackage(const fs::path& package_file, const GameRoots& 
         return Failure(FromPackage(opened.code), opened.detail);
     }
     const GameCheck identity = CheckPackageIdentity(package.sfo(), builds);
+    const PackageLogContext context{Utf8(source.filename()), package.sfo(), identity};
+    const auto logged = [&](InstallResult result) {
+        result.report = PackageInstallLog(context, result, roots, builds);
+        return result;
+    };
     if (identity.state != GameFileState::kValid) {
         if (std::optional<InstallResult> diagnosed = DiagnosePackage(package, roots, hooks, identity.detail)) {
-            return *diagnosed;
+            return logged(*diagnosed);
         }
-        return Failure(FromCheck(identity), identity.detail);
+        return logged(Failure(FromCheck(identity), identity.detail));
     }
     const GameBuild& build = *identity.build;
     if (std::optional<InstallResult> reused = ReuseInstalledBuild(roots, builds, build, hooks.replace_active)) {
-        return *reused;
+        return logged(*reused);
     }
     const Layout layout(BuildPaths(roots, build));
     if (identity.layer > 0) {
-        return InstallUpdatePackage(source, package, layout, roots, hooks, builds, build);
+        return logged(InstallUpdatePackage(source, package, layout, roots, hooks, builds, build));
     }
-    return InstallBasePackage(source, package, layout, hooks, builds, build);
+    return logged(InstallBasePackage(source, package, layout, hooks, builds, build));
 }
 
 InstallResult InstallFromFolder(const fs::path& source_dir, const GameRoots& roots, const InstallHooks& hooks,
@@ -804,7 +809,7 @@ InstallResult InstallFromFolder(const fs::path& source_dir, const GameRoots& roo
     result.files = files.size();
     result.linked = linked;
     result.build = &build;
-    result.report = DiagnoseBuildMapping(layout.app0, build, hooks.prompt_patch);
+    result.report = DiagnoseBuildMapping(layout.app0, build, hooks.prompt_patch, &result.unmapped);
     return result;
 }
 
@@ -857,6 +862,109 @@ InstallMessage DescribeInstall(InstallStatus status) {
         return {"Already up to date", "This version is already the active game."};
     }
     return {"Could not install the game", "An unexpected error occurred."};
+}
+
+namespace {
+
+constexpr char kNoUpload[] = "  Only this log is needed: it holds hashes and metadata, never upload game files.\n";
+
+const char* PackageKind(const GameBuild& build, size_t layer) {
+    if (layer > 0) {
+        return "update";
+    }
+    return build.layers.size() > 1 ? "merged package" : "base";
+}
+
+std::string SfoFields(const std::string& sfo) {
+    return "  param.sfo: TITLE_ID " + SfoString(sfo, "TITLE_ID") + ", CONTENT_ID " + SfoString(sfo, "CONTENT_ID") +
+           ", APP_VER " + SfoString(sfo, "APP_VER") + ", VERSION " + SfoString(sfo, "VERSION") + ", CATEGORY " +
+           SfoString(sfo, "CATEGORY") + "\n";
+}
+
+std::string ExistingBaseText(const GameBuild& build, const GameRoots& roots, std::span<const GameBuild> builds) {
+    const GameBuild* base = BaseBuildOf(build, builds);
+    if (!base) {
+        return "no base build";
+    }
+    const GameCheck check = CheckGameTree(BuildPaths(roots, *base).app0, builds);
+    if (check.state == GameFileState::kValid && check.build == base) {
+        return std::string("found, ") + base->label;
+    }
+    return std::string("not found, ") + base->label + " (" + (check.detail.empty() ? StateName(check.state) : check.detail) +
+           ")";
+}
+
+// A supported package that installed: the recognition, the result and the final build, and the unmapped features.
+std::string KnownInstallLog(const PackageLogContext& context, const InstallResult& result, const GameBuild& matched,
+                            std::span<const GameBuild> builds) {
+    const GameBuild& final_build = result.build ? *result.build : matched;
+    std::string text = "Package recognized: " + context.file_name + " is " + matched.label + " (" +
+                       PackageKind(matched, context.identity.layer) + ", layer " + std::to_string(context.identity.layer + 1) +
+                       " of " + std::to_string(matched.layers.size()) + ")\n";
+    if (context.identity.layer > 0) {
+        if (const GameBuild* base = BaseBuildOf(matched, builds)) {
+            text += std::string("Update laid over ") + base->label + "\n";
+        }
+    }
+    text += "Package install result: " + std::string(DescribeInstall(result.status).title) + "\n";
+    text += std::string("Final prepared build: ") + final_build.label + " (" + final_build.folder + ")\n";
+    if (!result.unmapped.empty()) {
+        text += "Executable features not mapped (the installation is not affected):";
+        for (size_t i = 0; i < result.unmapped.size(); ++i) {
+            text += (i ? ", " : " ") + result.unmapped[i];
+        }
+        text += "\n";
+    }
+    return text;
+}
+
+std::string FailureRequest(const InstallResult& result, const GameBuild* build) {
+    if (result.status == InstallStatus::kCancelled) {
+        return {};
+    }
+    if (result.status == InstallStatus::kUpdateNeedsBase) {
+        return "Additional information requested:\n  - Please install the base package first, then install this update "
+               "again and attach the complete new log\n" +
+               std::string(kNoUpload);
+    }
+    if (!build) {
+        return "Additional information requested:\n  - Please attach this complete log when reporting this version\n" +
+               std::string(kNoUpload);
+    }
+    return std::string("Additional information requested:\n  - Please tell us whether the launcher reached ") +
+           build->label + "\n  - Please provide a fresh complete log if the installation still fails\n" + kNoUpload;
+}
+
+} // namespace
+
+std::string PackageInstallLog(const PackageLogContext& context, const InstallResult& result, const GameRoots& roots,
+                              std::span<const GameBuild> builds) {
+    const GameCheck& identity = context.identity;
+    const GameBuild* build = identity.state == GameFileState::kValid ? identity.build : nullptr;
+    if (build && result.ok()) {
+        return KnownInstallLog(context, result, *build, builds);
+    }
+
+    std::string text = "Package installation diagnostics begin\n  Package: " + context.file_name + "\n";
+    if (build) {
+        text += SfoFields(context.sfo);
+        text += std::string("  Matched build: ") + build->label + "\n";
+        text += "  Matched package layer: " + std::to_string(identity.layer) + " of " +
+                std::to_string(build->layers.size()) + " (" + PackageKind(*build, identity.layer) + ")\n";
+        if (identity.layer > 0) {
+            text += "  Existing base installation: " + ExistingBaseText(*build, roots, builds) + "\n";
+        }
+        text += std::string("  Target prepared folder: ") + build->folder + "\n";
+    } else {
+        if (result.report.empty()) {
+            text += SfoFields(context.sfo);
+        }
+        text += "  Matched build: none (" + identity.detail + ")\n";
+    }
+    const InstallMessage message = DescribeInstall(result.status);
+    text += std::string(result.status == InstallStatus::kCancelled ? "  Result: cancelled, " : "  Result: failed, ") + message.title + (result.detail.empty() ? "" : " (" + result.detail + ")") + "\n";
+    text += "Package installation diagnostics end\n" + result.report;
+    return text + FailureRequest(result, build);
 }
 
 } // namespace osl

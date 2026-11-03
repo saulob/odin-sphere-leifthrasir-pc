@@ -878,6 +878,42 @@ void ValidateMapping(Scan& s, std::span<const GameBuild> templates) {
     }
 }
 
+struct FeatureState {
+    const char* name;
+    bool complete;
+    std::string detail;
+};
+
+std::vector<FeatureState> FeatureStates(const ScannedMapping& mapping) {
+    size_t expected_sites = 0;
+    for (const GameBuild& build : SupportedBuilds()) {
+        if (!build.resolution_sites.empty()) {
+            expected_sites = build.resolution_sites.size();
+            break;
+        }
+    }
+    const bool resolution = !mapping.resolution_offsets.empty();
+    return {
+        {"Resolution", resolution, Fmt("%zu/%zu", mapping.resolution_offsets.size(), expected_sites)},
+        {"Skip intro", mapping.skip_intro.has_value(), {}},
+        {"Unlock Bookshelf", mapping.bookshelf.has_value(), {}},
+        {"Snapshot scale", mapping.snapshot_scale_site != 0, {}},
+        {"Legacy CPU LZCNT", !mapping.lzcnt_offsets.empty(), Fmt("%zu ranges", mapping.lzcnt_offsets.size())},
+    };
+}
+
+std::string FeatureMappingText(const ScannedMapping& mapping, std::vector<std::string>* unmapped = nullptr) {
+    std::string text = "  Feature mapping:\n";
+    for (const FeatureState& feature : FeatureStates(mapping)) {
+        text += std::string("    ") + feature.name + ": " + (feature.complete ? "complete" : "incomplete") +
+                (feature.detail.empty() ? "" : " (" + feature.detail + ")") + "\n";
+        if (!feature.complete && unmapped) {
+            unmapped->push_back(feature.name);
+        }
+    }
+    return text;
+}
+
 constexpr char kBegin[] = "Unsupported build diagnostics begin\n";
 constexpr char kEnd[] = "Unsupported build diagnostics end\n";
 constexpr char kMappingBegin[] = "Build mapping diagnostics begin\n";
@@ -965,7 +1001,7 @@ UnsupportedBuildReport DiagnoseUnsupportedBuild(const std::filesystem::path& app
     }
 
     DescribeArchives(app0, prompt_patch, text);
-    text += scan.text + Overall(scan) + kEnd;
+    text += scan.text + FeatureMappingText(scan.mapping) + Overall(scan) + kEnd;
     report.text = std::move(text);
     return report;
 }
@@ -1000,13 +1036,13 @@ UnsupportedBuildReport DiagnoseUnsupportedPackage(const std::string& sfo, const 
     }
 
     DescribePackageFiles(files, text);
-    text += scan.text + Overall(scan) + kEnd;
+    text += scan.text + FeatureMappingText(scan.mapping) + Overall(scan) + kEnd;
     report.text = std::move(text);
     return report;
 }
 
 std::string DiagnoseBuildMapping(const std::filesystem::path& app0, const GameBuild& build,
-                                 std::span<const uint8_t> prompt_patch) {
+                                 std::span<const uint8_t> prompt_patch, std::vector<std::string>* unmapped) {
     std::error_code ec;
     const std::filesystem::path eboot_path = app0 / "eboot.bin";
     const std::uintmax_t eboot_size = std::filesystem::file_size(eboot_path, ec);
@@ -1018,6 +1054,7 @@ std::string DiagnoseBuildMapping(const std::filesystem::path& app0, const GameBu
     text += std::string("Identity:\n  Build: ") + build.label + "\n";
     text += EbootLines(eboot_path, eboot_size) + SfoLine(ReadSmallText(app0 / "sce_sys" / "param.sfo")) + "\n";
     const ScanResult scan = ScanFolderExecutable(app0, text);
+    text += FeatureMappingText(scan.mapping, unmapped);
     const std::vector<std::string> missing = UnresolvedFeatures(scan.mapping);
     text += "  Features not resolved by the scan:";
     for (size_t i = 0; i < missing.size(); ++i) {

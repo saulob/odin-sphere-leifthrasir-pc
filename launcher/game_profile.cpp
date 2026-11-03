@@ -16,7 +16,7 @@ std::string DisplayVersion(std::string_view version) {
 }
 
 constexpr PackageLayer kUsaLayers[] = {{"01.00", "01.01", false}};
-constexpr PackageLayer kUsa101Layers[] = {{"01.00", "01.01", false}, {"01.01", "01.01", true}};
+constexpr PackageLayer kUsa101Layers[] = {{"01.00", "01.01", false}, {"01.01", "01.00", true}};
 constexpr PackageLayer kJapanBaseLayers[] = {{"01.00", "01.00", false}};
 constexpr PackageLayer kJapan102Layers[] = {{"01.00", "01.00", false}, {"01.02", "01.00", true}};
 constexpr PackageLayer kEuBaseLayers[] = {{"01.00", "01.00", false}};
@@ -209,7 +209,7 @@ constexpr GameBuild kGameBuilds[] = {
         {},
         ExecutableMapping::kScanned,
         TextLanguageMode::kFixed,
-        true,
+        "01.01",
     },
     {
         "CUSA01290",

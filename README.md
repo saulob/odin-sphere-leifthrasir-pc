@@ -78,7 +78,7 @@ checked by scripts, but it has not yet been tested on real Linux PCs or a Steam 
 | Game | Odin Sphere Leifthrasir |
 | Platform | PlayStation 4 |
 | USA build | Title ID `CUSA05083`, Content ID `UP0177-CUSA05083_00-ODINSPHERELE0000`, `APP_VER` `01.00`, `VERSION` `01.01`, `eboot.bin` SHA-256 `7c517194aba4e5eea55d9197efae47d1567bd785b8c0dced7d1b0f4028d3eed6` |
-| USA 1.01 update | Same Title and Content ID, `APP_VER` `01.01`, `VERSION` `01.01`, `eboot.bin` SHA-256 `2865b6cec33f2515def173c1ed0c03afc27a1cd5fad1b0d0f516b4527aba9a88` |
+| USA 1.01 update | Same Title and Content ID, `APP_VER` `01.01`, `VERSION` `01.00`, `eboot.bin` SHA-256 `2865b6cec33f2515def173c1ed0c03afc27a1cd5fad1b0d0f516b4527aba9a88` |
 | Japanese base | Title ID `CUSA01290`, Content ID `JP0005-CUSA01290_00-ODINSPHERELE0000`, `APP_VER` `01.00`, `VERSION` `01.00`, `eboot.bin` SHA-256 `d0add7e35bc5f58d5c9017fdce0878006c32f944fa8eb3d7ce62671257f5bcc7` |
 | Japanese 1.02 update | Same Title and Content ID, `APP_VER` `01.02`, `VERSION` `01.00`, `eboot.bin` SHA-256 `db96b839fe31adba4b3eb3547202f761d34881325c2fea650c4c020eded5d071` |
 | European base | Title ID `CUSA05262`, Content ID `EP1063-CUSA05262_00-ODINSPHERELE0000`, `APP_VER` `01.00`, `VERSION` `01.00`, `eboot.bin` SHA-256 `3e6b1741e8a404d0f8fbe10bce93c6887974566f5be09ef1bddc22a00ba29feb` |

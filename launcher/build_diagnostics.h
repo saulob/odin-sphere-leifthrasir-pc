@@ -74,8 +74,9 @@ UnsupportedBuildReport DiagnoseUnsupportedPackage(const std::string& sfo, const 
 std::vector<std::string> UnresolvedFeatures(const ScannedMapping& mapping);
 
 // For an installed build whose executable is scanned, the same scan as for an unsupported build, so the log holds
-// what was resolved; empty for a build with tables.
+// what was resolved, feature by feature; empty for a build with tables. `unmapped` receives the incomplete features.
 std::string DiagnoseBuildMapping(const std::filesystem::path& app0, const GameBuild& build,
-                                 std::span<const uint8_t> prompt_patch = {});
+                                 std::span<const uint8_t> prompt_patch = {},
+                                 std::vector<std::string>* unmapped = nullptr);
 
 } // namespace osl

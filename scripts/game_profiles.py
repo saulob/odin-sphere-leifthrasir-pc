@@ -23,7 +23,8 @@ PROFILES = {
             # The 1.01 patch is laid over the base package; it replaces eboot.bin and adds a patch archive.
             '1.01': {
                 'layers': ({'app_ver': '01.00', 'sfo_version': '01.01', 'update': False},
-                           {'app_ver': '01.01', 'sfo_version': '01.01', 'update': True}),
+                           {'app_ver': '01.01', 'sfo_version': '01.00', 'update': True}),
+                'merged_sfo_version': '01.01',
                 'eboot_sha256': '2865b6cec33f2515def173c1ed0c03afc27a1cd5fad1b0d0f516b4527aba9a88',
                 'folder': 'CUSA05083-1.01', 'extra_files': ('sce_discmap_patch.plt',),
                 'data_files': ('Odin2_BT_US.CPK', 'Odin2_OR_US.CPK', 'Odin2_RE_US.CPK', 'Odin2_US_PATCH1_RE_US.CPK'),
@@ -160,6 +161,12 @@ def finishing_version(title, identity):
     return None
 
 
+def _finished_identity(build, sfo):
+    finished = finished_layer(build)
+    versions = {finished['sfo_version'], build.get('merged_sfo_version')} - {None}
+    return sfo.get('APP_VER') == finished['app_ver'] and sfo.get('VERSION') in versions
+
+
 def version_of(game):
     """The profile version whose finished param.sfo matches the game folder, or None."""
     try:
@@ -169,9 +176,7 @@ def version_of(game):
     found = PROFILES.get(sfo.get('TITLE_ID', ''))
     if not found:
         return None
-    return next((v for v, build in found['versions'].items()
-                 if (finished_layer(build)['app_ver'], finished_layer(build)['sfo_version'])
-                 == (sfo.get('APP_VER'), sfo.get('VERSION'))), None)
+    return next((v for v, build in found['versions'].items() if _finished_identity(build, sfo)), None)
 
 
 def package_layer(info):

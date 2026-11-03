@@ -96,8 +96,10 @@ bool SameIdentity(const std::string& sfo, const PackageLayer& layer) {
 const GameBuild* BuildOfSfo(const std::string& sfo, std::span<const GameBuild> builds) {
     for (const GameBuild& build : builds) {
         const PackageLayer& finished = FinishedLayer(build);
+        const std::string version = SfoString(sfo, "VERSION");
         if (SfoString(sfo, "TITLE_ID") == build.title_id && SfoString(sfo, "CONTENT_ID") == build.content_id &&
-            SfoString(sfo, "APP_VER") == finished.app_ver && SfoString(sfo, "VERSION") == finished.sfo_version) {
+            SfoString(sfo, "APP_VER") == finished.app_ver &&
+            (version == finished.sfo_version || (build.merged_sfo_version && version == build.merged_sfo_version))) {
             return &build;
         }
     }
@@ -406,9 +408,11 @@ GameCheck CheckPackageIdentity(const std::string& sfo, std::span<const GameBuild
         }
     }
     for (const GameBuild& build : builds) {
-        PackageLayer complete = FinishedLayer(build);
-        complete.update = false;
-        if (title == build.title_id && build.merged_package && SameIdentity(sfo, complete)) {
+        if (title != build.title_id || !build.merged_sfo_version) {
+            continue;
+        }
+        const PackageLayer complete{FinishedLayer(build).app_ver, build.merged_sfo_version, false};
+        if (SameIdentity(sfo, complete)) {
             return Result(GameFileState::kValid, {}, {}, &build);
         }
     }

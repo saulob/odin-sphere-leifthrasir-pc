@@ -57,7 +57,7 @@ GameCheck CheckGameTree(const std::filesystem::path& app0, std::span<const GameB
 GameCheck CheckSfoIdentity(const std::string& sfo, std::span<const GameBuild> builds = SupportedBuilds());
 
 // The build whose finished game a package's param.sfo names, and the package's layer in that build. A merged package
-// (merged_package) is layer 0: it is installed like a base package.
+// (merged_sfo_version) is layer 0: it is installed like a base package.
 GameCheck CheckPackageIdentity(const std::string& sfo, std::span<const GameBuild> builds = SupportedBuilds());
 
 // A string value of param.sfo, empty when the key is absent or not a string.

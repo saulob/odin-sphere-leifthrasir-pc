@@ -8,6 +8,7 @@
 #include <functional>
 #include <span>
 #include <string>
+#include <vector>
 
 #include "game_files.h"
 
@@ -41,6 +42,7 @@ struct InstallResult {
     uint64_t bytes = 0;
     size_t files = 0, linked = 0;
     const GameBuild* build = nullptr; // the build that was installed
+    std::vector<std::string> unmapped; // executable features of a scanned build that the scan did not resolve
     bool ok() const {
         return status == InstallStatus::kInstalled || status == InstallStatus::kActivated || status == InstallStatus::kUpToDate;
     }
@@ -74,5 +76,17 @@ struct InstallMessage {
     std::string text;
 };
 InstallMessage DescribeInstall(InstallStatus status);
+
+// What the package's param.sfo and its identity check said, for the installation log.
+struct PackageLogContext {
+    std::string file_name;
+    std::string sfo;
+    GameCheck identity;
+};
+
+// The log text of one package installation: the package identity, the matched build and layer, the outcome, the
+// prepared folder's evidence after a success, `result.report`, and the final request for further information.
+std::string PackageInstallLog(const PackageLogContext& context, const InstallResult& result, const GameRoots& roots,
+                              std::span<const GameBuild> builds = SupportedBuilds());
 
 } // namespace osl
