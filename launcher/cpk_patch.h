@@ -6,7 +6,9 @@
 //
 // A DCPX patch (scripts/prompts/make_dcpx.py) names the entries it changes with the CRC32 of the entry before and
 // after, so an archive that does not match is left alone, and the 16-byte runs that differ. Several targets may share
-// a name, one per copy of the file the builds and languages ship; an entry takes the one its CRC32 matches.
+// a name, one per copy of the file the builds and languages ship; an entry takes the one its CRC32 matches. DCPX2 runs
+// also hold the original block, so a file of an unknown CRC32 is still taken when every block a target replaces is
+// exactly that target's original.
 #pragma once
 
 #include <array>
@@ -23,7 +25,8 @@ namespace osl {
 
 struct BlockRun {
     uint32_t offset = 0;
-    std::array<uint8_t, 16> data{};
+    std::array<uint8_t, 16> original{}; // DCPX2 only
+    std::array<uint8_t, 16> data{};     // the replacement
 };
 
 struct BlockPatchTarget {
@@ -31,6 +34,7 @@ struct BlockPatchTarget {
     uint32_t size = 0; // of the uncompressed entry
     uint32_t crc_before = 0;
     uint32_t crc_after = 0;
+    bool source_blocks = false; // the runs hold their original blocks (DCPX2)
     std::vector<BlockRun> runs;
 };
 
@@ -113,14 +117,42 @@ struct PatchHooks {
     std::function<bool(uint64_t done, uint64_t total)> progress;     // false cancels
 };
 
+// An entry the patch names whose data is neither the original nor the patched copy of any of its targets.
+struct UnmatchedEntry {
+    std::string archive;
+    std::string entry;
+    uint64_t size = 0;
+    uint32_t crc = 0;
+    std::string analysis; // why no target takes it
+};
+
 struct PatchResult {
     bool ok = false;
     bool cancelled = false;
     std::string detail;   // for the log
     size_t patched = 0;   // entries rewritten (0 with ok when the archive holds none of the patch's entries)
     size_t skipped = 0;   // entries named by the patch that are not a copy it was made for
+    std::vector<UnmatchedEntry> unmatched;
     uint64_t appended = 0;
 };
+
+enum class EntryState { kUnknown, kOriginal, kPatched };
+
+struct EntryMatch {
+    EntryState state = EntryState::kUnknown;
+    const BlockPatchTarget* target = nullptr; // the copy the entry is, or was made from
+    bool exact = false;                       // by CRC32; otherwise by source blocks
+    bool ambiguous = false;                   // source-block matches that would write different bytes
+    std::string analysis;                     // how a source-block match was made, or why there is none
+};
+
+// Whether the entry's data is an original or patched copy of one of the patch's targets. A CRC32 match is preferred.
+// Otherwise the data must have the size of a DCPX2 target and equal its original (or its replacement) blocks at every
+// run; copies that would give different results are ambiguous and match nothing.
+EntryMatch MatchEntry(const BlockPatch& patch, std::string_view name, std::span<const uint8_t> data, uint32_t crc);
+
+// The entries of the archive the patch names that are not a copy it was made for; nothing is written.
+std::vector<UnmatchedEntry> FindUnmatchedEntries(const std::filesystem::path& cpk, const BlockPatch& patch);
 
 // Whether the archive holds this patch and nothing else: every entry the patch names is a patched copy, and the undo
 // record names exactly those entries. False when it holds none of them.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Builds launcher/prompts/xbox-prompts.dcpx from the prepared game folders: every distinct copy of the button art
 (Interface.ftx, GUI/HD_Interface.ftx, OnMemory.ftx, OnMemory/HD_OnMemory.ftx) in every archive of every build found
-is painted (draw_osl.py), re-encoded where it changed (patch_ftx.py) and becomes one DCPX target, named as the archive
+is painted (draw_osl.py), re-encoded where it changed (patch_ftx.py) and becomes one DCPX2 target, named as the archive
 names it and keyed by its CRC32, so one patch serves every supported build and language.
 
     make_prompts.py game/prepared out.dcpx --dc-pack Interface_US.ftx --dc-patch xbox-prompts.dcpx --font Poppins-Bold.ttf
@@ -77,11 +77,11 @@ def main():
     args = ap.parse_args()
     dc = draw_osl.dc_atlases(args.dc_pack, args.dc_patch)
     painted = {}      # crc of the original file -> patched bytes
-    targets = {}      # (archive path, crc) -> (original, patched)
+    targets = {}      # (archive path, size, crc) -> (original, patched)
     reference = {}
     for build in sorted(p for p in Path(args.prepared).iterdir() if p.is_dir()):
         for archive in sorted(build.glob('*.CPK')):
-            pack = cpk.Cpk(archive)
+            pack = cpk.Cpk(archive, original=True)
             for entry in pack.entries:
                 name = entry['path']
                 if name not in INTERFACE + ONMEMORY:
@@ -94,8 +94,8 @@ def main():
                     else:
                         painted[crc], note = paint_onmemory(data, args.font, reference)
                     print(f'{build.name}/{archive.name}: {name} {crc:08x} -> {note}')
-                targets[(name, crc)] = (data, painted[crc])
-    blob = make_dcpx.dcpx_bytes([(name, orig, new) for (name, _), (orig, new) in sorted(targets.items())])
+                targets[(name, len(data), crc)] = (data, painted[crc])
+    blob = make_dcpx.dcpx_bytes([(name, orig, new) for (name, _, _), (orig, new) in sorted(targets.items(), key=lambda t: (t[0][0], t[0][2], t[0][1]))])
     Path(args.out).write_bytes(blob)
     print(f'{len(targets)} targets -> {args.out} ({len(blob)} bytes)')
 

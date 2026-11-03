@@ -1,5 +1,8 @@
 #include "controller_prompts.h"
 
+#include <algorithm>
+#include <cstdio>
+#include <iterator>
 #include <system_error>
 
 #include "utf8.h"
@@ -21,6 +24,13 @@ std::vector<std::filesystem::path> DataArchives(const std::filesystem::path& app
 
 void Note(std::string& detail, const std::string& step) {
     detail += (detail.empty() ? "" : "; ") + step;
+}
+
+std::string UnsupportedLine(const GameBuild& build, const UnmatchedEntry& asset) {
+    char tail[64];
+    std::snprintf(tail, sizeof(tail), ", size %llu, CRC32 %08x", static_cast<unsigned long long>(asset.size), asset.crc);
+    return std::string("Controller prompts unsupported asset: build ") + build.label + ", archive " + asset.archive +
+           ", entry " + asset.entry + tail;
 }
 
 } // namespace
@@ -138,6 +148,19 @@ PromptsResult SetPromptStyle(const std::filesystem::path& app0, const GameBuild&
             result.cancelled = step.cancelled;
             if (!restore_all()) {
                 Note(result.detail, "could not restore every archive");
+            }
+            if (step.skipped) {
+                // The archives after the failing one are only read, so the log names every unsupported file.
+                std::vector<UnmatchedEntry> unmatched = step.unmatched;
+                for (auto later = std::next(std::find(archives.begin(), archives.end(), archive)); later != archives.end(); ++later) {
+                    const std::vector<UnmatchedEntry> more = FindUnmatchedEntries(*later, *patch);
+                    unmatched.insert(unmatched.end(), more.begin(), more.end());
+                }
+                for (const UnmatchedEntry& asset : unmatched) {
+                    result.unsupported.push_back(UnsupportedLine(build, asset));
+                    result.unsupported.push_back("Controller prompts source-block check: archive " + asset.archive + ", entry " +
+                                                 asset.entry + ": " + asset.analysis);
+                }
             }
             return result;
         }

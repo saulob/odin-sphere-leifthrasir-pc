@@ -42,6 +42,9 @@ struct PromptsResult {
     bool ok = false;
     bool cancelled = false;
     std::string detail; // for the log
+    // Per button art file the patch was not made for: a line naming build, archive, entry, size, CRC32, then why no
+    // target took it.
+    std::vector<std::string> unsupported;
 };
 
 // Patches or reverts the build's archives so the game shows `style`. `xbox_patch` is the DCPX patch (the embedded

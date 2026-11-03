@@ -21,7 +21,10 @@ Bold (SIL OFL, fonts.google.com/specimen/Poppins).
 
 Every build and language ships its own copy of these files (the atlas pixels are the same in the USA and European
 copies; the Japanese copy is encoded differently). The patch has one target per copy, named as the archive names it and
-keyed by its CRC32, so one patch serves all supported builds and an unknown copy is left alone.
+keyed by its CRC32, and the launcher takes an entry by that key first. A file of another CRC32 is taken only when it has
+the size of a target of that name and every 16-byte block the target replaces is exactly the target's original block
+(DCPX2 runs hold both blocks); targets that would write different bytes into it are ambiguous and match nothing. Only
+those blocks are written, so the file's other bytes survive, and the undo record restores the file as it was.
 
 These scripts are development tools (Python 3.11+, `numpy`, `scipy`, `Pillow`); players never run them, and the patch
 is committed.
@@ -33,7 +36,7 @@ is committed.
 | `draw_osl.py` | Paints one atlas: `interface` from Dragon's Crown parts, `onmemory000/010/020` with Poppins Bold. Writes the atlas and a mask of the changed pixels. |
 | `bc3.py` | A BC3 encoder (numpy). |
 | `patch_ftx.py` | Re-encodes only the changed 4 × 4 blocks and splices them into the pack. |
-| `make_dcpx.py` | Diffs original and patched files into the `.dcpx` block patch the launcher embeds. |
+| `make_dcpx.py` | Diffs original and patched files into the DCPX2 block patch the launcher embeds, and checks it against those files. |
 | `make_prompts.py` | Builds the whole patch from the prepared game folders: every copy of the four files in every archive. |
 
 ## Rebuilding the patch
@@ -48,10 +51,19 @@ python scripts/prompts/make_prompts.py game/prepared launcher/prompts/xbox-promp
     --font Poppins-Bold.ttf
 ```
 
+A prepared folder the launcher has already switched to Xbox prompts is read as it was before: `cpk.py` takes the
+original table of contents from the archive's `.undo` record, so the patch comes out the same either way.
+
+A build missing from the patch is refused by the launcher, which logs one line per file it does not know:
+`Controller prompts unsupported asset: build <label>, archive <name>, entry <path>, size <n>, CRC32 <hex>`. Prepare that
+build and rebuild the patch; the shipped patch is checked against every local prepared build by `osl-tests`.
+
 To look at one atlas first, `ftex.py dump` the pack and run `draw_osl.py` on the PNG.
 
 ## Formats, briefly
 
-- **CPK**, **FTEX**, **DCPX** and the **undo record**: as in Dragon's Crown Pro PC's `scripts/prompts/README.md`. The
+- **DCPX2** is DCPX1 with `offset, original block, replacement block` per run (36 bytes) and the magic `DCPX2`; the
+  launcher still reads DCPX1, whose targets can only be taken by CRC32.
+- **CPK**, **FTEX**, **DCPX1** and the **undo record**: as in Dragon's Crown Pro PC's `scripts/prompts/README.md`. The
   interface textures here are BC3 (16-byte blocks, like BC7), tile mode 13 (Thin_1dThin), no mipmaps. A DCPX file may
   name an entry more than once, one target per copy of the file.

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdio>
 #include <cstring>
 #include <exception>
 #include <fstream>
@@ -15,7 +16,7 @@
 namespace osl {
 namespace {
 
-constexpr char kPatchMagic[8] = {'D', 'C', 'P', 'X', '1', 0, 0, 0};
+constexpr char kPatchMagic[4] = {'D', 'C', 'P', 'X'};
 constexpr char kUndoMagic[8] = {'D', 'C', 'P', 'U', 'N', 'D', 'O', '1'};
 constexpr uint8_t kStorageMask = 0xF0, kStorageConstant = 0x30, kStoragePerRow = 0x50;
 constexpr uint8_t kTypeMask = 0x0F, kTypeString = 0x0A, kTypeData = 0x0B;
@@ -274,7 +275,12 @@ std::optional<BlockPatch> ParseBlockPatch(std::span<const uint8_t> b, std::strin
         if (error) *error = why;
         return std::optional<BlockPatch>();
     };
-    if (b.size() < 12 || std::memcmp(b.data(), kPatchMagic, 8) != 0) return fail("not a DCPX patch");
+    if (b.size() < 12 || std::memcmp(b.data(), kPatchMagic, 4) != 0 || (b[4] != '1' && b[4] != '2') ||
+        b[5] != 0 || b[6] != 0 || b[7] != 0) {
+        return fail("not a DCPX patch");
+    }
+    const bool source_blocks = b[4] == '2';
+    const size_t run_size = source_blocks ? 36 : 20;
     const uint32_t count = ReadLe32(b.data() + 8);
     size_t pos = 12;
     BlockPatch patch;
@@ -291,14 +297,19 @@ std::optional<BlockPatch> ParseBlockPatch(std::span<const uint8_t> b, std::strin
         target.crc_after = ReadLe32(b.data() + pos + 8);
         const uint32_t runs = ReadLe32(b.data() + pos + 12);
         pos += 16;
-        if (pos + uint64_t(runs) * 20 > b.size()) return fail("DCPX truncated");
+        if (pos + uint64_t(runs) * run_size > b.size()) return fail("DCPX truncated");
+        if (source_blocks && runs == 0) return fail("DCPX target changes nothing");
+        target.source_blocks = source_blocks;
         target.runs.reserve(runs);
         for (uint32_t r = 0; r < runs; ++r) {
             BlockRun run;
             run.offset = ReadLe32(b.data() + pos);
             if (uint64_t(run.offset) + 16 > target.size) return fail("DCPX run outside the file");
-            std::memcpy(run.data.data(), b.data() + pos + 4, 16);
-            pos += 20;
+            if (!target.runs.empty() && run.offset < target.runs.back().offset + 16) return fail("DCPX runs overlap");
+            if (source_blocks) std::memcpy(run.original.data(), b.data() + pos + 4, 16);
+            std::memcpy(run.data.data(), b.data() + pos + run_size - 16, 16);
+            if (source_blocks && run.original == run.data) return fail("DCPX run changes nothing");
+            pos += run_size;
             target.runs.push_back(run);
         }
         patch.targets.push_back(std::move(target));
@@ -595,6 +606,62 @@ const BlockPatchTarget* TargetOf(const BlockPatch& patch, std::string_view name,
     return nullptr;
 }
 
+struct BlockCheck {
+    size_t differs_original = 0;
+    size_t differs_patched = 0;
+    uint32_t first_offset = 0;
+    uint32_t expected_crc = 0;
+    uint32_t actual_crc = 0;
+};
+
+BlockCheck CheckBlocks(const BlockPatchTarget& target, std::span<const uint8_t> data) {
+    BlockCheck check;
+    for (const BlockRun& run : target.runs) {
+        const uint8_t* actual = data.data() + run.offset;
+        if (std::memcmp(actual, run.original.data(), 16) != 0 && check.differs_original++ == 0) {
+            check.first_offset = run.offset;
+            check.expected_crc = Crc32({run.original.data(), 16});
+            check.actual_crc = Crc32({actual, 16});
+        }
+        check.differs_patched += std::memcmp(actual, run.data.data(), 16) != 0;
+    }
+    return check;
+}
+
+std::vector<uint8_t> Applied(const BlockPatchTarget& target, std::span<const uint8_t> data) {
+    std::vector<uint8_t> out(data.begin(), data.end());
+    for (const BlockRun& run : target.runs) {
+        std::memcpy(out.data() + run.offset, run.data.data(), 16);
+    }
+    return out;
+}
+
+template <typename... Args>
+std::string Format(const char* format, Args... args) {
+    char text[320];
+    std::snprintf(text, sizeof(text), format, args...);
+    return text;
+}
+
+std::string UnknownAnalysis(const BlockPatch& patch, std::string_view name, size_t size, size_t candidates, size_t without_blocks,
+                            const BlockPatchTarget* closest, const BlockCheck& check) {
+    if (candidates == 0) {
+        std::string sizes;
+        for (const BlockPatchTarget& target : patch.targets) {
+            const std::string text = std::to_string(target.size);
+            if (IEquals(target.name, name) && sizes.find(text) == std::string::npos) sizes += (sizes.empty() ? "" : ", ") + text;
+        }
+        return "no candidate: no copy of size " + std::to_string(size) + " (known sizes " + sizes + ")";
+    }
+    if (!closest) {
+        return Format("no candidate with source blocks: %zu same-size cop%s without them", without_blocks, without_blocks == 1 ? "y" : "ies");
+    }
+    return Format("source blocks incompatible: %zu candidate(s); closest copy CRC32 %08x has %zu of %zu blocks different, first at "
+                  "offset 0x%x (expected block CRC32 %08x, found %08x)",
+                  candidates, closest->crc_before, check.differs_original, closest->runs.size(), check.first_offset,
+                  check.expected_crc, check.actual_crc);
+}
+
 // The install hard-links the game's files from the folder it was made from, and writing through such a link would
 // change that folder's archive too: the patch gets a file of its own first.
 bool Unshare(const std::filesystem::path& file, std::string* error) {
@@ -623,11 +690,88 @@ bool Unshare(const std::filesystem::path& file, std::string* error) {
 
 } // namespace
 
+EntryMatch MatchEntry(const BlockPatch& patch, std::string_view name, std::span<const uint8_t> data, uint32_t crc) {
+    EntryMatch match;
+    if (const BlockPatchTarget* target = TargetOf(patch, name, data.size(), crc, true)) {
+        return {EntryState::kPatched, target, true, false, {}};
+    }
+    if (const BlockPatchTarget* target = TargetOf(patch, name, data.size(), crc, false)) {
+        return {EntryState::kOriginal, target, true, false, {}};
+    }
+    std::vector<const BlockPatchTarget*> originals, patched;
+    const BlockPatchTarget* closest = nullptr;
+    BlockCheck closest_check;
+    size_t candidates = 0, without_blocks = 0;
+    for (const BlockPatchTarget& target : patch.targets) {
+        if (!IEquals(target.name, name) || target.size != data.size()) continue;
+        ++candidates;
+        if (!target.source_blocks || target.runs.empty()) {
+            ++without_blocks;
+            continue;
+        }
+        const BlockCheck check = CheckBlocks(target, data);
+        if (check.differs_original == 0) {
+            originals.push_back(&target);
+        } else if (check.differs_patched == 0) {
+            patched.push_back(&target);
+        } else if (!closest || check.differs_original < closest_check.differs_original) {
+            closest = &target;
+            closest_check = check;
+        }
+    }
+    if (!originals.empty() && !patched.empty()) {
+        match.ambiguous = true;
+        match.analysis = Format("ambiguous: %zu candidate(s) match as original and %zu as patched", originals.size(), patched.size());
+        return match;
+    }
+    if (!originals.empty()) {
+        const std::vector<uint8_t> result = Applied(*originals.front(), data);
+        for (size_t i = 1; i < originals.size(); ++i) {
+            if (Applied(*originals[i], data) != result) {
+                match.ambiguous = true;
+                match.analysis = Format("ambiguous: %zu source-block compatible candidates would write different bytes", originals.size());
+                return match;
+            }
+        }
+        match.state = EntryState::kOriginal;
+        match.target = originals.front();
+        match.analysis = Format("compatible asset variant accepted by verified source blocks of the copy CRC32 %08x (%zu blocks, %zu "
+                                "equivalent candidate(s))",
+                                match.target->crc_before, match.target->runs.size(), originals.size());
+        return match;
+    }
+    if (!patched.empty()) {
+        match.state = EntryState::kPatched;
+        match.target = patched.front();
+        return match;
+    }
+    match.analysis = UnknownAnalysis(patch, name, data.size(), candidates, without_blocks, closest, closest_check);
+    return match;
+}
+
 std::vector<std::string> PatchedEntries(const std::filesystem::path& cpk) {
     std::vector<uint8_t> bytes;
     UndoRecord undo;
     if (!ReadWhole(UndoPath(cpk), bytes) || !undo.Parse(bytes)) return {};
     return undo.entries;
+}
+
+std::vector<UnmatchedEntry> FindUnmatchedEntries(const std::filesystem::path& cpk, const BlockPatch& patch) {
+    std::vector<UnmatchedEntry> unmatched;
+    CpkArchive archive;
+    if (!archive.Open(cpk)) return unmatched;
+    for (const std::string& name : TargetNames(patch)) {
+        const CpkEntry* entry = archive.Find(name);
+        if (!entry) continue;
+        const std::vector<uint8_t> data = archive.Read(*entry);
+        if (data.empty()) continue;
+        const uint32_t crc = Crc32(data);
+        const EntryMatch match = MatchEntry(patch, entry->path, data, crc);
+        if (match.state == EntryState::kUnknown) {
+            unmatched.push_back({Utf8(cpk.filename()), entry->path, data.size(), crc, match.analysis});
+        }
+    }
+    return unmatched;
 }
 
 bool HoldsBlockPatch(const std::filesystem::path& cpk, const BlockPatch& patch) {
@@ -638,7 +782,7 @@ bool HoldsBlockPatch(const std::filesystem::path& cpk, const BlockPatch& patch) 
         const CpkEntry* entry = archive.Find(name);
         if (!entry) continue;
         const std::vector<uint8_t> data = archive.Read(*entry);
-        if (!TargetOf(patch, entry->path, data.size(), Crc32(data), true)) return false;
+        if (MatchEntry(patch, entry->path, data, Crc32(data)).state != EntryState::kPatched) return false;
         present.push_back(entry->path);
     }
     std::vector<uint8_t> bytes;
@@ -672,7 +816,7 @@ PatchResult PatchWriter::Apply(const std::filesystem::path& cpk, const BlockPatc
     std::string error;
     if (!archive.Open(cpk, &error)) return fail(name + ": " + error);
     std::vector<std::pair<const CpkEntry*, std::vector<uint8_t>>> patched;
-    std::string skipped;
+    std::string skipped, accepted;
     for (const std::string& target_name : TargetNames(patch)) {
         const CpkEntry* entry = archive.Find(target_name);
         if (!entry) continue;
@@ -684,19 +828,22 @@ PatchResult PatchWriter::Apply(const std::filesystem::path& cpk, const BlockPatc
         std::vector<uint8_t> data = archive.Read(*entry, &error);
         if (data.empty()) return fail(name + ": " + error);
         const uint32_t crc = Crc32(data);
-        if (TargetOf(patch, entry->path, data.size(), crc, true)) {
+        const EntryMatch match = MatchEntry(patch, entry->path, data, crc);
+        if (match.state == EntryState::kPatched) {
             continue; // already carries the patch (then the undo record was lost; nothing to redo)
         }
-        const BlockPatchTarget* target = TargetOf(patch, entry->path, data.size(), crc, false);
-        if (!target) {
+        if (match.state != EntryState::kOriginal) {
             skipped += (skipped.empty() ? "" : ", ") + entry->path + " is not the file the patch was made for";
             ++result.skipped;
+            result.unmatched.push_back({name, entry->path, data.size(), crc, match.analysis});
             continue;
         }
+        const BlockPatchTarget* target = match.target;
         for (const BlockRun& run : target->runs) {
             std::memcpy(data.data() + run.offset, run.data.data(), 16);
         }
-        if (Crc32(data) != target->crc_after) return fail(name + ": " + entry->path + ": patched data does not verify");
+        if (match.exact && Crc32(data) != target->crc_after) return fail(name + ": " + entry->path + ": patched data does not verify");
+        if (!match.exact) accepted += (accepted.empty() ? "" : "; ") + entry->path + " (CRC32 " + Format("%08x", crc) + "): " + match.analysis;
         patched.emplace_back(entry, std::move(data));
     }
     if (patched.empty()) {
@@ -792,6 +939,9 @@ PatchResult PatchWriter::Apply(const std::filesystem::path& cpk, const BlockPatc
     result.detail = name + ": " + std::to_string(patched.size()) + " file(s) patched";
     if (!skipped.empty()) {
         result.detail += "; " + skipped;
+    }
+    if (!accepted.empty()) {
+        result.detail += "; " + accepted;
     }
     return result;
 }

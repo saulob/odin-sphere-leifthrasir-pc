@@ -176,11 +176,27 @@ def crilayla_decompress(data):
 
 # ------------------------------------------------------------------ CPK
 
+def read_undo(path):
+    """The original header and TOC packets, as stored in a launcher undo record (<archive>.undo)."""
+    b = Path(path).read_bytes()
+    if b[:8] != b'DCPUNDO1':
+        raise ValueError(f'{path}: not an undo record')
+    toc_len = struct.unpack_from('<I', b, 24)[0]
+    toc = b[28:28 + toc_len]
+    hdr_len = struct.unpack_from('<I', b, 28 + toc_len + 8)[0]
+    start = 28 + toc_len + 12
+    return b[start:start + hdr_len], toc
+
+
 class Cpk:
-    def __init__(self, path):
+    def __init__(self, path, original=False):
+        """original: read the archive as it was before the launcher patched it, when an undo record is next to it."""
         self.path = Path(path)
         self.f = open(path, 'rb')
-        self.header = read_packet(self.f, 0, b'CPK ')
+        undo = Path(str(path) + '.undo')
+        saved = read_undo(undo) if original and undo.is_file() else None
+        self.patched = saved is not None
+        self.header = UtfTable(saved[0]) if saved else read_packet(self.f, 0, b'CPK ')
         h = self.header.rows[0]
         self.toc_offset = h.get('TocOffset') or 0
         self.content_offset = h.get('ContentOffset') or 0
@@ -190,7 +206,7 @@ class Cpk:
         self.toc = None
         self.toc_base = 0
         if self.toc_offset:
-            toc = self.toc = read_packet(self.f, self.toc_offset, b'TOC ')
+            toc = self.toc = UtfTable(saved[1]) if saved else read_packet(self.f, self.toc_offset, b'TOC ')
             # FileOffset is relative to the lower of ContentOffset and TocOffset (TocOffset counted as at
             # most 0x800), as CriPakTools resolves it.
             toc_base = min(self.toc_offset, 0x800)

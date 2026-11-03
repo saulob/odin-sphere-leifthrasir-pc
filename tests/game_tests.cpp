@@ -17,6 +17,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <tuple>
 #include <vector>
 #ifdef _WIN32
 #include <io.h>
@@ -2346,9 +2347,11 @@ std::string BuildCpk(const std::vector<Entry>& entries, bool encrypt_toc, bool s
 std::span<const uint8_t> Span(const std::string& s) { return {reinterpret_cast<const uint8_t*>(s.data()), s.size()}; }
 std::string Bytes(const std::vector<uint8_t>& v) { return std::string(v.begin(), v.end()); }
 
-// A DCPX patch turning each `before` into its `after` (same size), as scripts/prompts/make_dcpx.py writes it.
-std::string MakePatch(const std::vector<std::pair<std::string, std::pair<std::string, std::string>>>& targets) {
-    std::string out("DCPX1\0\0\0", 8);
+// A DCPX patch turning each `before` into its `after` (same size), as scripts/prompts/make_dcpx.py writes it; with
+// `source_blocks` false, a DCPX1 patch whose runs hold only the replacement.
+std::string MakePatch(const std::vector<std::pair<std::string, std::pair<std::string, std::string>>>& targets,
+                      bool source_blocks = true) {
+    std::string out(source_blocks ? "DCPX2\0\0\0" : "DCPX1\0\0\0", 8);
     Le32(out, uint32_t(targets.size()));
     for (const auto& [name, versions] : targets) {
         const auto& [before, after] = versions;
@@ -2365,6 +2368,7 @@ std::string MakePatch(const std::vector<std::pair<std::string, std::pair<std::st
         Le32(out, uint32_t(runs.size()));
         for (const size_t off : runs) {
             Le32(out, uint32_t(off));
+            if (source_blocks) out += before.substr(off, 16);
             out += after.substr(off, 16);
         }
     }
@@ -2413,6 +2417,78 @@ void TestControllerPromptsSetting() {
     CHECK(ParsePromptStyle(invalid.Get(kControllerPromptsKey, kPromptsPlayStation)) == PromptStyle::kPlayStation);
 }
 
+// Every button art file of every supported build prepared under game/prepared must resolve to exactly one target of the
+// shipped patch, as the original copy or (in an archive already patched) as the patched one. Each is then matched again
+// with its own target removed: when other targets take it by source blocks, what they would write must be exactly
+// what its own target writes. Builds that are not prepared are skipped.
+void CheckShippedPatchCoversLocalBuilds(const BlockPatch& patch) {
+    using namespace cpk_test;
+    static const char* const kArt[] = {"Interface.ftx", "GUI/HD_Interface.ftx", "OnMemory.ftx", "OnMemory/HD_OnMemory.ftx"};
+    size_t builds = 0, assets = 0, by_blocks = 0, refused = 0;
+    std::string absent;
+    for (const GameBuild& build : SupportedBuilds()) {
+        const fs::path app0 = fs::path(OSL_SOURCE_DIR) / "game" / "prepared" / build.folder;
+        std::error_code ec;
+        if (!fs::is_directory(app0, ec)) {
+            absent += std::string(absent.empty() ? "" : ", ") + build.label;
+            continue;
+        }
+        bool covered = true;
+        for (const fs::path& archive : PromptArchives(app0, build, patch)) {
+            CpkArchive pack;
+            if (!pack.Open(archive)) {
+                continue;
+            }
+            for (const char* name : kArt) {
+                const CpkEntry* entry = pack.Find(name);
+                if (!entry) {
+                    continue;
+                }
+                const std::vector<uint8_t> data = pack.Read(*entry);
+                const uint32_t crc = Crc32(data);
+                size_t matches = 0;
+                for (const BlockPatchTarget& target : patch.targets) {
+                    matches += target.name == entry->path && target.size == data.size() &&
+                               (target.crc_before == crc || target.crc_after == crc);
+                }
+                const EntryMatch match = MatchEntry(patch, entry->path, data, crc);
+                ++assets;
+                if (matches != 1 || match.state == EntryState::kUnknown || !match.exact) {
+                    covered = false;
+                    std::printf("prompts coverage: %zu target(s) for build %s, archive %s, entry %s, size %zu, CRC32 %08x\n",
+                                matches, build.label, archive.filename().string().c_str(), entry->path.c_str(), data.size(), crc);
+                    continue;
+                }
+                std::vector<uint8_t> original = data;
+                if (match.state == EntryState::kPatched) {
+                    for (const BlockRun& run : match.target->runs) std::memcpy(original.data() + run.offset, run.original.data(), 16);
+                    CHECK(Crc32(original) == match.target->crc_before);
+                }
+                BlockPatch others;
+                for (const BlockPatchTarget& target : patch.targets) {
+                    if (&target != match.target) others.targets.push_back(target);
+                }
+                const EntryMatch fallback = MatchEntry(others, entry->path, original, match.target->crc_before);
+                if (fallback.state != EntryState::kOriginal) {
+                    ++refused;
+                    CHECK(!fallback.analysis.empty());
+                    continue;
+                }
+                std::vector<uint8_t> written = original;
+                for (const BlockRun& run : fallback.target->runs) std::memcpy(written.data() + run.offset, run.data.data(), 16);
+                CHECK(!fallback.exact && Crc32(written) == match.target->crc_after);
+                ++by_blocks;
+            }
+        }
+        CHECK(covered);
+        ++builds;
+    }
+    std::printf("Controller prompts coverage with local game data: %zu build(s), %zu asset(s) resolved by their own target; "
+                "%zu also by other targets' source blocks (same bytes written), %zu refused without their own target; "
+                "not prepared: %s\n",
+                builds, assets, by_blocks, refused, absent.empty() ? "none" : absent.c_str());
+}
+
 // The shipped patch names every copy of the button art the supported builds hold, by its CRC32: the Japanese and USA
 // copies, the European languages' (DE, ES, FR, IT, UK) and the 1.01 update's, in the Classic and Refined archives.
 void TestShippedPromptsPatch() {
@@ -2450,6 +2526,22 @@ void TestShippedPromptsPatch() {
     }
     CHECK(!ParseBlockPatch(Span(shipped.substr(0, 100)), &error) && error.find("truncated") != std::string::npos);
     CHECK(!ParseBlockPatch(Span(std::string("hello")), &error));
+
+    std::set<std::tuple<std::string, uint32_t, uint32_t>> originals;
+    for (const BlockPatchTarget& target : patch->targets) {
+        std::string lower = target.name;
+        std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return char(std::tolower(c)); });
+        CHECK(originals.emplace(lower, target.size, target.crc_before).second);
+        CHECK(target.crc_before != target.crc_after && !target.runs.empty() && target.source_blocks);
+        bool inside = true;
+        for (size_t i = 0; i < target.runs.size(); ++i) {
+            inside = inside && target.runs[i].offset % 16 == 0 && uint64_t(target.runs[i].offset) + 16 <= target.size &&
+                     (i == 0 || target.runs[i].offset >= target.runs[i - 1].offset + 16) &&
+                     target.runs[i].original != target.runs[i].data;
+        }
+        CHECK(inside);
+    }
+    CheckShippedPatchCoversLocalBuilds(*patch);
 }
 
 void TestControllerPrompts() {
@@ -3290,6 +3382,12 @@ bool PromptsRollBackOnUnknownArchives(const GameBuild& build, const std::filesys
     const PromptsResult refused = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch));
     ok = ok && !refused.ok && ReadFile(app0 / first) == matching && ReadFile(app0 / second) == foreign &&
          !AnyPromptPatch(app0, build) && InstalledPromptStyle(app0, build, Span(patch)) == PromptStyle::kPlayStation;
+    char crc_text[16];
+    std::snprintf(crc_text, sizeof(crc_text), "%08x", Crc32(Span(unknown)));
+    ok = ok && refused.unsupported.size() == 2 && Contains(refused.unsupported[1], "source blocks incompatible") &&
+         Contains(refused.unsupported[0], std::string("build ") + build.label + ",") &&
+         Contains(refused.unsupported[0], "archive " + second + ",") && Contains(refused.unsupported[0], "entry Interface.ftx,") &&
+         Contains(refused.unsupported[0], "size 20480,") && Contains(refused.unsupported[0], std::string("CRC32 ") + crc_text);
     WriteAll(app0 / second, matching);
     const PromptsResult applied = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch));
     ok = ok && applied.ok && InstalledPromptStyle(app0, build, Span(patch)) == PromptStyle::kXbox;
@@ -3322,6 +3420,41 @@ bool PromptsFollowPatchArchive(const GameBuild& build, const std::filesystem::pa
     const PromptsResult reverted = SetPromptStyle(app0, build, PromptStyle::kPlayStation, {});
     return ok && reverted.ok && ReadFile(app0 / first) == matching && ReadFile(app0 / last) == matching &&
            !AnyPromptPatch(app0, build);
+}
+
+std::string Overlay(std::string data, const std::string& from, std::initializer_list<size_t> offsets) {
+    for (const size_t off : offsets) data.replace(off, 16, from, off, 16);
+    return data;
+}
+
+// Every build takes a regional copy of its button art through the same source-block check, and restores it exactly.
+bool PromptsAcceptCompatibleVariants(const GameBuild& build, const std::filesystem::path& base) {
+    using namespace cpk_test;
+    namespace fs = std::filesystem;
+    const fs::path app0 = base / build.folder;
+    fs::remove_all(app0);
+    fs::create_directories(app0);
+    const std::string known = Pattern(20480, 3), painted = Painted(known, {0x340, 0x1000}, 'X');
+    const std::string variant = Painted(known, {0x2000}, 'V');
+    const std::string patch = MakePatch({{"Interface.ftx", {known, painted}}, {"GUI/HD_Interface.ftx", {known, painted}}});
+    const std::string classic = BuildCpk({{"Interface.ftx", variant, true}}, true);
+    const std::string refined = BuildCpk({{"GUI/HD_Interface.ftx", variant, false}}, false);
+    const std::string first = build.data_files.front(), last = build.data_files.back();
+    WriteAll(app0 / first, classic);
+    WriteAll(app0 / last, refined);
+    const PromptsResult applied = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch));
+    bool ok = applied.ok && applied.detail.find("accepted by verified source blocks") != std::string::npos &&
+              InstalledPromptStyle(app0, build, Span(patch)) == PromptStyle::kXbox;
+    CpkArchive archive;
+    const std::string expected = Overlay(variant, painted, {0x340, 0x1000});
+    ok = ok && archive.Open(app0 / first) && Bytes(archive.Read(*archive.Find("Interface.ftx"))) == expected;
+    const PromptsResult reverted = SetPromptStyle(app0, build, PromptStyle::kPlayStation, {});
+    ok = ok && reverted.ok && ReadFile(app0 / first) == classic && ReadFile(app0 / last) == refined && !AnyPromptPatch(app0, build);
+    WriteAll(app0 / last, BuildCpk({{"GUI/HD_Interface.ftx", Painted(variant, {0x340}, 'W'), false}}, false));
+    const std::string changed = ReadFile(app0 / last);
+    const PromptsResult refused = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch));
+    return ok && !refused.ok && ReadFile(app0 / first) == classic && ReadFile(app0 / last) == changed && !AnyPromptPatch(app0, build) &&
+           InstalledPromptStyle(app0, build, Span(patch)) == PromptStyle::kPlayStation;
 }
 
 // The fixture every scanned build is checked against: the production patterns at offsets no profile has.
@@ -3519,6 +3652,7 @@ void TestBuildContract() {
         // Controls
         PARITY("Controls", PromptsRollBackOnUnknownArchives(build, dir / "prompts"));
         PARITY("Controls", PromptsFollowPatchArchive(build, dir / "prompts-patch"));
+        PARITY("Controls", PromptsAcceptCompatibleVariants(build, dir / "prompts-compatible"));
 
         // Trophies and Save Data: read from the game's own files, never from the profile.
         PARITY("Trophies", no_build_literals);
@@ -3682,6 +3816,214 @@ void TestScannedMappingFixtures() {
     const std::vector<unsigned char> untouched = damaged_image;
     CHECK(!osl_apply_resolution(damaged_image.data(), damaged_image.size(), sites.data(), sites.size(), &target, error, sizeof(error)));
     CHECK(damaged_image == untouched);
+}
+
+bool AnyContains(const std::vector<std::string>& lines, const std::string& part) {
+    return std::any_of(lines.begin(), lines.end(), [&](const std::string& line) { return Contains(line, part); });
+}
+
+// A file whose CRC32 no target names is taken only when every block a target replaces is exactly that target's original
+// block, whichever build, archive or entry it is. What is written is the validated blocks alone, and the archive is
+// restored to the file as it was.
+void TestCompatiblePromptVariants() {
+    using namespace cpk_test;
+    const fs::path app0 = TempDir("prompts-compatible") / "app0";
+    fs::create_directories(app0);
+    const std::initializer_list<size_t> classic_runs = {0x340, 0x1000, 0x4ff0}, memory_runs = {0x380, 0x5000};
+    const std::string known = Pattern(20480, 3), known_mem = Pattern(24576, 13);
+    const std::string painted = Painted(known, classic_runs, 'X'), painted_mem = Painted(known_mem, memory_runs, 'Z');
+    const auto regional = [](std::string data) {
+        data[0x80] = char(data[0x80] + 1);
+        data[0x3000] = char(data[0x3000] + 1);
+        return data;
+    };
+    const auto flip = [](std::string data, size_t at) {
+        data[at] = char(data[at] + 1);
+        return data;
+    };
+    const char* const files[] = {"Odin2_OR_XX.CPK", "Odin2_RE_XX.CPK"};
+    GameBuild build{};
+    build.label = "test build";
+    build.data_files = files;
+    const auto classic = [](const std::string& iface, const std::string& mem) {
+        return BuildCpk({{"Interface.ftx", iface, true}, {"OnMemory.ftx", mem, false}}, true);
+    };
+    const auto refined = [](const std::string& iface, const std::string& mem) {
+        return BuildCpk({{"GUI/HD_Interface.ftx", iface, false}, {"OnMemory/HD_OnMemory.ftx", mem, true}}, false);
+    };
+    const auto install = [&](const std::string& classic_bytes, const std::string& refined_bytes) {
+        for (const char* name : files) fs::remove(UndoPath(app0 / name));
+        WriteAll(app0 / files[0], classic_bytes);
+        WriteAll(app0 / files[1], refined_bytes);
+    };
+    const auto untouched = [&](const std::string& classic_bytes, const std::string& refined_bytes, const std::string& patch) {
+        return ReadFile(app0 / files[0]) == classic_bytes && ReadFile(app0 / files[1]) == refined_bytes &&
+               !fs::exists(UndoPath(app0 / files[0])) && !fs::exists(UndoPath(app0 / files[1])) && !AnyPromptPatch(app0, build) &&
+               InstalledPromptStyle(app0, build, Span(patch)) == PromptStyle::kPlayStation;
+    };
+    const auto entry = [&](const char* file, const char* name) {
+        CpkArchive archive;
+        const CpkEntry* found = archive.Open(app0 / file) ? archive.Find(name) : nullptr;
+        return found ? Bytes(archive.Read(*found)) : std::string("<missing>");
+    };
+    const std::string patch = MakePatch({{"Interface.ftx", {known, painted}},
+                                         {"GUI/HD_Interface.ftx", {known, painted}},
+                                         {"OnMemory.ftx", {known_mem, painted_mem}},
+                                         {"OnMemory/HD_OnMemory.ftx", {known_mem, painted_mem}}});
+    const std::string accepted = "compatible asset variant accepted by verified source blocks";
+
+    // Known copies: the exact path, nothing reported as a variant.
+    install(classic(known, known_mem), refined(known, known_mem));
+    PromptsResult r = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch));
+    CHECK(r.ok && !Contains(r.detail, accepted) && entry(files[0], "Interface.ftx") == painted);
+    CHECK(entry(files[1], "OnMemory/HD_OnMemory.ftx") == painted_mem);
+    CHECK(SetPromptStyle(app0, build, PromptStyle::kPlayStation, {}).ok && untouched(classic(known, known_mem), refined(known, known_mem), patch));
+
+    // Unknown CRC32, same names and sizes, other bytes elsewhere: all four entries are taken by their source blocks.
+    const std::string v = regional(known), vm = regional(known_mem);
+    const std::string v_classic = classic(v, vm), v_refined = refined(v, vm);
+    const std::string want = Overlay(v, painted, classic_runs), want_mem = Overlay(vm, painted_mem, memory_runs);
+    CHECK(want != painted && want_mem != painted_mem);
+    install(v_classic, v_refined);
+    r = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch));
+    CHECK(r.ok && Contains(r.detail, accepted) && r.unsupported.empty());
+    CHECK(entry(files[0], "Interface.ftx") == want && entry(files[0], "OnMemory.ftx") == want_mem);
+    CHECK(entry(files[1], "GUI/HD_Interface.ftx") == want && entry(files[1], "OnMemory/HD_OnMemory.ftx") == want_mem);
+    CHECK(InstalledPromptStyle(app0, build, Span(patch)) == PromptStyle::kXbox);
+
+    // Already patched: detected, and a second Xbox changes nothing.
+    const std::string patched_classic = ReadFile(app0 / files[0]), patched_refined = ReadFile(app0 / files[1]);
+    r = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch));
+    CHECK(r.ok && Contains(r.detail, "already patched") && ReadFile(app0 / files[0]) == patched_classic &&
+          ReadFile(app0 / files[1]) == patched_refined);
+
+    // Back to PlayStation: the very bytes of the regional files, again and again.
+    for (int i = 0; i < 3; ++i) {
+        CHECK(SetPromptStyle(app0, build, PromptStyle::kPlayStation, {}).ok && untouched(v_classic, v_refined, patch));
+        CHECK(SetPromptStyle(app0, build, PromptStyle::kPlayStation, {}).ok && untouched(v_classic, v_refined, patch));
+        CHECK(SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch)).ok && entry(files[0], "Interface.ftx") == want);
+    }
+    CHECK(SetPromptStyle(app0, build, PromptStyle::kPlayStation, {}).ok && untouched(v_classic, v_refined, patch));
+
+    // One replaced block differs: refused, and the log names the run and the check.
+    install(classic(flip(v, 0x1000), vm), v_refined);
+    const std::string bad_classic = ReadFile(app0 / files[0]);
+    r = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch));
+    CHECK(!r.ok && untouched(bad_classic, v_refined, patch));
+    CHECK(AnyContains(r.unsupported, "archive Odin2_OR_XX.CPK, entry Interface.ftx") &&
+          AnyContains(r.unsupported, "source blocks incompatible: 1 candidate(s)") && AnyContains(r.unsupported, "first at offset 0x1000"));
+
+    // The first archive is taken, the second is not: the first is put back byte for byte.
+    install(v_classic, refined(flip(v, 0x340), vm));
+    const std::string bad_refined = ReadFile(app0 / files[1]);
+    r = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch));
+    CHECK(!r.ok && untouched(v_classic, bad_refined, patch));
+    CHECK(AnyContains(r.unsupported, "archive Odin2_RE_XX.CPK, entry GUI/HD_Interface.ftx"));
+
+    // The size differs: no candidate.
+    install(classic(v + std::string(16, 'q'), vm), v_refined);
+    const std::string wrong_size = ReadFile(app0 / files[0]);
+    r = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch));
+    CHECK(!r.ok && untouched(wrong_size, v_refined, patch) && AnyContains(r.unsupported, "no candidate: no copy of size 20496"));
+
+    // A DCPX1 patch has no source blocks: its exact copies work, nothing else is taken.
+    const std::string patch1 = MakePatch({{"Interface.ftx", {known, painted}}, {"OnMemory.ftx", {known_mem, painted_mem}}}, false);
+    CHECK(ParseBlockPatch(Span(patch1)) && !ParseBlockPatch(Span(patch1))->targets[0].source_blocks);
+    install(classic(known, known_mem), refined(v, vm));
+    CHECK(SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch1)).ok && entry(files[0], "Interface.ftx") == painted);
+    CHECK(SetPromptStyle(app0, build, PromptStyle::kPlayStation, {}).ok);
+    install(v_classic, v_refined);
+    r = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(patch1));
+    CHECK(!r.ok && untouched(v_classic, v_refined, patch1) && AnyContains(r.unsupported, "same-size copy without them"));
+
+    // Several targets that write the same bytes into the file are one match; ones that write different bytes are refused.
+    const fs::path single = TempDir("prompts-compatible-targets") / "app0";
+    fs::create_directories(single);
+    const char* const one[] = {"Odin2_OR_XX.CPK"};
+    GameBuild lone{};
+    lone.label = "test build";
+    lone.data_files = one;
+    const std::string other = regional(flip(known, 0x90));
+    const std::string same_ink = MakePatch({{"Interface.ftx", {known, painted}}, {"Interface.ftx", {flip(known, 0x90), Overlay(flip(known, 0x90), painted, classic_runs)}}});
+    const std::string other_ink =
+        MakePatch({{"Interface.ftx", {known, painted}},
+                   {"Interface.ftx", {flip(known, 0x90), Overlay(flip(known, 0x90), Painted(known, classic_runs, 'Y'), classic_runs)}}});
+    const std::string lone_cpk = BuildCpk({{"Interface.ftx", other, true}}, true);
+    WriteAll(single / one[0], lone_cpk);
+    r = SetPromptStyle(single, lone, PromptStyle::kXbox, Span(same_ink));
+    CHECK(r.ok && Contains(r.detail, accepted) && Contains(r.detail, "2 equivalent candidate(s)"));
+    {
+        CpkArchive archive;
+        CHECK(archive.Open(single / one[0]) && Bytes(archive.Read(*archive.Find("Interface.ftx"))) == Overlay(other, painted, classic_runs));
+    }
+    CHECK(SetPromptStyle(single, lone, PromptStyle::kPlayStation, {}).ok && ReadFile(single / one[0]) == lone_cpk);
+    r = SetPromptStyle(single, lone, PromptStyle::kXbox, Span(other_ink));
+    CHECK(!r.ok && ReadFile(single / one[0]) == lone_cpk && !AnyPromptPatch(single, lone));
+    CHECK(AnyContains(r.unsupported, "ambiguous: 2 source-block compatible candidates would write different bytes"));
+}
+
+// Issue #4: a build whose button art is a copy the patch was not made for is refused as a whole, every archive is left
+// as it was, and the log names each unsupported file by build, archive, entry, size and CRC32.
+void TestUnsupportedPromptAssets() {
+    using namespace cpk_test;
+    const GameBuild* hk = BuildWithLabel("CUSA03873 1.00 HK");
+    CHECK(hk != nullptr);
+    if (!hk) {
+        return;
+    }
+    const fs::path app0 = TempDir("prompts-unsupported") / "app0";
+    fs::create_directories(app0);
+    const std::string known = Pattern(20480, 3), painted = Painted(known, {0x340, 0x2000}, 'X');
+    const std::string known_mem = Pattern(24576, 13), painted_mem = Painted(known_mem, {0x380}, 'Z');
+    const std::string odd = Pattern(20480, 17), odd_mem = Pattern(24576, 19);
+    const std::string patch = MakePatch({{"Interface.ftx", {known, painted}},
+                                         {"GUI/HD_Interface.ftx", {known, painted}},
+                                         {"OnMemory.ftx", {known_mem, painted_mem}},
+                                         {"OnMemory/HD_OnMemory.ftx", {known_mem, painted_mem}}});
+    const std::string boot = BuildCpk({{"other/x.bin", "BOOT" + std::string(600, '\0'), false}}, false);
+    const std::string classic_known = BuildCpk({{"Interface.ftx", known, true}, {"OnMemory.ftx", known_mem, false}}, true);
+    const std::string classic_odd = BuildCpk({{"Interface.ftx", odd, true}, {"OnMemory.ftx", odd_mem, false}}, true);
+    const std::string refined_odd =
+        BuildCpk({{"GUI/HD_Interface.ftx", odd, false}, {"OnMemory/HD_OnMemory.ftx", odd_mem, true}}, false);
+    const auto unsupported_line = [&](const char* archive, const char* entry, const std::string& data) {
+        char tail[64];
+        std::snprintf(tail, sizeof(tail), ", size %zu, CRC32 %08x", data.size(), Crc32(Span(data)));
+        return std::string("Controller prompts unsupported asset: build CUSA03873 1.00 HK, archive ") + archive + ", entry " +
+               entry + tail;
+    };
+
+    // The reporter's case: Classic holds copies the patch does not know, and so does Refined.
+    WriteAll(app0 / "Odin2_BT_CN.CPK", boot);
+    WriteAll(app0 / "Odin2_OR_CN.CPK", classic_odd);
+    WriteAll(app0 / "Odin2_RE_CN.CPK", refined_odd);
+    PromptsResult r = SetPromptStyle(app0, *hk, PromptStyle::kXbox, Span(patch));
+    CHECK(!r.ok && !r.cancelled);
+    CHECK(Contains(r.detail, "Odin2_OR_CN.CPK: Interface.ftx is not the file the patch was made for, OnMemory.ftx is not the file"));
+    CHECK(r.unsupported.size() == 8);
+    if (r.unsupported.size() == 8) {
+        const std::string expected[] = {unsupported_line("Odin2_OR_CN.CPK", "Interface.ftx", odd),
+                                        unsupported_line("Odin2_OR_CN.CPK", "OnMemory.ftx", odd_mem),
+                                        unsupported_line("Odin2_RE_CN.CPK", "GUI/HD_Interface.ftx", odd),
+                                        unsupported_line("Odin2_RE_CN.CPK", "OnMemory/HD_OnMemory.ftx", odd_mem)};
+        for (size_t i = 0; i < 4; ++i) {
+            CHECK(r.unsupported[2 * i] == expected[i]);
+            CHECK(Contains(r.unsupported[2 * i + 1], "source blocks incompatible: 1 candidate(s); closest copy CRC32 "));
+            CHECK(Contains(r.unsupported[2 * i + 1], i % 2 ? "first at offset 0x380" : "first at offset 0x340"));
+        }
+    }
+    CHECK(ReadFile(app0 / "Odin2_BT_CN.CPK") == boot && ReadFile(app0 / "Odin2_OR_CN.CPK") == classic_odd &&
+          ReadFile(app0 / "Odin2_RE_CN.CPK") == refined_odd && !AnyPromptPatch(app0, *hk));
+
+    // Classic is a known copy and gets patched before Refined is found unknown: it is put back byte for byte.
+    WriteAll(app0 / "Odin2_OR_CN.CPK", classic_known);
+    r = SetPromptStyle(app0, *hk, PromptStyle::kXbox, Span(patch));
+    CHECK(!r.ok && r.unsupported.size() == 4 && Contains(r.unsupported[0], "archive Odin2_RE_CN.CPK, entry GUI/HD_Interface.ftx"));
+    CHECK(ReadFile(app0 / "Odin2_OR_CN.CPK") == classic_known && ReadFile(app0 / "Odin2_RE_CN.CPK") == refined_odd);
+    CHECK(!AnyPromptPatch(app0, *hk) && InstalledPromptStyle(app0, *hk, Span(patch)) == PromptStyle::kPlayStation);
+
+    // Failures that are not an unknown copy name no file.
+    r = SetPromptStyle(app0, *hk, PromptStyle::kXbox, Span(std::string("DCPX1")));
+    CHECK(!r.ok && r.unsupported.empty());
 }
 
 void TestHongKongBuild() {
@@ -4402,6 +4744,8 @@ int main() {
     TestControllerPromptsSetting();
     TestShippedPromptsPatch();
     TestControllerPrompts();
+    TestCompatiblePromptVariants();
+    TestUnsupportedPromptAssets();
     TestSharedDirectoryArchive();
     TestSessionLogFiles();
     TestCrashReport();
