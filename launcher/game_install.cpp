@@ -473,10 +473,21 @@ const GameBuild* ActiveValidBuild(const GameRoots& roots, std::span<const GameBu
 }
 
 // Makes a complete build the newest prepared one, which is how ActiveBuildPaths picks the active build. Only the small
-// marker is written.
-bool ActivatePrepared(const fs::path& app0) {
+// marker is written, stamped after every other build's so a coarse clock cannot tie them.
+bool ActivatePrepared(const GameRoots& roots, std::span<const GameBuild> builds, const GameBuild& build) {
     std::error_code ec;
-    fs::last_write_time(app0 / kPreparedMarker, fs::file_time_type::clock::now(), ec);
+    fs::file_time_type stamp = fs::file_time_type::clock::now();
+    for (const GameBuild& other : builds) {
+        if (&other == &build) {
+            continue;
+        }
+        const fs::file_time_type time = fs::last_write_time(BuildPaths(roots, other).app0 / kPreparedMarker, ec);
+        if (!ec && time >= stamp) {
+            stamp = time + std::chrono::microseconds(1);
+        }
+        ec.clear();
+    }
+    fs::last_write_time(BuildPaths(roots, build).app0 / kPreparedMarker, stamp, ec);
     return !ec;
 }
 
@@ -496,7 +507,7 @@ std::optional<InstallResult> ReuseInstalledBuild(const GameRoots& roots, std::sp
     if (prepared.state != GameFileState::kValid || prepared.build != &build) {
         return std::nullopt;
     }
-    if (!ActivatePrepared(target.app0)) {
+    if (!ActivatePrepared(roots, builds, build)) {
         return Failure(InstallStatus::kWriteFailed, "cannot activate " + Utf8(target.app0));
     }
     InstallResult result;

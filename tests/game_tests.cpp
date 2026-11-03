@@ -2823,6 +2823,20 @@ bool Unresolved(const ScanResult& scan, const std::string& what) {
     return std::find(scan.unresolved.begin(), scan.unresolved.end(), what) != scan.unresolved.end();
 }
 
+std::string ShapeInstructionLine(size_t shape, size_t instruction) {
+    const LzcntShape& planted = lzcnt_shapes[shape];
+    const size_t at = instruction ? planted.second : 0;
+    LzcntOperands operands;
+    CHECK(lzcnt_compat_decode(planted.bytes + at, planted.length - at, &operands));
+    std::string raw;
+    for (size_t i = 0; i < operands.length; ++i) {
+        char byte[4];
+        std::snprintf(byte, sizeof(byte), "%02x", planted.bytes[at + i]);
+        raw += (i ? " " : "") + std::string(byte);
+    }
+    return HexText(kPlantedLzcnt + shape * 0x20 + at) + ": " + raw;
+}
+
 void TestBuildDiagnosticsScanner() {
     const MappedExecutable image = SyntheticOdinImage();
     const ScanResult scan = ScanExecutable(image, image.image.size());
@@ -2880,6 +2894,83 @@ void TestBuildDiagnosticsScanner() {
     MappedExecutable wrong_scale = image;
     PlantFloat(wrong_scale, kPlantedData, 2.0f);
     CHECK(!ScanExecutable(wrong_scale, wrong_scale.image.size()).complete());
+
+    constexpr size_t kFirstCluster = 15;
+    MappedExecutable eboot_only = image;
+    for (size_t i = kFirstCluster; i < LZCNT_RANGE_COUNT; ++i) {
+        std::fill_n(eboot_only.image.begin() + kPlantedLzcnt + i * 0x20, lzcnt_shapes[i].length, uint8_t{0x90});
+    }
+    const unsigned char stray[] = {0xf3, 0x4c, 0x0f, 0xbd, 0xc1};
+    std::memcpy(&eboot_only.image[0x20100], stray, sizeof(stray));
+    const ScanResult partial = ScanExecutable(eboot_only, eboot_only.image.size());
+    CHECK(!partial.complete() && Unresolved(partial, "LZCNT ranges"));
+    CHECK(Contains(partial.text, "instructions found: 16 (the shapes hold 50)"));
+    CHECK(Contains(partial.text, "ranges: shape 15 has no candidate in order"));
+    CHECK(Contains(partial.text, "ordered placement: 15 of 49 shapes placed, stopped at shape 15 expecting f3 48 0f bd df"));
+    CHECK(Contains(partial.text, "bundled modules: not in the scanned image"));
+    CHECK(Contains(partial.text, "detected instructions outside the placed shapes: 1 of 16"));
+    for (size_t i = 0; i < kFirstCluster; ++i) {
+        CHECK(Contains(partial.text, ShapeInstructionLine(i, 0) + " | "));
+        CHECK(Contains(partial.text, "placed in shape " + std::to_string(i)));
+    }
+    CHECK(Contains(partial.text, HexText(kPlantedLzcnt) + ": 66 f3 0f bd e8 | 16-bit"));
+    CHECK(Contains(partial.text, HexText(kPlantedLzcnt + 3 * 0x20) + ": f3 48 0f bd ca | 64-bit"));
+    CHECK(Contains(partial.text, "0x20100: f3 4c 0f bd c1 | 64-bit, destination r8, register source | matches no shape"));
+    CHECK(Contains(partial.text, "context: ") && Contains(partial.text, "[f3 4c 0f bd c1]"));
+    CHECK(Contains(partial.text, "64-bit, destination r1, register source") &&
+          Contains(partial.text, "memory source"));
+    CHECK(!Contains(partial.text, "placed in shape 15"));
+    CHECK(partial.text.size() < 24 * 1024);
+
+    std::vector<size_t> two_instruction_shapes;
+    for (size_t i = 0; i < LZCNT_RANGE_COUNT; ++i) {
+        if (lzcnt_shapes[i].second != 0) {
+            two_instruction_shapes.push_back(i);
+        }
+    }
+    CHECK(two_instruction_shapes.size() == 1);
+    const size_t kTwoInstructionShape = two_instruction_shapes.empty() ? 0 : two_instruction_shapes[0];
+    MappedExecutable gap = image;
+    std::fill_n(gap.image.begin() + kPlantedLzcnt + kFirstCluster * 0x20, lzcnt_shapes[kFirstCluster].length,
+                uint8_t{0x90});
+    const ScanResult gapped = ScanExecutable(gap, gap.image.size());
+    CHECK(Contains(gapped.text, "instructions found: 49 (the shapes hold 50)"));
+    CHECK(Contains(gapped.text, "15 of 49 shapes placed, stopped at shape 15"));
+    CHECK(Contains(gapped.text, "detected instructions outside the placed shapes: 34 of 49"));
+    size_t represented = 0;
+    for (size_t i = 0; i < LZCNT_RANGE_COUNT; ++i) {
+        for (size_t k = 0; k < (lzcnt_shapes[i].second ? 2u : 1u); ++k) {
+            if (i == kFirstCluster) {
+                continue;
+            }
+            const bool listed = Contains(gapped.text, ShapeInstructionLine(i, k) + " | ");
+            CHECK(listed);
+            represented += listed ? 1 : 0;
+        }
+    }
+    CHECK(represented == 49);
+    const LzcntShape& pair = lzcnt_shapes[kTwoInstructionShape];
+    LzcntOperands first_operands, second_operands;
+    CHECK(lzcnt_compat_decode(pair.bytes, pair.length, &first_operands) && first_operands.length == pair.second);
+    CHECK(lzcnt_compat_decode(pair.bytes + pair.second, pair.length - pair.second, &second_operands) &&
+          pair.second + second_operands.length == pair.length);
+    const std::string second_form = std::to_string(second_operands.bits) + "-bit, destination r" +
+                                    std::to_string(second_operands.dst) + ", " +
+                                    (second_operands.memory ? "memory" : "register") + " source";
+    CHECK(Contains(gapped.text, ShapeInstructionLine(kTwoInstructionShape, 1) + " | " + second_form + " | "));
+    CHECK(Contains(gapped.text, HexText(kPlantedLzcnt + kTwoInstructionShape * 0x20 + pair.second) + ": "));
+    CHECK(ShapeInstructionLine(kTwoInstructionShape, 0) != ShapeInstructionLine(kTwoInstructionShape, 1));
+    CHECK(!Contains(gapped.text, "more not listed"));
+
+    const ScanResult with_modules = ScanExecutable(eboot_only, eboot_only.image.size() - 0x1000);
+    CHECK(Contains(with_modules.text, "bundled modules: linked after the eboot (0x1000 of "));
+
+    MappedExecutable crowded = image;
+    for (size_t i = 0; i < 80; ++i) {
+        std::memcpy(&crowded.image[0x21000 + i * 0x20], stray, sizeof(stray));
+    }
+    const ScanResult listed = ScanExecutable(crowded, crowded.image.size());
+    CHECK(Contains(listed.text, "(+16 more not listed)"));
 
     const MappedExecutable empty;
     const ScanResult nothing = ScanExecutable(empty, 0);
@@ -3250,6 +3341,21 @@ void TestBuildContract() {
                                 Contains(loader, "runtime_savedata_configure(id)");
     CHECK(save_from_sfo);
     CHECK(lzcnt_compat_needed(IsaHostFeatures{0, 0, bit_LZCNT}) == 0 && lzcnt_compat_needed(IsaHostFeatures{0, 0, 0}) == 1);
+    for (size_t i = 0; i < LZCNT_RANGE_COUNT; ++i) {
+        LzcntOperands operands;
+        CHECK(lzcnt_compat_decode(lzcnt_shapes[i].bytes, lzcnt_shapes[i].length, &operands));
+    }
+    LzcntOperands decoded;
+    CHECK(lzcnt_compat_decode(lzcnt_shapes[3].bytes, lzcnt_shapes[3].length, &decoded) && decoded.bits == 64 &&
+          decoded.dst == 1 && decoded.length == 5 && !decoded.memory);
+    CHECK(lzcnt_compat_decode(lzcnt_shapes[2].bytes, lzcnt_shapes[2].length, &decoded) && decoded.bits == 64 &&
+          decoded.dst == 6 && decoded.length == 10 && decoded.memory);
+    CHECK(lzcnt_compat_decode(lzcnt_shapes[0].bytes, lzcnt_shapes[0].length, &decoded) && decoded.bits == 16 &&
+          decoded.dst == 5 && decoded.length == 5 && !decoded.memory);
+    const unsigned char not_lzcnt[] = {0x48, 0x0f, 0xbd, 0xca}, rip_relative[] = {0xf3, 0x0f, 0xbd, 0x05, 0, 0, 0, 0};
+    CHECK(!lzcnt_compat_decode(not_lzcnt, sizeof(not_lzcnt), &decoded) &&
+          !lzcnt_compat_decode(rip_relative, sizeof(rip_relative), &decoded) &&
+          !lzcnt_compat_decode(lzcnt_shapes[3].bytes, 4, &decoded));
 
     std::set<std::string> shas, folders, labels, contents;
     std::map<std::string, std::string> content_of_title;
@@ -3913,6 +4019,12 @@ void TestUsa101Layering() {
     const InstallResult forward = InstallFromFolder(update_source, roots, {}, builds);
     CHECK(forward.status == InstallStatus::kActivated && forward.build == &update);
     CHECK(LastPreparedBuild(roots, builds) == &update);
+    for (int i = 0; i < 20; ++i) {
+        CHECK(InstallFromFolder(base_source, roots, {}, builds).status == InstallStatus::kActivated);
+        CHECK(LastPreparedBuild(roots, builds) == &base);
+        CHECK(InstallFromFolder(update_source, roots, {}, builds).status == InstallStatus::kActivated);
+        CHECK(LastPreparedBuild(roots, builds) == &update);
+    }
     CHECK(TreeContents(staged) == update_before && TreeContents(base_dir) == base_prepared);
 }
 
@@ -4042,6 +4154,9 @@ void TestUsa101Scanned() {
                               "Legacy CPU (LZCNT)\n"));
     CHECK(Contains(diagnosed, "Feature mapping:\n") && Contains(diagnosed, "Resolution: incomplete (0/17)"));
     CHECK(Contains(diagnosed, "Snapshot scale: incomplete") && Contains(diagnosed, "Legacy CPU LZCNT: incomplete"));
+    CHECK(Contains(diagnosed, "Legacy CPU LZCNT mapping incomplete:\n  installation is not affected on CPUs with native LZCNT\n"));
+    CHECK(Contains(diagnosed, "attach the complete log when reporting this mapping issue; do not upload game files"));
+    CHECK(!Contains(diagnosed, "eboot.bin to") && !Contains(diagnosed, "send the PKG"));
     std::vector<std::string> unmapped;
     CHECK(!DiagnoseBuildMapping(game, update, {}, &unmapped).empty() && unmapped.size() == 5);
     CHECK(DiagnoseBuildMapping(game, base).empty());

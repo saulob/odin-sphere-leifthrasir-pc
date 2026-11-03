@@ -549,6 +549,72 @@ std::vector<uint64_t> LzcntStarts(const Bytes& image, const std::vector<Range>& 
     return starts;
 }
 
+constexpr size_t kMaxLzcntListed = 64;
+constexpr uint64_t kLzcntContext = 8;
+
+std::string HexBytes(const Bytes& image, uint64_t from, uint64_t to) {
+    std::string text;
+    for (uint64_t at = from; at < to && at < image.size(); ++at) {
+        text += (at == from ? "" : " ") + Fmt("%02x", image[at]);
+    }
+    return text;
+}
+
+std::string HexBytes(const uint8_t* bytes, size_t count) {
+    std::string text;
+    for (size_t i = 0; i < count; ++i) {
+        text += (i ? " " : "") + Fmt("%02x", bytes[i]);
+    }
+    return text;
+}
+
+// The instructions that no placed shape covers, or every one, one line each with the bytes needed to rebuild a shape.
+void ListLzcnt(Scan& s, const std::vector<uint64_t>& starts, const std::vector<std::vector<uint64_t>>& candidates,
+               const std::array<uint64_t, LZCNT_RANGE_COUNT>& placed_at, size_t placed, bool only_unplaced) {
+    const Bytes& image = s.image();
+    size_t listed = 0, skipped = 0;
+    for (uint64_t start : starts) {
+        std::string shape;
+        for (size_t i = 0; i < placed && shape.empty(); ++i) {
+            if (start >= placed_at[i] && start < placed_at[i] + lzcnt_shapes[i].length) {
+                shape = Fmt("placed in shape %zu", i);
+            }
+        }
+        if (shape.empty()) {
+            for (size_t i = 0; i < LZCNT_RANGE_COUNT; ++i) {
+                if (std::find(candidates[i].begin(), candidates[i].end(), start) != candidates[i].end()) {
+                    shape += (shape.empty() ? "matches shape " : ",") + Fmt("%zu", i);
+                }
+            }
+            shape = shape.empty() ? "matches no shape" : shape + " out of order";
+        } else if (only_unplaced) {
+            continue;
+        }
+        if (listed == kMaxLzcntListed) {
+            ++skipped;
+            continue;
+        }
+        ++listed;
+        const size_t available = static_cast<size_t>(std::min<uint64_t>(image.size() - start, 16));
+        LzcntOperands operands;
+        const bool supported = lzcnt_compat_decode(image.data() + start, available, &operands);
+        const uint64_t end = start + (supported ? operands.length : std::min<size_t>(available, 8));
+        s.Line("    " + Hex(start) + ": " + HexBytes(image, start, end) + " | " +
+               (supported ? Fmt("%u-bit, destination r%u, %s source", operands.bits, operands.dst,
+                                operands.memory ? "memory" : "register")
+                          : std::string("form not supported by the rewrite")) +
+               " | " + shape);
+        if (shape.starts_with("placed")) {
+            continue;
+        }
+        s.Line("      context: " + HexBytes(image, start > kLzcntContext ? start - kLzcntContext : 0, start) + " [" +
+               HexBytes(image, start, end) + "] " + HexBytes(image, end, end + kLzcntContext));
+    }
+    if (skipped) {
+        s.Line(Fmt("    (+%zu more not listed)", skipped));
+    }
+}
+
 void ScanLzcnt(Scan& s) {
     s.Line("Legacy CPU (LZCNT):");
     const Bytes& image = s.image();
@@ -571,7 +637,7 @@ void ScanLzcnt(Scan& s) {
     }
     std::array<uint64_t, LZCNT_RANGE_COUNT> early{}, late{};
     uint64_t previous = 0;
-    size_t failed = LZCNT_RANGE_COUNT;
+    size_t failed = LZCNT_RANGE_COUNT, placed = 0;
     for (size_t i = 0; i < LZCNT_RANGE_COUNT && failed == LZCNT_RANGE_COUNT; ++i) {
         const auto pick = std::find_if(candidates[i].begin(), candidates[i].end(), [&](uint64_t p) { return p >= previous; });
         if (pick == candidates[i].end()) {
@@ -579,6 +645,7 @@ void ScanLzcnt(Scan& s) {
         } else {
             early[i] = *pick;
             previous = *pick + lzcnt_shapes[i].length;
+            placed = i + 1;
         }
     }
     uint64_t next = image.size();
@@ -594,6 +661,31 @@ void ScanLzcnt(Scan& s) {
     }
     if (failed != LZCNT_RANGE_COUNT) {
         s.Line(Fmt("  ranges: shape %zu has no candidate in order", failed));
+        const LzcntShape& expected = lzcnt_shapes[failed];
+        s.Line(Fmt("  ordered placement: %zu of %d shapes placed, stopped at shape %zu expecting %s at or after %s",
+                   placed, LZCNT_RANGE_COUNT, failed, HexBytes(expected.bytes, expected.length).c_str(),
+                   Hex(previous).c_str()));
+        if (placed) {
+            s.Line("    placed: " + List(std::vector<uint64_t>(early.begin(), early.begin() + placed), LZCNT_RANGE_COUNT));
+        }
+        if (image.size() <= s.eboot_size) {
+            s.Line(Fmt("  bundled modules: not in the scanned image (eboot only, %s); LZCNT sites inside them cannot be seen",
+                       Hex(s.eboot_size).c_str()));
+        } else {
+            s.Line(Fmt("  bundled modules: linked after the eboot (%s of %s)", Hex(image.size() - s.eboot_size).c_str(),
+                       Hex(image.size()).c_str()));
+        }
+        size_t outside = 0;
+        for (uint64_t start : starts) {
+            bool inside = false;
+            for (size_t i = 0; i < placed && !inside; ++i) {
+                inside = start >= early[i] && start < early[i] + lzcnt_shapes[i].length;
+            }
+            outside += inside ? 0 : 1;
+        }
+        s.Line(Fmt("  detected instructions outside the placed shapes: %zu of %zu", outside, starts.size()));
+        s.Line("  detected instructions:");
+        ListLzcnt(s, starts, candidates, early, placed, false);
         s.Line("  status: incomplete");
         s.Unresolved("LZCNT ranges");
         return;
@@ -618,6 +710,7 @@ void ScanLzcnt(Scan& s) {
     s.Line(Fmt("  unexpected instructions: %zu %s", uncovered.size(), List(uncovered).c_str()));
     if (!uncovered.empty()) {
         s.Unresolved("LZCNT instructions outside the shapes");
+        ListLzcnt(s, starts, candidates, early, LZCNT_RANGE_COUNT, true);
     }
     bool rewritable = false;
     if (unique && uncovered.empty()) {
@@ -918,6 +1011,11 @@ constexpr char kBegin[] = "Unsupported build diagnostics begin\n";
 constexpr char kEnd[] = "Unsupported build diagnostics end\n";
 constexpr char kMappingBegin[] = "Build mapping diagnostics begin\n";
 constexpr char kMappingEnd[] = "Build mapping diagnostics end\n";
+constexpr char kLzcntNotice[] =
+    "Legacy CPU LZCNT mapping incomplete:\n"
+    "  installation is not affected on CPUs with native LZCNT\n"
+    "  a CPU without LZCNT cannot run this build until the mapping exists\n"
+    "  attach the complete log when reporting this mapping issue; do not upload game files\n";
 
 } // namespace
 
@@ -1062,7 +1160,11 @@ std::string DiagnoseBuildMapping(const std::filesystem::path& app0, const GameBu
     }
     text += missing.empty() ? " none\n" : "\n";
     DescribeArchives(app0, prompt_patch, text);
-    return text + scan.text + Overall(scan) + kMappingEnd;
+    text += scan.text;
+    if (scan.mapping.lzcnt_offsets.empty()) {
+        text += kLzcntNotice;
+    }
+    return text + Overall(scan) + kMappingEnd;
 }
 
 } // namespace osl

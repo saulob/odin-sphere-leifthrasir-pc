@@ -119,6 +119,7 @@ typedef struct {
 typedef struct {
     unsigned bits, dst;
     size_t length, rep;
+    int memory;
 } Form;
 
 static void put(Code *c, const void *data, size_t length) {
@@ -169,6 +170,17 @@ static int parse_lzcnt(const uint8_t *p, size_t available, Form *form) {
     form->dst = (modrm >> 3 & 7) | (rex & 4 ? 8 : 0);
     form->length = i;
     form->rep = rep;
+    form->memory = mod != 3;
+    return 1;
+}
+
+int lzcnt_compat_decode(const uint8_t *bytes, size_t available, LzcntOperands *operands) {
+    Form form;
+    if (!parse_lzcnt(bytes, available, &form)) return 0;
+    operands->bits = form.bits;
+    operands->dst = form.dst;
+    operands->length = form.length;
+    operands->memory = form.memory;
     return 1;
 }
 

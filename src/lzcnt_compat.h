@@ -43,6 +43,15 @@ typedef enum {
 
 const char *lzcnt_compat_status_text(LzcntCompatStatus status);
 
+typedef struct {
+    unsigned bits, dst;
+    size_t length;
+    int memory;
+} LzcntOperands;
+
+/* The LZCNT forms the rewrite supports: nonzero and `operands` filled when `bytes` starts with one. */
+int lzcnt_compat_decode(const uint8_t *bytes, size_t available, LzcntOperands *operands);
+
 /* Whether the host needs the rewrite. */
 int lzcnt_compat_needed(IsaHostFeatures host);
 
