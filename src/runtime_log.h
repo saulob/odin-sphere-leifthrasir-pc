@@ -38,6 +38,9 @@ void runtime_log_set_session_path(const char *path);
 void runtime_log_finalize(void);
 void runtime_log_install_cleanup(void);
 
+/* The normal shutdown: marks the exit clean, finalizes and flushes the log, ends the process with status 0. */
+void runtime_exit_clean(void) __attribute__((noreturn));
+
 #ifdef __cplusplus
 }
 #endif

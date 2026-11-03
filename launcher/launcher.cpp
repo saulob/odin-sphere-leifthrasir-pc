@@ -38,6 +38,8 @@
 #include "play_gate.h"
 #include "problem_dialog.h"
 #include "prompts_patch.h"
+#include "title_exit_assets.h"
+#include "title_patch.h"
 #include "settings.h"
 #include "shift_key.h"
 #include "trophy_page.h"
@@ -943,8 +945,10 @@ private:
             return;
         }
         const PromptStyle style = SavedPromptStyle();
-        if (style != prompts_installed_ || (style == PromptStyle::kPlayStation && AnyPromptPatch(paths_.app0, *build_))) {
-            Log("controller prompts: applying the saved %s", PromptStyleKey(style));
+        const bool title_pending = TitleExitPending(paths_.app0, *build_, TitleExitPatch());
+        if (style != prompts_installed_ || (style == PromptStyle::kPlayStation && AnyPromptPatch(paths_.app0, *build_)) ||
+            title_pending) {
+            Log("controller prompts: applying the saved %s%s", PromptStyleKey(style), title_pending ? " and the title menu update" : "");
             StartPrompts(style);
         }
     }
@@ -955,7 +959,9 @@ private:
         }
         prompts_outcome_ = std::make_shared<PromptsResult>();
         const bool started = prompts_.Start(
-            style == PromptStyle::kXbox ? "Switching to Xbox prompts..." : "Restoring PlayStation prompts...",
+            style == PromptStyle::kXbox ? "Switching to Xbox prompts..."
+            : AnyPromptPatch(paths_.app0, *build_) ? "Restoring PlayStation prompts..."
+                                                   : "Updating the game files...",
             [outcome = prompts_outcome_, style, app0 = paths_.app0, build = *build_](trg::Task& task) {
                 PatchHooks hooks;
                 hooks.phase = [&task](const char* text) {
@@ -966,7 +972,7 @@ private:
                     task.Progress(static_cast<long long>(done), static_cast<long long>(total));
                     return !task.cancelled();
                 };
-                *outcome = SetPromptStyle(app0, build, style, XboxPromptsPatch(), hooks);
+                *outcome = SetPromptStyle(app0, build, style, XboxPromptsPatch(), hooks, TitleExitPatch());
                 if (outcome->ok) {
                     return std::string();
                 }

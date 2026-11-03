@@ -7,6 +7,7 @@
 #include "osl_resolution.h"
 #include "osl_bookshelf.h"
 #include "osl_skip_intro.h"
+#include "osl_title_menu_exit.h"
 
 #ifdef __cplusplus
 extern "C" {

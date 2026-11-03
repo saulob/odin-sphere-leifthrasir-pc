@@ -47,6 +47,7 @@ checked by scripts, but it has not yet been tested on real Linux PCs or a Steam 
 
 ### Gameplay
 - **Skip intro**: start at the title's PRESS START, without the startup notice, logos and intro
+- **EXIT GAME** at the end of the native title menu, in Refined and Classic mode, on Windows and Linux, leaves the game cleanly. The label is drawn from the game's own title art and follows the title language where its letters allow (Italian, Spanish, French and German); other languages show EXIT GAME
 - **Menu & Subtitles** language for the European build (English, French, German, Spanish, Italian) and the Hong Kong build (Traditional Chinese, Korean)
 - Frame rate and render resolution in the window title, and an in-game **frame counter** with the frame time, toggled with **F2** while playing
 - Startup hints confirm **Skip intro** and **Unlock Bookshelf** when either is on, then disappear on their own

@@ -5,6 +5,7 @@
 #include <iterator>
 #include <system_error>
 
+#include "title_exit_assets.h"
 #include "utf8.h"
 
 namespace osl {
@@ -101,7 +102,9 @@ bool AnyPromptPatch(const std::filesystem::path& app0, const GameBuild& build) {
     return false;
 }
 
-PromptsResult SetPromptStyle(const std::filesystem::path& app0, const GameBuild& build, PromptStyle style,
+namespace {
+
+PromptsResult SetPromptLayer(const std::filesystem::path& app0, const GameBuild& build, PromptStyle style,
                              std::span<const uint8_t> xbox_patch, const PatchHooks& hooks) {
     PromptsResult result;
     const auto restore_all = [&] {
@@ -166,6 +169,24 @@ PromptsResult SetPromptStyle(const std::filesystem::path& app0, const GameBuild&
         }
     }
     result.ok = true;
+    return result;
+}
+
+} // namespace
+
+PromptsResult SetPromptStyle(const std::filesystem::path& app0, const GameBuild& build, PromptStyle style,
+                             std::span<const uint8_t> xbox_patch, const PatchHooks& hooks,
+                             std::span<const uint8_t> title_patch) {
+    if (const TitleExitResult off = RevertTitleExit(app0, build); !off.ok) {
+        PromptsResult failed;
+        failed.detail = "cannot take the title menu update off: " + off.detail;
+        return failed;
+    }
+    PromptsResult result = SetPromptLayer(app0, build, style, xbox_patch, hooks);
+    if (!title_patch.empty() && !result.cancelled) {
+        const TitleExitResult on = ApplyTitleExit(app0, build, title_patch, hooks);
+        Note(result.detail, on.ok ? "title menu: updated" : "title menu: " + on.detail);
+    }
     return result;
 }
 

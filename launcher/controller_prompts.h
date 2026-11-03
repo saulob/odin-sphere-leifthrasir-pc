@@ -50,7 +50,10 @@ struct PromptsResult {
 // Patches or reverts the build's archives so the game shows `style`. `xbox_patch` is the DCPX patch (the embedded
 // xbox-prompts.dcpx); it is only needed for kXbox. An Xbox change that fails or is cancelled puts every archive back
 // to the original. Progress and cancellation go through the hooks.
+// The title menu layer (title_exit_assets.h) sits on top of the prompts patch: it comes off before the archives change
+// and goes back on afterwards when `title_patch` is given.
 PromptsResult SetPromptStyle(const std::filesystem::path& app0, const GameBuild& build, PromptStyle style,
-                             std::span<const uint8_t> xbox_patch, const PatchHooks& hooks = {});
+                             std::span<const uint8_t> xbox_patch, const PatchHooks& hooks = {},
+                             std::span<const uint8_t> title_patch = {});
 
 } // namespace osl

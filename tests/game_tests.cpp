@@ -46,6 +46,7 @@
 #include "placement.h"
 #include "runtime_log.h"
 #include "settings.h"
+#include "title_exit_assets.h"
 #include "utf8.h"
 
 using namespace osl;
@@ -4680,6 +4681,377 @@ void TestBuildMappingDiagnostics() {
                 real_builds, real_packages);
 }
 
+void TestTitleExitAssets() {
+    using namespace cpk_test;
+    const fs::path app0 = TempDir("title-assets") / "app0";
+    fs::create_directories(app0);
+
+    const std::string atlas = Pattern(24576, 5), atlas_x = Painted(atlas, {0x340, 0x1230, 0x5ff0}, 'T');
+    const std::string refined = Pattern(8192, 9), refined_x = Painted(refined, {0x80, 0x1000}, 'R');
+    const std::string classic = Pattern(6144, 3), classic_x = Painted(classic, {0x40}, 'C');
+    const std::string iface = Pattern(20480, 7), iface_x = Painted(iface, {0x340, 0x1000}, 'X');
+    const std::string other = "BOOT" + std::string(600, '\0');
+    const std::string title_patch = MakePatch({{"title.ftx", {atlas, atlas_x}},
+                                               {"GUI/HD_title.ftx", {atlas, atlas_x}},
+                                               {"GUI/REHD_title.mbs", {refined, refined_x}},
+                                               {"title.mbs", {classic, classic_x}}});
+    const std::string prompts_patch = MakePatch({{"Interface.ftx", {iface, iface_x}}});
+    const std::string or_de =
+        BuildCpk({{"Interface.ftx", iface, true}, {"title.ftx", atlas, true}, {"title.mbs", classic, false}}, true);
+    const std::string re_de = BuildCpk({{"GUI/HD_title.ftx", atlas, false}, {"GUI/REHD_title.mbs", refined, true}}, false);
+    const std::string bt = BuildCpk({{"other/x.bin", other, false}}, false);
+    const char* const files[] = {"Odin2_BT_DE.CPK", "Odin2_OR_DE.CPK", "Odin2_RE_DE.CPK"};
+    const auto reset = [&] {
+        for (const char* name : files) {
+            fs::remove(UndoPath(app0 / name));
+            fs::remove(UndoPath(app0 / name, kTitleUndoSuffix));
+        }
+        WriteAll(app0 / "Odin2_BT_DE.CPK", bt);
+        WriteAll(app0 / "Odin2_OR_DE.CPK", or_de);
+        WriteAll(app0 / "Odin2_RE_DE.CPK", re_de);
+    };
+    GameBuild build{};
+    build.label = "test build";
+    build.data_files = files;
+    const auto originals = [&] {
+        return ReadFile(app0 / "Odin2_BT_DE.CPK") == bt && ReadFile(app0 / "Odin2_OR_DE.CPK") == or_de &&
+               ReadFile(app0 / "Odin2_RE_DE.CPK") == re_de;
+    };
+    const auto entry = [&](const char* archive, const char* name) {
+        CpkArchive cpk;
+        CHECK(cpk.Open(app0 / archive));
+        const CpkEntry* found = cpk.Find(name);
+        return found ? Bytes(cpk.Read(*found)) : std::string();
+    };
+    reset();
+    CHECK(TitleExitPending(app0, build, Span(title_patch)));
+    CHECK(!TitleExitPending(app0, build, Span(std::string("not a patch"))));
+
+    // The layer: patched copies of every title file, the other entries and archives as they were, its own undo records.
+    TitleExitResult applied = ApplyTitleExit(app0, build, Span(title_patch));
+    CHECK(applied.ok && !TitleExitPending(app0, build, Span(title_patch)));
+    CHECK(entry("Odin2_OR_DE.CPK", "title.ftx") == atlas_x && entry("Odin2_OR_DE.CPK", "title.mbs") == classic_x);
+    CHECK(entry("Odin2_RE_DE.CPK", "GUI/HD_title.ftx") == atlas_x && entry("Odin2_RE_DE.CPK", "GUI/REHD_title.mbs") == refined_x);
+    CHECK(entry("Odin2_OR_DE.CPK", "Interface.ftx") == iface && entry("Odin2_BT_DE.CPK", "other/x.bin") == other);
+    CHECK(fs::exists(UndoPath(app0 / "Odin2_OR_DE.CPK", kTitleUndoSuffix)) && !fs::exists(UndoPath(app0 / "Odin2_OR_DE.CPK")));
+    CHECK(!fs::exists(UndoPath(app0 / "Odin2_BT_DE.CPK", kTitleUndoSuffix)) && ReadFile(app0 / "Odin2_BT_DE.CPK") == bt);
+    const std::string once = ReadFile(app0 / "Odin2_OR_DE.CPK");
+    CHECK(ApplyTitleExit(app0, build, Span(title_patch)).ok && ReadFile(app0 / "Odin2_OR_DE.CPK") == once);
+
+    // Taking it off restores every archive byte for byte, and again changes nothing.
+    CHECK(RevertTitleExit(app0, build).ok && originals());
+    CHECK(RevertTitleExit(app0, build).ok && originals());
+
+    // A layer of an older patch is replaced by the current one, and taking it off still restores the original.
+    const std::string newer_atlas = Painted(atlas, {0x340, 0x2000}, 'N');
+    const std::string newer = MakePatch({{"title.ftx", {atlas, newer_atlas}},
+                                         {"GUI/HD_title.ftx", {atlas, newer_atlas}},
+                                         {"GUI/REHD_title.mbs", {refined, refined_x}},
+                                         {"title.mbs", {classic, classic_x}}});
+    CHECK(ApplyTitleExit(app0, build, Span(title_patch)).ok && !TitleExitPending(app0, build, Span(title_patch)));
+    CHECK(TitleExitPending(app0, build, Span(newer)));
+    CHECK(ApplyTitleExit(app0, build, Span(newer)).ok && !TitleExitPending(app0, build, Span(newer)));
+    CHECK(entry("Odin2_OR_DE.CPK", "title.ftx") == newer_atlas && entry("Odin2_RE_DE.CPK", "GUI/HD_title.ftx") == newer_atlas);
+    CHECK(RevertTitleExit(app0, build).ok && originals());
+
+    // It sits above the controller prompts: either order of choosing, the prompts change under a removed layer.
+    CHECK(ApplyTitleExit(app0, build, Span(title_patch)).ok);
+    PromptsResult prompts = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(prompts_patch), {}, Span(title_patch));
+    CHECK(prompts.ok && InstalledPromptStyle(app0, build, Span(prompts_patch)) == PromptStyle::kXbox);
+    CHECK(!TitleExitPending(app0, build, Span(title_patch)));
+    CHECK(entry("Odin2_OR_DE.CPK", "Interface.ftx") == iface_x && entry("Odin2_OR_DE.CPK", "title.ftx") == atlas_x);
+    CHECK(fs::exists(UndoPath(app0 / "Odin2_OR_DE.CPK")) && fs::exists(UndoPath(app0 / "Odin2_OR_DE.CPK", kTitleUndoSuffix)));
+    prompts = SetPromptStyle(app0, build, PromptStyle::kPlayStation, {}, {}, Span(title_patch));
+    CHECK(prompts.ok && !AnyPromptPatch(app0, build) && !TitleExitPending(app0, build, Span(title_patch)));
+    CHECK(entry("Odin2_OR_DE.CPK", "Interface.ftx") == iface && entry("Odin2_OR_DE.CPK", "title.ftx") == atlas_x);
+    CHECK(RevertTitleExit(app0, build).ok && originals());
+    CHECK(SetPromptStyle(app0, build, PromptStyle::kXbox, Span(prompts_patch)).ok && SetPromptStyle(app0, build, PromptStyle::kPlayStation, {}).ok &&
+          originals());
+
+    // A cancelled change puts every archive back as it was.
+    int phases = 0;
+    PatchHooks cancel_second;
+    cancel_second.phase = [&phases](const char*) { ++phases; };
+    cancel_second.progress = [&phases](uint64_t, uint64_t) { return phases < 2; };
+    const TitleExitResult cancelled = ApplyTitleExit(app0, build, Span(title_patch), cancel_second);
+    CHECK(!cancelled.ok && cancelled.cancelled && originals());
+    CHECK(TitleExitPending(app0, build, Span(title_patch)));
+
+    // A copy of the file with other bytes: taken when the blocks the patch changes are the ones it was made from, left
+    // alone when they are not, and refused when two targets would write different bytes into it.
+    const std::string compatible = Painted(atlas, {0x2000}, 'k'), incompatible = Painted(atlas, {0x340}, 'k');
+    const BlockPatch parsed = *ParseBlockPatch(Span(title_patch));
+    const EntryMatch exact = MatchEntry(parsed, "title.ftx", Span(atlas), Crc32(Span(atlas)));
+    const EntryMatch compat = MatchEntry(parsed, "title.ftx", Span(compatible), Crc32(Span(compatible)));
+    const EntryMatch rejected = MatchEntry(parsed, "title.ftx", Span(incompatible), Crc32(Span(incompatible)));
+    CHECK(exact.state == EntryState::kOriginal && exact.exact);
+    CHECK(compat.state == EntryState::kOriginal && !compat.exact && !compat.ambiguous);
+    CHECK(rejected.state == EntryState::kUnknown);
+    const std::string twin = Painted(atlas, {0x3000}, 'w');
+    const std::string twin_x = Painted(twin, {0x340, 0x1230, 0x5ff0}, 'U');
+    const std::string ambiguous_patch =
+        MakePatch({{"title.ftx", {atlas, atlas_x}}, {"title.ftx", {twin, twin_x}}, {"GUI/HD_title.ftx", {atlas, atlas_x}}});
+    const std::string stranger = Painted(atlas, {0x4000}, 's');
+    const EntryMatch refused = MatchEntry(*ParseBlockPatch(Span(ambiguous_patch)), "title.ftx", Span(stranger), Crc32(Span(stranger)));
+    CHECK(refused.state == EntryState::kUnknown && refused.ambiguous);
+    WriteAll(app0 / "Odin2_OR_DE.CPK", BuildCpk({{"title.ftx", incompatible, true}}, true));
+    const std::string foreign = ReadFile(app0 / "Odin2_OR_DE.CPK");
+    const TitleExitResult skipped = ApplyTitleExit(app0, build, Span(title_patch));
+    CHECK(skipped.ok && ReadFile(app0 / "Odin2_OR_DE.CPK") == foreign && !fs::exists(UndoPath(app0 / "Odin2_OR_DE.CPK", kTitleUndoSuffix)));
+    reset();
+    WriteAll(app0 / "Odin2_OR_DE.CPK", BuildCpk({{"title.ftx", compatible, true}}, true));
+    CHECK(ApplyTitleExit(app0, build, Span(title_patch)).ok);
+    CHECK(entry("Odin2_OR_DE.CPK", "title.ftx") == Painted(compatible, {0x340, 0x1230, 0x5ff0}, 'T'));
+    CHECK(RevertTitleExit(app0, build).ok);
+    reset();
+
+    // The shipped patch: every target holds source blocks, names only the four title files, one target per copy.
+    const std::filesystem::path shipped = std::filesystem::path(OSL_SOURCE_DIR) / "launcher" / "title" / "title-exit.dcpx";
+    const std::string bytes = ReadFile(shipped);
+    const std::optional<BlockPatch> patch = ParseBlockPatch(Span(bytes));
+    CHECK(patch.has_value());
+    if (patch) {
+        std::set<std::tuple<std::string, uint32_t, uint32_t>> seen;
+        std::set<std::string> names;
+        bool sound = !patch->targets.empty();
+        for (const BlockPatchTarget& target : patch->targets) {
+            names.insert(target.name);
+            sound &= target.source_blocks && !target.runs.empty() && target.crc_before != target.crc_after;
+            sound &= seen.emplace(target.name, target.size, target.crc_before).second;
+        }
+        CHECK(sound);
+        const std::set<std::string> expected = {"GUI/HD_title.ftx", "GUI/REHD_title.mbs", "title.ftx", "title.mbs"};
+        CHECK(names == expected);
+    }
+
+    // The artwork is made from the game's own letters: the generator names no font, and none ships with it.
+    const std::filesystem::path generator = std::filesystem::path(OSL_SOURCE_DIR) / "scripts" / "title_exit";
+    const std::string source = ReadFile(generator / "make_title_exit.py");
+    CHECK(!source.empty() && !Contains(source, "ImageFont") && !Contains(source, "truetype") && !Contains(source, "Marcellus") &&
+          !Contains(source, ".ttf") && Contains(source, "SEQUENCE") && Contains(source, "reference_glyphs"));
+    size_t fonts = 0;
+    for (const auto& file : std::filesystem::directory_iterator(generator)) {
+        const std::string extension = file.path().extension().string();
+        fonts += extension == ".ttf" || extension == ".otf" || extension == ".woff";
+    }
+    CHECK(fonts == 0);
+}
+
+struct TitleExitFixture {
+    std::vector<unsigned char> image; // the game image, then the stub page
+    uint64_t size = 0;
+    std::map<std::string, size_t> sites;
+};
+
+// The title menu code as the Exit Game patch expects it: each signature once (or twice, or not at all) and the Classic
+// row tables behind their lookups.
+TitleExitFixture TitleExitImage(const std::set<std::string>& absent = {}, const std::set<std::string>& doubled = {}) {
+    TitleExitFixture fixture;
+    fixture.size = 0x40000;
+    fixture.image.assign(fixture.size + OSL_TITLE_EXIT_STUB_BYTES, 0);
+    static const std::map<std::string, std::array<int32_t, 3>> kTables = {
+        {"classic_lookup_a", {5, 11, 23}}, {"classic_lookup_b", {9, 15, 27}}, {"classic_lookup_c", {7, 13, 25}}};
+    size_t count = 0, at = 0x1000, table = 0x30000;
+    const OslTitleExitSignature* signatures = osl_title_exit_signatures(&count);
+    for (size_t i = 0; i < count; ++i) {
+        const std::string name = signatures[i].name;
+        if (absent.count(name)) {
+            continue;
+        }
+        for (int copy = 0; copy < (doubled.count(name) ? 2 : 1); ++copy) {
+            const size_t where = at;
+            at += 0x100;
+            for (size_t k = 0; k < signatures[i].count; ++k) {
+                fixture.image[where + k] =
+                    signatures[i].bytes[k] < 0 ? 0 : static_cast<unsigned char>(signatures[i].bytes[k]);
+            }
+            fixture.sites.emplace(name, where);
+            const auto rows = kTables.find(name);
+            if (rows == kTables.end()) {
+                continue;
+            }
+            size_t lea = 0;
+            while (!(signatures[i].bytes[lea] == 0x48 && signatures[i].bytes[lea + 1] == 0x8d &&
+                     signatures[i].bytes[lea + 2] == 0x0d)) {
+                ++lea;
+            }
+            const int32_t disp = static_cast<int32_t>(static_cast<int64_t>(table) - static_cast<int64_t>(where + lea + 7));
+            std::memcpy(fixture.image.data() + where + lea + 3, &disp, 4);
+            std::memcpy(fixture.image.data() + table, rows->second.data(), 12);
+            table += 0x20;
+        }
+    }
+    return fixture;
+}
+
+int32_t Int32At(const std::vector<unsigned char>& image, size_t at) {
+    int32_t value = 0;
+    std::memcpy(&value, image.data() + at, 4);
+    return value;
+}
+
+int g_title_exit_calls = 0;
+void CountTitleExit() {
+    ++g_title_exit_calls;
+}
+
+void TestTitleMenuExit() {
+    char error[320] = "";
+    const TitleExitFixture fixture = TitleExitImage();
+    size_t count = 0;
+    const OslTitleExitSignature* signatures = osl_title_exit_signatures(&count);
+    CHECK(count == 11);
+
+    OslTitleExitPlan plan;
+    CHECK(osl_title_exit_plan(fixture.image.data(), fixture.size, fixture.size, 0x1122334455667788ull, &plan, error,
+                              sizeof(error)));
+    CHECK(plan.count == 15 && plan.stub_used > 0 && plan.stub_used <= sizeof(plan.stub));
+    CHECK(osl_title_exit_validate(&plan, fixture.image.data(), fixture.size, fixture.size, OSL_TITLE_EXIT_STUB_BYTES,
+                                  error, sizeof(error)));
+
+    std::vector<unsigned char> patched = fixture.image;
+    CHECK(osl_apply_title_menu_exit(patched.data(), fixture.size, fixture.size, OSL_TITLE_EXIT_STUB_BYTES,
+                                    0x1122334455667788ull, error, sizeof(error)));
+    CHECK(patched != fixture.image);
+    const auto site = [&](const char* name) { return fixture.sites.at(name); };
+
+    // Refined: the game's five-row range with no row skipped, and every row plays its four-row animation variant.
+    CHECK(patched[site("refined_ctor") + 6] == 5);
+    CHECK(patched[site("refined_up") + 8] == 0xff && patched[site("refined_down") + 8] == 0xff);
+    const std::array<int32_t, 5> original_rows = {0, 48, 12, 24, 36}, four_row_variants = {1, 49, 13, 25, 37};
+    for (size_t i = 0; i < 5; ++i) {
+        CHECK(Int32At(fixture.image, site("refined_rows") + 4 * i) == original_rows[i]);
+        CHECK(Int32At(patched, site("refined_rows") + 4 * i) == four_row_variants[i]);
+    }
+    CHECK(patched[site("refined_confirm") + 24] == 0xc7 && Int32At(patched, site("refined_confirm") + 30) == 4);
+    CHECK(patched[site("refined_result")] == 0xe9);
+
+    // Classic: the shipped tables stay as they were; the copies play the four-row variants, the INSTALL group third and the MODE group fourth.
+    CHECK(Int32At(patched, site("classic_down") + 15) == 3 && patched[site("classic_down") + 21] == 3);
+    const struct {
+        const char* name;
+        size_t bound, disp;
+        std::array<int32_t, 4> rows;
+    } lookups[] = {{"classic_lookup_a", 12, 18, {6, 12, 18, 24}},
+                   {"classic_lookup_b", 10, 16, {10, 16, 22, 28}},
+                   {"classic_lookup_c", 12, 21, {8, 14, 20, 26}}};
+    for (const auto& lookup : lookups) {
+        const size_t at = site(lookup.name);
+        CHECK(fixture.image[at + lookup.bound] == 2 && patched[at + lookup.bound] == 3);
+        const int64_t before = static_cast<int64_t>(at + lookup.disp) + 4 + Int32At(fixture.image, at + lookup.disp);
+        const int64_t after = static_cast<int64_t>(at + lookup.disp) + 4 + Int32At(patched, at + lookup.disp);
+        CHECK(after >= static_cast<int64_t>(fixture.size) && before < static_cast<int64_t>(fixture.size));
+        for (size_t i = 0; i < 4; ++i) {
+            CHECK(Int32At(patched, static_cast<size_t>(after) + 4 * i) == lookup.rows[i]);
+            CHECK(i == 3 || Int32At(patched, static_cast<size_t>(before) + 4 * i) == Int32At(fixture.image, static_cast<size_t>(before) + 4 * i));
+        }
+    }
+    CHECK(patched[site("classic_other")] == 0xe9);
+
+    size_t differing = 0, planned = 0;
+    for (size_t i = 0; i < fixture.size; ++i) {
+        differing += patched[i] != fixture.image[i];
+    }
+    for (size_t i = 0; i < plan.count; ++i) {
+        planned += plan.patches[i].length;
+    }
+    CHECK(differing <= planned);
+
+    // A site that is missing or ambiguous, or code that differs, writes nothing.
+    const auto refused = [&](const TitleExitFixture& broken, const char* expected,
+                             size_t stub_bytes = OSL_TITLE_EXIT_STUB_BYTES) {
+        std::vector<unsigned char> image = broken.image;
+        char message[320] = "";
+        const bool applied =
+            osl_apply_title_menu_exit(image.data(), broken.size, broken.size, stub_bytes, 1, message, sizeof(message));
+        CHECK(!applied && image == broken.image && Contains(message, expected));
+    };
+    for (size_t i = 0; i < count; ++i) {
+        refused(TitleExitImage({signatures[i].name}), "not found");
+        refused(TitleExitImage({}, {signatures[i].name}), "ambiguous");
+    }
+    TitleExitFixture changed_table = TitleExitImage();
+    {
+        const size_t lookup = changed_table.sites["classic_lookup_a"];
+        const int64_t table = static_cast<int64_t>(lookup + 18) + 4 + Int32At(changed_table.image, lookup + 18);
+        changed_table.image[static_cast<size_t>(table)] = 6;
+    }
+    refused(changed_table, "table differs");
+    TitleExitFixture busy_stub = TitleExitImage();
+    busy_stub.image[busy_stub.size + 3] = 1;
+    refused(busy_stub, "stub space in use");
+    refused(TitleExitImage(), "stub space too small", 16);
+
+    // Overlap, bounds, expected bytes and stub range are each rejected.
+    OslTitleExitPlan broken = plan;
+    broken.patches[1].at = broken.patches[0].at;
+    CHECK(!osl_title_exit_validate(&broken, fixture.image.data(), fixture.size, fixture.size, OSL_TITLE_EXIT_STUB_BYTES,
+                                   error, sizeof(error)) &&
+          Contains(error, "overlapping"));
+    broken = plan;
+    broken.patches[0].at = fixture.size - 1;
+    broken.patches[0].length = 2;
+    CHECK(!osl_title_exit_validate(&broken, fixture.image.data(), fixture.size, fixture.size, OSL_TITLE_EXIT_STUB_BYTES,
+                                   error, sizeof(error)));
+    broken = plan;
+    broken.patches[0].expected[0] ^= 0xff;
+    CHECK(!osl_title_exit_validate(&broken, fixture.image.data(), fixture.size, fixture.size, OSL_TITLE_EXIT_STUB_BYTES,
+                                   error, sizeof(error)) &&
+          Contains(error, "unexpected"));
+    CHECK(!osl_title_exit_validate(&plan, fixture.image.data(), fixture.size, fixture.size - 16,
+                                   OSL_TITLE_EXIT_STUB_BYTES, error, sizeof(error)));
+
+    // One confirm asks the host to exit once, whatever else the guest calls.
+    g_title_exit_calls = 0;
+    osl_title_menu_exit_set_host(CountTitleExit);
+    osl_title_menu_exit_rearm();
+    osl_title_menu_exit_request();
+    osl_title_menu_exit_request();
+    CHECK(g_title_exit_calls == 1);
+    osl_title_menu_exit_rearm();
+    osl_title_menu_exit_request();
+    CHECK(g_title_exit_calls == 2);
+    osl_title_menu_exit_set_host(nullptr);
+    osl_title_menu_exit_rearm();
+
+    // The request ends the process through the shutdown the window close uses, in one place.
+    const std::filesystem::path root(OSL_SOURCE_DIR);
+    const std::string gpu = ReadFile(root / "gpu" / "shim" / "oslgpu.cpp");
+    const std::string session = ReadFile(root / "src" / "runtime_session_log.c");
+    const std::string loader = ReadFile(root / "src" / "loader.c");
+    const size_t exit_function = session.find("void runtime_exit_clean(void)");
+    CHECK(exit_function != std::string::npos);
+    CHECK(session.find("runtime_log_mark_clean_exit();", exit_function) != std::string::npos &&
+          session.find("runtime_log_finalize();", exit_function) != std::string::npos &&
+          session.find("runtime_log_flush();", exit_function) != std::string::npos &&
+          session.find("_Exit(0);", exit_function) != std::string::npos);
+    CHECK(Contains(gpu, "runtime_exit_clean();") && !Contains(gpu, "std::_Exit(0)"));
+    CHECK(Contains(loader, "osl_title_menu_exit_set_host(runtime_exit_clean)") &&
+          Contains(loader, "osl_apply_title_menu_exit(") && Contains(loader, "Title menu Exit Game: installed") &&
+          Contains(loader, "Title menu Exit Game: unavailable: %s"));
+
+    // Linux parity: the feature uses no Win32 API or path syntax, its patch is embedded like the prompts patch, and the
+    // prepared game it patches lives in the portable folder outside the read-only AppImage mount.
+    const std::string menu_source = ReadFile(root / "launcher" / "title_menu_exit.c");
+    const std::string assets_source = ReadFile(root / "launcher" / "title_exit_assets.cpp");
+    const std::string header_source = ReadFile(root / "launcher" / "osl_title_menu_exit.h");
+    const std::string paths_source = ReadFile(root / "launcher" / "paths.cpp");
+    const std::string launcher_build = ReadFile(root / "launcher" / "CMakeLists.txt");
+    for (const std::string* source : {&menu_source, &assets_source, &header_source, &session}) {
+        CHECK(!source->empty() && !Contains(*source, "_WIN32") && !Contains(*source, "windows.h") && !Contains(*source, "TerminateProcess"));
+    }
+    CHECK(Contains(assets_source, ".title.stamp") && Contains(assets_source, "std::filesystem"));
+    CHECK(Contains(session, "_Exit(0)"));
+    CHECK(Contains(launcher_build, "SYMBOL=kTitleExitPatch") && Contains(launcher_build, "title/title-exit.dcpx"));
+    CHECK(Contains(paths_source, "APPIMAGE") && Contains(paths_source, "OSL_PORTABLE_DIR"));
+    CHECK(Contains(ReadFile(root / "launcher" / "launcher.cpp"), "TitleExitPatch()"));
+
+    for (const GameBuild& build : SupportedBuilds()) {
+        PARITY("Runtime Patches",
+               osl_title_exit_plan(fixture.image.data(), fixture.size, fixture.size, 1, &plan, error, sizeof(error)));
+    }
+}
+
 void PrintParitySummary() {
     static const char* const kCategories[] = {"Installation", "Languages", "Display",       "Graphics",
                                               "Gameplay",     "Controls",  "Trophies",      "Save Data",
@@ -4697,6 +5069,11 @@ void PrintParitySummary() {
             }
         }
         std::printf("  %-24s %s\n", build.label, pass ? "PASS" : "FAIL");
+    }
+    std::printf("\nTitle menu Exit Game: implementation covers every build above; local game files to verify against\n");
+    for (const GameBuild& build : SupportedBuilds()) {
+        const bool present = std::filesystem::exists(std::filesystem::path(OSL_SOURCE_DIR) / "game" / "prepared" / build.folder);
+        std::printf("  %-24s %s\n", build.label, present ? "local files present" : "no local files (not verified)");
     }
     std::printf("\nFeature parity\n  %-24s", "");
     for (const char* category : kCategories) {
@@ -4847,6 +5224,8 @@ int main() {
     TestScannedMappingFixtures();
     TestUnsupportedPackageDiagnostics();
     TestBuildMappingDiagnostics();
+    TestTitleMenuExit();
+    TestTitleExitAssets();
     PrintParitySummary();
     std::printf("%s (%d checks, %d failures)\n", g_failures ? "FAILED" : "OK", g_checks, g_failures);
     runtime_log_flush();

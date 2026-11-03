@@ -394,13 +394,19 @@ InstallResult RevertStagedPatches(const fs::path& staged) {
     if (ec) {
         return Failure(InstallStatus::kReadFailed, "cannot list " + Utf8(staged) + ": " + ec.message());
     }
+    const auto is_title_layer = [](const fs::path& record) {
+        return Utf8(record.filename()).ends_with(kTitleUndoSuffix);
+    };
+    std::stable_partition(records.begin(), records.end(), is_title_layer);
     for (const fs::path& record : records) {
-        const fs::path archive = fs::path(record).replace_extension();
+        const std::string_view suffix = is_title_layer(record) ? kTitleUndoSuffix : kUndoSuffix;
+        std::string text = Utf8(record);
+        const fs::path archive = fs::path(text.substr(0, text.size() - suffix.size()));
         if (!fs::exists(archive, ec)) {
             fs::remove(record, ec);
             continue;
         }
-        if (const PatchResult reverted = RevertBlockPatch(archive); !reverted.ok) {
+        if (const PatchResult reverted = RevertBlockPatch(archive, suffix); !reverted.ok) {
             return Failure(InstallStatus::kWriteFailed, "cannot restore the original " + reverted.detail);
         }
     }

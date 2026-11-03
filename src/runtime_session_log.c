@@ -40,3 +40,10 @@ void runtime_log_install_cleanup(void) {
     installed = 1;
     atexit(runtime_log_finalize);
 }
+
+void runtime_exit_clean(void) {
+    runtime_log_mark_clean_exit();
+    runtime_log_finalize();
+    runtime_log_flush();
+    _Exit(0);
+}

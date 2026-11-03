@@ -388,7 +388,8 @@ std::vector<uint8_t> CrilaylaDecompress(std::span<const uint8_t> data, std::stri
 // The parsed tables are kept in the archive object as raw packets plus field positions so ApplyBlockPatch can
 // rewrite them. PatchWriter is the only writer.
 struct PatchWriter {
-    static PatchResult Apply(const std::filesystem::path& cpk, const BlockPatch& patch, const PatchHooks& hooks);
+    static PatchResult Apply(const std::filesystem::path& cpk, const BlockPatch& patch, const PatchHooks& hooks,
+                             std::string_view suffix);
 
     static bool Load(CpkArchive& a, const std::filesystem::path& file, UtfTable& header, UtfTable& toc, std::string* error) {
         std::ifstream in(file, std::ios::binary);
@@ -486,15 +487,15 @@ std::vector<uint8_t> CpkArchive::Read(const CpkEntry& entry, std::string* error)
     return data;
 }
 
-std::filesystem::path UndoPath(const std::filesystem::path& cpk) {
+std::filesystem::path UndoPath(const std::filesystem::path& cpk, std::string_view suffix) {
     std::filesystem::path undo = cpk;
-    undo += ".undo";
+    undo += std::string(suffix);
     return undo;
 }
 
-ArchivePatchState ArchiveState(const std::filesystem::path& cpk) {
+ArchivePatchState ArchiveState(const std::filesystem::path& cpk, std::string_view suffix) {
     std::error_code ec;
-    return std::filesystem::is_regular_file(UndoPath(cpk), ec) ? ArchivePatchState::kPatched : ArchivePatchState::kOriginal;
+    return std::filesystem::is_regular_file(UndoPath(cpk, suffix), ec) ? ArchivePatchState::kPatched : ArchivePatchState::kOriginal;
 }
 
 namespace {
@@ -749,10 +750,10 @@ EntryMatch MatchEntry(const BlockPatch& patch, std::string_view name, std::span<
     return match;
 }
 
-std::vector<std::string> PatchedEntries(const std::filesystem::path& cpk) {
+std::vector<std::string> PatchedEntries(const std::filesystem::path& cpk, std::string_view suffix) {
     std::vector<uint8_t> bytes;
     UndoRecord undo;
-    if (!ReadWhole(UndoPath(cpk), bytes) || !undo.Parse(bytes)) return {};
+    if (!ReadWhole(UndoPath(cpk, suffix), bytes) || !undo.Parse(bytes)) return {};
     return undo.entries;
 }
 
@@ -774,7 +775,7 @@ std::vector<UnmatchedEntry> FindUnmatchedEntries(const std::filesystem::path& cp
     return unmatched;
 }
 
-bool HoldsBlockPatch(const std::filesystem::path& cpk, const BlockPatch& patch) {
+bool HoldsBlockPatch(const std::filesystem::path& cpk, const BlockPatch& patch, std::string_view suffix) {
     CpkArchive archive;
     if (!archive.Open(cpk)) return false;
     std::vector<std::string> present;
@@ -787,14 +788,15 @@ bool HoldsBlockPatch(const std::filesystem::path& cpk, const BlockPatch& patch) 
     }
     std::vector<uint8_t> bytes;
     UndoRecord undo;
-    if (present.empty() || !ReadWhole(UndoPath(cpk), bytes) || !undo.Parse(bytes)) return false;
+    if (present.empty() || !ReadWhole(UndoPath(cpk, suffix), bytes) || !undo.Parse(bytes)) return false;
     std::vector<std::string> recorded = undo.entries;
     std::sort(present.begin(), present.end());
     std::sort(recorded.begin(), recorded.end());
     return present == recorded;
 }
 
-PatchResult PatchWriter::Apply(const std::filesystem::path& cpk, const BlockPatch& patch, const PatchHooks& hooks) {
+PatchResult PatchWriter::Apply(const std::filesystem::path& cpk, const BlockPatch& patch, const PatchHooks& hooks,
+                               std::string_view suffix) {
     PatchResult result;
     const auto fail = [&](std::string why) {
         result.ok = false;
@@ -802,14 +804,14 @@ PatchResult PatchWriter::Apply(const std::filesystem::path& cpk, const BlockPatc
         return result;
     };
     const std::string name = Utf8(cpk.filename());
-    if (ArchiveState(cpk) == ArchivePatchState::kPatched) {
-        if (HoldsBlockPatch(cpk, patch)) {
+    if (ArchiveState(cpk, suffix) == ArchivePatchState::kPatched) {
+        if (HoldsBlockPatch(cpk, patch, suffix)) {
             result.ok = true;
             result.detail = name + ": already patched";
             return result;
         }
         // An earlier run was interrupted: back to the original first.
-        const PatchResult undone = RevertBlockPatch(cpk);
+        const PatchResult undone = RevertBlockPatch(cpk, suffix);
         if (!undone.ok) return fail(undone.detail);
     }
     CpkArchive archive;
@@ -864,15 +866,15 @@ PatchResult PatchWriter::Apply(const std::filesystem::path& cpk, const BlockPatc
     undo.header_pos = archive.header_.file_pos;
     undo.header = PatchWriter::Stored(archive.header_);
     for (const auto& [entry, data] : patched) undo.entries.push_back(entry->path);
-    if (!WriteWhole(UndoPath(cpk), undo.Serialize())) {
-        std::filesystem::remove(UndoPath(cpk), ec);
+    if (!WriteWhole(UndoPath(cpk, suffix), undo.Serialize())) {
+        std::filesystem::remove(UndoPath(cpk, suffix), ec);
         return fail(name + ": cannot write the undo record");
     }
 
     std::fstream out(cpk, std::ios::binary | std::ios::in | std::ios::out);
     const auto fail_undone = [&](std::string why) {
         out.close();
-        const PatchResult undone = RevertBlockPatch(cpk);
+        const PatchResult undone = RevertBlockPatch(cpk, suffix);
         if (!undone.ok) why += " (" + undone.detail + ")";
         return fail(std::move(why));
     };
@@ -946,14 +948,15 @@ PatchResult PatchWriter::Apply(const std::filesystem::path& cpk, const BlockPatc
     return result;
 }
 
-PatchResult ApplyBlockPatch(const std::filesystem::path& cpk, const BlockPatch& patch, const PatchHooks& hooks) {
-    return PatchWriter::Apply(cpk, patch, hooks);
+PatchResult ApplyBlockPatch(const std::filesystem::path& cpk, const BlockPatch& patch, const PatchHooks& hooks,
+                            std::string_view suffix) {
+    return PatchWriter::Apply(cpk, patch, hooks, suffix);
 }
 
-PatchResult RevertBlockPatch(const std::filesystem::path& cpk) {
+PatchResult RevertBlockPatch(const std::filesystem::path& cpk, std::string_view suffix) {
     PatchResult result;
     const std::string name = Utf8(cpk.filename());
-    const std::filesystem::path undo_path = UndoPath(cpk);
+    const std::filesystem::path undo_path = UndoPath(cpk, suffix);
     std::error_code ec;
     if (!std::filesystem::is_regular_file(undo_path, ec)) {
         result.ok = true;

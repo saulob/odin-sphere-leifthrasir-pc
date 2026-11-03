@@ -106,11 +106,16 @@ std::vector<uint8_t> CrilaylaDecompress(std::span<const uint8_t> data, std::stri
 
 enum class ArchivePatchState { kOriginal, kPatched };
 
-std::filesystem::path UndoPath(const std::filesystem::path& cpk);
+// A patch layer is named by its undo record's suffix. Layers revert last in, first out: the title menu patch goes on
+// top of the controller prompts patch and comes off first.
+inline constexpr std::string_view kUndoSuffix = ".undo";
+inline constexpr std::string_view kTitleUndoSuffix = ".title.undo";
+
+std::filesystem::path UndoPath(const std::filesystem::path& cpk, std::string_view suffix = kUndoSuffix);
 // Patched when the undo record next to the archive exists.
-ArchivePatchState ArchiveState(const std::filesystem::path& cpk);
+ArchivePatchState ArchiveState(const std::filesystem::path& cpk, std::string_view suffix = kUndoSuffix);
 // The entries the archive's undo record says were rewritten; empty when it is not patched or the record is unreadable.
-std::vector<std::string> PatchedEntries(const std::filesystem::path& cpk);
+std::vector<std::string> PatchedEntries(const std::filesystem::path& cpk, std::string_view suffix = kUndoSuffix);
 
 struct PatchHooks {
     std::function<void(const char* text)> phase;                     // "Reading stage/Interface_US.ftx..."
@@ -156,13 +161,14 @@ std::vector<UnmatchedEntry> FindUnmatchedEntries(const std::filesystem::path& cp
 
 // Whether the archive holds this patch and nothing else: every entry the patch names is a patched copy, and the undo
 // record names exactly those entries. False when it holds none of them.
-bool HoldsBlockPatch(const std::filesystem::path& cpk, const BlockPatch& patch);
+bool HoldsBlockPatch(const std::filesystem::path& cpk, const BlockPatch& patch, std::string_view suffix = kUndoSuffix);
 
 // Applies every target of the patch the archive holds. An archive that is already patched is left alone (ok, 0
 // patched); an entry that is not the file the patch was made for is skipped and named in `detail`.
-PatchResult ApplyBlockPatch(const std::filesystem::path& cpk, const BlockPatch& patch, const PatchHooks& hooks = {});
+PatchResult ApplyBlockPatch(const std::filesystem::path& cpk, const BlockPatch& patch, const PatchHooks& hooks = {},
+                            std::string_view suffix = kUndoSuffix);
 // Puts the archive back as it was, from the undo record, and removes the record.
-PatchResult RevertBlockPatch(const std::filesystem::path& cpk);
+PatchResult RevertBlockPatch(const std::filesystem::path& cpk, std::string_view suffix = kUndoSuffix);
 
 uint32_t Crc32(std::span<const uint8_t> bytes);
 

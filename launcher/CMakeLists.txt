@@ -30,7 +30,7 @@ target_link_libraries(osl_imgui_sdl PUBLIC SDL3::SDL3)
 # Display options: no window needed (tests link only this).
 find_package(ZLIB REQUIRED)
 add_library(osl_launcher_core STATIC bookshelf.c boot_image.cpp build_diagnostics.cpp controller_prompts.cpp cpk_patch.cpp file_browser.cpp game_files.cpp
-    game_install.cpp game_profile.cpp options.cpp paths.cpp pkg_extract.cpp resolution.c settings.cpp skip_intro.c
+    game_install.cpp game_profile.cpp options.cpp paths.cpp pkg_extract.cpp resolution.c settings.cpp skip_intro.c title_exit_assets.cpp title_menu_exit.c
     trophy_content.cpp ${PROJECT_SOURCE_DIR}/src/lzcnt_compat.c
     ${PROJECT_SOURCE_DIR}/src/trophies/trophy_data.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trophy_key.cpp
     ${PROJECT_SOURCE_DIR}/src/trophies/trophy_pack.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trophy_runtime.cpp
@@ -60,12 +60,22 @@ add_custom_command(OUTPUT ${OSL_PROMPTS_PATCH_SOURCE}
     DEPENDS ${OSL_PROMPTS_PATCH} ${CMAKE_CURRENT_SOURCE_DIR}/embed.cmake
     COMMENT "Embedding prompts/xbox-prompts.dcpx")
 
+# The title menu patch (title/title-exit.dcpx) as a byte array, title_patch.h.
+set(OSL_TITLE_PATCH ${CMAKE_CURRENT_SOURCE_DIR}/title/title-exit.dcpx)
+set(OSL_TITLE_PATCH_SOURCE ${CMAKE_BINARY_DIR}/generated/title_patch_data.cpp)
+add_custom_command(OUTPUT ${OSL_TITLE_PATCH_SOURCE}
+    COMMAND ${CMAKE_COMMAND} -DINPUT=${OSL_TITLE_PATCH} -DOUTPUT=${OSL_TITLE_PATCH_SOURCE} -DSYMBOL=kTitleExitPatch
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/embed.cmake
+    DEPENDS ${OSL_TITLE_PATCH} ${CMAKE_CURRENT_SOURCE_DIR}/embed.cmake
+    COMMENT "Embedding title/title-exit.dcpx")
+
 # The launcher's self-update from GitHub releases (update_config.cpp, updater/).
 set(OSL_UPDATER_SOURCES updater/github_release.cpp updater/json.cpp updater/sha256.cpp updater/update_controller.cpp
     updater/update_job.cpp updater/update_paths.cpp updater/update_platform.cpp updater/update_zip.cpp updater/version.cpp)
 
 add_library(osl_launcher STATIC host.cpp launcher.cpp package_browser.cpp problem_dialog.cpp shift_key.cpp trophy_page.cpp
-    update_config.cpp ${OSL_UPDATER_SOURCES} updater/update_ui.cpp ${OSL_PROMPTS_PATCH_SOURCE})
+    update_config.cpp ${OSL_UPDATER_SOURCES} updater/update_ui.cpp ${OSL_PROMPTS_PATCH_SOURCE}
+    ${OSL_TITLE_PATCH_SOURCE})
 target_compile_definitions(osl_launcher PRIVATE OSL_PORT_VERSION="${OSL_PORT_VERSION}")
 target_include_directories(osl_launcher PRIVATE ${PROJECT_SOURCE_DIR}/gpu/shim)
 target_link_libraries(osl_launcher PUBLIC osl_launcher_core trg_launcher osl_imgui_sdl miniz ${CMAKE_DL_LIBS})
