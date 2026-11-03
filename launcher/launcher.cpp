@@ -970,7 +970,11 @@ private:
                 if (outcome->ok) {
                     return std::string();
                 }
-                return std::string(outcome->cancelled ? "Cancelled" : "Could not change the game files");
+                if (outcome->cancelled) {
+                    return std::string("Cancelled");
+                }
+                return std::string(outcome->unsupported.empty() ? "Could not change the game files"
+                                                                : "Controller prompts are not available for this game version");
             });
         if (started) {
             Log("controller prompts: switching to %s", PromptStyleKey(style));
@@ -1002,7 +1006,13 @@ private:
             return;
         }
         Log("controller prompts: failed: %s", outcome->detail.c_str());
-        launcher_->SetStatus("Could not change the controller prompts. See the log.", 8.0);
+        for (const std::string& line : outcome->unsupported) {
+            Log("%s", line.c_str());
+        }
+        launcher_->SetStatus(outcome->unsupported.empty()
+                                 ? "Could not change the controller prompts. See the log."
+                                 : "Controller prompts are not available for this game version. Please provide the log.",
+                             8.0);
     }
 
     std::filesystem::path UserDir() const { return PathFromUtf8(config_.user_dir ? config_.user_dir : "user"); }
