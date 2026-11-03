@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <fcntl.h>
 #include <filesystem>
 #include <fstream>
 #include <functional>
@@ -892,12 +893,46 @@ void TestGraphicsCard() {
     }
 }
 
+std::string CapturedStdout(const std::function<void()>& run, const std::filesystem::path& file) {
+    std::fflush(stdout);
+    const int saved = dup(1);
+    const int fd = open(file.string().c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    dup2(fd, 1);
+    close(fd);
+    run();
+    std::fflush(stdout);
+    dup2(saved, 1);
+    close(saved);
+    std::ifstream in(file, std::ios::binary);
+    return std::string(std::istreambuf_iterator<char>(in), {});
+}
+
 void TestTextLanguages() {
     const std::span<const GameBuild> builds = SupportedBuilds();
     const GameBuild& eu = builds[5];
     const GameBuild& usa = builds[0];
     const GameBuild& usa_update = builds[1];
     const GameBuild& japan = builds[3];
+    const GameBuild& hk = builds[6];
+
+    CHECK(std::string_view(hk.title_id) == "CUSA03873" && std::string_view(hk.region) == "HK");
+    CHECK(hk.text_mode == TextLanguageMode::kSelectable);
+    const std::span<const TextLanguage> hk_languages = TextLanguagesOf(&hk);
+    CHECK(hk_languages.size() == 2);
+    CHECK(hk_languages[0].key == "traditional_chinese" && hk_languages[0].name == "Traditional Chinese" &&
+          hk_languages[0].ps4_id == 10);
+    CHECK(hk_languages[1].key == "korean" && hk_languages[1].name == "Korean" && hk_languages[1].ps4_id == 9);
+    CHECK(ResolveTextLanguage(&hk, "traditional_chinese").ps4_id == 10);
+    CHECK(ResolveTextLanguage(&hk, "korean").ps4_id == 9);
+    CHECK(ResolveTextLanguage(&hk, "invalid").ps4_id == 10);
+    CHECK(ResolveTextLanguage(&hk, "english").ps4_id == 10);
+    CHECK(ResolveTextLanguage(&hk, "french").ps4_id == 10);
+    CHECK(ResolveTextLanguage(&eu, "traditional_chinese").ps4_id == 1);
+    CHECK(ResolveTextLanguage(&eu, "korean").ps4_id == 1);
+    for (const size_t fixed : {0, 1, 2, 3}) {
+        CHECK(builds[fixed].text_mode == TextLanguageMode::kFixed && TextLanguagesOf(&builds[fixed]).empty());
+    }
+    CHECK(builds[4].text_mode == TextLanguageMode::kSelectable && eu.text_mode == TextLanguageMode::kSelectable);
 
     const std::span<const TextLanguage> languages = TextLanguagesOf(&eu);
     CHECK(languages.size() == 5);
@@ -959,6 +994,34 @@ void TestTextLanguages() {
     CHECK(osl_text_language(ini.string().c_str(), dir.string().c_str()) == 2);
     CHECK(osl_text_language(nullptr, dir.string().c_str()) == 1);
     CHECK(osl_text_language(ini.string().c_str(), nullptr) == 1);
+
+    write_image(hk);
+    const auto hk_language = [&](const char* value) {
+        std::ofstream(ini) << "text_language = " << value << "\n";
+        return osl_text_language(ini.string().c_str(), dir.string().c_str());
+    };
+    CHECK(hk_language("traditional_chinese") == 10);
+    CHECK(hk_language("korean") == 9);
+    CHECK(hk_language("english") == 10);
+    CHECK(hk_language("klingon") == 10);
+    const auto logged = [&](const char* value) {
+        std::ofstream(ini) << "text_language = " << value << "\n";
+        return CapturedStdout([&] { osl_log_gameplay_settings(ini.string().c_str(), dir.string().c_str()); },
+                              dir / "log.txt");
+    };
+    const auto has_line = [](const std::string& log, const char* line) {
+        return log.find(std::string(line) + "\n") != std::string::npos ||
+               log.find(std::string(line) + "\r\n") != std::string::npos;
+    };
+    CHECK(has_line(logged("traditional_chinese"), "Gameplay: Menu & Subtitles Traditional Chinese"));
+    CHECK(has_line(logged("korean"), "Gameplay: Menu & Subtitles Korean"));
+    write_image(eu);
+    CHECK(has_line(logged("french"), "Gameplay: Menu & Subtitles French"));
+    CHECK(hk_language("korean") == 1);
+    CHECK(hk_language("traditional_chinese") == 1);
+    CHECK(IsValidSetting(kTextLanguageKey, "traditional_chinese"));
+    CHECK(IsValidSetting(kTextLanguageKey, "korean"));
+    CHECK(!IsValidSetting(kTextLanguageKey, "simplified_chinese"));
 
     LauncherSettings settings(dir / "other.ini");
     settings.ResetToDefaults();
@@ -3571,9 +3634,17 @@ void TestBuildContract() {
                 resolved = resolved && IsValidSetting(kTextLanguageKey, std::string(language.key)) &&
                            osl_text_language(ini.string().c_str(), image_dir.string().c_str()) == language.ps4_id;
             }
-            PARITY("Languages", languages.size() >= 2 && languages.front().key == "english" &&
-                                    languages.front().ps4_id == 1 && ids.size() == languages.size() &&
-                                    keys.size() == languages.size() && resolved);
+            std::ofstream(ini) << "text_language = invalid\n";
+            for (const TextLanguage& language : languages) {
+                resolved = resolved && &ResolveTextLanguage(&build, language.key) == &language;
+            }
+            PARITY("Languages", languages.size() >= 2 && &ResolveTextLanguage(&build, "invalid") == &languages.front() &&
+                                    osl_text_language(ini.string().c_str(), image_dir.string().c_str()) ==
+                                        languages.front().ps4_id &&
+                                    ids.size() == languages.size() && keys.size() == languages.size() &&
+                                    std::all_of(languages.begin(), languages.end(),
+                                                [](const TextLanguage& language) { return language.ps4_id >= 0; }) &&
+                                    resolved);
         } else {
             std::ofstream(ini) << "text_language = german\n";
             PARITY("Languages", ResolveTextLanguage(&build, "german").ps4_id == 1 &&
@@ -4040,7 +4111,15 @@ void TestHongKongBuild() {
     CHECK(std::string(hk.region) == "HK" && hk.extra_files.empty() && hk.layers.size() == 1);
     const std::vector<std::string> data(hk.data_files.begin(), hk.data_files.end());
     CHECK((data == std::vector<std::string>{"Odin2_BT_CN.CPK", "Odin2_OR_CN.CPK", "Odin2_RE_CN.CPK"}));
-    CHECK(hk.mapping == ExecutableMapping::kScanned && hk.text_mode == TextLanguageMode::kFixed);
+    CHECK(hk.mapping == ExecutableMapping::kScanned && hk.text_mode == TextLanguageMode::kSelectable);
+    const std::span<const TextLanguage> languages = TextLanguagesOf(&hk);
+    CHECK(languages.size() == 2);
+    if (languages.size() == 2) {
+        CHECK(languages[0].key == "traditional_chinese" && languages[0].name == "Traditional Chinese" &&
+              languages[0].ps4_id == 10);
+        CHECK(languages[1].key == "korean" && languages[1].name == "Korean" && languages[1].ps4_id == 9);
+        CHECK(&ResolveTextLanguage(&hk, "") == &languages[0]);
+    }
     CHECK(BuildMetadataText(hk) == "APP_VER 1.00 \xC2\xB7 VERSION 1.00");
     CHECK(InstalledGameName(GameFileState::kValid, &hk) == "PS4 CUSA03873 1.00 HK");
 

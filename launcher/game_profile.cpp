@@ -145,6 +145,11 @@ constexpr TextLanguage kEuLanguages[] = {
     {"spanish", "Spanish", 3}, {"italian", "Italian", 5},
 };
 
+constexpr TextLanguage kHkLanguages[] = {
+    {"traditional_chinese", "Traditional Chinese", 10},
+    {"korean", "Korean", 9},
+};
+
 constexpr const char* kUsaDataFiles[] = {"Odin2_BT_US.CPK", "Odin2_OR_US.CPK", "Odin2_RE_US.CPK"};
 constexpr const char* kUsa101DataFiles[] = {"Odin2_BT_US.CPK", "Odin2_OR_US.CPK", "Odin2_RE_US.CPK",
                                             "Odin2_US_PATCH1_RE_US.CPK"};
@@ -302,9 +307,9 @@ constexpr GameBuild kGameBuilds[] = {
         0,
         nullptr,
         nullptr,
-        {},
+        kHkLanguages,
         ExecutableMapping::kScanned,
-        TextLanguageMode::kFixed,
+        TextLanguageMode::kSelectable,
     },
 };
 

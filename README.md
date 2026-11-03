@@ -47,7 +47,7 @@ checked by scripts, but it has not yet been tested on real Linux PCs or a Steam 
 
 ### Gameplay
 - **Skip intro**: start at the title's PRESS START, without the startup notice, logos and intro
-- **Menu & Subtitles** language for the European build (English, French, German, Spanish, Italian)
+- **Menu & Subtitles** language for the European build (English, French, German, Spanish, Italian) and the Hong Kong build (Traditional Chinese, Korean)
 - Frame rate and render resolution in the window title, and an in-game **frame counter** with the frame time, toggled with **F2** while playing
 - Startup hints confirm **Skip intro** and **Unlock Bookshelf** when either is on, then disappear on their own
 
@@ -148,7 +148,7 @@ Everything is kept next to the program (next to the AppImage on Linux):
 - **Play**: install or reinstall the game from your `.pkg`, the **Ready to play** status and **Show this launcher**
 - **Display**: display mode, window size, monitor, Aspect Ratio, graphics card, VSync, Presentation, FSR 1 upscaling and RCAS sharpening
 - **Graphics**: Render resolution, SMAA anti-aliasing and anisotropic texture filtering
-- **Gameplay**: Menu & Subtitles language (the European build only), **Skip intro**, **Unlock Bookshelf**, frame rate and render resolution in the title, and the in-game frame counter
+- **Gameplay**: Menu & Subtitles language (the European and Hong Kong builds), **Skip intro**, **Unlock Bookshelf**, frame rate and render resolution in the title, and the in-game frame counter
 - **Controls**: **Controller prompts** (PlayStation or Xbox), every keyboard binding and the port hotkeys, with **Reset to defaults**. Xbox changes the button pictures the game shows (A/B/X/Y, LB/RB, LT/RT, MENU and VIEW) in the port's own copy of the game; the touchpad prompt becomes VIEW. PlayStation puts the originals back. Your `.pkg` file is never changed.
 - **Trophies**: your local PS4 trophy progress, the trophy list and the Trophy Key setup
 - **About**: the port version, the game, the renderer and the library versions, the game, saves and logs folders, the settings file, **Reset all settings**, and **Diagnostics** with Detailed logging and a button that opens the logs folder
@@ -167,11 +167,12 @@ offer them when their installation scan found their sites.
 Cheats are not exposed: Odin Sphere's gameplay values have not yet been verified for a launcher option. Each build's own
 text is used, and no region's assets are ever mixed.
 
-**Menu & Subtitles** is offered for the European build (CUSA05262) only, whose executable selects its menu and subtitle
-archives from the console's System Language: English, French, German, Spanish or Italian. The setting is stored in
-`user\osl.ini` as `text_language` and is passed to the game as the PS4 System Language. The USA build contains a single
-English text set and the Japanese build Japanese text, so neither shows the control; a language chosen for the European
-build is kept if you switch builds and used again when you return.
+**Menu & Subtitles** is offered for the European build (CUSA05262) and the Hong Kong build (CUSA03873), whose executables
+select their menu and subtitle text from the console's System Language. Europe offers English, French, German, Spanish
+or Italian (English by default); Hong Kong offers Traditional Chinese or Korean (Traditional Chinese by default). The
+setting is stored in `user\osl.ini` as `text_language` and is passed to the game as the PS4 System Language. The USA
+build contains a single English text set and the Japanese build Japanese text, so neither shows the control. A saved
+language the selected build does not offer is replaced by that build's default.
 
 **Voice Language** is the game's own setting. The European build ships the Japanese and English voice banks in its
 single `Odin2_BT_UK.CPK` audio container (the per-language `Odin2_BT_*.CPK` files are secondary), and the in-game
