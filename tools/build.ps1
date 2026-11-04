@@ -13,11 +13,14 @@
   The prepared build whose boot image to update (default: the active one, game\prepared\CUSA05083-1.00 by default).
 .PARAMETER Run
   Launches the loader that was just built and stays attached until the game is closed. The launcher opens first
-  when its rules say so (docs\LAUNCHER.md). Logs to build\logs\odin_sphere_leifthrasir_NNN.log.
+  when its rules say so (docs\LAUNCHER.md). Logs to build\logs\odin_sphere_leifthrasir_NNN.log. The terminal stays
+  concise: the complete run output goes to that log only, and an abnormal exit prints the log path and its last lines.
+.PARAMETER VerboseRuntime
+  With -Run, streams the runtime output live into the terminal as well (it is always in the log).
 .PARAMETER Clean
   Deletes the configuration's build folder first (the installed game, the boot image and the logs are kept).
 .PARAMETER CheckImports
-  Diagnostic: with -Run, lists the PS4 imports the runtime lacks instead of running the game.
+  Diagnostic: with -Run, lists the PS4 imports the runtime lacks instead of running the game (output stays live).
 .PARAMETER TimeoutSeconds
   Diagnostic for automated tests only: with -Run, kills the loader after this many seconds (and skips the launcher).
 .PARAMETER LoaderArgs
@@ -25,6 +28,7 @@
 .EXAMPLE
   .\tools\build.ps1
   .\tools\build.ps1 -Run
+  .\tools\build.ps1 -Run -VerboseRuntime
   .\tools\build.ps1 -Release
 #>
 [CmdletBinding()]
@@ -33,6 +37,7 @@ param(
     [switch]$Run,
     [switch]$Clean,
     [switch]$CheckImports,
+    [switch]$VerboseRuntime,
     [string]$Version = '',
     [int]$TimeoutSeconds = 0,
     [Parameter(ValueFromRemainingArguments = $true)][string[]]$LoaderArgs = @()
@@ -137,6 +142,18 @@ $arguments = @()
 if ($CheckImports) { $arguments += '--check-imports' }
 if ($TimeoutSeconds -gt 0) { $arguments += '--osl-skip-launcher' }
 $arguments += $LoaderArgs
+$quiet = -not ($VerboseRuntime -or $CheckImports -or $TimeoutSeconds -gt 0)
+function Get-LogsDirectory {
+    $index = [array]::LastIndexOf($LoaderArgs, '--logs')
+    if ($index -lt 0 -or $index + 1 -ge $LoaderArgs.Count) { return Join-Path $root 'build\logs' }
+    $dir = $LoaderArgs[$index + 1]
+    if (-not [System.IO.Path]::IsPathRooted($dir)) { $dir = Join-Path (Split-Path $loader -Parent) $dir }
+    return [System.IO.Path]::GetFullPath($dir)
+}
+$logsDir = Get-LogsDirectory
+Write-Step 'Starting odin_sphere_leifthrasir.exe'
+Write-Host "Runtime logs: $logsDir"
+if ($quiet) { Write-Host 'Run output goes to the log only; -VerboseRuntime streams it here.' }
 Push-Location (Split-Path $loader -Parent)
 try {
     if ($TimeoutSeconds -gt 0) {
@@ -149,14 +166,25 @@ try {
         }
         $code = $process.ExitCode
     }
-    else {
+    elseif (-not $quiet) {
+        # The call operator waits for a Windows-subsystem program only when its output is piped.
         & $loader @arguments | Out-Host
         $code = $LASTEXITCODE
+    }
+    else {
+        # The runtime echoes its log to the stdout it inherits; NUL keeps that out of the terminal.
+        $start = @{ FilePath = $loader; NoNewWindow = $true; Wait = $true; PassThru = $true
+                    RedirectStandardOutput = 'NUL'; RedirectStandardError = '\.\NUL' }
+        if ($arguments.Count -gt 0) { $start.ArgumentList = @($arguments | ForEach-Object { if ($_ -match '\s') { "`"$_`"" } else { $_ } }) }
+        $code = (Start-Process @start).ExitCode
     }
 }
 finally {
     Pop-Location
 }
 Write-Host "odin_sphere_leifthrasir.exe exit code $code"
-if ($code -eq $loadExecExit) { Write-Host 'The game requested sceSystemServiceLoadExec (see the LoadExec lines above).' }
+if ($code -eq $loadExecExit) {
+    Write-Host ('The game requested sceSystemServiceLoadExec' + $(if ($quiet) { ' (see the runtime log).' } else { ' (see the LoadExec lines above).' }))
+}
+elseif ($code -ne 0 -and $quiet) { Write-Warn "Abnormal exit; see the runtime logs in $logsDir" }
 exit $code
