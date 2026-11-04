@@ -36,7 +36,7 @@ $sources = @($Matches[1] -split '\s+' | Where-Object { $_ } | ForEach-Object { "
 $rootForward = $root.Replace('\', '/')
 $compileFlags = @('-O2', '-g', '-DNDEBUG', '-std=c++20', "-fmacro-prefix-map=$rootForward/=", '-Wall', '-Wextra',
     '-DOSL_UPDATER_HELPER_BUILD=1', '-I', "$rootForward/launcher")
-$linkFlags = @('-O2', '-g', '-DNDEBUG', '-mwindows', '-static', '-fuse-ld=lld')
+$linkFlags = @('-O2', '-g', '-DNDEBUG', '-mwindows', '-static', '-fuse-ld=lld', '-Wl,--no-insert-timestamp')
 $libraries = @('-lshell32', '-lkernel32', '-luser32', '-lgdi32', '-lwinspool', '-lshell32', '-lole32', '-loleaut32', '-luuid',
     '-lcomdlg32', '-ladvapi32')
 # The helper is copied to a temporary folder and run from there, so it may load nothing but Windows itself.

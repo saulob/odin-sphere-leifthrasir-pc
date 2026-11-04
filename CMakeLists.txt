@@ -118,13 +118,14 @@ if (WIN32)
 endif()
 
 # Windows Release: ThinLTO across the program and the project libraries it is linked from, with the LTO backend at
-# -O3 like the compile. Without debug information the program has no use for a COFF symbol table or a build id.
+# -O3 like the compile. Without debug information the program has no use for a COFF symbol table or a build id, and a
+# fixed PE time stamp makes the same inputs link to the same bytes.
 if (WIN32)
     foreach(target odin_sphere_leifthrasir oslgpu osl_launcher osl_launcher_core trg_launcher trg_core osl_imgui_sdl osl_keys)
         target_compile_options(${target} PRIVATE "$<$<AND:$<CONFIG:Release>,$<COMPILE_LANGUAGE:C,CXX>>:-flto=thin>")
     endforeach()
     set(OSL_RELEASE_LINK -flto=thin -Wl,--lto-O3 "-Wl,--thinlto-cache-dir=${CMAKE_BINARY_DIR}/lto-cache" -Wl,--strip-all
-        -Wl,--build-id=none)
+        -Wl,--build-id=none -Wl,--no-insert-timestamp)
     target_link_options(odin_sphere_leifthrasir PRIVATE "$<$<CONFIG:Release>:${OSL_RELEASE_LINK}>")
 endif()
 
