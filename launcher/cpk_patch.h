@@ -149,6 +149,7 @@ struct EntryMatch {
     bool exact = false;                       // by CRC32; otherwise by source blocks
     bool ambiguous = false;                   // source-block matches that would write different bytes
     std::string analysis;                     // how a source-block match was made, or why there is none
+    bool by_profile = false;                  // taken by a KnownEntryProfile: its source blocks are not verified
 };
 
 // Whether the entry's data is an original or patched copy of one of the patch's targets. A CRC32 match is preferred.
@@ -156,8 +157,24 @@ struct EntryMatch {
 // run; copies that would give different results are ambiguous and match nothing.
 EntryMatch MatchEntry(const BlockPatch& patch, std::string_view name, std::span<const uint8_t> data, uint32_t crc);
 
+// One exact file whose original blocks are unavailable, so no target can be made from it: when MatchEntry finds nothing,
+// the runs of the reference target are written to it unverified. Never matches on anything but all three of name, size
+// and CRC32.
+struct KnownEntryProfile {
+    const char* label; // names the profile in the log
+    std::string_view name;
+    uint64_t size;
+    uint32_t crc;
+    uint32_t reference_crc; // crc_before of the target of the same name and size
+};
+
+// MatchEntry, then `profiles` for an entry it left unknown.
+EntryMatch MatchEntryWithProfiles(const BlockPatch& patch, std::span<const KnownEntryProfile> profiles, std::string_view name,
+                                  std::span<const uint8_t> data, uint32_t crc);
+
 // The entries of the archive the patch names that are not a copy it was made for; nothing is written.
-std::vector<UnmatchedEntry> FindUnmatchedEntries(const std::filesystem::path& cpk, const BlockPatch& patch);
+std::vector<UnmatchedEntry> FindUnmatchedEntries(const std::filesystem::path& cpk, const BlockPatch& patch,
+                                                 std::span<const KnownEntryProfile> profiles = {});
 
 // Whether the archive holds this patch and nothing else: every entry the patch names is a patched copy, and the undo
 // record names exactly those entries. False when it holds none of them.
@@ -166,7 +183,7 @@ bool HoldsBlockPatch(const std::filesystem::path& cpk, const BlockPatch& patch, 
 // Applies every target of the patch the archive holds. An archive that is already patched is left alone (ok, 0
 // patched); an entry that is not the file the patch was made for is skipped and named in `detail`.
 PatchResult ApplyBlockPatch(const std::filesystem::path& cpk, const BlockPatch& patch, const PatchHooks& hooks = {},
-                            std::string_view suffix = kUndoSuffix);
+                            std::string_view suffix = kUndoSuffix, std::span<const KnownEntryProfile> profiles = {});
 // Puts the archive back as it was, from the undo record, and removes the record.
 PatchResult RevertBlockPatch(const std::filesystem::path& cpk, std::string_view suffix = kUndoSuffix);
 

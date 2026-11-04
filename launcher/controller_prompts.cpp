@@ -145,7 +145,7 @@ PromptsResult SetPromptLayer(const std::filesystem::path& app0, const GameBuild&
         if (hooks.phase) {
             hooks.phase(("Patching " + Utf8(archive.filename()) + "...").c_str());
         }
-        const PatchResult step = ApplyBlockPatch(archive, *patch, hooks);
+        const PatchResult step = ApplyBlockPatch(archive, *patch, hooks, kUndoSuffix, build.prompt_profiles);
         Note(result.detail, step.detail);
         if (!step.ok || step.skipped) {
             result.cancelled = step.cancelled;
@@ -156,7 +156,7 @@ PromptsResult SetPromptLayer(const std::filesystem::path& app0, const GameBuild&
                 // The archives after the failing one are only read, so the log names every unsupported file.
                 std::vector<UnmatchedEntry> unmatched = step.unmatched;
                 for (auto later = std::next(std::find(archives.begin(), archives.end(), archive)); later != archives.end(); ++later) {
-                    const std::vector<UnmatchedEntry> more = FindUnmatchedEntries(*later, *patch);
+                    const std::vector<UnmatchedEntry> more = FindUnmatchedEntries(*later, *patch, build.prompt_profiles);
                     unmatched.insert(unmatched.end(), more.begin(), more.end());
                 }
                 for (const UnmatchedEntry& asset : unmatched) {

@@ -25,6 +25,8 @@ keyed by its CRC32, and the launcher takes an entry by that key first. A file of
 the size of a target of that name and every 16-byte block the target replaces is exactly the target's original block
 (DCPX2 runs hold both blocks); targets that would write different bytes into it are ambiguous and match nothing. Only
 those blocks are written, so the file's other bytes survive, and the undo record restores the file as it was.
+A file with no target and no matching blocks is refused, except the exact name, size and CRC32 a build lists in
+`prompt_profiles` (`launcher/game_profile.cpp`): that file takes a named target's runs unverified, and the log says so. Rebuilding the patch from the real file gives it a target of its own, which then takes precedence.
 
 These scripts are development tools (Python 3.11+, `numpy`, `scipy`, `Pillow`); players never run them, and the patch
 is committed.

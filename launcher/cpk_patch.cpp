@@ -389,7 +389,7 @@ std::vector<uint8_t> CrilaylaDecompress(std::span<const uint8_t> data, std::stri
 // rewrite them. PatchWriter is the only writer.
 struct PatchWriter {
     static PatchResult Apply(const std::filesystem::path& cpk, const BlockPatch& patch, const PatchHooks& hooks,
-                             std::string_view suffix);
+                             std::string_view suffix, std::span<const KnownEntryProfile> profiles);
 
     static bool Load(CpkArchive& a, const std::filesystem::path& file, UtfTable& header, UtfTable& toc, std::string* error) {
         std::ifstream in(file, std::ios::binary);
@@ -750,6 +750,31 @@ EntryMatch MatchEntry(const BlockPatch& patch, std::string_view name, std::span<
     return match;
 }
 
+EntryMatch MatchEntryWithProfiles(const BlockPatch& patch, std::span<const KnownEntryProfile> profiles, std::string_view name,
+                                  std::span<const uint8_t> data, uint32_t crc) {
+    EntryMatch match = MatchEntry(patch, name, data, crc);
+    if (match.state != EntryState::kUnknown) return match;
+    const auto profile = std::find_if(profiles.begin(), profiles.end(), [&](const KnownEntryProfile& known) {
+        return known.name == name && known.size == data.size() && known.crc == crc;
+    });
+    if (profile == profiles.end()) return match;
+    const std::string identity = Format("Controller prompts %s compatibility: %s, CRC32 %08x", profile->label, std::string(name).c_str(), crc);
+    if (match.ambiguous) {
+        match.analysis = identity + " rejected: " + match.analysis;
+        return match;
+    }
+    const BlockPatchTarget* reference = TargetOf(patch, name, data.size(), profile->reference_crc, false);
+    if (!reference) {
+        match.analysis = identity + Format(" rejected: reference target %08x is not in the patch", profile->reference_crc);
+        return match;
+    }
+    match.state = EntryState::kOriginal;
+    match.target = reference;
+    match.by_profile = true;
+    match.analysis = identity + Format(", reference %08x", reference->crc_before);
+    return match;
+}
+
 std::vector<std::string> PatchedEntries(const std::filesystem::path& cpk, std::string_view suffix) {
     std::vector<uint8_t> bytes;
     UndoRecord undo;
@@ -757,7 +782,8 @@ std::vector<std::string> PatchedEntries(const std::filesystem::path& cpk, std::s
     return undo.entries;
 }
 
-std::vector<UnmatchedEntry> FindUnmatchedEntries(const std::filesystem::path& cpk, const BlockPatch& patch) {
+std::vector<UnmatchedEntry> FindUnmatchedEntries(const std::filesystem::path& cpk, const BlockPatch& patch,
+                                                 std::span<const KnownEntryProfile> profiles) {
     std::vector<UnmatchedEntry> unmatched;
     CpkArchive archive;
     if (!archive.Open(cpk)) return unmatched;
@@ -767,7 +793,7 @@ std::vector<UnmatchedEntry> FindUnmatchedEntries(const std::filesystem::path& cp
         const std::vector<uint8_t> data = archive.Read(*entry);
         if (data.empty()) continue;
         const uint32_t crc = Crc32(data);
-        const EntryMatch match = MatchEntry(patch, entry->path, data, crc);
+        const EntryMatch match = MatchEntryWithProfiles(patch, profiles, entry->path, data, crc);
         if (match.state == EntryState::kUnknown) {
             unmatched.push_back({Utf8(cpk.filename()), entry->path, data.size(), crc, match.analysis});
         }
@@ -796,7 +822,7 @@ bool HoldsBlockPatch(const std::filesystem::path& cpk, const BlockPatch& patch, 
 }
 
 PatchResult PatchWriter::Apply(const std::filesystem::path& cpk, const BlockPatch& patch, const PatchHooks& hooks,
-                               std::string_view suffix) {
+                               std::string_view suffix, std::span<const KnownEntryProfile> profiles) {
     PatchResult result;
     const auto fail = [&](std::string why) {
         result.ok = false;
@@ -830,7 +856,7 @@ PatchResult PatchWriter::Apply(const std::filesystem::path& cpk, const BlockPatc
         std::vector<uint8_t> data = archive.Read(*entry, &error);
         if (data.empty()) return fail(name + ": " + error);
         const uint32_t crc = Crc32(data);
-        const EntryMatch match = MatchEntry(patch, entry->path, data, crc);
+        const EntryMatch match = MatchEntryWithProfiles(patch, profiles, entry->path, data, crc);
         if (match.state == EntryState::kPatched) {
             continue; // already carries the patch (then the undo record was lost; nothing to redo)
         }
@@ -845,7 +871,11 @@ PatchResult PatchWriter::Apply(const std::filesystem::path& cpk, const BlockPatc
             std::memcpy(data.data() + run.offset, run.data.data(), 16);
         }
         if (match.exact && Crc32(data) != target->crc_after) return fail(name + ": " + entry->path + ": patched data does not verify");
-        if (!match.exact) accepted += (accepted.empty() ? "" : "; ") + entry->path + " (CRC32 " + Format("%08x", crc) + "): " + match.analysis;
+        if (match.by_profile) {
+            accepted += (accepted.empty() ? "" : "; ") + match.analysis;
+        } else if (!match.exact) {
+            accepted += (accepted.empty() ? "" : "; ") + entry->path + " (CRC32 " + Format("%08x", crc) + "): " + match.analysis;
+        }
         patched.emplace_back(entry, std::move(data));
     }
     if (patched.empty()) {
@@ -949,8 +979,8 @@ PatchResult PatchWriter::Apply(const std::filesystem::path& cpk, const BlockPatc
 }
 
 PatchResult ApplyBlockPatch(const std::filesystem::path& cpk, const BlockPatch& patch, const PatchHooks& hooks,
-                            std::string_view suffix) {
-    return PatchWriter::Apply(cpk, patch, hooks, suffix);
+                            std::string_view suffix, std::span<const KnownEntryProfile> profiles) {
+    return PatchWriter::Apply(cpk, patch, hooks, suffix, profiles);
 }
 
 PatchResult RevertBlockPatch(const std::filesystem::path& cpk, std::string_view suffix) {

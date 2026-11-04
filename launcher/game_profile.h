@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 
+#include "cpk_patch.h"
 #include "osl_bookshelf.h"
 #include "osl_resolution.h"
 #include "osl_skip_intro.h"
@@ -58,6 +59,7 @@ struct GameBuild {
     ExecutableMapping mapping;
     TextLanguageMode text_mode;
     const char* merged_sfo_version = nullptr; // VERSION of a complete (gd) package of the finished APP_VER; needs no base
+    std::span<const KnownEntryProfile> prompt_profiles = {}; // button art taken without verified source blocks
 };
 
 // The supported builds, USA first.

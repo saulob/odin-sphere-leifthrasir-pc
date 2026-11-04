@@ -175,6 +175,10 @@ constexpr const char* kEu101DataFiles[] = {
 constexpr const char* kEu101ExtraFiles[] = {"sce_discmap_patch.plt"};
 
 constexpr const char* kHkDataFiles[] = {"Odin2_BT_CN.CPK", "Odin2_OR_CN.CPK", "Odin2_RE_CN.CPK"};
+constexpr KnownEntryProfile kHkPromptProfiles[] = {
+    {"HK", "Interface.ftx", 4458000, 0xc2d4a197, 0xe47e29e5},
+    {"HK", "GUI/HD_Interface.ftx", 4458000, 0xc2d4a197, 0xe47e29e5},
+};
 
 constexpr GameBuild kGameBuilds[] = {
     {
@@ -310,6 +314,8 @@ constexpr GameBuild kGameBuilds[] = {
         kHkLanguages,
         ExecutableMapping::kScanned,
         TextLanguageMode::kSelectable,
+        nullptr,
+        kHkPromptProfiles,
     },
 };
 
