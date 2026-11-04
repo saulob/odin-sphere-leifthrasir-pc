@@ -16,7 +16,7 @@
 
 ## Status
 
-**v0.2.2** is the current release. The loader and runtime map and run the game's own x86-64 code, with the
+**v0.2.3** is the current release. The loader and runtime map and run the game's own x86-64 code, with the
 shadPS4-derived Vulkan video core, the launcher and installer, local trophies, the self-updater and the diagnostics.
 The USA release (`CUSA05083` base 1.00 plus its 1.01 update), the Japanese release (`CUSA01290` base 1.00 plus its 1.02
 update) and the European release (`CUSA05262` base 1.00 plus its 1.01 update) are supported. The Hong Kong 1.00 base
@@ -96,9 +96,9 @@ with the same Title ID and Content ID. A package encrypted for a PS4 console can
 
 ### Windows
 
-1. Download **OdinSphereLeifthrasirPC-v0.2.2-windows-x64.zip** from the
+1. Download **OdinSphereLeifthrasirPC-v0.2.3-windows-x64.zip** from the
    [latest release](https://github.com/saulob/odin-sphere-leifthrasir-pc/releases/latest) and extract it anywhere you
-   can write to (not `Program Files`). It contains one folder, `OdinSphereLeifthrasirPC-v0.2.2-windows-x64`.
+   can write to (not `Program Files`). It contains one folder, `OdinSphereLeifthrasirPC-v0.2.3-windows-x64`.
 2. Run **odin_sphere_leifthrasir.exe** from that folder. The launcher opens.
 3. On the **Play** page click **Install game...** and select your own Odin Sphere Leifthrasir `.pkg` file.
 4. Wait until **Ready to play** appears. The package is unpacked on your PC into the `game` folder next to the program
@@ -112,7 +112,7 @@ with the same Title ID and Content ID. A package encrypted for a PS4 console can
 
 ### Linux and Steam Deck (experimental)
 
-1. Download **OdinSphereLeifthrasirPC-v0.2.2-x86_64.AppImage**, put it in a folder you can write to and make it
+1. Download **OdinSphereLeifthrasirPC-v0.2.3-x86_64.AppImage**, put it in a folder you can write to and make it
    executable (right-click > **Properties** > **Permissions** > **Is executable**, or `chmod +x`).
 2. Run it and install your own `.pkg` from the **Play** page, as on Windows. `game`, `user` and `logs` are kept next to
    the AppImage.

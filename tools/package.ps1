@@ -23,7 +23,7 @@
   Only checks an existing staged folder or release ZIP, then exits.
 .EXAMPLE
   .\tools\package.ps1
-  .\tools\package.ps1 -VerifyOnly dist\OdinSphereLeifthrasirPC-v0.2.2-windows-x64.zip
+  .\tools\package.ps1 -VerifyOnly dist\OdinSphereLeifthrasirPC-v0.2.3-windows-x64.zip
 #>
 [CmdletBinding()]
 param(
@@ -470,7 +470,11 @@ Write-Host ''
 Write-Host 'RELEASE PACKAGE READY (nothing was published)' -ForegroundColor Green
 Write-Host "  Folder:   $stage ($(Format-Size $stageBytes), $($files.Count) files)"
 Write-Host "  ZIP:      $zip ($(Format-Size (Get-Item -LiteralPath $zip).Length), one folder: $name/)"
-Write-Host "  SHA-256:  $hash"
+Write-Host "  Windows ZIP SHA-256:                $hash"
+foreach ($program in @('odin_sphere_leifthrasir.exe', 'trg-updater.exe')) {
+    Write-Host ("  {0} SHA-256: {1}" -f $program.PadRight(28), (Get-FileHash -LiteralPath (Join-Path $stage $program) -Algorithm SHA256).Hash.ToLowerInvariant())
+}
+Write-Host '  VirusTotal: scan the ZIP, both executables and the AppImage separately (docs\RELEASE_SECURITY.md)'
 Write-Host "  Checksum: $shaFile"
 Write-Host "  Symbols:  $symbols (not in the package)"
 Write-Host "  Loader:   $(Format-Size (Get-Item -LiteralPath $loader).Length) built, $(Format-Size (Get-Item -LiteralPath (Join-Path $stage 'odin_sphere_leifthrasir.exe')).Length) packaged"
