@@ -173,8 +173,9 @@ try {
     }
     else {
         # The runtime echoes its log to the stdout it inherits; NUL keeps that out of the terminal.
+        # Start-Process rejects equal RedirectStandardOutput/RedirectStandardError strings, so stderr uses the device path form of the same NUL device.
         $start = @{ FilePath = $loader; NoNewWindow = $true; Wait = $true; PassThru = $true
-                    RedirectStandardOutput = 'NUL'; RedirectStandardError = '\.\NUL' }
+                    RedirectStandardOutput = 'NUL'; RedirectStandardError = '\\.\NUL' }
         if ($arguments.Count -gt 0) { $start.ArgumentList = @($arguments | ForEach-Object { if ($_ -match '\s') { "`"$_`"" } else { $_ } }) }
         $code = (Start-Process @start).ExitCode
     }
