@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -30,10 +31,13 @@
 #include "controller_prompts.h"
 #include "game_files.h"
 #include "game_install.h"
+#include "header_art.h"
 #include "host.h"
+#include "incident_page.h"
 #include "launcher_quit.h"
 #include "options.h"
 #include "package_browser.h"
+#include "page_icons.h"
 #include "placement.h"
 #include "play_gate.h"
 #include "problem_dialog.h"
@@ -154,26 +158,28 @@ trg::Theme LauncherTheme() {
     return theme;
 }
 
-struct HeaderArt {
-    ImTextureID texture{};
-    float aspect = 0.0f;
-};
-
-trg::HeaderPainter LauncherHeader(HeaderArt art) {
+trg::HeaderPainter LauncherHeader(std::function<ImTextureID(int, int)> art, float art_aspect) {
     const trg::HeaderPainter gradient =
         trg::headers::Gradient(IM_COL32(10, 12, 24, 255),
                                IM_COL32(kAccentSubtleRed, kAccentSubtleGreen, kAccentSubtleBlue, 255),
                                IM_COL32(kAccentPressedRed / 2, kAccentPressedGreen / 2, kAccentPressedBlue / 2, 255),
                                IM_COL32(6, 8, 14, 255));
-    return [gradient, art](const trg::HeaderContext& c) {
+    return [gradient, art = std::move(art), art_aspect](const trg::HeaderContext& c) {
         gradient(c);
-        if (art.texture == ImTextureID{}) {
+        if (art_aspect <= 0.0f) {
             return;
         }
-        const float height = c.max.y - c.min.y;
-        const float width = height * art.aspect;
-        const ImVec2 top_left(c.max.x - width, c.min.y);
-        c.draw->AddImage(ImTextureRef(art.texture), top_left, c.max);
+        const HeaderArtRect rect = PlaceHeaderArt(c.min.y, c.max.x, c.max.y, art_aspect);
+        const float framebuffer = std::max(ImGui::GetIO().DisplayFramebufferScale.x, 1.0f);
+        const ImTextureID texture = art(static_cast<int>((rect.max_x - rect.min_x) * framebuffer + 0.5f),
+                                        static_cast<int>((rect.max_y - rect.min_y) * framebuffer + 0.5f));
+        if (texture == ImTextureID{}) {
+            return;
+        }
+        for (const HeaderArtStrip& strip : SplitHeaderArt(rect)) {
+            c.draw->AddImage(ImTextureRef(texture), ImVec2(strip.min_x, rect.min_y), ImVec2(strip.max_x, rect.max_y),
+                             ImVec2(strip.min_u, 0.0f), ImVec2(strip.max_u, 1.0f));
+        }
     };
 }
 
@@ -217,20 +223,6 @@ ImTextureID LoadSponsorIcon(LauncherHost& host) {
         }
     }
     return host.CreateTexture(image.rgba.data(), image.width, image.height);
-}
-
-// Optional: without it the header keeps its plain gradient.
-HeaderArt LoadHeaderArt(LauncherHost& host) {
-    OslPng::Image image;
-    if (!LoadLauncherImage("header-art.png", image)) {
-        return {};
-    }
-    const ImTextureID texture = host.CreateTexture(image.rgba.data(), image.width, image.height);
-    if (texture == ImTextureID{}) {
-        Log("header art could not be uploaded");
-        return {};
-    }
-    return {texture, float(image.width) / float(image.height)};
 }
 
 const char* StatusTitle(GameFileState state) {
@@ -301,10 +293,14 @@ public:
         prompts_installed_ = InstalledPrompts();
         Log("controller prompts: %s installed", PromptStyleKey(prompts_installed_));
         placement_ = PlacementTracker(host_.Restored());
-        fonts_ = trg::LoadSystemFonts(18.0f);
-        header_art_ = LoadHeaderArt(host_);
+        fonts_ = trg::LoadSystemFonts(trg::layout::kTextBody);
+        if (LoadLauncherImage("header-art.png", header_art_image_)) {
+            header_art_aspect_ = float(header_art_image_.width) / float(header_art_image_.height);
+        }
         sponsor_icon_ = LoadSponsorIcon(host_);
         trophy_page_ = std::make_unique<TrophyPage>(host_, UserDir());
+        incident_page_ = std::make_unique<IncidentPage>(IncidentPlaces());
+        incident_page_->CheckReports();
         launcher_ = std::make_unique<trg::Launcher>(MakeConfig());
         updater_ = std::make_unique<trg::update::UpdateController>(MakeUpdateConfig(InstallDir(), OSL_PORT_VERSION));
         updater_->StartCheck();
@@ -353,6 +349,7 @@ public:
         }
         launcher_.reset();
         trophy_page_.reset();
+        incident_page_.reset();
         host_.Close();
         Log(outcome == Outcome::kPlay ? "closed, starting the game" : "closed");
         return true;
@@ -413,16 +410,16 @@ private:
         const float s = ImGui::GetFontSize() / fonts_.size;
         ImGui::PopFont();
         const trg::Branding& branding = launcher_->config().branding;
-        const float header = std::clamp(ImGui::GetMainViewport()->Size.y * 0.2f, 120 * s, 190 * s);
-        const float title_size = std::clamp(header * 0.27f, 30 * s, 46 * s);
+        const float header = trg::layout::HeaderHeight(ImGui::GetMainViewport()->Size.y, s);
+        const float title_size = std::clamp(header * 0.34f, 30 * s, 44 * s);
         ImFont* bold = fonts_.bold ? fonts_.bold : fonts_.semibold ? fonts_.semibold : fonts_.regular;
         ImFont* semibold = fonts_.semibold ? fonts_.semibold : bold;
         float subtitle = 0.0f;
         for (const trg::SubtitleSegment& segment : branding.subtitle_segments) {
-            subtitle += semibold->CalcTextSizeA(16 * s, FLT_MAX, 0.0f, segment.text.c_str()).x;
+            subtitle += semibold->CalcTextSizeA(15 * s, FLT_MAX, 0.0f, segment.text.c_str()).x;
         }
         const float title = bold->CalcTextSizeA(title_size, FLT_MAX, 0.0f, branding.title.c_str()).x;
-        return 30 * s + std::max(title, subtitle) + 26 * s;
+        return 26 * s + std::max(title, subtitle) + 26 * s;
     }
 
     // True when the update helper was started and the launcher must quit so it can replace the program.
@@ -547,12 +544,14 @@ private:
             {"v" OSL_PORT_VERSION "   \xC2\xB7   ", ""},
             {"BY SAULOB", kAuthorUrl},
         };
-        c.branding.background = LauncherHeader(header_art_);
+        c.branding.background = LauncherHeader([this](int width, int height) { return HeaderArtTexture(width, height); },
+                                               header_art_aspect_);
         c.sponsor = {"Sponsor on GitHub", kSponsorUrl, sponsor_icon_};
         c.hints = "Enter  Play     Alt+F4  Quit     Ctrl+S  Save";
         c.note = "Play applies the changes. Save keeps them without starting.";
         for (const PageId page : kPageOrder) {
             c.pages.push_back(MakePage(page));
+            c.pages.back().icon = [this, page](int pixels) { return PageIconTexture(page, pixels); };
         }
         c.can_play = [this] {
             if (install_.running()) {
@@ -569,27 +568,56 @@ private:
         return c;
     }
 
+    ImTextureID HeaderArtTexture(int width, int height) {
+        if (width != header_art_width_ || height != header_art_height_) {
+            header_art_width_ = width;
+            header_art_height_ = height;
+            host_.DestroyTexture(header_art_);
+            const std::vector<uint8_t> rgba = ScaleArtRgba(header_art_image_.rgba.data(), header_art_image_.width,
+                                                           header_art_image_.height, width, height);
+            header_art_ = rgba.empty() ? ImTextureID{} : host_.CreateTexture(rgba.data(), width, height);
+        }
+        return header_art_;
+    }
+
+    ImTextureID PageIconTexture(PageId page, int pixels) {
+        const auto [icon, is_new] = page_icons_.try_emplace({page, pixels});
+        if (is_new) {
+            const std::vector<uint8_t> rgba = RenderPageIcon(page, pixels);
+            if (!rgba.empty()) {
+                icon->second = host_.CreateTexture(rgba.data(), pixels, pixels);
+            }
+            if (icon->second == ImTextureID{}) {
+                Log("sidebar icon unavailable: page %d at %d px", static_cast<int>(page), pixels);
+            }
+        }
+        return icon->second;
+    }
+
     trg::Page MakePage(PageId page) {
         const std::string name(PageName(page));
         switch (page) {
         case PageId::kPlay:
             return {name, "Check the game files and start playing.", [this](trg::Ui& ui) { PagePlay(ui); },
-                    [this] { return files_ != GameFileState::kValid; }};
+                    [this] { return files_ != GameFileState::kValid; }, nullptr};
         case PageId::kDisplay:
             return {name, "Window, monitor, scaling and presentation.", [this](trg::Ui& ui) { PageDisplay(ui); },
-                    nullptr};
+                    nullptr, nullptr};
         case PageId::kGraphics:
             return {name, "Resolution, anti-aliasing and texture filtering.", [this](trg::Ui& ui) { PageGraphics(ui); },
-                    nullptr};
+                    nullptr, nullptr};
         case PageId::kGameplay:
-            return {name, "Language and readouts.", [this](trg::Ui& ui) { PageGameplay(ui); }, nullptr};
+            return {name, "Language and readouts.", [this](trg::Ui& ui) { PageGameplay(ui); }, nullptr, nullptr};
         case PageId::kControls:
-            return {name, "Controller and keyboard.", [this](trg::Ui& ui) { PageControls(ui); }, nullptr};
+            return {name, "Controller and keyboard.", [this](trg::Ui& ui) { PageControls(ui); }, nullptr, nullptr};
         case PageId::kTrophies:
-            return {name, "Your trophies on this PC.", [this](trg::Ui& ui) { PageTrophies(ui); }, nullptr};
+            return {name, "Your trophies on this PC.", [this](trg::Ui& ui) { PageTrophies(ui); }, nullptr, nullptr};
+        case PageId::kBugReport:
+            return {name, "Describe a problem and send a report with one game log.",
+                    [this](trg::Ui& ui) { PageBugReport(ui); }, [this] { return incident_page_->HasReportUpdates(); }, nullptr};
         case PageId::kAbout:
             return {name, "This port, and where your files and settings live.", [this](trg::Ui& ui) { PageAbout(ui); },
-                    nullptr};
+                    nullptr, nullptr};
         }
         return {};
     }
@@ -1028,6 +1056,27 @@ private:
         trophy_page_->Draw(ui);
     }
 
+    IncidentPage::Places IncidentPlaces() const {
+        const std::filesystem::path logs = PathFromUtf8(config_.logs_dir ? config_.logs_dir : "logs");
+        const std::filesystem::path running = config_.log_file ? PathFromUtf8(config_.log_file) : std::filesystem::path();
+        return {logs, running, UserDir(), {InstallDir(), UserDir().parent_path(), logs.parent_path()},
+                [](const std::string& line) { Log("%s", line.c_str()); }};
+    }
+
+    ReportFacts CurrentReportFacts() const {
+        static const std::string operating_system = OperatingSystemText();
+        const bool known = build_ && files_ == GameFileState::kValid;
+        return {OSL_PORT_VERSION,
+                known ? build_->label : "Not installed",
+                known ? build_->version : "",
+                known ? build_->region : "",
+                known ? build_->title_id : "",
+                known ? build_->eboot_sha256 : "",
+                operating_system};
+    }
+
+    void PageBugReport(trg::Ui& ui) { incident_page_->Draw(ui, CurrentReportFacts()); }
+
     void PageAbout(trg::Ui& ui) {
         ui.SponsorCard(
             "This open source PC port is maintained and developed in my free time. If you enjoy the project and would "
@@ -1109,10 +1158,16 @@ private:
     std::vector<Display> displays_;
     std::vector<std::string> gpu_names_;
     trg::Fonts fonts_;
-    HeaderArt header_art_;
+    OslPng::Image header_art_image_;
+    ImTextureID header_art_{};
+    int header_art_width_ = 0;
+    int header_art_height_ = 0;
+    float header_art_aspect_ = 0.0f;
     ImTextureID sponsor_icon_{};
+    std::map<std::pair<PageId, int>, ImTextureID> page_icons_;
     std::unique_ptr<trg::Launcher> launcher_;
     std::unique_ptr<TrophyPage> trophy_page_;
+    std::unique_ptr<IncidentPage> incident_page_;
     std::unique_ptr<trg::update::UpdateController> updater_;
     PlayGate play_;
     ProblemDialog problem_;

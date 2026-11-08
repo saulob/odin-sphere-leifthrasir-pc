@@ -34,6 +34,7 @@ const char* PageName(PageId page) {
     case PageId::kGameplay: return "Gameplay";
     case PageId::kControls: return "Controls";
     case PageId::kTrophies: return "Trophies";
+    case PageId::kBugReport: return "Bug Report";
     case PageId::kAbout: return "About";
     }
     return "";

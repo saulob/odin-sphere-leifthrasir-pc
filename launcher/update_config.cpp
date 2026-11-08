@@ -79,6 +79,7 @@ trg::update::UpdateConfig MakeUpdateConfig(const std::filesystem::path& install_
     trg::update::UpdateConfig config;
     config.current_version = std::string(current_version);
     config.releases_url = kReleasesUrl;
+    config.download_url_prefix = kDownloadUrlPrefix;
     config.user_agent = "OdinSphereLeifthrasirPC-Updater/" + config.current_version;
     config.install_dir = install_dir;
     config.restart_arguments = UpdateRestartArguments(trg::update::CurrentProcessArguments());

@@ -1,0 +1,17 @@
+{
+  "description": "The game freezes on the loading screen after I pick a save.",
+  "launcher_version": "0.1.0",
+  "game_build": "CUSA05083 1.00 USA",
+  "region": "USA",
+  "game_version": "1.00",
+  "cusa": "CUSA05083",
+  "eboot_sha256": "7c517194aba4e5eea55d9197efae47d1567bd785b8c0dced7d1b0f4028d3eed6",
+  "operating_system": "Windows 11 (build 26200)",
+  "renderer": "Vulkan",
+  "gpu": "NVIDIA GeForce RTX 4070",
+  "driver": "NVIDIA 621.1.0.0, Vulkan 1.4.357",
+  "render_resolution": "1920x1080 (native)",
+  "log_file": "odin_sphere_leifthrasir_026.log",
+  "log_clipped": "no",
+  "log_text": "Renderer: selected vulkan, active Vulkan\nGPU: selected NVIDIA GeForce RTX 4070\nRuntime: guest thread 'main' started\n"
+}

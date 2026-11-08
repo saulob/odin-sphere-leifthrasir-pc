@@ -6,6 +6,7 @@
 
 #include <imgui.h>
 
+#include "trg/layout.h"
 #include "trg/platform.h"
 
 namespace trg::update {
@@ -48,12 +49,12 @@ UpdateUiAction DrawUpdateBanner(const UpdateSnapshot& snapshot, const trg::Theme
     return UpdateUiAction::kNone;
   }
 
-  const float base_size = fonts.size > 0.0f ? fonts.size : 18.0f;
+  const float base_size = fonts.size > 0.0f ? fonts.size : trg::layout::kTextBody;
   ImFont* base = fonts.regular ? fonts.regular : ImGui::GetFont();
   ImGui::PushFont(base, base_size);
   const float s = std::max(0.75f, ImGui::GetFontSize() / base_size);
   const ImGuiViewport* viewport = ImGui::GetMainViewport();
-  const float header = std::clamp(viewport->Size.y * 0.2f, 120.0f * s, 190.0f * s);
+  const float header = trg::layout::HeaderHeight(viewport->Size.y, s);
   const float right_margin = 22.0f * s;
   const float width = std::max(std::min({std::max(viewport->Size.x * 0.42f, 260.0f * s), 400.0f * s,
                                          viewport->Size.x - right_margin - reserved_left}),

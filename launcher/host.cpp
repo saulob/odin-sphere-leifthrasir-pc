@@ -16,6 +16,20 @@ Rect ToRect(const SDL_Rect& rect) {
     return {rect.x, rect.y, rect.x + rect.w, rect.y + rect.h};
 }
 
+SDL_Renderer* CreateLauncherRenderer(SDL_Window* window) {
+#ifdef _WIN32
+    // A Direct3D 11 device here races the NVIDIA driver's worker threads at teardown.
+    return SDL_CreateRenderer(window, SDL_SOFTWARE_RENDERER);
+#else
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, nullptr);
+    if (!renderer) {
+        std::printf("Launcher: no accelerated renderer (%s), using the software one\n", SDL_GetError());
+        renderer = SDL_CreateRenderer(window, SDL_SOFTWARE_RENDERER);
+    }
+    return renderer;
+#endif
+}
+
 } // namespace
 
 bool LauncherHost::Open(const HostOptions& options) {
@@ -83,11 +97,7 @@ bool LauncherHost::Open(const HostOptions& options) {
     SDL_SetWindowMinimumSize(window_, std::min(static_cast<int>(options.min_width * target->scale), width),
                              std::min(static_cast<int>(options.min_height * target->scale), height));
 
-    renderer_ = SDL_CreateRenderer(window_, nullptr);
-    if (!renderer_) {
-        std::printf("Launcher: no accelerated renderer (%s), using the software one\n", SDL_GetError());
-        renderer_ = SDL_CreateRenderer(window_, SDL_SOFTWARE_RENDERER);
-    }
+    renderer_ = CreateLauncherRenderer(window_);
     if (!renderer_) {
         std::printf("Launcher: cannot create a renderer: %s\n", SDL_GetError());
         Close();
@@ -140,6 +150,15 @@ ImTextureID LauncherHost::CreateTexture(const uint8_t* rgba, int width, int heig
     SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
     textures_.push_back(texture);
     return static_cast<ImTextureID>(reinterpret_cast<uintptr_t>(texture));
+}
+
+void LauncherHost::DestroyTexture(ImTextureID texture) {
+    SDL_Texture* sdl_texture = reinterpret_cast<SDL_Texture*>(static_cast<uintptr_t>(texture));
+    const auto found = std::find(textures_.begin(), textures_.end(), sdl_texture);
+    if (found != textures_.end()) {
+        SDL_DestroyTexture(sdl_texture);
+        textures_.erase(found);
+    }
 }
 
 void LauncherHost::Close() {

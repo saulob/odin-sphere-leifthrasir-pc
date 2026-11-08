@@ -83,6 +83,11 @@ These are the same pins and patch as Dragon's Crown Pro PC and Hard Corps: Upris
 - No `hang_NNN.txt` freeze report is written: the hang watchdog is Windows-only. `--timeout <seconds>` stops a run that
   is still going after that long and writes every thread's frame chain to the log (a development aid).
 
+## Bug Report page
+
+Sending a report and checking My Reports run the system's `curl` (no shell, the address as an argument); install it with
+the package manager if it is missing. Without it the page says the service is unreachable and **Save report** still works.
+
 ## Verification
 
 Verified headlessly for v0.1.0, in a WSL2 Ubuntu 20.04 (glibc 2.31) build environment: the Release build and the

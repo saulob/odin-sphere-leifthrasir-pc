@@ -1,0 +1,43 @@
+diff --git a/src/launcher.cpp b/src/launcher.cpp
+index c72eb35..c87ed9c 100644
+--- a/src/launcher.cpp
++++ b/src/launcher.cpp
+@@ -123,6 +123,11 @@ const ImVec4 kSponsorPink(0.79f, 0.18f, 0.50f, 1.0f);
+ const ImVec4 kSponsorPinkHot(0.88f, 0.27f, 0.59f, 1.0f);
+ const ImVec4 kSponsorPinkActive(0.68f, 0.14f, 0.43f, 1.0f);
+ const ImVec4 kSponsorLinkColor(0.92f, 0.40f, 0.68f, 1.0f);
++const ImVec4 kSponsorFill(0.97f, 0.95f, 0.96f, 1.0f);
++const ImVec4 kSponsorFillHot(1.0f, 1.0f, 1.0f, 1.0f);
++const ImVec4 kSponsorFillActive(0.88f, 0.84f, 0.87f, 1.0f);
++const ImVec4 kSponsorText(0.16f, 0.10f, 0.14f, 1.0f);
++const ImVec4 kSponsorHeart(0.86f, 0.20f, 0.52f, 1.0f);
+ 
+ float SponsorIconSize(float font_size) { return font_size * 1.1f; }
+ 
+@@ -174,9 +179,9 @@ bool SponsorButton(const char* id, const SponsorLink& sponsor, ImVec2 pos, ImVec
+                    float font_size, float scale) {
+   ImGui::SetCursorScreenPos(pos);
+   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12 * scale);
+-  ImGui::PushStyleColor(ImGuiCol_Button, kSponsorPink);
+-  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, kSponsorPinkHot);
+-  ImGui::PushStyleColor(ImGuiCol_ButtonActive, kSponsorPinkActive);
++  ImGui::PushStyleColor(ImGuiCol_Button, kSponsorFill);
++  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, kSponsorFillHot);
++  ImGui::PushStyleColor(ImGuiCol_ButtonActive, kSponsorFillActive);
+   const bool pressed = ImGui::Button(id, size);
+   ImGui::PopStyleColor(3);
+   ImGui::PopStyleVar();
+@@ -194,9 +199,11 @@ bool SponsorButton(const char* id, const SponsorLink& sponsor, ImVec2 pos, ImVec
+   const float cy = min.y + size.y * 0.5f;
+   ImDrawList* dl = ImGui::GetWindowDrawList();
+   if (has_icon) {
+-    dl->AddImage(ImTextureRef(sponsor.icon), ImVec2(x, cy - icon * 0.5f), ImVec2(x + icon, cy + icon * 0.5f));
++    dl->AddImage(ImTextureRef(sponsor.icon), ImVec2(x, cy - icon * 0.5f), ImVec2(x + icon, cy + icon * 0.5f),
++                 ImVec2(0, 0), ImVec2(1, 1), ImGui::ColorConvertFloat4ToU32(kSponsorHeart));
+   }
+-  dl->AddText(font, font_size, ImVec2(x + icon + gap, cy - text.y * 0.5f), IM_COL32_WHITE, label);
++  dl->AddText(font, font_size, ImVec2(x + icon + gap, cy - text.y * 0.5f), ImGui::ColorConvertFloat4ToU32(kSponsorText),
++              label);
+   return pressed;
+ }
+ 

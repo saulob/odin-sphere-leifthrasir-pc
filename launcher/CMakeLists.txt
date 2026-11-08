@@ -30,7 +30,8 @@ target_link_libraries(osl_imgui_sdl PUBLIC SDL3::SDL3)
 # Display options: no window needed (tests link only this).
 find_package(ZLIB REQUIRED)
 add_library(osl_launcher_core STATIC bookshelf.c boot_image.cpp build_diagnostics.cpp controller_prompts.cpp cpk_patch.cpp file_browser.cpp game_files.cpp
-    game_install.cpp game_profile.cpp options.cpp paths.cpp pkg_extract.cpp resolution.c settings.cpp skip_intro.c title_exit_assets.cpp title_menu_exit.c
+    game_install.cpp game_profile.cpp header_art.cpp http_post.cpp incident_client.cpp incident_report.cpp json_lite.cpp log_scrubber.cpp options.cpp
+    page_icons.cpp paths.cpp pkg_extract.cpp report_history.cpp resolution.c settings.cpp skip_intro.c title_exit_assets.cpp title_menu_exit.c
     trophy_content.cpp ${PROJECT_SOURCE_DIR}/src/lzcnt_compat.c
     ${PROJECT_SOURCE_DIR}/src/trophies/trophy_data.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trophy_key.cpp
     ${PROJECT_SOURCE_DIR}/src/trophies/trophy_pack.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trophy_runtime.cpp
@@ -38,18 +39,33 @@ add_library(osl_launcher_core STATIC bookshelf.c boot_image.cpp build_diagnostic
     ${PROJECT_SOURCE_DIR}/src/trophies/trophy_view.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trp_archive.cpp)
 target_include_directories(osl_launcher_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(osl_launcher_core PUBLIC trg_core SDL3::SDL3 osl_keys PRIVATE ZLIB::ZLIB)
+target_compile_definitions(osl_launcher_core PRIVATE OSL_PORT_VERSION="${OSL_PORT_VERSION}")
 # Hashes and ciphers: CNG on Windows, OpenSSL's libcrypto elsewhere.
 if (WIN32)
     target_sources(osl_launcher_core PRIVATE crypto_win.cpp)
-    target_link_libraries(osl_launcher_core PRIVATE bcrypt)
+    target_link_libraries(osl_launcher_core PRIVATE bcrypt winhttp)
     set(OSL_LOG_SOURCE ${PROJECT_SOURCE_DIR}/src/runtime_log.c)
 else()
     find_package(OpenSSL REQUIRED COMPONENTS Crypto)
     target_sources(osl_launcher_core PRIVATE crypto_openssl.cpp)
     target_link_libraries(osl_launcher_core PRIVATE OpenSSL::Crypto)
+    target_link_libraries(osl_launcher_core PUBLIC Threads::Threads)
     set(OSL_LOG_SOURCE ${PROJECT_SOURCE_DIR}/src/runtime_log_posix.c)
 endif()
 set(OSL_LOG_SOURCES ${OSL_LOG_SOURCE} ${PROJECT_SOURCE_DIR}/src/runtime_session_log.c)
+
+# The sidebar's page icons (assets/launcher/icons/*.svg) as a table of byte arrays, page_icons.cpp.
+file(GLOB OSL_PAGE_ICONS CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/assets/launcher/icons/*.svg)
+list(SORT OSL_PAGE_ICONS)
+set(OSL_PAGE_ICON_LIST ${CMAKE_BINARY_DIR}/generated/page_icons.txt)
+file(CONFIGURE OUTPUT ${OSL_PAGE_ICON_LIST} CONTENT "${OSL_PAGE_ICONS}")
+set(OSL_PAGE_ICON_SOURCE ${CMAKE_BINARY_DIR}/generated/page_icon_data.cpp)
+add_custom_command(OUTPUT ${OSL_PAGE_ICON_SOURCE}
+    COMMAND ${CMAKE_COMMAND} -DINPUT_LIST=${OSL_PAGE_ICON_LIST} -DOUTPUT=${OSL_PAGE_ICON_SOURCE} -DSYMBOL=kPageIconFiles
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/embed_files.cmake
+    DEPENDS ${OSL_PAGE_ICON_LIST} ${OSL_PAGE_ICONS} ${CMAKE_CURRENT_SOURCE_DIR}/embed_files.cmake
+    COMMENT "Embedding the page icons")
+target_sources(osl_launcher_core PRIVATE ${OSL_PAGE_ICON_SOURCE})
 
 # The Controller prompts patch (prompts/xbox-prompts.dcpx) as a byte array, prompts_patch.h.
 set(OSL_PROMPTS_PATCH ${CMAKE_CURRENT_SOURCE_DIR}/prompts/xbox-prompts.dcpx)
@@ -73,7 +89,8 @@ add_custom_command(OUTPUT ${OSL_TITLE_PATCH_SOURCE}
 set(OSL_UPDATER_SOURCES updater/github_release.cpp updater/json.cpp updater/sha256.cpp updater/update_controller.cpp
     updater/update_job.cpp updater/update_paths.cpp updater/update_platform.cpp updater/update_zip.cpp updater/version.cpp)
 
-add_library(osl_launcher STATIC host.cpp launcher.cpp package_browser.cpp problem_dialog.cpp shift_key.cpp trophy_page.cpp
+add_library(osl_launcher STATIC host.cpp incident_page.cpp launcher.cpp my_reports_page.cpp package_browser.cpp problem_dialog.cpp shift_key.cpp
+    trophy_page.cpp
     update_config.cpp ${OSL_UPDATER_SOURCES} updater/update_ui.cpp ${OSL_PROMPTS_PATCH_SOURCE}
     ${OSL_TITLE_PATCH_SOURCE})
 target_compile_definitions(osl_launcher PRIVATE OSL_PORT_VERSION="${OSL_PORT_VERSION}")
@@ -127,6 +144,20 @@ if (WIN32)
     set_target_properties(osl-update-helper-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
     target_compile_options(osl-update-helper-tests PRIVATE -Wall -Wextra)
 endif()
+
+# The Bug Report page's logic against a stand-in transport and synthetic logs: no window, no network (tools\test.ps1).
+add_executable(osl-bug-report-tests EXCLUDE_FROM_ALL ../tests/bug_report_tests.cpp)
+target_compile_definitions(osl-bug-report-tests PRIVATE OSL_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+target_link_libraries(osl-bug-report-tests PRIVATE osl_launcher_core)
+set_target_properties(osl-bug-report-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_compile_options(osl-bug-report-tests PRIVATE -Wall -Wextra)
+
+# The sidebar's page icons and the header art: lookup, rasterizing, placement and scaling; no window.
+add_executable(osl-launcher-asset-tests EXCLUDE_FROM_ALL ../tests/launcher_asset_tests.cpp)
+target_compile_definitions(osl-launcher-asset-tests PRIVATE OSL_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+target_link_libraries(osl-launcher-asset-tests PRIVATE osl_launcher_core)
+set_target_properties(osl-launcher-asset-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_compile_options(osl-launcher-asset-tests PRIVATE -Wall -Wextra)
 
 # Focused tests of the local trophies (tools\test.ps1); not part of the default build.
 find_package(PNG REQUIRED)

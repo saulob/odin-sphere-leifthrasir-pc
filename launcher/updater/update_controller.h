@@ -13,6 +13,7 @@
 #include <trg/platform.h>
 
 #include "updater/github_release.h"
+#include "updater/url_policy.h"
 #include "updater/version.h"
 
 namespace trg::update {
@@ -34,6 +35,13 @@ struct UpdateConfig {
   std::string current_version;
   std::string releases_url;
   std::string user_agent;
+  // Every request and redirect stays on these hosts; package and checksum addresses also start with the prefix.
+  std::vector<std::string> allowed_hosts = GitHubReleaseHosts();
+  std::string download_url_prefix;
+  // Replaces the address policy; only the network tests set it.
+  std::function<bool(const std::string& url)> url_filter;
+  int connect_timeout_ms = 15000;
+  int receive_timeout_ms = 30000;
   UpdatePackageKind package_kind = UpdatePackageKind::kZip;
   std::function<std::string(const SemanticVersion&)> asset_name;
   std::function<std::string(const SemanticVersion&)> checksum_asset_name;
@@ -111,6 +119,8 @@ class UpdateController {
   std::optional<SemanticVersion> current_version_;
   UpdateSnapshot snapshot_;
   WorkspaceCleanup cleanup_;
+  // Read by the download worker, so it must outlive task_, which joins that worker.
+  std::atomic<int> worker_phase_{0};
   trg::Task task_;
   TaskKind task_kind_ = TaskKind::kNone;
   RetryKind retry_kind_ = RetryKind::kCheck;
@@ -124,7 +134,6 @@ class UpdateController {
   std::filesystem::path staging_content_path_;
   std::filesystem::path backup_path_;
   std::filesystem::path manifest_path_;
-  std::atomic<int> worker_phase_{0};
   bool install_started_ = false;
 };
 

@@ -11,6 +11,7 @@
 namespace osl {
 
 inline constexpr char kReleasesUrl[] = "https://api.github.com/repos/saulob/odin-sphere-leifthrasir-pc/releases/latest";
+inline constexpr char kDownloadUrlPrefix[] = "https://github.com/saulob/odin-sphere-leifthrasir-pc/releases/download/";
 inline constexpr char kGameExecutable[] = "odin_sphere_leifthrasir.exe";
 inline constexpr char kUpdaterExecutable[] = "trg-updater.exe";
 

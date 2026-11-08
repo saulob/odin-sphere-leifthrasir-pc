@@ -34,6 +34,16 @@ All colors are in the SVG's `<style>` block; each color has a fill class, and so
 
 Keep the left ~55% of the viewBox (x < 880) almost empty: the title and subtitle are drawn there.
 
+The launcher scales the PNG to the size it is shown at (`launcher/header_art.cpp`) and draws it in strips, right-aligned and
+as tall as the header. Keep the 3840x432 shape: the header takes its width from the image's aspect ratio.
+
+# Page icons
+
+The sidebar's icons are `icons/*.svg`, compiled into the executable and drawn white at the exact size the sidebar asks for.
+`icons/SOURCES.md` records where each one comes from and its licence; the attribution is also in
+`packaging/licenses/THIRD-PARTY-LICENSES.txt`. An icon that no page uses does not belong in the folder, and a new page needs
+its icon, its entry in `launcher/page_icons.cpp` and its attribution (`tests/launcher_asset_tests.cpp` checks all three).
+
 # Sponsor heart
 
 `sponsor-heart.svg` is the source of truth for the heart in the Sponsor on GitHub buttons (CC0, see

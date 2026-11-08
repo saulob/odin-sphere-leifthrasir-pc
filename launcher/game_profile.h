@@ -17,6 +17,11 @@ inline constexpr char kGameTitle[] = "Odin Sphere Leifthrasir";
 inline constexpr char kPortRepository[] = "github.com/saulob/odin-sphere-leifthrasir-pc";
 inline constexpr char kAuthorUrl[] = "https://github.com/saulob";
 inline constexpr char kSponsorUrl[] = "https://github.com/sponsors/saulob";
+inline constexpr char kIssuesUrl[] = "https://github.com/saulob/odin-sphere-leifthrasir-pc/issues";
+
+// The bug report service (server/odin-bug-reports), as https://host. Empty until the service is deployed: the Bug Report page
+// then only saves a report on this PC. OSL_BUG_REPORT_URL overrides it for one run.
+inline constexpr char kBugReportServiceUrl[] = "";
 
 // A package of a build, by its param.sfo APP_VER and VERSION. An update (CATEGORY gp) is applied over the packages
 // before it.

@@ -27,6 +27,7 @@
 #include "updater/update_paths.h"
 #include "updater/update_platform.h"
 #include "updater/update_zip.h"
+#include "updater/url_policy.h"
 #include "updater/version.h"
 
 using namespace trg::update;
@@ -832,6 +833,29 @@ int CheckPackage(const std::filesystem::path& zip) {
     return 0;
 }
 
+void TestUrlPolicy() {
+    std::printf("Update address policy\n");
+    const std::vector<std::string> hosts = GitHubReleaseHosts();
+    CHECK(UrlHostAllowed("https://api.github.com/repos/saulob/odin-sphere-leifthrasir-pc/releases/latest", hosts));
+    CHECK(UrlHostAllowed("https://release-assets.githubusercontent.com/github-production-release-asset/1?sig=a", hosts));
+    CHECK(UrlHostAllowed("https://objects.githubusercontent.com/x", hosts));
+    CHECK(UrlHostAllowed("HTTPS://GitHub.com:443/saulob", hosts));
+    CHECK(!UrlHostAllowed("http://github.com/saulob", hosts));
+    CHECK(!UrlHostAllowed("https://example.com/github.com", hosts));
+    CHECK(!UrlHostAllowed("https://github.com.example.com/x", hosts));
+    CHECK(!UrlHostAllowed("https://github.com@example.com/x", hosts));
+    CHECK(!UrlHostAllowed("https://github.com:8443/x", hosts));
+    CHECK(!UrlHostAllowed("https://", hosts));
+    CHECK(!UrlHostAllowed("https://github.com/x", {}));
+
+    const std::string prefix(osl::kDownloadUrlPrefix);
+    CHECK(UrlAllowed(prefix + "v0.3.0/OdinSphereLeifthrasirPC-v0.3.0-windows-x64.zip", hosts, prefix));
+    CHECK(!UrlAllowed("https://github.com/someone/else/releases/download/v1/x.zip", hosts, prefix));
+    CHECK(!UrlAllowed("https://objects.githubusercontent.com/x.zip", hosts, prefix));
+    CHECK(!UrlAllowed("http://github.com/saulob/odin-sphere-leifthrasir-pc/releases/download/v1/x.zip", hosts, prefix));
+    CHECK(UrlAllowed("https://github.com/anything", hosts, ""));
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
@@ -840,6 +864,7 @@ int main(int argc, char** argv) {
         return CheckPackage(argv[2]);
     }
     TestVersions();
+TestUrlPolicy();
     TestReleases();
     TestChecksums();
     TestPaths();

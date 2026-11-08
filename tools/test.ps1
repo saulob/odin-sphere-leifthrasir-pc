@@ -4,7 +4,7 @@
   (identity, languages, display, graphics, gameplay, controls, trophies, save data and runtime patches, checked on
   synthetic fixtures without game files; the script requires a PASS row for each build, CUSA05083 1.01 USA included),
   the layering of an update over its base, the settings file, the run log's
-  retention and capture without a console, the keyboard bindings, the controller prompts patch, the cursor visibility rules, the window fit, the GPU tile layouts, the patch workflow and the
+  retention and capture without a console, the keyboard bindings, the controller prompts patch, the launcher's page icons and header art, the Bug Report page and its service, the cursor visibility rules, the window fit, the GPU tile layouts, the patch workflow and the
   launcher self-update (versions, release JSON, checksums, ZIP safety, the install transaction and the real update helper). They use
   synthetic data in a temporary folder: no window, no game files.
 .DESCRIPTION
@@ -26,7 +26,7 @@ Write-Step 'Running the patch workflow tests'
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step 'Building the tests'
-& ninja -C $buildDir osl-memory-windows-tests osl-tests osl-log-tests osl-window-tests osl-tiling-tests osl-cursor-tests osl-notice-tests osl-trophy-tests osl-runtime-tests osl-isa-tests osl-update-tests osl-update-helper-tests
+& ninja -C $buildDir osl-memory-windows-tests osl-tests osl-log-tests osl-window-tests osl-tiling-tests osl-cursor-tests osl-notice-tests osl-trophy-tests osl-runtime-tests osl-isa-tests osl-update-tests osl-update-helper-tests osl-bug-report-tests osl-launcher-asset-tests
 if ($LASTEXITCODE -ne 0) { Stop-Tool 'Test build failed' }
 
 Write-Step 'Running the Windows memory tests (sparse backing, commitment, aliases, release)'
@@ -73,6 +73,26 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Write-Step 'Running the tiling tests (GPU tile layouts and addresses)'
 & (Join-Path $buildDir 'bin\osl-tiling-tests.exe')
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+Write-Step 'Running the launcher asset tests (page icons, header art)'
+& (Join-Path $buildDir 'bin\osl-launcher-asset-tests.exe')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+Write-Step 'Running the Bug Report tests (JSON, service address, log choice, privacy filter, report and preview, client, My Reports)'
+Push-Location (Join-Path $buildDir 'bin')
+try { & (Join-Path $buildDir 'bin\osl-bug-report-tests.exe') } finally { Pop-Location }
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+Write-Step 'Running the Bug Report service tests (Node, disposable database)'
+$node = Get-Command node -ErrorAction SilentlyContinue
+if (-not $node) {
+    Write-Host '  SKIPPED: Node.js 22 or newer not found.'
+} else {
+    $env:OSL_CPP_REQUEST = Join-Path $buildDir 'bin\bug-report-request.json'
+    Push-Location (Join-Path $script:RepoRoot 'server\odin-bug-reports')
+    try { & $node.Source '--test' 'test/*.test.js' } finally { Pop-Location; Remove-Item Env:\OSL_CPP_REQUEST -ErrorAction SilentlyContinue }
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
 
 Write-Step 'Running the updater tests'
 & (Join-Path $buildDir 'bin\osl-update-tests.exe')

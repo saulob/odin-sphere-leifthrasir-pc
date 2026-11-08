@@ -731,7 +731,7 @@ int main(int argc, char **argv) {
 #ifndef _WIN32
         check_graphics=system_usable;
 #endif
-        OslLauncherConfig launcher={app0,paths.image_dir,user_dir,settings_file,log_folder,skip_launcher,force_launcher,check_graphics};
+        OslLauncherConfig launcher={app0,paths.image_dir,user_dir,settings_file,log_folder,skip_launcher,force_launcher,check_graphics,log_path[0] ? log_path : NULL};
         OslLauncherResult launched=osl_launcher_run(&launcher);
         runtime_log_set_detailed(osl_detailed_logging(settings_file));
         if (launched==OSL_LAUNCHER_QUIT) { runtime_log_mark_clean_exit(); exit(0); }

@@ -63,6 +63,9 @@ checked by scripts, but it has not yet been tested on real Linux PCs or a Steam 
   keeping your game files, saves and settings
 - **Diagnostics**: one log per run, a `CRASH REPORT` section in that log after a crash, and on Windows a
   `hang_NNN.txt` report when the game freezes
+- **Bug Report page**: previews exactly what would be sent (a description and one privacy-filtered log), keeps the reports
+  you sent in My Reports and can save the same report as a text file; sending needs the report service, which is not
+  online yet (see [docs/BUG_REPORTS.md](docs/BUG_REPORTS.md))
 
 ## What you need
 
@@ -275,6 +278,11 @@ the game froze without crashing, attach the newest `hang_NNN.txt` from the same 
 
 For a problem that is not a crash, keep **Detailed logging** on in the launcher (About, Diagnostics), reproduce it, and
 send the newest log. On Linux, please also give your distribution, your GPU and its driver.
+
+The launcher's **Bug Report** page builds the report for you: it shows the description, the system details and the
+selected log after the privacy filter, and **Save report** writes that report to `logs\reports` so you can attach it to
+the issue. Sending a report from the page needs the report service, which has not been deployed yet; until it is, use
+GitHub as described above. How reports work and what they contain is in [docs/BUG_REPORTS.md](docs/BUG_REPORTS.md).
 
 ## Sponsoring
 

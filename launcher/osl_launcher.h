@@ -26,6 +26,7 @@ typedef struct {
     int skip_once;             /* --osl-skip-launcher: do not show it unless the game files are not ready */
     int force_show;            /* --launcher: show it even when "Show this launcher" is off, like holding Shift */
     OslGraphicsCheck check_graphics; /* NULL: Play does not check; see osl_check_vulkan */
+    const char *log_file;      /* this run's log, continued by the game; NULL or empty when there is none */
 } OslLauncherConfig;
 
 /* NULL asks for the default, which is relative to the executable (launcher/paths.h). */

@@ -1,0 +1,19 @@
+name = "odin-sphere-bug-reports"
+main = "src/worker.js"
+compatibility_date = "2025-09-01"
+workers_dev = true
+
+[[durable_objects.bindings]]
+name = "REPORTS"
+class_name = "BugReportDesk"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["BugReportDesk"]
+
+# Edge limit per connection address, before the Durable Object is woken. Replace the placeholder with an integer that no
+# other rate-limit binding in your Cloudflare account uses; the deploy is refused until you do.
+[[ratelimits]]
+name = "REPORT_LIMITER"
+namespace_id = "REPLACE_WITH_UNIQUE_NUMBER"
+simple = { limit = 20, period = 60 }
