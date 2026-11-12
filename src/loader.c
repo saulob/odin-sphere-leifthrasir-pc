@@ -100,7 +100,9 @@ static void log_host(void) {
     printf("[run] Odin Sphere Leifthrasir PC %s, %s\n[run] CPU %s\n", OSL_VERSION_STRING, os, cpu);
 }
 
+#ifdef _WIN32
 static int log_started;
+#endif
 static void fail(const char *message) {
     fprintf(stderr, "ERROR: %s\n", message);
 #ifdef _WIN32
@@ -706,7 +708,9 @@ int main(int argc, char **argv) {
     static char log_folder[4200];
     snprintf(log_folder,sizeof(log_folder),"%s",paths.logs_dir);
     if (runtime_log_start(paths.logs_dir,log_file,log_path,sizeof(log_path))) {
+#ifdef _WIN32
         log_started=1;
+#endif
         time_t now=time(NULL);
         char stamp[32];
         strftime(stamp,sizeof(stamp),"%Y-%m-%dT%H:%M:%S",localtime(&now));
