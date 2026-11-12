@@ -77,19 +77,30 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
       stream_buffer{instance, scheduler, MemoryType::Stream, STREAM_BUFFER_SIZE},
       gds_buffer{instance, 0, GDS_BUFFER_SIZE, MemoryType::Stream, "GDS Buffer"},
       memory_semaphore{instance} {
-    while (arena_page_bits > MIN_ARENA_PAGE_BITS &&
+    sparse_supported = instance.IsSparseSupported();
+    if (!sparse_supported) {
+        // The driver cannot bind sparse buffer memory, so every arena is one fully resident
+        // allocation instead of a lazily bound 4 GiB address range.
+        arena_page_bits = NON_SPARSE_ARENA_PAGE_BITS;
+    }
+    const u64 min_page_bits = sparse_supported ? MIN_ARENA_PAGE_BITS : NON_SPARSE_ARENA_PAGE_BITS;
+    while (arena_page_bits > min_page_bits &&
            (u64{2} << arena_page_bits) > instance.GetMaxBufferSize()) {
         --arena_page_bits;
     }
     arena_page_size = u64{1} << arena_page_bits;
     num_arena_pages = u64{1} << (ADDRESS_SPACE_BITS - arena_page_bits);
+    address_space.resize(num_arena_pages);
     if (arena_page_bits != MAX_ARENA_PAGE_BITS) {
         LOG_INFO(Render_Vulkan, "Buffer arenas of {} MiB (driver buffer limit {} MiB)",
                  arena_page_size >> 20, instance.GetMaxBufferSize() >> 20);
     }
+    const vk::BufferCreateFlags probe_flags =
+        sparse_supported
+            ? vk::BufferCreateFlagBits::eSparseBinding | vk::BufferCreateFlagBits::eSparseResidency
+            : vk::BufferCreateFlags{};
     const vk::BufferCreateInfo probe_ci = {
-        .flags =
-            vk::BufferCreateFlagBits::eSparseBinding | vk::BufferCreateFlagBits::eSparseResidency,
+        .flags = probe_flags,
         .size = arena_page_size,
         .usage = ARENA_USAGE,
         .sharingMode = vk::SharingMode::eExclusive,
@@ -376,6 +387,8 @@ const Buffer* BufferCache::GetArena(u64 first_block, u64 last_block) {
 
     const auto* first_arena = address_space[first_page];
     const auto* last_arena = address_space[last_page];
+    const MemoryType arena_mem_type =
+        sparse_supported ? MemoryType::Sparse : MemoryType::DeviceLocal;
     if (first_arena == last_arena) {
         if (!first_arena) {
             const u64 base_block = Common::AlignDownPow2<u64>(first_block, blocks_per_arena_page);
@@ -383,7 +396,7 @@ const Buffer* BufferCache::GetArena(u64 first_block, u64 last_block) {
             std::scoped_lock lock{arenas_mutex};
             const auto* new_arena =
                 &arenas.emplace_back(instance, base_block << block_shift,
-                                     num_pages << arena_page_bits, MemoryType::Sparse);
+                                     num_pages << arena_page_bits, arena_mem_type);
             address_space[first_page] = new_arena;
             address_space[last_page] = new_arena;
         }
@@ -401,19 +414,43 @@ const Buffer* BufferCache::GetArena(u64 first_block, u64 last_block) {
     const u64 end_block = (first_addr + total_size) >> block_shift;
     auto* new_arena = [&] {
         std::scoped_lock lock{arenas_mutex};
-        return &arenas.emplace_back(instance, first_addr, total_size, MemoryType::Sparse);
+        return &arenas.emplace_back(instance, first_addr, total_size, arena_mem_type);
     }();
-    auto* bind = BindsForArena(new_arena);
-    resident_ranges.ForEachInRange(base_block, end_block, [&](const Backing& backing) {
-        const u64 start = std::max(base_block, backing.start);
-        const u64 end = std::min(end_block, backing.end);
-        bind->binds.push_back(vk::SparseMemoryBind{
-            .resourceOffset = (start - base_block) << block_shift,
-            .size = (end - start) << block_shift,
-            .memory = backing.memory,
-            .memoryOffset = (backing.offset + start - backing.start) << block_shift,
+    if (sparse_supported) {
+        auto* bind = BindsForArena(new_arena);
+        resident_ranges.ForEachInRange(base_block, end_block, [&](const Backing& backing) {
+            const u64 start = std::max(base_block, backing.start);
+            const u64 end = std::min(end_block, backing.end);
+            bind->binds.push_back(vk::SparseMemoryBind{
+                .resourceOffset = (start - base_block) << block_shift,
+                .size = (end - start) << block_shift,
+                .memory = backing.memory,
+                .memoryOffset = (backing.offset + start - backing.start) << block_shift,
+            });
         });
-    });
+    } else {
+        // Fully resident arenas: the new allocation starts empty, so carry the data that already
+        // lives in the old arenas over with buffer copies.
+        boost::container::small_vector<std::pair<u64, u64>, 8> moved;
+        resident_ranges.ForEachInRange(base_block, end_block, [&](const Backing& backing) {
+            const u64 start = std::max(base_block, backing.start);
+            const u64 end = std::min(end_block, backing.end);
+            const Buffer* source = address_space[start >> blocks_per_arena_page_shift];
+            if (source != nullptr && source != new_arena) {
+                const vk::BufferCopy copy{
+                    .srcOffset = (start << block_shift) - source->cpu_addr,
+                    .dstOffset = (start << block_shift) - new_arena->cpu_addr,
+                    .size = (end - start) << block_shift,
+                };
+                runtime.CopyBuffer(source, new_arena, {&copy, 1});
+            }
+            moved.emplace_back(start, end);
+        });
+        for (const auto& [start, end] : moved) {
+            std::scoped_lock lock{arenas_mutex};
+            resident_ranges.Add(Backing{{start, end}, VK_NULL_HANDLE, 0});
+        }
+    }
 
     u64 base_page = first_addr >> arena_page_bits;
     for (u32 page = 0; page < (first_size >> arena_page_bits); ++page) {
@@ -438,6 +475,33 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
         return;
     }
     OslStats::Timer timer{OslStats::t_resident};
+
+    if (!sparse_supported) {
+        // The arena allocation already covers every page: only publish the page table entries for
+        // the ranges that become resident now.
+        boost::container::small_vector<vk::BufferCopy, 8> copies;
+        const auto staging = staging_pool.Request(resident_blocks * sizeof(vk::DeviceAddress),
+                                                  MemoryType::HostUncached);
+        auto* bda_addrs = reinterpret_cast<vk::DeviceAddress*>(staging.mapped);
+        u64 offset = staging.offset;
+        for (const auto& range : bind_ranges) {
+            const u64 range_offset = (range.start << block_shift) - arena->cpu_addr;
+            const u64 range_size = (range.end - range.start) << block_shift;
+            for (u64 block = 0; block < range_size; block += block_size) {
+                *(bda_addrs++) = arena->BufferDeviceAddress() + range_offset + block;
+            }
+            {
+                std::scoped_lock lock{arenas_mutex};
+                resident_ranges.Add(Backing{{range.start, range.end}, VK_NULL_HANDLE, 0});
+            }
+            const u64 copy_size = (range.end - range.start) * sizeof(vk::DeviceAddress);
+            copies.emplace_back(offset, range.start * sizeof(vk::DeviceAddress), copy_size);
+            offset += copy_size;
+        }
+        staging.Flush();
+        runtime.CopyBuffer(staging.buffer, bda_pagetable_buffer.get(), copies);
+        return;
+    }
 
     const vk::MemoryAllocateFlagsInfo alloc_flags = {
         .flags = vk::MemoryAllocateFlagBits::eDeviceAddress,
