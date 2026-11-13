@@ -118,6 +118,12 @@ public:
         return features.depthBounds;
     }
 
+    /// Returns true if the device can bind sparse buffer memory. Drivers without it (Mesa's ANV on
+    /// Intel Gen9 and older, for example) get fully resident buffer arenas instead.
+    bool IsSparseSupported() const {
+        return features.sparseBinding && features.sparseResidencyBuffer;
+    }
+
     /// Returns true if 16-bit floats are supported in shaders
     bool IsShaderFloat16Supported() const {
         return vk12_features.shaderFloat16;

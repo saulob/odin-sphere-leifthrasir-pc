@@ -8,6 +8,8 @@
 #include <deque>
 #include <mutex>
 #include <string>
+#include <utility>
+#include <vector>
 #include <boost/container/small_vector.hpp>
 
 #include "common/interval_set.h"
@@ -44,6 +46,9 @@ class BufferCache {
     // Windows driver: 2 GiB); an arena spans up to two pages, so they shrink to half the limit.
     static constexpr u64 MAX_ARENA_PAGE_BITS = 32;
     static constexpr u64 MIN_ARENA_PAGE_BITS = 30;
+    // osl: without sparse buffers an arena is one fully resident allocation, so arenas are kept
+    // small enough (16 MiB) to allocate whole instead of a 4 GiB address range.
+    static constexpr u64 NON_SPARSE_ARENA_PAGE_BITS = 24;
     static constexpr u64 MAX_ARENA_PAGES = u64{1} << (ADDRESS_SPACE_BITS - MIN_ARENA_PAGE_BITS);
     static constexpr u64 MIN_BLOCK_SIZE = 16_KB;
 
@@ -177,7 +182,8 @@ private:
     std::unique_ptr<Buffer> bda_pagetable_buffer;
     std::unique_ptr<Buffer> null_index_buffer;
 
-    std::array<const Buffer*, MAX_ARENA_PAGES> address_space{};
+    std::vector<const Buffer*> address_space;
+    bool sparse_supported{true};
     u64 arena_page_bits{MAX_ARENA_PAGE_BITS};
     u64 arena_page_size{u64{1} << MAX_ARENA_PAGE_BITS};
     u64 num_arena_pages{u64{1} << (ADDRESS_SPACE_BITS - MAX_ARENA_PAGE_BITS)};
