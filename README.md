@@ -53,7 +53,7 @@ checked by scripts, but it has not yet been tested on real Linux PCs or a Steam 
 - Startup hints confirm **Skip intro** and **Unlock Bookshelf** when either is on, then disappear on their own
 
 ### Controls
-- Xbox controllers without setup, and keyboard play with every binding changeable
+- Xbox controllers without setup, with every controller button and keyboard binding changeable
 - **Controller prompts**: the game's PlayStation button pictures (the default) or **Xbox** prompts
 
 ### Your data
@@ -153,7 +153,7 @@ Everything is kept next to the program (next to the AppImage on Linux):
 - **Display**: display mode, window size, monitor, Aspect Ratio, graphics card, VSync, Presentation, FSR 1 upscaling and RCAS sharpening
 - **Graphics**: Render resolution, SMAA anti-aliasing and anisotropic texture filtering
 - **Gameplay**: Menu & Subtitles language (the European and Hong Kong builds), **Skip intro**, **Unlock Bookshelf**, frame rate and render resolution in the title, and the in-game frame counter
-- **Controls**: **Controller prompts** (PlayStation or Xbox), every keyboard binding and the port hotkeys, with **Reset to defaults**. Xbox changes the button pictures the game shows (A/B/X/Y, LB/RB, LT/RT, MENU and VIEW) in the port's own copy of the game; the touchpad prompt becomes VIEW. PlayStation puts the originals back. Your `.pkg` file is never changed.
+- **Controls**: **Controller prompts** (PlayStation or Xbox), **Controller bindings**, every keyboard binding and the port hotkeys, each with **Reset to defaults**. Xbox changes the button pictures the game shows (A/B/X/Y, LB/RB, LT/RT, MENU and VIEW) in the port's own copy of the game; the touchpad prompt becomes VIEW. PlayStation puts the originals back. Your `.pkg` file is never changed.
 - **Trophies**: your local PS4 trophy progress, the trophy list and the Trophy Key setup
 - **About**: the port version, the game, the renderer and the library versions, the game, saves and logs folders, the settings file, **Reset all settings**, and **Diagnostics** with Detailed logging and a button that opens the logs folder
 
@@ -204,7 +204,9 @@ and it is available for every supported build.
 - **F2** shows or hides the in-game frame counter while playing, for the current session only.
 - Xbox controllers work without setup (on Linux through SDL's gamepad support).
 - The keyboard plays too: the Controls page lists every binding, and **Reset to defaults** restores them.
-- **Controller prompts** chooses the button pictures the game shows: PlayStation (the original) or Xbox.
+- **Controller bindings** rebinds the controller: each row is a PlayStation button, which is what the game receives, and you click it and press the controller button (or pull a trigger) that should press it. For example, set **R1 (RB)** to B to put R1 on B. Bindings are one set for every connected controller, one controller button can drive more than one row, and **Reset to defaults** restores the standard layout. The game still decides what each PlayStation button does.
+- **Controller prompts** chooses the button pictures the game shows: PlayStation (the original) or Xbox. It only changes the pictures, never the bindings.
+- Advanced: the `OSL_PAD_MAP` environment variable (for example `cross=b,circle=a`) still overrides the saved controller bindings for one run.
 
 ## Trophies
 

@@ -31,7 +31,7 @@ target_link_libraries(osl_imgui_sdl PUBLIC SDL3::SDL3)
 find_package(ZLIB REQUIRED)
 add_library(osl_launcher_core STATIC bookshelf.c boot_image.cpp build_diagnostics.cpp controller_prompts.cpp cpk_patch.cpp file_browser.cpp game_files.cpp
     game_install.cpp game_profile.cpp header_art.cpp http_post.cpp incident_client.cpp incident_report.cpp json_lite.cpp log_scrubber.cpp options.cpp
-    page_icons.cpp paths.cpp pkg_extract.cpp report_history.cpp resolution.c settings.cpp skip_intro.c title_exit_assets.cpp title_menu_exit.c
+    page_icons.cpp pad_capture.cpp paths.cpp pkg_extract.cpp report_history.cpp resolution.c settings.cpp skip_intro.c title_exit_assets.cpp title_menu_exit.c
     trophy_content.cpp ${PROJECT_SOURCE_DIR}/src/lzcnt_compat.c
     ${PROJECT_SOURCE_DIR}/src/trophies/trophy_data.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trophy_key.cpp
     ${PROJECT_SOURCE_DIR}/src/trophies/trophy_pack.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trophy_runtime.cpp

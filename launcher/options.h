@@ -6,6 +6,7 @@
 
 #include "osl_displays.h"
 #include "osl_keys.h"
+#include "osl_pad.h"
 #include "osl_resolution.h"
 #include "trg/settings.h"
 
@@ -55,5 +56,12 @@ int SavedKey(const trg::SettingsStore& settings, OslKeyAction action);
 void SetKey(trg::SettingsStore& settings, OslKeyAction action, int scancode);
 // Puts every keyboard control and port hotkey back to its default and nothing else.
 void ResetKeys(trg::SettingsStore& settings);
+
+// The Controls page's controller bindings, stored one SDL gamepad name per PS4 button in the settings (osl_pad.h).
+// The saved source of a PS4 button; the default when the setting is missing or names no bindable button or trigger.
+int SavedPadSource(const trg::SettingsStore& settings, OslPadAction action);
+void SetPadSource(trg::SettingsStore& settings, OslPadAction action, int source);
+// Puts every controller binding back to its default and nothing else.
+void ResetPads(trg::SettingsStore& settings);
 
 } // namespace osl

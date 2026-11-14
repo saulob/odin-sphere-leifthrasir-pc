@@ -36,6 +36,7 @@
 #include "incident_page.h"
 #include "launcher_quit.h"
 #include "options.h"
+#include "pad_capture.h"
 #include "package_browser.h"
 #include "page_icons.h"
 #include "placement.h"
@@ -138,7 +139,11 @@ constexpr char kShowResolutionTitleHelp[] =
     "Shows the game's render resolution in the window title: Odin Sphere Leifthrasir | 1920x1080";
 constexpr char kFrameCounterHelp[] = "Shows the game's frame rate in the corner. F2 toggles it while playing.";
 constexpr char kWindowModeKeyHelp[] = "Switches between Windowed and Borderless Fullscreen while playing.";
-constexpr char kControllerPromptsHelp[] = "The button images shown in the game's prompts.";
+constexpr char kControllerPromptsHelp[] = "The button images shown in the game's prompts. They do not change the bindings.";
+constexpr char kControllerBindingsHelp[] =
+    "Click a row, then press a controller button or pull a trigger. Esc cancels. Each row is a PlayStation button, "
+    "which is what the game receives; the controller button shown presses it. The bindings apply to every connected "
+    "controller, and a controller button can be used for more than one row.";
 
 std::vector<std::string> ListGpuNames() {
     char names[16][256] = {};
@@ -350,6 +355,7 @@ public:
         launcher_.reset();
         trophy_page_.reset();
         incident_page_.reset();
+        controllers_.Close();
         host_.Close();
         Log(outcome == Outcome::kPlay ? "closed, starting the game" : "closed");
         return true;
@@ -365,6 +371,7 @@ private:
             return Outcome::kPlay;
         }
         ImGuiIO& io = ImGui::GetIO();
+        PollPadCapture();
         if (play_.starting()) {
             io.ClearInputKeys();
             io.ClearInputMouse();
@@ -902,6 +909,17 @@ private:
         ui.Info("Controller", "Automatic: Xbox controllers work without setup.");
         ui.Row("Controller prompts", kControllerPromptsHelp);
         ControllerPromptsCombo(ui);
+        if (ui.ConfirmRow("Controller defaults", "Puts every controller binding back to the standard layout.",
+                          "Reset to defaults", "Put every controller button back to its default?", "Reset")) {
+            ResetPads(settings_);
+            ui.SetStatus("Controller bindings reset to defaults.");
+        }
+        if (ui.Section("Controller bindings", true)) {
+            ui.Help(kControllerBindingsHelp);
+            for (int action = 0; action < OSL_PAD_COUNT; ++action) {
+                PadRow(ui, static_cast<OslPadAction>(action));
+            }
+        }
         ui.Info("Keyboard", "Always on, together with the controller.");
         if (ui.ConfirmRow("Keyboard defaults", "Puts the keyboard controls and the port hotkeys back to their defaults.",
                           "Reset to defaults", "Put every key back to its default?", "Reset")) {
@@ -933,6 +951,54 @@ private:
         } else {
             ui.SetStatus("That key cannot be used.");
         }
+    }
+
+    void PadRow(trg::Ui& ui, OslPadAction action) {
+        ui.Row(osl_pad_actions[action].label, nullptr);
+        ImGui::PushID(osl_pad_actions[action].ini_key);
+        if (pad_capture_.active() && pad_capture_.action() == action) {
+            pad_capture_drawn_ = true;
+            if (ui.AccentButton("Press a controller button...  (Esc cancels)")) {
+                pad_capture_.Cancel();
+                pad_hold_ = true;
+            }
+        } else if (ImGui::Button(osl_pad_source_label(SavedPadSource(settings_, action)), ImVec2(-FLT_MIN, 0))) {
+            if (pad_capture_.Begin(action, ControllerReader::Connected())) {
+                pad_capture_drawn_ = true;
+            } else {
+                ui.SetStatus("No controller connected. Connect one to change this binding.");
+            }
+        }
+        ImGui::PopID();
+    }
+
+    // While a binding waits, and until the pressed button is released, the controller must not also drive the
+    // launcher: Menu would press Play.
+    void PollPadCapture() {
+        if (pad_capture_.active() && !pad_capture_drawn_) {
+            pad_capture_.Cancel();
+            pad_hold_ = true;
+        }
+        pad_capture_drawn_ = false;
+        if (!pad_capture_.active() && !pad_hold_) {
+            return;
+        }
+        const std::vector<OslPadInput> pads = controllers_.Read();
+        if (pad_capture_.active()) {
+            const OslPadAction action = pad_capture_.action();
+            const PadCaptureResult result = pad_capture_.Update(pads, ImGui::IsKeyPressed(ImGuiKey_Escape, false));
+            if (result.kind == PadCaptureResult::Kind::kAssigned) {
+                SetPadSource(settings_, action, result.source);
+            } else if (result.kind == PadCaptureResult::Kind::kNoController) {
+                launcher_->SetStatus("No controller connected. Connect one to change this binding.");
+            }
+            pad_hold_ = !pad_capture_.active();
+        } else if (std::none_of(pads.begin(), pads.end(),
+                                [](const OslPadInput& pad) { return osl_pad_first_pressed(&pad) != OSL_PAD_SOURCE_NONE; })) {
+            pad_hold_ = false;
+            controllers_.Close();
+        }
+        ImGui::GetIO().ClearInputKeys();
     }
 
     PromptStyle InstalledPrompts() const {
@@ -1183,6 +1249,10 @@ private:
     std::shared_ptr<PromptsResult> prompts_outcome_;
     trg::Task prompts_;
     PackageBrowser browser_;
+    PadCapture pad_capture_;
+    ControllerReader controllers_;
+    bool pad_capture_drawn_ = false;
+    bool pad_hold_ = false;
     std::string install_failure_;
     std::string install_failure_text_;
 };

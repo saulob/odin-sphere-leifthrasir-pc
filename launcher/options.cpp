@@ -109,4 +109,22 @@ void ResetKeys(trg::SettingsStore& settings) {
     }
 }
 
+int SavedPadSource(const trg::SettingsStore& settings, OslPadAction action) {
+    const int saved = osl_pad_source_from_name(settings.Get(osl_pad_actions[action].ini_key).c_str());
+    return saved != OSL_PAD_SOURCE_NONE ? saved : osl_pad_actions[action].default_source;
+}
+
+void SetPadSource(trg::SettingsStore& settings, OslPadAction action, int source) {
+    char name[32];
+    if (osl_pad_source_name(source, name, sizeof(name))[0]) {
+        settings.Set(osl_pad_actions[action].ini_key, name);
+    }
+}
+
+void ResetPads(trg::SettingsStore& settings) {
+    for (int action = 0; action < OSL_PAD_COUNT; ++action) {
+        SetPadSource(settings, static_cast<OslPadAction>(action), osl_pad_actions[action].default_source);
+    }
+}
+
 } // namespace osl

@@ -231,7 +231,7 @@ $steps = @(
     (Step 'Runtime' 'Windows guest memory (sparse backing, commitment, aliases, release)' 'osl-memory-windows-tests'),
     (Step 'Runtime' 'run log retention and capture in a Windows-subsystem process without standard handles' 'osl-log-tests'),
     (Step 'CPU' 'MOVBE, BMI1 and LZCNT emulation and rewrite' 'osl-isa-tests'),
-    (Step 'Packages' 'game profile, package identity, build parity of every supported build, layering, settings, keys, controller prompts' 'osl-tests' -Expect @(
+    (Step 'Packages' 'game profile, package identity, build parity of every supported build, layering, settings, keys, controller bindings, controller prompts' 'osl-tests' -Expect @(
         '(?m)^  CUSA05083 1\.00 USA\s+PASS\s*$', '(?m)^  CUSA05083 1\.01 USA\s+PASS\s*$', '(?m)^  CUSA01290 1\.00 Japan\s+PASS\s*$',
         '(?m)^  CUSA01290 1\.02 Japan\s+PASS\s*$', '(?m)^  CUSA05262 1\.00 Europe\s+PASS\s*$', '(?m)^  CUSA05262 1\.01 Europe\s+PASS\s*$',
         '(?m)^  CUSA03873 1\.00 HK\s+PASS\s*$')),

@@ -7,6 +7,7 @@
 #include "runtime.h"
 #include "oslgpu.h"
 #include "osl_keys.h"
+#include "osl_pad.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -125,29 +126,21 @@ static void refresh_gamepads(void) {
     }
     SDL_free(ids);
 }
-/* Button sources: a host button or key and the PS4 button it presses. The defaults below can be
- * changed per PS4 button with OSL_PAD_MAP (gamepad) and OSL_KEY_MAP (keyboard), e.g.
- * OSL_KEY_MAP="cross=Q,square=Left Shift" or OSL_PAD_MAP="cross=b,circle=a": comma-separated
- * <ps4 button>=<SDL key or gamepad button name>. A mapped PS4 button loses its default sources.
- * Sticks and the touchpad keys are set by the launcher only. */
+/* Button sources: a host key and the PS4 button it presses. The keyboard defaults (osl_keys.c) can be changed
+ * per PS4 button with OSL_KEY_MAP, e.g. OSL_KEY_MAP="cross=Q,square=Left Shift", and the gamepad's (osl_pad.c)
+ * with OSL_PAD_MAP, e.g. OSL_PAD_MAP="cross=b,circle=a": comma-separated <ps4 button>=<SDL key or gamepad
+ * button name>. A mapped PS4 button loses its default sources. Sticks and the touchpad keys are set by the
+ * launcher only. */
 static const struct { const char *name; uint32_t ps; } ps_names[]={
     {"cross",BTN_CROSS}, {"circle",BTN_CIRCLE}, {"square",BTN_SQUARE}, {"triangle",BTN_TRIANGLE},
     {"l1",BTN_L1}, {"r1",BTN_R1}, {"l2",BTN_L2}, {"r2",BTN_R2}, {"l3",BTN_L3}, {"r3",BTN_R3},
     {"options",BTN_OPTIONS}, {"touchpad",BTN_TOUCHPAD},
     {"up",BTN_UP}, {"down",BTN_DOWN}, {"left",BTN_LEFT}, {"right",BTN_RIGHT},
 };
+_Static_assert(sizeof(ps_names)/sizeof(*ps_names)==OSL_PAD_COUNT,"one PS4 button per controller binding");
 typedef struct { int source; uint32_t ps; } ButtonSource;
 typedef struct { ButtonSource entries[48]; size_t count; } ButtonMap;
-static ButtonMap pad_map={{
-    {SDL_GAMEPAD_BUTTON_SOUTH,BTN_CROSS}, {SDL_GAMEPAD_BUTTON_EAST,BTN_CIRCLE},
-    {SDL_GAMEPAD_BUTTON_WEST,BTN_SQUARE}, {SDL_GAMEPAD_BUTTON_NORTH,BTN_TRIANGLE},
-    {SDL_GAMEPAD_BUTTON_LEFT_SHOULDER,BTN_L1}, {SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER,BTN_R1},
-    {SDL_GAMEPAD_BUTTON_LEFT_STICK,BTN_L3}, {SDL_GAMEPAD_BUTTON_RIGHT_STICK,BTN_R3},
-    {SDL_GAMEPAD_BUTTON_START,BTN_OPTIONS}, {SDL_GAMEPAD_BUTTON_BACK,BTN_TOUCHPAD},
-    {SDL_GAMEPAD_BUTTON_TOUCHPAD,BTN_TOUCHPAD},
-    {SDL_GAMEPAD_BUTTON_DPAD_UP,BTN_UP}, {SDL_GAMEPAD_BUTTON_DPAD_DOWN,BTN_DOWN},
-    {SDL_GAMEPAD_BUTTON_DPAD_LEFT,BTN_LEFT}, {SDL_GAMEPAD_BUTTON_DPAD_RIGHT,BTN_RIGHT},
-},15};
+static OslPadMap pad_map;
 static ButtonMap key_map;
 static OslKeyMap keys;
 static char keys_file[4200];
@@ -173,9 +166,9 @@ static char *trim(char *text) {
     return text;
 }
 
-/* Applies a OSL_PAD_MAP/OSL_KEY_MAP value; returns how many entries were used. Bad entries are
- * logged and skipped, so their PS4 button keeps its default. */
-static int apply_button_map(ButtonMap *map, const char *spec, bool keyboard) {
+/* Applies an OSL_KEY_MAP value; returns how many entries were used. Bad entries are logged and skipped, so
+ * their PS4 button keeps its default. */
+static int apply_key_map(ButtonMap *map, const char *spec) {
     if (!spec || !*spec) return 0;
     char copy[1024];
     snprintf(copy,sizeof(copy),"%s",spec);
@@ -195,8 +188,8 @@ static int apply_button_map(ButtonMap *map, const char *spec, bool keyboard) {
         entry=next;
         uint32_t ps=0;
         for (size_t i=0;i<sizeof(ps_names)/sizeof(*ps_names);++i) if (!SDL_strcasecmp(button,ps_names[i].name)) ps=ps_names[i].ps;
-        const int source=!*name ? -1 : keyboard ? (int)SDL_GetScancodeFromName(name) : (int)SDL_GetGamepadButtonFromString(name);
-        if (!ps || source<=(keyboard ? (int)SDL_SCANCODE_UNKNOWN : (int)SDL_GAMEPAD_BUTTON_INVALID)) {
+        const int source=!*name ? -1 : (int)SDL_GetScancodeFromName(name);
+        if (!ps || source<=(int)SDL_SCANCODE_UNKNOWN) {
             printf("Runtime: pad map: ignored '%s=%s'\n",button,name);
             continue;
         }
@@ -214,13 +207,30 @@ static void load_button_maps(void) {
     if (loaded) return;
     loaded=true;
     load_key_map();
-    const int pad=apply_button_map(&pad_map,getenv("OSL_PAD_MAP"),false);
-    const int keys=apply_button_map(&key_map,getenv("OSL_KEY_MAP"),true);
+    osl_pad_load(keys_file,&pad_map);
+    const int saved=osl_pad_changed(&pad_map);
+    if (saved) printf("Runtime: pad map: %d controller bindings from osl.ini differ from the defaults\n",saved);
+    const int pad=osl_pad_apply_spec(&pad_map,getenv("OSL_PAD_MAP"));
+    const int keys=apply_key_map(&key_map,getenv("OSL_KEY_MAP"));
     if (pad || keys) printf("Runtime: pad map: %d gamepad and %d keyboard buttons remapped\n",pad,keys);
 }
 
 static void key_axis(uint8_t *axis, bool negative, bool positive) {
     if (negative || positive) *axis=(uint8_t)(128-(negative ? 128 : 0)+(positive ? 127 : 0));
+}
+/* The PS4 buttons and L2/R2 values a gamepad presses through the controller bindings. */
+static uint32_t gamepad_buttons(SDL_Gamepad *g, uint8_t *l2, uint8_t *r2) {
+    OslPadInput in={0};
+    for (int b=0;b<SDL_GAMEPAD_BUTTON_COUNT;++b) if (SDL_GetGamepadButton(g,(SDL_GamepadButton)b)) in.buttons|=1u<<b;
+    in.left_trigger=trigger(SDL_GetGamepadAxis(g,SDL_GAMEPAD_AXIS_LEFT_TRIGGER));
+    in.right_trigger=trigger(SDL_GetGamepadAxis(g,SDL_GAMEPAD_AXIS_RIGHT_TRIGGER));
+    OslPadOutput out;
+    osl_pad_translate(&pad_map,&in,&out);
+    uint32_t buttons=0;
+    for (int i=0;i<OSL_PAD_COUNT;++i) if ((out.pressed>>i) & 1u) buttons|=ps_names[i].ps;
+    if (l2) *l2=out.l2;
+    if (r2) *r2=out.r2;
+    return buttons;
 }
 /* Player 1 is always connected: the keyboard stands in for a missing gamepad. */
 static bool slot_connected(int slot) { return slot==0 || slots[slot].gamepad; }
@@ -237,16 +247,9 @@ static void sample_host(int slot, PadData *d) {
     const bool *k=slot==0 && SDL_WasInit(SDL_INIT_VIDEO) ? SDL_GetKeyboardState(NULL) : NULL;
     load_button_maps();
     if (g) {
-        for (size_t i=0;i<pad_map.count;++i)
-            if (SDL_GetGamepadButton(g,(SDL_GamepadButton)pad_map.entries[i].source)) d->buttons|=pad_map.entries[i].ps;
-        const uint32_t mapped=d->buttons;
+        d->buttons|=gamepad_buttons(g,&d->l2,&d->r2);
         d->left_x=axis(SDL_GetGamepadAxis(g,SDL_GAMEPAD_AXIS_LEFTX)); d->left_y=axis(SDL_GetGamepadAxis(g,SDL_GAMEPAD_AXIS_LEFTY));
         d->right_x=axis(SDL_GetGamepadAxis(g,SDL_GAMEPAD_AXIS_RIGHTX)); d->right_y=axis(SDL_GetGamepadAxis(g,SDL_GAMEPAD_AXIS_RIGHTY));
-        d->l2=trigger(SDL_GetGamepadAxis(g,SDL_GAMEPAD_AXIS_LEFT_TRIGGER)); d->r2=trigger(SDL_GetGamepadAxis(g,SDL_GAMEPAD_AXIS_RIGHT_TRIGGER));
-        if (d->l2>30) d->buttons|=BTN_L2;
-        if (d->r2>30) d->buttons|=BTN_R2;
-        if (mapped & BTN_L2) d->l2=255;
-        if (mapped & BTN_R2) d->r2=255;
         if (SDL_GetNumGamepadTouchpads(g)>0) {
             const int fingers=SDL_GetNumGamepadTouchpadFingers(g,0);
             for (int finger=0;finger<fingers && d->touch_count<2;++finger) {
@@ -395,8 +398,7 @@ static uint32_t host_buttons(void) {
     load_button_maps();
     refresh_gamepads();
     SDL_Gamepad *g=slots[0].gamepad;
-    if (g) for (size_t i=0;i<pad_map.count;++i)
-        if (SDL_GetGamepadButton(g,(SDL_GamepadButton)pad_map.entries[i].source)) buttons|=pad_map.entries[i].ps;
+    if (g) buttons|=gamepad_buttons(g,NULL,NULL);
     const bool *k=SDL_WasInit(SDL_INIT_VIDEO) ? SDL_GetKeyboardState(NULL) : NULL;
     if (k) for (size_t i=0;i<key_map.count;++i) if (k[key_map.entries[i].source]) buttons|=key_map.entries[i].ps;
     return buttons;

@@ -47,6 +47,12 @@ int osl_keys_apply(OslKeyMap *map, const char *ini_key, const char *value);
 /* Defaults, then every valid binding in the osl.ini at `path`; a missing file or line keeps the default. */
 void osl_keys_load(const char *path, OslKeyMap *map);
 
+/* Calls `entry` for every key=value line of the osl.ini at `path` (comments and a missing file are skipped). */
+typedef void (*OslIniEntry)(const char *key, const char *value, void *user);
+void osl_ini_read(const char *path, OslIniEntry entry, void *user);
+/* Strips blanks at both ends in place. */
+char *osl_text_trim(char *text);
+
 #ifdef __cplusplus
 }
 #endif

@@ -88,15 +88,14 @@ int osl_keys_apply(OslKeyMap *map, const char *ini_key, const char *value) {
     return 0;
 }
 
-static char *trim(char *text) {
+char *osl_text_trim(char *text) {
     while (*text==' ' || *text=='\t') ++text;
     char *end=text+strlen(text);
     while (end>text && (end[-1]==' ' || end[-1]=='\t' || end[-1]=='\r')) *--end=0;
     return text;
 }
 
-void osl_keys_load(const char *path, OslKeyMap *map) {
-    osl_keys_defaults(map);
+void osl_ini_read(const char *path, OslIniEntry entry, void *user) {
     size_t size=0;
     char *text=path && *path ? (char *)SDL_LoadFile(path,&size) : NULL;
     if (!text) return;
@@ -105,14 +104,23 @@ void osl_keys_load(const char *path, OslKeyMap *map) {
         char *next=strchr(line,'\n');
         if (next) *next++=0;
         char *eq=strchr(line,'=');
-        if (eq && *trim(line)!='#') {
+        if (eq && *osl_text_trim(line)!='#') {
             *eq=0;
-            char *value=trim(eq+1);
+            char *value=osl_text_trim(eq+1);
             char *comment=strstr(value," #");
             if (comment) *comment=0;
-            osl_keys_apply(map,trim(line),trim(value));
+            entry(osl_text_trim(line),osl_text_trim(value),user);
         }
         line=next;
     }
     SDL_free(text);
+}
+
+static void apply_key_entry(const char *key, const char *value, void *map) {
+    osl_keys_apply((OslKeyMap *)map,key,value);
+}
+
+void osl_keys_load(const char *path, OslKeyMap *map) {
+    osl_keys_defaults(map);
+    osl_ini_read(path,apply_key_entry,map);
 }

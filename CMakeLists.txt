@@ -42,8 +42,8 @@ find_package(SDL3 CONFIG REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(Threads REQUIRED)
 
-# Keyboard bindings shared by the launcher, the runtime pad and the video core.
-add_library(osl_keys STATIC src/osl_keys.c)
+# Keyboard and controller bindings shared by the launcher, the runtime pad and the video core.
+add_library(osl_keys STATIC src/osl_keys.c src/osl_pad.c)
 target_include_directories(osl_keys PUBLIC src)
 target_link_libraries(osl_keys PUBLIC SDL3::SDL3)
 target_compile_options(osl_keys PRIVATE -Wall -Wextra -Werror)

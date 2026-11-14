@@ -11,6 +11,7 @@
 
 #include "osl_keys.h"
 #include "osl_launcher.h"
+#include "osl_pad.h"
 #include "osl_resolution.h"
 #include "game_files.h"
 #include "utf8.h"
@@ -68,6 +69,11 @@ std::span<const ManagedSetting> ManagedSettings() {
             default_names.emplace_back(osl_key_name(action.default_scancode, name, sizeof(name)));
             all.push_back({action.ini_key, default_names.back()});
         }
+        for (const OslPadInfo& action : osl_pad_actions) {
+            char name[32];
+            default_names.emplace_back(osl_pad_source_name(action.default_source, name, sizeof(name)));
+            all.push_back({action.ini_key, default_names.back()});
+        }
         return all;
     }();
     return settings;
@@ -80,6 +86,10 @@ bool IsValidSetting(std::string_view key, std::string_view value) {
     if (std::any_of(std::begin(osl_key_actions), std::end(osl_key_actions),
                     [&](const OslKeyInfo& action) { return key == action.ini_key; })) {
         return osl_key_from_name(std::string(value).c_str()) != 0;
+    }
+    if (std::any_of(std::begin(osl_pad_actions), std::end(osl_pad_actions),
+                    [&](const OslPadInfo& action) { return key == action.ini_key; })) {
+        return osl_pad_source_from_name(std::string(value).c_str()) != OSL_PAD_SOURCE_NONE;
     }
     if (key == kDisplayModeKey) {
         return one_of({"windowed", "borderless"});

@@ -17,6 +17,7 @@
 #include <iterator>
 #include <map>
 #include <set>
+#include <span>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -26,6 +27,7 @@
 #include <unistd.h>
 #endif
 
+#include <SDL3/SDL_gamepad.h>
 #include <SDL3/SDL_scancode.h>
 
 #include "build_diagnostics.h"
@@ -39,6 +41,7 @@
 #include "launcher_quit.h"
 #include "lzcnt_compat.h"
 #include "options.h"
+#include "pad_capture.h"
 #include "osl_accent.h"
 #include "osl_graphics.h"
 #include "osl_launcher.h"
@@ -6151,6 +6154,279 @@ int RunTitleArtReport(const char* manifest) {
     return g_failures ? 1 : 0;
 }
 
+OslPadInput PadInput(std::initializer_list<int> buttons, int left = 0, int right = 0) {
+    OslPadInput input{};
+    for (const int button : buttons) input.buttons |= 1u << button;
+    input.left_trigger = static_cast<uint8_t>(left);
+    input.right_trigger = static_cast<uint8_t>(right);
+    return input;
+}
+
+OslPadOutput PadOutput(const OslPadMap& map, const OslPadInput& input) {
+    OslPadOutput output;
+    osl_pad_translate(&map, &input, &output);
+    return output;
+}
+
+constexpr uint32_t Bit(OslPadAction action) { return 1u << action; }
+
+std::string PadFile(const std::filesystem::path& path) { return path.string(); }
+
+void TestPadDefaults() {
+    OslPadMap map;
+    osl_pad_defaults(&map);
+    CHECK(osl_pad_changed(&map) == 0);
+    const char* const names[OSL_PAD_COUNT] = {"a", "b", "x", "y", "leftshoulder", "rightshoulder", "lefttrigger",
+                                              "righttrigger", "leftstick", "rightstick", "start", "back", "dpup",
+                                              "dpdown", "dpleft", "dpright"};
+    for (int action = 0; action < OSL_PAD_COUNT; ++action) {
+        char name[32];
+        CHECK(std::string(osl_pad_source_name(osl_pad_actions[action].default_source, name, sizeof(name))) == names[action]);
+        CHECK(osl_pad_source_from_name(names[action]) == osl_pad_actions[action].default_source);
+        CHECK(!std::string(osl_pad_source_label(osl_pad_actions[action].default_source)).empty());
+        if (action != OSL_PAD_L2 && action != OSL_PAD_R2) {
+            const OslPadOutput output = PadOutput(map, PadInput({osl_pad_actions[action].default_source}));
+            CHECK(output.pressed == (1u << action) && output.l2 == 0 && output.r2 == 0);
+        }
+    }
+    CHECK(PadOutput(map, PadInput({SDL_GAMEPAD_BUTTON_TOUCHPAD})).pressed == Bit(OSL_PAD_TOUCHPAD));
+    CHECK(PadOutput(map, PadInput({SDL_GAMEPAD_BUTTON_GUIDE, SDL_GAMEPAD_BUTTON_MISC1})).pressed == 0);
+
+    // Triggers keep their analog value; a value up to 30 is not a press.
+    OslPadOutput output = PadOutput(map, PadInput({}, 200, 31));
+    CHECK(output.l2 == 200 && output.r2 == 31 && output.pressed == (Bit(OSL_PAD_L2) | Bit(OSL_PAD_R2)));
+    output = PadOutput(map, PadInput({}, 30, 0));
+    CHECK(output.l2 == 30 && output.pressed == 0);
+
+    CHECK(osl_pad_source_from_name("A") == SDL_GAMEPAD_BUTTON_SOUTH);
+    CHECK(osl_pad_source_from_name("LeftTrigger") == OSL_PAD_SOURCE_LEFT_TRIGGER);
+    for (const char* invalid : {"", "guide", "nonsense", "lefttrigger2", "south trigger"}) {
+        CHECK(osl_pad_source_from_name(invalid) == OSL_PAD_SOURCE_NONE);
+    }
+    CHECK(!osl_pad_source_bindable(SDL_GAMEPAD_BUTTON_GUIDE) && !osl_pad_source_bindable(OSL_PAD_SOURCE_NONE));
+    CHECK(!osl_pad_source_bindable(SDL_GAMEPAD_BUTTON_COUNT));
+    char name[32];
+    CHECK(std::string(osl_pad_source_name(SDL_GAMEPAD_BUTTON_GUIDE, name, sizeof(name))).empty());
+}
+
+void TestPadRebinding() {
+    OslPadMap map;
+    osl_pad_defaults(&map);
+    // Physical B drives R1 and, still, Circle; the default R1 source no longer drives R1.
+    map.source[OSL_PAD_R1] = SDL_GAMEPAD_BUTTON_EAST;
+    CHECK(PadOutput(map, PadInput({SDL_GAMEPAD_BUTTON_EAST})).pressed == (Bit(OSL_PAD_R1) | Bit(OSL_PAD_CIRCLE)));
+    CHECK(PadOutput(map, PadInput({SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER})).pressed == 0);
+
+    // Swapped: physical A is Circle and physical B is Cross.
+    map.source[OSL_PAD_CROSS] = SDL_GAMEPAD_BUTTON_EAST;
+    map.source[OSL_PAD_CIRCLE] = SDL_GAMEPAD_BUTTON_SOUTH;
+    map.source[OSL_PAD_R1] = SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER;
+    CHECK(PadOutput(map, PadInput({SDL_GAMEPAD_BUTTON_SOUTH})).pressed == Bit(OSL_PAD_CIRCLE));
+    CHECK(PadOutput(map, PadInput({SDL_GAMEPAD_BUTTON_EAST})).pressed == Bit(OSL_PAD_CROSS));
+    CHECK(PadOutput(map, PadInput({SDL_GAMEPAD_BUTTON_WEST})).pressed == Bit(OSL_PAD_SQUARE));
+    CHECK(osl_pad_changed(&map) == 2);
+
+    // One physical button may drive several PS4 buttons; they are pressed together.
+    map.source[OSL_PAD_TRIANGLE] = SDL_GAMEPAD_BUTTON_SOUTH;
+    CHECK(PadOutput(map, PadInput({SDL_GAMEPAD_BUTTON_SOUTH})).pressed == (Bit(OSL_PAD_CIRCLE) | Bit(OSL_PAD_TRIANGLE)));
+
+    // Buttons on L2 and R2 give the full value, and the physical triggers stop driving them.
+    osl_pad_defaults(&map);
+    map.source[OSL_PAD_L2] = SDL_GAMEPAD_BUTTON_LEFT_SHOULDER;
+    map.source[OSL_PAD_R2] = SDL_GAMEPAD_BUTTON_NORTH;
+    OslPadOutput output = PadOutput(map, PadInput({SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, SDL_GAMEPAD_BUTTON_NORTH}));
+    CHECK(output.l2 == 255 && output.r2 == 255);
+    CHECK(output.pressed == (Bit(OSL_PAD_L1) | Bit(OSL_PAD_L2) | Bit(OSL_PAD_R2) | Bit(OSL_PAD_TRIANGLE)));
+    output = PadOutput(map, PadInput({}, 255, 255));
+    CHECK(output.l2 == 0 && output.r2 == 0 && output.pressed == 0);
+
+    // A trigger on a PS4 button, and L2 on the other trigger.
+    osl_pad_defaults(&map);
+    map.source[OSL_PAD_CIRCLE] = OSL_PAD_SOURCE_RIGHT_TRIGGER;
+    map.source[OSL_PAD_L2] = OSL_PAD_SOURCE_RIGHT_TRIGGER;
+    output = PadOutput(map, PadInput({}, 0, 90));
+    CHECK(output.l2 == 90 && output.r2 == 90 && output.pressed == (Bit(OSL_PAD_CIRCLE) | Bit(OSL_PAD_L2) | Bit(OSL_PAD_R2)));
+    CHECK(PadOutput(map, PadInput({SDL_GAMEPAD_BUTTON_EAST})).pressed == 0);
+
+    // Options, the D-pad and the touchpad take any source.
+    osl_pad_defaults(&map);
+    map.source[OSL_PAD_OPTIONS] = SDL_GAMEPAD_BUTTON_BACK;
+    map.source[OSL_PAD_TOUCHPAD] = SDL_GAMEPAD_BUTTON_START;
+    map.source[OSL_PAD_DPAD_UP] = SDL_GAMEPAD_BUTTON_NORTH;
+    CHECK(PadOutput(map, PadInput({SDL_GAMEPAD_BUTTON_BACK})).pressed == Bit(OSL_PAD_OPTIONS));
+    CHECK(PadOutput(map, PadInput({SDL_GAMEPAD_BUTTON_START})).pressed == Bit(OSL_PAD_TOUCHPAD));
+    CHECK(PadOutput(map, PadInput({SDL_GAMEPAD_BUTTON_TOUCHPAD})).pressed == 0);
+    CHECK(PadOutput(map, PadInput({SDL_GAMEPAD_BUTTON_NORTH})).pressed == (Bit(OSL_PAD_TRIANGLE) | Bit(OSL_PAD_DPAD_UP)));
+    CHECK(PadOutput(map, PadInput({SDL_GAMEPAD_BUTTON_DPAD_UP})).pressed == 0);
+}
+
+void TestPadSettingsFile() {
+    const std::filesystem::path dir = TempDir("pad_settings");
+    OslPadMap map;
+    osl_pad_load(PadFile(dir / "missing.ini").c_str(), &map);
+    CHECK(osl_pad_changed(&map) == 0);
+
+    // An osl.ini from before controller bindings: every default, and keyboard lines are not pad lines.
+    std::ofstream(dir / "old.ini") << "show_launcher = 1\nkey_cross = q\ncontroller_prompts = xbox\n";
+    osl_pad_load(PadFile(dir / "old.ini").c_str(), &map);
+    CHECK(osl_pad_changed(&map) == 0);
+    OslKeyMap keys;
+    osl_keys_load(PadFile(dir / "old.ini").c_str(), &keys);
+    CHECK(keys.scancode[OSL_KEY_CROSS] == SDL_SCANCODE_Q);
+
+    std::ofstream(dir / "pad.ini") << "# comment\npad_cross = B   # swapped\npad_circle=a\npad_l1 = guide\npad_r1 = nonsense\n"
+                                      "pad_l2 = RightTrigger\npad_square=\nkey_circle = e\npad_dpad_up = misc1\n";
+    osl_pad_load(PadFile(dir / "pad.ini").c_str(), &map);
+    CHECK(map.source[OSL_PAD_CROSS] == SDL_GAMEPAD_BUTTON_EAST && map.source[OSL_PAD_CIRCLE] == SDL_GAMEPAD_BUTTON_SOUTH);
+    CHECK(map.source[OSL_PAD_L1] == SDL_GAMEPAD_BUTTON_LEFT_SHOULDER && map.source[OSL_PAD_R1] == SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER);
+    CHECK(map.source[OSL_PAD_SQUARE] == SDL_GAMEPAD_BUTTON_WEST);
+    CHECK(map.source[OSL_PAD_L2] == OSL_PAD_SOURCE_RIGHT_TRIGGER && map.source[OSL_PAD_DPAD_UP] == SDL_GAMEPAD_BUTTON_MISC1);
+    CHECK(osl_pad_changed(&map) == 4);
+    osl_keys_load(PadFile(dir / "pad.ini").c_str(), &keys);
+    CHECK(keys.scancode[OSL_KEY_CIRCLE] == SDL_SCANCODE_E && keys.scancode[OSL_KEY_CROSS] == SDL_SCANCODE_SPACE);
+
+    // OSL_PAD_MAP comes after osl.ini; bad entries are skipped and change nothing.
+    CHECK(osl_pad_apply_spec(&map, "cross=a, circle = x ,bogus=a,l1=guide,r1,l3=") == 2);
+    CHECK(map.source[OSL_PAD_CROSS] == SDL_GAMEPAD_BUTTON_SOUTH && map.source[OSL_PAD_CIRCLE] == SDL_GAMEPAD_BUTTON_WEST);
+    CHECK(map.source[OSL_PAD_L1] == SDL_GAMEPAD_BUTTON_LEFT_SHOULDER && map.source[OSL_PAD_L2] == OSL_PAD_SOURCE_RIGHT_TRIGGER);
+    CHECK(osl_pad_apply_spec(&map, nullptr) == 0 && osl_pad_apply_spec(&map, "") == 0);
+    CHECK(osl_pad_apply_spec(&map, "UP=lefttrigger") == 1 && map.source[OSL_PAD_DPAD_UP] == OSL_PAD_SOURCE_LEFT_TRIGGER);
+}
+
+void TestPadSettings() {
+    bool managed[OSL_PAD_COUNT] = {};
+    for (const ManagedSetting& setting : ManagedSettings()) {
+        for (int action = 0; action < OSL_PAD_COUNT; ++action) {
+            if (setting.key == osl_pad_actions[action].ini_key) {
+                char name[32];
+                managed[action] = setting.default_value == osl_pad_source_name(osl_pad_actions[action].default_source, name, sizeof(name));
+            }
+        }
+    }
+    CHECK(std::all_of(std::begin(managed), std::end(managed), [](bool value) { return value; }));
+    CHECK(IsValidSetting("pad_cross", "b") && IsValidSetting("pad_l2", "righttrigger") && IsValidSetting("pad_r1", "A"));
+    CHECK(!IsValidSetting("pad_cross", "guide") && !IsValidSetting("pad_cross", "q") && !IsValidSetting("pad_cross", ""));
+
+    const std::filesystem::path dir = TempDir("pad_settings_file");
+    std::ofstream(dir / "osl.ini") << "# Odin\nshow_launcher = 0\nkey_cross = q\ncontroller_prompts = xbox\nextra_line = 7\n"
+                                      "pad_circle = not a button\n";
+    LauncherSettings settings(dir / "osl.ini");
+    for (int action = 0; action < OSL_PAD_COUNT; ++action) {
+        CHECK(SavedPadSource(settings, static_cast<OslPadAction>(action)) == osl_pad_actions[action].default_source);
+    }
+
+    SetPadSource(settings, OSL_PAD_R1, SDL_GAMEPAD_BUTTON_EAST);
+    SetPadSource(settings, OSL_PAD_CROSS, SDL_GAMEPAD_BUTTON_GUIDE);
+    SetPadSource(settings, OSL_PAD_L2, OSL_PAD_SOURCE_RIGHT_TRIGGER);
+    CHECK(settings.Save());
+    const std::string saved = ReadFile(dir / "osl.ini");
+    CHECK(saved.find("pad_r1") != std::string::npos && saved.find("righttrigger") != std::string::npos);
+    CHECK(saved.find("pad_cross") == std::string::npos && saved.find("extra_line") != std::string::npos);
+    CHECK(saved.find("key_cross") != std::string::npos && saved.find("controller_prompts") != std::string::npos);
+
+    LauncherSettings reloaded(dir / "osl.ini");
+    CHECK(SavedPadSource(reloaded, OSL_PAD_R1) == SDL_GAMEPAD_BUTTON_EAST);
+    CHECK(SavedPadSource(reloaded, OSL_PAD_L2) == OSL_PAD_SOURCE_RIGHT_TRIGGER);
+    CHECK(SavedPadSource(reloaded, OSL_PAD_CIRCLE) == SDL_GAMEPAD_BUTTON_EAST);
+    CHECK(SavedPadSource(reloaded, OSL_PAD_CROSS) == SDL_GAMEPAD_BUTTON_SOUTH);
+
+    // Reset puts the controller bindings back and touches neither the keyboard nor the prompts.
+    reloaded.Set(osl_key_actions[OSL_KEY_SQUARE].ini_key, "r");
+    ResetPads(reloaded);
+    for (int action = 0; action < OSL_PAD_COUNT; ++action) {
+        CHECK(SavedPadSource(reloaded, static_cast<OslPadAction>(action)) == osl_pad_actions[action].default_source);
+    }
+    CHECK(SavedKey(reloaded, OSL_KEY_CROSS) == SDL_SCANCODE_Q && SavedKey(reloaded, OSL_KEY_SQUARE) == SDL_SCANCODE_R);
+    CHECK(reloaded.Get(kControllerPromptsKey, kPromptsPlayStation) == "xbox");
+    CHECK(reloaded.Save());
+    OslPadMap loaded;
+    osl_pad_load(PadFile(dir / "osl.ini").c_str(), &loaded);
+    CHECK(osl_pad_changed(&loaded) == 0);
+
+    // The keyboard reset and a prompt change leave the controller bindings alone.
+    SetPadSource(reloaded, OSL_PAD_CIRCLE, SDL_GAMEPAD_BUTTON_NORTH);
+    ResetKeys(reloaded);
+    CHECK(SavedKey(reloaded, OSL_KEY_CROSS) == SDL_SCANCODE_SPACE);
+    CHECK(SavedPadSource(reloaded, OSL_PAD_CIRCLE) == SDL_GAMEPAD_BUTTON_NORTH);
+    CHECK(reloaded.SaveNow({{kControllerPromptsKey, kPromptsPlayStation}}));
+    CHECK(SavedPadSource(reloaded, OSL_PAD_CIRCLE) == SDL_GAMEPAD_BUTTON_NORTH);
+
+    // Reset all settings includes the controller bindings.
+    reloaded.ResetToDefaults();
+    CHECK(SavedPadSource(reloaded, OSL_PAD_CIRCLE) == SDL_GAMEPAD_BUTTON_EAST);
+}
+
+void TestPadCapture() {
+    using Kind = PadCaptureResult::Kind;
+    PadCapture none;
+    CHECK(!none.Begin(OSL_PAD_CIRCLE, 0) && !none.active());
+
+    PadCapture capture;
+    CHECK(capture.Begin(OSL_PAD_CIRCLE, 1) && capture.active() && capture.action() == OSL_PAD_CIRCLE);
+    // The button that opened the row is still held at first: it is not the new binding.
+    const OslPadInput held = PadInput({SDL_GAMEPAD_BUTTON_SOUTH});
+    CHECK(capture.Update(std::span(&held, 1), false).kind == Kind::kWaiting);
+    const OslPadInput idle = PadInput({});
+    CHECK(capture.Update(std::span(&idle, 1), false).kind == Kind::kWaiting);
+    const OslPadInput guide = PadInput({SDL_GAMEPAD_BUTTON_GUIDE});
+    CHECK(capture.Update(std::span(&guide, 1), false).kind == Kind::kWaiting);
+    const OslPadInput pressed = PadInput({SDL_GAMEPAD_BUTTON_EAST});
+    PadCaptureResult result = capture.Update(std::span(&pressed, 1), false);
+    CHECK(result.kind == Kind::kAssigned && result.source == SDL_GAMEPAD_BUTTON_EAST && !capture.active());
+
+    // A trigger can be captured, a second controller can press, Esc cancels and losing the controller ends it.
+    CHECK(capture.Begin(OSL_PAD_L2, 2));
+    const OslPadInput pair[2] = {idle, PadInput({}, 0, 255)};
+    CHECK(capture.Update(std::span(&idle, 1), false).kind == Kind::kWaiting);
+    result = capture.Update(std::span(pair, 2), false);
+    CHECK(result.kind == Kind::kAssigned && result.source == OSL_PAD_SOURCE_RIGHT_TRIGGER);
+    CHECK(capture.Begin(OSL_PAD_CROSS, 1));
+    CHECK(capture.Update(std::span(&idle, 1), true).kind == Kind::kCancelled && !capture.active());
+    CHECK(capture.Begin(OSL_PAD_CROSS, 1));
+    CHECK(capture.Update({}, false).kind == Kind::kNoController && !capture.active());
+
+    CHECK(osl_pad_first_pressed(&guide) == OSL_PAD_SOURCE_NONE);
+    const OslPadInput two = PadInput({SDL_GAMEPAD_BUTTON_EAST, SDL_GAMEPAD_BUTTON_SOUTH});
+    CHECK(osl_pad_first_pressed(&two) == SDL_GAMEPAD_BUTTON_SOUTH);
+    const OslPadInput half = PadInput({}, 127, 128);
+    CHECK(osl_pad_first_pressed(&half) == OSL_PAD_SOURCE_RIGHT_TRIGGER);
+    const OslPadInput soft = PadInput({}, 127, 0);
+    CHECK(osl_pad_first_pressed(&soft) == OSL_PAD_SOURCE_NONE);
+}
+
+// The runtime pad, the launcher and the tests read the same map, which has no platform code of its own.
+void TestPadWiring() {
+    const std::filesystem::path root(OSL_SOURCE_DIR);
+    const std::string runtime = ReadFile(root / "src" / "runtime_pad.c");
+    const size_t load = runtime.find("osl_pad_load(keys_file,&pad_map)");
+    const size_t spec = runtime.find("osl_pad_apply_spec(&pad_map,getenv(\"OSL_PAD_MAP\"))");
+    CHECK(load != std::string::npos && spec != std::string::npos && load < spec);
+    CHECK(runtime.find("osl_pad_translate(&pad_map") != std::string::npos);
+    CHECK(runtime.find("gamepad_buttons(g,&d->l2,&d->r2)") != std::string::npos);
+    CHECK(runtime.find("slot==0 && SDL_WasInit(SDL_INIT_VIDEO)") != std::string::npos);
+    const std::string pad = ReadFile(root / "src" / "osl_pad.c");
+    for (const char* platform : {"_WIN32", "__linux__", "windows.h", "unistd.h"}) {
+        CHECK(pad.find(platform) == std::string::npos);
+    }
+    CHECK(ReadFile(root / "CMakeLists.txt").find("add_library(osl_keys STATIC src/osl_keys.c src/osl_pad.c)") != std::string::npos);
+
+    const std::string launcher = ReadFile(root / "launcher" / "launcher.cpp");
+    const size_t prompts = launcher.find("ControllerPromptsCombo(ui);");
+    const size_t bindings = launcher.find("ui.Section(\"Controller bindings\", true)");
+    const size_t keyboard = launcher.find("ui.Section(\"Keyboard controls\", true)");
+    const size_t hotkeys = launcher.find("ui.Section(\"Port hotkeys\", true)");
+    CHECK(prompts != std::string::npos && prompts < bindings && bindings < keyboard && keyboard < hotkeys);
+    CHECK(launcher.find("ResetPads(settings_)") != std::string::npos && launcher.find("ResetKeys(settings_)") != std::string::npos);
+    const size_t row = launcher.find("void PadRow(");
+    const size_t end = launcher.find("PromptStyle InstalledPrompts()");
+    CHECK(row != std::string::npos && row < end);
+    const std::string rows = launcher.substr(row, end - row);
+    for (const char* absolute : {"SetCursorPos", "SetCursorScreenPos", "SetNextItemWidth", "kControllerPromptsKey"}) {
+        CHECK(rows.find(absolute) == std::string::npos);
+    }
+    CHECK(rows.find("ImVec2(-FLT_MIN, 0)") != std::string::npos);
+}
+
 int main(int argc, char** argv) {
     if (argc >= 3 && std::strcmp(argv[1], "--title-art") == 0) {
         return RunTitleArtReport(argv[2]);
@@ -6166,6 +6442,12 @@ int main(int argc, char** argv) {
     TestTextLanguages();
     TestVoicePolicy();
     TestKeys();
+    TestPadDefaults();
+    TestPadRebinding();
+    TestPadSettingsFile();
+    TestPadSettings();
+    TestPadCapture();
+    TestPadWiring();
     TestPresentation();
     TestWindowTitle();
     TestFrameCounterAndNotices();
