@@ -74,8 +74,8 @@ public:
     // The history changes in memory even when saving fails; false says it was not saved.
     bool Add(TrackedReport report);
     // Newer facts for the reports held here; a difference marks the report unseen, and a new or changed developer message
-    // also marks its message unseen. A report in `asked` that the answer leaves out is marked unavailable, once. False when
-    // nothing changed.
+    // also marks its message unseen. A report in `asked` that the answer leaves out is marked unavailable, once, and stops
+    // counting as an update. False when nothing changed.
     bool Apply(const std::vector<ReportStatusUpdate>& statuses, const std::vector<std::string>& asked = {});
     bool MarkSeen(std::string_view ticket);
     bool Remove(std::string_view ticket);

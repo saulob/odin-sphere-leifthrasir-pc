@@ -940,8 +940,9 @@ void TestKeyManagementFlow(const fs::path& base) {
 }
 
 void TestLauncherPieces(const fs::path& base) {
-    CHECK(std::size(kPageOrder) >= 3 && kPageOrder[std::size(kPageOrder) - 2] == PageId::kTrophies &&
-          kPageOrder[std::size(kPageOrder) - 1] == PageId::kAbout && kPageOrder[std::size(kPageOrder) - 3] == PageId::kControls);
+    CHECK(std::size(kPageOrder) >= 4 && kPageOrder[std::size(kPageOrder) - 4] == PageId::kControls &&
+          kPageOrder[std::size(kPageOrder) - 3] == PageId::kTrophies && kPageOrder[std::size(kPageOrder) - 2] == PageId::kBugReport &&
+          kPageOrder[std::size(kPageOrder) - 1] == PageId::kAbout);
     CHECK(std::string(PageName(PageId::kTrophies)) == "Trophies");
     OslPng::Image image;
     CHECK(!OslPng::LoadRgba((base / "missing.png").string().c_str(), image));

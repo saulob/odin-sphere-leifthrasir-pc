@@ -15,9 +15,9 @@
 
 namespace osl {
 
-// The launcher's Bug Report page: report the problem, choose one game log, preview what will be sent, and send it once the
-// player confirms. Nothing is sent before that. A connection is opened to ask about reports already sent, and only when
-// there are some.
+// The launcher's Bug Report page: report the problem, choose one game log, preview what will be sent, send it. Nothing is
+// sent until the player presses Send report. A connection is opened to ask about reports already sent, and only when there
+// are some.
 class IncidentPage {
 public:
     struct Places {
@@ -49,15 +49,15 @@ private:
     void CollectDelivery();
     std::shared_ptr<const IncidentPackage> BuildPackage(const ReportFacts& facts);
     void TogglePreview(const ReportFacts& facts);
-    void AskToSend(const ReportFacts& facts);
-    void StartDelivery();
+    void Send(const ReportFacts& facts);
     void Save(const ReportFacts& facts);
     void DrawDescription(trg::Ui& ui, bool sending);
     void DrawLogs(trg::Ui& ui, bool sending);
     void DrawPreview(trg::Ui& ui, const ReportFacts& facts, bool sending);
     void DrawSend(trg::Ui& ui, const ReportFacts& facts, bool sending);
-    void DrawConfirmation(trg::Ui& ui);
+    void DrawOtherOptions(trg::Ui& ui, const ReportFacts& facts, bool sending);
     void DrawResult(trg::Ui& ui);
+    void DrawSaved(trg::Ui& ui);
 
     void Log(const std::string& line) const {
         if (places_.log) places_.log(line);
@@ -75,13 +75,13 @@ private:
     std::shared_ptr<const IncidentPackage> previewed_;
     std::string preview_text_;
     bool log_failed_ = false;
-    bool confirm_requested_ = false;
     std::shared_ptr<Delivery> delivery_;
     std::optional<ReportReceipt> result_;
     bool sent_report_remembered_ = true;
     std::filesystem::path saved_report_;
     bool save_failed_ = false;
     bool bring_result_into_view_ = false;
+    bool bring_saved_into_view_ = false;
     MyReports my_reports_;
 };
 

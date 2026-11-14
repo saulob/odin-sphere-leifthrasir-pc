@@ -165,17 +165,18 @@ bool ReportHistory::Save() const {
 }
 
 bool ReportHistory::HasUnseen() const {
-    return std::any_of(reports_.begin(), reports_.end(), [](const TrackedReport& report) { return report.unseen; });
+    return std::any_of(reports_.begin(), reports_.end(), [](const TrackedReport& report) { return report.unseen && !report.unavailable; });
 }
 
 bool ReportHistory::HasUnseenMessage() const {
-    return std::any_of(reports_.begin(), reports_.end(), [](const TrackedReport& report) { return report.message_unseen; });
+    return std::any_of(reports_.begin(), reports_.end(),
+                       [](const TrackedReport& report) { return report.message_unseen && !report.unavailable; });
 }
 
 std::string ReportHistory::NextUnseen() const {
     const TrackedReport* best = nullptr;
     for (const TrackedReport& report : reports_) {
-        if (!report.unseen && !report.message_unseen) continue;
+        if (report.unavailable || (!report.unseen && !report.message_unseen)) continue;
         const bool better = !best || (report.message_unseen && !best->message_unseen) ||
                             (report.message_unseen == best->message_unseen && report.status_updated_at > best->status_updated_at);
         if (better) best = &report;
@@ -214,6 +215,8 @@ bool ReportHistory::Apply(const std::vector<ReportStatusUpdate>& statuses, const
         const auto found = std::find_if(reports_.begin(), reports_.end(), [&](const TrackedReport& r) { return r.ticket == ticket; });
         if (answered || found == reports_.end() || found->unavailable) continue;
         found->unavailable = true;
+        found->unseen = false;
+        found->message_unseen = false;
         changed = true;
     }
     return changed;

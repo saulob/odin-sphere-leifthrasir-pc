@@ -24,15 +24,12 @@ constexpr float kDescriptionHeight = 112.0f;
 constexpr float kPreviewHeight = 300.0f;
 constexpr float kAlertTint = 0.16f, kAlertFlashTint = 0.5f;
 constexpr float kAlertFlashSeconds = 0.9f;
-constexpr float kConfirmWidth = 440.0f, kConfirmButtonWidth = 150.0f;
 
-const char* kPrivacyHeadline = "Nothing is sent unless you press Send report.";
+const char* kPrivacyHeadline = "No personal user data is intentionally included.";
 const char* kPrivacyNote =
-    "Before anything is sent, the launcher takes addresses, user and computer names, private folders, passwords and other "
-    "private details out of the selected log. Automatic filtering cannot promise to catch everything, so check the preview. "
-    "The launcher and the game collect no usage data and keep no player identity: a report gets a random ticket and a "
-    "private receipt that stay on this PC. The service sees your connection address briefly to limit abuse and does not "
-    "store it with the report.";
+    "Before anything is sent, the launcher takes addresses, user and computer names, private folders, passwords, secrets and "
+    "other private details out of the selected log. Automatic filtering cannot promise to catch everything, so open the "
+    "preview if you want to check what goes out.";
 
 int KeepDescriptionShort(ImGuiInputTextCallbackData* data) {
     const size_t keep = BytesOfCharacters(std::string_view(data->Buf, size_t(data->BufTextLen)), kMostDescriptionCharacters);
@@ -138,7 +135,7 @@ std::string EnvironmentValue(const char* name) {
 IncidentPage::IncidentPage(Places places)
     : places_(std::move(places)), my_reports_(places_.user_dir / kReportHistoryFile) {
     service_.endpoint = ResolveEndpoint(kBugReportServiceUrl, EnvironmentValue(kBugReportUrlVariable));
-    Log(service_.endpoint.configured() ? "Bug report: service " + service_.endpoint.url : "Bug report: no service configured");
+    Log(service_.endpoint.configured() ? "Bug report: service " + service_.endpoint.url : "Bug report: service address not valid");
 }
 
 void IncidentPage::Draw(trg::Ui& ui, const ReportFacts& facts) {
@@ -150,10 +147,7 @@ void IncidentPage::Draw(trg::Ui& ui, const ReportFacts& facts) {
     KeepClearOfScrollbar(std::floor(trg::layout::kContentPadding * ui.scale()));
     AccentText(ui, kPrivacyHeadline);
     ui.Paragraph(kPrivacyNote);
-    if (!service_.endpoint.configured()) {
-        WarningText(ui, service_.endpoint.problem.c_str());
-        ui.Help("You can still save the report on this PC and attach it to a GitHub issue yourself.");
-    }
+    if (!service_.endpoint.configured()) WarningText(ui, service_.endpoint.problem.c_str());
     if (my_reports_.HasUpdates()) {
         const bool reply = my_reports_.HasNewReply();
         if (ui.ButtonRow(reply ? "A report has a new reply" : "A report has an update",
@@ -231,21 +225,13 @@ void IncidentPage::TogglePreview(const ReportFacts& facts) {
     if (previewed_) preview_text_ = IncidentPreviewText(*previewed_);
 }
 
-// Builds the report, shows it in the preview and asks for confirmation; the player sees exactly what a confirmed send holds.
-void IncidentPage::AskToSend(const ReportFacts& facts) {
-    if (!AcceptDraft()) return;
-    if (!previewed_) {
-        previewed_ = BuildPackage(facts);
-        if (previewed_) preview_text_ = IncidentPreviewText(*previewed_);
-    }
-    confirm_requested_ = previewed_ != nullptr;
-}
-
-void IncidentPage::StartDelivery() {
-    if (!previewed_ || delivery_ || !service_.endpoint.configured()) return;
+void IncidentPage::Send(const ReportFacts& facts) {
+    if (delivery_ || !service_.endpoint.configured() || !AcceptDraft()) return;
+    std::shared_ptr<const IncidentPackage> package = previewed_ ? previewed_ : BuildPackage(facts);
+    if (!package) return;
     result_.reset();
     delivery_ = std::make_shared<Delivery>();
-    delivery_->package = previewed_;
+    delivery_->package = std::move(package);
     bring_result_into_view_ = true;
     std::thread([delivery = delivery_, service = service_] {
         delivery->receipt = FileReport(service, *delivery->package);
@@ -259,7 +245,7 @@ void IncidentPage::Save(const ReportFacts& facts) {
     if (!package) return;
     saved_report_ = SaveIncidentReport(*package, places_.logs_dir / "reports");
     save_failed_ = saved_report_.empty();
-    bring_result_into_view_ = true;
+    bring_saved_into_view_ = true;
     if (!save_failed_) {
         description_[0] = '\0';
         ForgetPreview();
@@ -294,15 +280,15 @@ void IncidentPage::DrawDescription(trg::Ui& ui, bool sending) {
 
 void IncidentPage::DrawLogs(trg::Ui& ui, bool sending) {
     if (logs_.empty()) {
-        ui.Paragraph("No game log is available yet, so a report cannot be made. Start the game once and try again. With "
+        ui.Paragraph("No game log is available yet, so a report cannot be sent. Start the game once and try again. With "
                      "Detailed logging off on the About page, only sessions that crashed keep a log.");
         if (problem_ == DraftProblem::kNoLog) {
             if (std::exchange(bring_problem_into_view_, false)) ImGui::SetScrollHereY();
-            WarningText(ui, "There is no game log to report.");
+            WarningText(ui, "There is no game log to send.");
         }
         return;
     }
-    ui.Help("The newest logs of the game, most recent first. Only the one you choose goes into the report.");
+    ui.Help("The newest logs of the game, most recent first. Only the one you choose is sent.");
     for (size_t i = 0; i < logs_.size(); ++i) {
         const std::string details = LogDetails(logs_[i]);
         ui.RowLeft(logs_[i].name.c_str(), details.c_str());
@@ -311,7 +297,7 @@ void IncidentPage::DrawLogs(trg::Ui& ui, bool sending) {
         ImGui::PushID(int(i));
         ImGui::BeginDisabled(sending);
         ImGui::AlignTextToFramePadding();
-        if (ImGui::RadioButton(Tr("Use this log"), selected_ == i) && selected_ != i) {
+        if (ImGui::RadioButton(Tr("Send this log"), selected_ == i) && selected_ != i) {
             selected_ = i;
             ForgetPreview();
         }
@@ -338,52 +324,31 @@ void IncidentPage::DrawPreview(trg::Ui& ui, const ReportFacts& facts, bool sendi
 
 void IncidentPage::DrawSend(trg::Ui& ui, const ReportFacts& facts, bool sending) {
     ImGui::BeginDisabled(sending || !service_.endpoint.configured());
-    const bool send = ui.ButtonRow("Send report", "Sends what the preview shows to the developer, after you confirm.",
+    const bool send = ui.ButtonRow("Send report", "Sends the selected log after the privacy filter is applied.",
                                    sending ? "Sending..." : "Send report", true);
     ImGui::EndDisabled();
-    if (send) AskToSend(facts);
-    if (ui.ButtonRow("Save a copy", "Writes the same filtered report to a text file in the logs folder instead of sending it.", "Save report")) {
-        Save(facts);
-    }
+    if (send) Send(facts);
+    ui.EndRows();
+    DrawResult(ui);
+    if (std::exchange(bring_result_into_view_, false)) ImGui::SetScrollHereY(1.0f);
+    DrawOtherOptions(ui, facts, sending);
+}
+
+void IncidentPage::DrawOtherOptions(trg::Ui& ui, const ReportFacts& facts, bool sending) {
+    ui.Spacer(4);
+    ImGui::BeginDisabled(sending);
+    const bool save = ui.ButtonRow("Save a copy", "Writes the same filtered report to a text file in the logs folder.", "Save report");
+    ImGui::EndDisabled();
+    if (save) Save(facts);
     if (ui.ButtonRow("Logs folder", "The game logs, and the copies saved here.", "Open logs folder")) {
         std::error_code ec;
         std::filesystem::create_directories(places_.logs_dir, ec);
         trg::OpenInFileManager(Utf8(places_.logs_dir));
     }
-    if (ui.ButtonRow("Report on GitHub", "Opens the issue tracker in your browser. Attach a saved copy yourself.", "Open GitHub issues")) {
-        trg::OpenUrl(kIssuesUrl);
-    }
+    if (ui.ButtonRow("Report on GitHub", "Opens the issue tracker in your browser.", "Open GitHub issues")) trg::OpenUrl(kIssuesUrl);
     ui.EndRows();
-    DrawConfirmation(ui);
-    DrawResult(ui);
-    if (std::exchange(bring_result_into_view_, false)) ImGui::SetScrollHereY(1.0f);
-}
-
-void IncidentPage::DrawConfirmation(trg::Ui& ui) {
-    const float scale = ui.scale();
-    if (std::exchange(confirm_requested_, false)) ImGui::OpenPopup("##confirm_send");
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(24 * scale, 20 * scale));
-    const bool open = ImGui::BeginPopupModal("##confirm_send", nullptr,
-                                             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::PopStyleVar();
-    if (!open) return;
-    ImGui::PushFont(ui.fonts().semibold, 0.0f);
-    ImGui::TextUnformatted(Tr("Send this report to the developer?"));
-    ImGui::PopFont();
-    ImGui::PushTextWrapPos(kConfirmWidth * scale);
-    ImGui::TextUnformatted(Tr("The preview shows exactly what is sent: your description, your system details and the selected "
-                              "log after the privacy filter. Nothing else leaves this PC."));
-    ImGui::PopTextWrapPos();
-    ImGui::Dummy(ImVec2(kConfirmWidth * scale, 6 * scale));
-    if (ui.AccentButton("Send report", ImVec2(kConfirmButtonWidth * scale, 0))) {
-        ImGui::CloseCurrentPopup();
-        StartDelivery();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button(Tr("Cancel"), ImVec2(kConfirmButtonWidth * scale, 0)) || ImGui::IsKeyPressed(ImGuiKey_Escape, false)) {
-        ImGui::CloseCurrentPopup();
-    }
-    ImGui::EndPopup();
+    DrawSaved(ui);
+    if (std::exchange(bring_saved_into_view_, false)) ImGui::SetScrollHereY(1.0f);
 }
 
 void IncidentPage::DrawResult(trg::Ui& ui) {
@@ -392,21 +357,23 @@ void IncidentPage::DrawResult(trg::Ui& ui) {
         ui.StatusCard(trg::Status::kBusy, "Sending your report...", "This takes a few seconds.");
         return;
     }
-    if (result_) {
-        ui.Spacer(4);
-        if (result_->outcome == ReportOutcome::kSent) {
-            const std::string id = std::string(Tr("Report ID:")) + " " + result_->ticket;
-            ui.StatusCard(trg::Status::kReady, "Report sent successfully", id.c_str());
-            ui.Spacer(4);
-            if (ImGui::Button(Tr("Copy report ID"))) {
-                ImGui::SetClipboardText(result_->ticket.c_str());
-                ui.SetStatus("Report ID copied.");
-            }
-            if (!sent_report_remembered_) ui.Help("The report was sent, but it could not be added to My Reports on this PC.");
-        } else {
-            ui.StatusCard(trg::Status::kAttention, OutcomeTitle(result_->outcome), OutcomeAdvice(result_->outcome));
-        }
+    if (!result_) return;
+    ui.Spacer(4);
+    if (result_->outcome != ReportOutcome::kSent) {
+        ui.StatusCard(trg::Status::kAttention, OutcomeTitle(result_->outcome), OutcomeAdvice(result_->outcome));
+        return;
     }
+    const std::string id = std::string(Tr("Report ID:")) + " " + result_->ticket;
+    ui.StatusCard(trg::Status::kReady, "Report sent successfully", id.c_str());
+    ui.Spacer(4);
+    if (ImGui::Button(Tr("Copy report ID"))) {
+        ImGui::SetClipboardText(result_->ticket.c_str());
+        ui.SetStatus("Report ID copied.");
+    }
+    if (!sent_report_remembered_) ui.Help("The report was sent, but it could not be added to My Reports on this PC.");
+}
+
+void IncidentPage::DrawSaved(trg::Ui& ui) {
     if (save_failed_) {
         ui.Spacer(4);
         WarningText(ui, "The report could not be saved.");

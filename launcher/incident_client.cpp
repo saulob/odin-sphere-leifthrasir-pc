@@ -65,13 +65,10 @@ bool Ok(const Answer& answer) { return answer.failure == ReportOutcome::kSent; }
 
 ServiceEndpoint ResolveEndpoint(std::string_view built_in, std::string_view override_url) {
     ServiceEndpoint endpoint;
-    const std::string chosen = TrimmedAscii(override_url.empty() ? built_in : override_url);
-    if (chosen.empty()) {
-        endpoint.problem = "No bug report service is set up in this version yet.";
-        return endpoint;
-    }
+    const std::string requested = TrimmedAscii(override_url);
+    const std::string chosen = requested.empty() ? TrimmedAscii(built_in) : requested;
     ServiceAddress address;
-    if (!ParseServiceAddress(chosen, address) || (address.path != "/" && !address.path.empty())) {
+    if (chosen.empty() || !ParseServiceAddress(chosen, address) || (address.path != "/" && !address.path.empty())) {
         endpoint.problem = "The bug report service address is not valid.";
         return endpoint;
     }
@@ -109,7 +106,7 @@ const char* OutcomeTitle(ReportOutcome outcome) {
     case ReportOutcome::kCertificate: return "The report service's security certificate was not accepted";
     case ReportOutcome::kRefused: return "The report was not accepted";
     case ReportOutcome::kServiceError: return "The report service could not take the report";
-    case ReportOutcome::kNotConfigured: return "The report service is not available yet";
+    case ReportOutcome::kNotConfigured: return "The report service address is not valid";
     }
     return nullptr;
 }
@@ -118,18 +115,16 @@ const char* OutcomeAdvice(ReportOutcome outcome) {
     switch (outcome) {
     case ReportOutcome::kSent: break;
     case ReportOutcome::kRecentLimit:
-    case ReportOutcome::kDailyLimit: return "Please try again later.";
+    case ReportOutcome::kDailyLimit: return "Please try again later";
     case ReportOutcome::kUnreachable:
-        return "Check your internet connection. If Windows Firewall, a security program or a proxy blocks this launcher, allow "
-               "it to make outgoing HTTPS connections (port 443). Your text is kept; press Send report again.";
+        return "Check your connection and press Send report again; your text is kept. A firewall or security program may be "
+               "blocking outgoing HTTPS (port 443).";
     case ReportOutcome::kTimedOut: return "Check your connection and press Send report again; your text is kept.";
     case ReportOutcome::kCertificate:
         return "Nothing was sent. The clock of this PC, a proxy or a security program may be interfering with secure connections.";
     case ReportOutcome::kRefused: return "Change the description or choose another log, then send it again.";
     case ReportOutcome::kServiceError: return "This is not your fault. Try again in a few minutes; your text is kept.";
-    case ReportOutcome::kNotConfigured:
-        return "This version has no bug report service set up. Save the report on this PC and attach it to a GitHub issue "
-               "instead.";
+    case ReportOutcome::kNotConfigured: return "Nothing was sent. Check OSL_BUG_REPORT_URL, or save the report on this PC.";
     }
     return nullptr;
 }

@@ -11,9 +11,9 @@ class_name = "BugReportDesk"
 tag = "v1"
 new_sqlite_classes = ["BugReportDesk"]
 
-# Edge limit per connection address, before the Durable Object is woken. Replace the placeholder with an integer that no
-# other rate-limit binding in your Cloudflare account uses; the deploy is refused until you do.
+# Edge limit per connection address, before the Durable Object is woken. namespace_id is an integer, unique in the
+# Cloudflare account and used by no other Worker; tools/worker.ps1 refuses to deploy while it is the placeholder.
 [[ratelimits]]
 name = "REPORT_LIMITER"
-namespace_id = "REPLACE_WITH_UNIQUE_NUMBER"
+namespace_id = "5005"
 simple = { limit = 20, period = 60 }

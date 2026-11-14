@@ -30,7 +30,6 @@ constexpr std::string_view kPlayer = "<player>";
 constexpr std::string_view kRoom = "<room>";
 constexpr std::string_view kIpv4 = "<ipv4>";
 constexpr std::string_view kIpv6 = "<ipv6>";
-constexpr std::string_view kChatLine = "Chat: <message removed>";
 
 constexpr std::string_view kSecretWords[] = {
     "secret",     "password",    "passwd",      "passphrase", "pwd",         "token",  "api_key", "apikey",
@@ -592,6 +591,33 @@ std::string CleanCharacters(std::string_view text) {
     return out;
 }
 
+bool IsEmailLocal(char c) { return IsDigit(c) || IsLetter(c) || c == '.' || c == '_' || c == '-' || c == '+' || c == '%'; }
+bool IsDomain(char c) { return IsDigit(c) || IsLetter(c) || c == '.' || c == '-'; }
+
+// name@host.tld, the top-level domain two or more letters.
+std::string MaskEmails(std::string_view line) {
+    std::string out;
+    size_t copied = 0;
+    for (size_t at = line.find('@'); at != std::string_view::npos; at = line.find('@', at + 1)) {
+        size_t begin = at;
+        while (begin > copied && IsEmailLocal(line[begin - 1])) --begin;
+        size_t end = at + 1;
+        while (end < line.size() && IsDomain(line[end])) ++end;
+        while (end > at + 1 && (line[end - 1] == '.' || line[end - 1] == '-')) --end;
+        const std::string_view domain = line.substr(at + 1, end - at - 1);
+        const size_t dot = domain.rfind('.');
+        const bool tld = dot != std::string_view::npos && dot > 0 && domain.size() - dot > 2 &&
+                         std::all_of(domain.begin() + std::ptrdiff_t(dot) + 1, domain.end(), IsLetter);
+        if (begin == at || !tld) continue;
+        out.append(line, copied, begin - copied);
+        out += "<email>";
+        copied = end;
+        at = end - 1;
+    }
+    out.append(line, copied);
+    return out;
+}
+
 struct KnownName {
     std::string_view name;
     std::string_view token;
@@ -613,12 +639,12 @@ std::vector<KnownName> KnownNames(const PrivateFacts& facts) {
 
 std::string ScrubLine(std::string_view raw, const std::vector<KnownFolder>& folders,
                       const std::vector<KnownName>& names) {
-    if (raw.starts_with("Chat:")) return std::string(kChatLine);
     std::string line(raw);
     line = ReplaceKnownFolders(line, folders);
     line = ReplaceProfilePaths(line);
     line = ReplaceLocalFolders(line);
     line = MaskLabelledSecrets(line);
+    line = MaskEmails(line);
     line = MaskAccounts(line, "peer ");
     line = MaskAccounts(line, "account ");
     line = MaskRoomCodes(line);

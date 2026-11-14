@@ -6,7 +6,7 @@ import { handlePublic } from '../src/api.js';
 import { localService } from '../local/host.js';
 
 export const TOKEN = 'admin-token-0123456789-abcdefgh';
-export const ENV = { OSL_DASHBOARD_TOKEN: TOKEN };
+export const ENV = { OSL_BUG_REPORT_ADMIN_TOKEN: TOKEN };
 export const MARKER = 'UNIQUE-REPORT-MARKER-4711';
 export const HOUR = 3600 * 1000;
 export const DAY = 24 * HOUR;

@@ -19,9 +19,8 @@ inline constexpr char kAuthorUrl[] = "https://github.com/saulob";
 inline constexpr char kSponsorUrl[] = "https://github.com/sponsors/saulob";
 inline constexpr char kIssuesUrl[] = "https://github.com/saulob/odin-sphere-leifthrasir-pc/issues";
 
-// The bug report service (server/odin-bug-reports), as https://host. Empty until the service is deployed: the Bug Report page
-// then only saves a report on this PC. OSL_BUG_REPORT_URL overrides it for one run.
-inline constexpr char kBugReportServiceUrl[] = "";
+// The bug report service (server/odin-bug-reports). OSL_BUG_REPORT_URL overrides it for one run.
+inline constexpr char kBugReportServiceUrl[] = "https://odin-sphere-bug-reports.saulobenigno.workers.dev";
 
 // A package of a build, by its param.sfo APP_VER and VERSION. An update (CATEGORY gp) is applied over the packages
 // before it.

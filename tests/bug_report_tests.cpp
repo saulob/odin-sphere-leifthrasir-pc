@@ -121,7 +121,12 @@ void TestJson() {
 
 void TestEndpoint() {
     CHECK(!ResolveEndpoint("", "").configured() && !ResolveEndpoint("", "").problem.empty());
-    CHECK(std::string(kBugReportServiceUrl).empty() || ResolveEndpoint(kBugReportServiceUrl, "").configured());
+    const std::string production = "https://odin-sphere-bug-reports.saulobenigno.workers.dev";
+    CHECK(production == kBugReportServiceUrl);
+    CHECK(ResolveEndpoint(kBugReportServiceUrl, "").configured() && ResolveEndpoint(kBugReportServiceUrl, "").url == production);
+    CHECK(ResolveEndpoint(kBugReportServiceUrl, "https://dev.example:8443").url == "https://dev.example:8443");
+    CHECK(ResolveEndpoint(kBugReportServiceUrl, "  ").url == production);
+    CHECK(!ResolveEndpoint(kBugReportServiceUrl, "http://dev.example").configured());
     CHECK(ResolveEndpoint("https://reports.example.workers.dev", "").url == "https://reports.example.workers.dev");
     CHECK(ResolveEndpoint("https://reports.example/", "").url == "https://reports.example");
     CHECK(ResolveEndpoint("https://reports.example:8443", "").url == "https://reports.example:8443");
@@ -135,7 +140,7 @@ void TestEndpoint() {
         CHECK(!ResolveEndpoint("https://ok.example", bad).configured());
     }
     const std::string built_in = kBugReportServiceUrl;
-    CHECK(built_in.empty() || (built_in.starts_with("https://") && !Has(built_in, "localhost") && !Has(built_in, "127.")));
+    CHECK(built_in.starts_with("https://") && !Has(built_in, "localhost") && !Has(built_in, "127.") && built_in.back() != '/');
     for (const char* other_project : {"13-sentinels", "ssf2t", "dcp", "dragon"}) CHECK(!Has(built_in, other_project));
 }
 
@@ -200,13 +205,43 @@ void TestPrivacyFilter() {
     const std::string controls = ScrubText(std::string("a\r\nb\x01\x7F\tc\xC2\x85 d\xC3(\n"), PrivateFacts{});
     CHECK(controls == "a\nb\tc d?(\n");
 
+    CHECK(ScrubText("mail me at jane.doe+osl@mail.example.org. thanks", PrivateFacts{}) == "mail me at <email>. thanks");
+    CHECK(ScrubText("a@b.co and c@d.io", PrivateFacts{}) == "<email> and <email>");
+    CHECK(ScrubText("shader main@4 and x@y.1 and @handle", PrivateFacts{}) == "shader main@4 and x@y.1 and @handle");
+
+    const std::string linux_paths = ScrubText(
+        "Runtime: game /home/ana.silva/Games/OSL/game/prepared/CUSA05083-1.00/eboot.bin\n"
+        "Launcher: AppImage /var/home/anasilva/Apps/OdinSphereLeifthrasirPC-v0.3.0-x86_64.AppImage\n"
+        "Launcher: settings /run/media/anasilva/SD/OSL/user/osl.ini\n"
+        "Launcher: package /mnt/c/Users/AnaStuff/Downloads/odin.pkg\n"
+        "Launcher: program /tmp/.mount_OdinSpQx7Lm2/usr/bin/odin_sphere_leifthrasir\n",
+        PrivateFacts{});
+    for (const char* secret : {"ana.silva", "anasilva", "AnaStuff", "/mnt/c/Users", "/home/", "/var/home/", "/run/media/"}) {
+        if (Has(linux_paths, secret)) std::printf("  leaked: %s\n", secret);
+        CHECK(!Has(linux_paths, secret));
+    }
+    CHECK(Has(linux_paths, "<home>/Games/OSL/game/prepared/CUSA05083-1.00/eboot.bin"));
+    for (const char* kept : {"eboot.bin", "OdinSphereLeifthrasirPC-v0.3.0-x86_64.AppImage", "osl.ini", "odin.pkg",
+                             "/tmp/.mount_OdinSpQx7Lm2/usr/bin/odin_sphere_leifthrasir"}) {
+        if (!Has(linux_paths, kept)) std::printf("  lost: %s\n", kept);
+        CHECK(Has(linux_paths, kept));
+    }
+
+    const auto generic = [](std::string name) {
+        for (char& c : name) c = char(std::tolower(static_cast<unsigned char>(c)));
+        for (const char* word : {"admin", "administrator", "deck", "default", "game", "guest", "localhost", "owner", "player",
+                                 "public", "root", "steam", "steamdeck", "user"}) {
+            if (name == word) return true;
+        }
+        return false;
+    };
     PrivateFacts real = GatherPrivateFacts({});
     for (const std::string& name : real.user_names) {
-        if (name.size() < 4 || name == "Administrator" || name == "Default") continue;
+        if (name.size() < 4 || generic(name)) continue;
         CHECK(!Has(ScrubText("Hello " + name + " here\nC:\\Users\\" + name + "\\x\n", real), name));
     }
     for (const std::string& name : real.machine_names) {
-        if (name.size() < 4) continue;
+        if (name.size() < 4 || generic(name)) continue;
         CHECK(!Has(ScrubText("Machine " + name + " here\n", real), name));
     }
 }
@@ -417,7 +452,16 @@ void TestClient(const fs::path& scratch) {
         CHECK(OutcomeTitle(item.outcome) && OutcomeAdvice(item.outcome));
     }
     CHECK(!OutcomeTitle(ReportOutcome::kSent) && !OutcomeAdvice(ReportOutcome::kSent));
-    CHECK(Has(OutcomeAdvice(ReportOutcome::kUnreachable), "Firewall") && Has(OutcomeAdvice(ReportOutcome::kUnreachable), "443"));
+    CHECK(Has(OutcomeAdvice(ReportOutcome::kUnreachable), "firewall") && Has(OutcomeAdvice(ReportOutcome::kUnreachable), "443"));
+    CHECK(std::string(OutcomeTitle(ReportOutcome::kRecentLimit)) == "Too many reports were sent recently");
+    CHECK(std::string(OutcomeTitle(ReportOutcome::kDailyLimit)) == "Daily report limit reached");
+    CHECK(std::string(OutcomeAdvice(ReportOutcome::kRecentLimit)) == "Please try again later" && std::string(OutcomeAdvice(ReportOutcome::kDailyLimit)) == "Please try again later");
+    CHECK(std::string(OutcomeTitle(ReportOutcome::kUnreachable)) == "Cannot reach the report service");
+    CHECK(Has(OutcomeAdvice(ReportOutcome::kUnreachable), "press Send report again") && Has(OutcomeAdvice(ReportOutcome::kUnreachable), "your text is kept"));
+    CHECK(std::string(OutcomeTitle(ReportOutcome::kServiceError)) == "The report service could not take the report");
+    for (const ReportOutcome outcome : {ReportOutcome::kUnreachable, ReportOutcome::kServiceError, ReportOutcome::kNotConfigured, ReportOutcome::kRefused}) {
+        CHECK(!Has(OutcomeTitle(outcome), "online service") && !Has(OutcomeAdvice(outcome), "not set up") && !Has(OutcomeAdvice(outcome), "not deployed"));
+    }
 
     // Offline and no service: the transport is never asked.
     Wire silent;
@@ -576,6 +620,20 @@ void TestUnavailableReports(const fs::path& scratch) {
                         {"OSL-CCCCCC", "closed", 600, "", ""}}));
     CHECK(unseen.NextUnseen() == "OSL-BBBBBB");
     CHECK(unseen.MarkSeen("OSL-BBBBBB") && unseen.NextUnseen() == "OSL-CCCCCC");
+    CHECK(unseen.HasUnseen() && unseen.MarkSeen("OSL-AAAAAA") && unseen.HasUnseen() && unseen.MarkSeen("OSL-CCCCCC") && !unseen.HasUnseen());
+
+    ReportHistory gone(scratch / "gone" / kReportHistoryFile);
+    gone.Add(make("OSL-AAAAAA", 100));
+    CHECK(gone.Apply({{"OSL-AAAAAA", "fixed", 500, "0.3.1", "Try this."}}));
+    CHECK(gone.HasUnseen() && gone.HasUnseenMessage() && gone.NextUnseen() == "OSL-AAAAAA");
+    CHECK(gone.Apply({}, {"OSL-AAAAAA"}));
+    CHECK(!gone.HasUnseen() && !gone.HasUnseenMessage() && gone.NextUnseen().empty());
+    const TrackedReport& last = gone.reports()[0];
+    CHECK(last.unavailable && last.status == "fixed" && last.fixed_version == "0.3.1" && last.player_message == "Try this.");
+    CHECK(gone.Save());
+    ReportHistory gone_again(scratch / "gone" / kReportHistoryFile);
+    gone_again.Load();
+    CHECK(gone_again.reports()[0].unavailable && !gone_again.HasUnseen() && gone_again.reports()[0].player_message == "Try this.");
 }
 
 std::string Source(const char* relative) { return Read(fs::path(OSL_SOURCE_DIR) / relative); }
@@ -593,10 +651,13 @@ void TestNothingHappensByItself() {
     const std::string mine = Source("launcher/my_reports_page.cpp");
     const std::string launcher = Source("launcher/launcher.cpp");
     CHECK(Count(page, "FileReport(") == 1 && Count(mine, "FetchReportStatuses(") == 1 && Count(mine, "FetchSentReport(") == 1);
-    CHECK(Has(page, "if (ui.AccentButton(\"Send report\"") && page.find("StartDelivery();") > page.find("if (ui.AccentButton(\"Send report\""));
-    CHECK(Count(page, "StartDelivery()") == 2);
+    CHECK(Has(page, "if (send) Send(facts);") && Count(page, "Send(facts)") == 1 && Count(page, "delivery_ = std::make_shared<Delivery>()") == 1);
+    CHECK(!Has(page, "BeginPopupModal") && !Has(page, "StartDelivery") && !Has(page, "AskToSend"));
+    CHECK(Has(page, "if (delivery_ || !service_.endpoint.configured() || !AcceptDraft()) return;"));
     CHECK(Has(mine, "if (ImGui::Button(Tr(check_ ? \"Checking...\" : \"Refresh\"), ImVec2(width, 0))) Refresh(service, true);"));
     CHECK(Count(mine, "Refresh(service, true)") == 1 && Count(mine, "Refresh(service)") == 1);
+    CHECK(Has(mine, "if (!report.unavailable || asked_by_player) reports.push_back(report);"));
+    CHECK(Count(mine, "MarkSeen(") == 1 && Count(page, "MarkSeen(") == 0 && Count(launcher, "MarkSeen(") == 0);
     CHECK(Has(mine, "if (check_ || !service.endpoint.configured()) return;") && Has(mine, "if (reports.empty()) return;"));
     CHECK(Has(mine, "const bool toggle_sent = ImGui::Button(") && Count(mine, "ReadSentReport(report, service)") == 1);
     CHECK(Count(launcher, "CheckReports()") == 1 && Has(Source("launcher/incident_page.h"), "void CheckReports() { my_reports_.Refresh(service_); }"));
@@ -636,6 +697,67 @@ void TestNothingHappensByItself() {
     CHECK(!Has(manifest, "requireAdministrator") && !Has(manifest, "highestAvailable"));
 }
 
+// The production page: the four steps and status cards, no pre-deployment wording, no other project's names or transport.
+void TestProductionPage() {
+    const std::string page = Source("launcher/incident_page.cpp");
+    const std::string mine = Source("launcher/my_reports_page.cpp");
+    const std::string client = Source("launcher/incident_client.cpp");
+    const std::string profile = Source("launcher/game_profile.h");
+
+    size_t at = 0;
+    for (const char* part : {"No personal user data is intentionally included.", "ui.Heading(\"1. Report the problem\")", "ui.Heading(\"2. Choose one game log\")",
+                             "ui.Heading(\"3. Preview what will be sent\")", "ui.Heading(\"4. Send\")"}) {
+        const size_t found = page.find(part, at);
+        CHECK(found != std::string::npos);
+        if (found != std::string::npos) at = found;
+    }
+    for (const char* part : {"What were you doing, what went wrong, and does it happen every time?", "Please describe the problem, minimum 10 characters",
+                             "kDescriptionHeight = 112.0f", "kPreviewHeight = 300.0f", "Send this log", "\"Selected log\"", "\"Last written\"", "\"Size\"",
+                             "View selected log", "Shows exactly what will be sent, after the privacy filter.", "PreviewButtonText(previewed_ != nullptr)",
+                             "ReadOnlyBox(\"##preview\"", "Sends the selected log after the privacy filter is applied.", "sending ? \"Sending...\" : \"Send report\"",
+                             "Sending your report...", "This takes a few seconds.", "Report sent successfully", "Copy report ID", "Report ID copied.",
+                             "A report has a new reply", "A report has an update", "ui.StatusCard(trg::Status::kAttention, OutcomeTitle(result_->outcome)"}) {
+        if (!Has(page, part)) std::printf("  incident_page.cpp lacks %s\n", part);
+        CHECK(Has(page, part));
+    }
+    CHECK(Has(page, "reply ? \"A report has a new reply\" : \"A report has an update\""));
+    CHECK(Has(page, "if (!service_.endpoint.configured()) WarningText(ui, service_.endpoint.problem.c_str());"));
+    CHECK(Has(page, "ImGui::BeginDisabled(sending);") && Has(page, "description_[0] = '\\0';"));
+    CHECK(Count(page, "description_[0] = '\\0';") == 2);
+
+    for (const char* part : {"New reply", "Message from developer", "No longer available", "What was sent", "Remove from this PC", "View details", "Hide details"}) {
+        if (!Has(mine, part)) std::printf("  my_reports_page.cpp lacks %s\n", part);
+        CHECK(Has(mine, part));
+    }
+    CHECK(!Has(mine, "Their status is checked when"));
+
+    for (const std::string* text : {&page, &mine, &client, &profile}) {
+        for (const char* stale : {"No bug report service is set up", "not set up in this version", "service is not deployed", "not available in this version",
+                                  "attach it to a GitHub issue yourself", "attach a saved copy yourself", "Nothing is sent unless you press", "Use this log",
+                                  "after you confirm", "placeholder", "Send this report to the developer?"}) {
+            if (Has(*text, stale)) std::printf("  stale text: %s\n", stale);
+            CHECK(!Has(*text, stale));
+        }
+        for (const char* other : {"lobby", "Lobby", "WebSocket", "websocket", "Online Play", "online service", "friend", "DCP-", "dcp::", "dragon", "Dragon",
+                                  "DEBUG_SAULO", "OSL_BUG_REPORT_ADMIN_TOKEN"}) {
+            if (Has(*text, other)) std::printf("  foreign text: %s\n", other);
+            CHECK(!Has(*text, other));
+        }
+    }
+    CHECK(Has(profile, "https://odin-sphere-bug-reports.saulobenigno.workers.dev"));
+    CHECK(Has(client, "OSL_BUG_REPORT_URL") && Has(Source("launcher/incident_client.h"), "OSL_BUG_REPORT_URL"));
+    CHECK(Count(page, "kBugReportServiceUrl") == 1 && Has(page, "ResolveEndpoint(kBugReportServiceUrl, EnvironmentValue(kBugReportUrlVariable))"));
+
+    const std::string docs = Source("docs/BUG_REPORTS.md");
+    for (const char* part : {"https://odin-sphere-bug-reports.saulobenigno.workers.dev", "OSL_BUG_REPORT_URL", "/health", "/admin",
+                             "OSL_BUG_REPORT_ADMIN_TOKEN", "My Reports", "New reply", "No longer available"}) {
+        if (!Has(docs, part)) std::printf("  docs/BUG_REPORTS.md lacks %s\n", part);
+        CHECK(Has(docs, part));
+    }
+    CHECK(!Has(docs, "not deployed yet") && !Has(docs, "has not been deployed"));
+    CHECK(!std::regex_search(docs, std::regex("[0-9a-f]{40,}")));
+}
+
 } // namespace
 
 int main() {
@@ -654,6 +776,7 @@ int main() {
     TestHistory(scratch);
     TestUnavailableReports(scratch);
     TestNothingHappensByItself();
+    TestProductionPage();
     fs::remove_all(scratch, ec);
     std::printf("bug report: %d checks, %d failed\n", checks, failures);
     return failures ? 1 : 0;

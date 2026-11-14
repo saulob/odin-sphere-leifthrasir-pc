@@ -62,7 +62,9 @@ npm test                               # node --test "test/*.test.js"; Node 22 o
 ```
 
 The tests need no npm packages. `test/contract.test.js` is skipped unless `OSL_CPP_REQUEST` names a request file the launcher
-built; `test/fixtures/request.json` is the canonical request.
+built; `tools\test.ps1` runs the launcher's test first and sets it, so the request the real launcher builds is the one the
+Worker has to accept. `test/fixtures/request.json` is the canonical request the other tests start from. `test/config.test.js`
+checks `wrangler.toml` (own name, own namespace, no other project's values) and the one secret the code reads.
 
 ## Deploy (manual; nothing in this repository deploys)
 
@@ -72,20 +74,22 @@ until you deploy.
 
 1. Install Wrangler if you do not have it (`npm install -g wrangler`, or use `npx wrangler`), and sign in with
    `npx wrangler login`. Check the account with `npx wrangler whoami`.
-2. In `wrangler.toml`, replace `REPLACE_WITH_UNIQUE_NUMBER` (the `REPORT_LIMITER` rate-limit `namespace_id`) with an integer
-   that no other rate-limit binding in your Cloudflare account uses. It must be unique per account; keep the block, it is the
-   edge abuse limit.
-3. Make a random token of 24 or more characters and keep it in your password manager:
+2. In `wrangler.toml`, replace `SET_UNIQUE_ODIN_RATE_LIMIT_NAMESPACE_ID` (the `REPORT_LIMITER` rate-limit `namespace_id`) with
+   an integer that no other rate-limit binding in your Cloudflare account uses. It must be unique per account; keep the
+   block, it is the edge abuse limit. `tools\worker.ps1` stops before Wrangler while it is a placeholder.
+3. `.\tools\worker.ps1 -DryRun` from the repository root checks the files and the configuration and has Wrangler bundle the
+   Worker. Nothing is uploaded.
+4. Make a random token of 24 or more characters and keep it in your password manager:
 
    ```powershell
    $bytes = New-Object byte[] 32; [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
    ($bytes | ForEach-Object { $_.ToString('x2') }) -join ''
    ```
 
-4. `npx wrangler secret put OSL_DASHBOARD_TOKEN` and paste the token. If it says the Worker does not exist yet, run step 5 first
-   and then this one; until the secret exists `/admin` answers `503 not_configured`.
-5. `npx wrangler deploy`
-6. Check `/health` at the address `wrangler deploy` prints, open `/admin`, sign in with the token, and send one
+5. In this folder, `npx wrangler secret put OSL_BUG_REPORT_ADMIN_TOKEN` and paste the token. If it says the Worker does not
+   exist yet, run step 6 first and then this one; until the secret exists `/admin` answers `503 not_configured`.
+6. `.\tools\worker.ps1` deploys (`wrangler deploy`). The script never sets a secret and holds no credential.
+7. Check `/health` at the address `wrangler deploy` prints, open `/admin`, sign in with the token, and send one
    real report from the launcher to confirm the whole path.
 
 SQLite-backed Durable Objects are offered on Cloudflare's free and paid Workers plans; check Cloudflare's current limits for
@@ -94,15 +98,15 @@ binding. Do not edit an applied migration.
 
 ### Pointing the launcher at it
 
-The launcher reads a compile-time default address and lets an environment variable override it. Once the Worker is deployed,
-put its address in the compile-time default and rebuild; until then the launcher has no service to send to, and the override
-is for trying a different deployment.
+The launcher's compile-time default (`kBugReportServiceUrl`) is the production Worker,
+`https://odin-sphere-bug-reports.saulobenigno.workers.dev`. The environment variable `OSL_BUG_REPORT_URL` overrides it for one
+run, to try a different deployment.
 
 ## Operate
 
 - `npx wrangler tail odin-sphere-bug-reports` shows the Worker's log. It records refusals and errors, never report text,
   receipts, tokens or addresses.
-- To rotate the dashboard token, run `npx wrangler secret put OSL_DASHBOARD_TOKEN` again; nothing else needs deploying.
+- To rotate the admin token, run `npx wrangler secret put OSL_BUG_REPORT_ADMIN_TOKEN` again; nothing else needs deploying.
 - Wrong tokens are limited per address (10, then one every 30 seconds, per isolate).
 - To delete every report, deploy a migration that lists `BugReportDesk` under `deleted_classes` (and a new class name under
   `new_sqlite_classes`). This is irreversible.
@@ -117,7 +121,7 @@ is for trying a different deployment.
 | `src/api.js` | the public HTTP routes: origin, media type, size, edge limit, JSON, validation |
 | `src/service.js` | the service: random values, limits, the transaction that files a report |
 | `src/reports.js` | the request fields, tickets, receipts, statuses, the SQL tables, retention |
-| `src/limits.js` | the in-memory rate limiter and address grouping |
+| `src/limits.js` | the in-memory rate limiter (bounded, pruned) and address grouping |
 | `src/admin.js`, `src/admin_page.js` | the dashboard's API and its static page |
 | `src/sha256.js` | a synchronous SHA-256 |
 | `local/host.js` | the Node host (node:sqlite) the tests use |

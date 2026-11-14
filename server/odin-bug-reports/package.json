@@ -9,7 +9,6 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "node --test \"test/*.test.js\"",
-    "deploy": "wrangler deploy"
+    "test": "node --test \"test/*.test.js\""
   }
 }

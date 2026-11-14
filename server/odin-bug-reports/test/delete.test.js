@@ -25,7 +25,7 @@ test('deleting needs the private token and a stored secret, and an unauthorised 
     assert.equal(response.headers.get('WWW-Authenticate'), 'Bearer');
   }
   assert.equal((await remove(env, filed.body.ticket, { envVars: {} })).status, 503);
-  assert.equal((await remove(env, filed.body.ticket, { envVars: { OSL_DASHBOARD_TOKEN: 'short' }, token: 'short' })).status, 503);
+  assert.equal((await remove(env, filed.body.ticket, { envVars: { OSL_BUG_REPORT_ADMIN_TOKEN: 'short' }, token: 'short' })).status, 503);
   assert.ok(env.service.get(filed.body.ticket));
   assert.equal(env.rows('report_tracking').length, 1);
 });

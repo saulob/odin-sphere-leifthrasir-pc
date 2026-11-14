@@ -126,6 +126,18 @@ target_link_libraries(osl-update-tests PRIVATE osl_launcher_core miniz)
 set_target_properties(osl-update-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
 target_compile_options(osl-update-tests PRIVATE -Wall -Wextra)
 
+# Update failures against a scripted loopback HTTP server: 404, 500, 504, dropped connections, stalls, cancellation,
+# redirects and retries; no Internet.
+add_executable(osl-update-network-tests EXCLUDE_FROM_ALL ../tests/update_network_tests.cpp ${OSL_UPDATER_SOURCES})
+target_compile_definitions(osl-update-network-tests PRIVATE OSL_PORT_VERSION="${OSL_PORT_VERSION}")
+target_include_directories(osl-update-network-tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(osl-update-network-tests PRIVATE osl_launcher_core miniz)
+if (WIN32)
+    target_link_libraries(osl-update-network-tests PRIVATE ws2_32)
+endif()
+set_target_properties(osl-update-network-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_compile_options(osl-update-network-tests PRIVATE -Wall -Wextra)
+
 # The real trg-updater.exe run alone from a temporary folder: imports, parent wait, replacement, restart quoting,
 # test variable removal and rollback. The marker stands in for the launcher it waits for and restarts.
 if (WIN32)

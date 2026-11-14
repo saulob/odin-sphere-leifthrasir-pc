@@ -44,7 +44,7 @@ test('the page holds no inline script, external resource, secret or unsafe marku
   for (const text of [ADMIN_HTML, ADMIN_CSS, ADMIN_JS]) assert.ok(!/(src|href)=["']?https?:|@import|url\(/i.test(text));
   assert.doesNotThrow(() => new Function(ADMIN_JS));
   const all = ADMIN_HTML + ADMIN_CSS + ADMIN_JS;
-  assert.ok(!all.includes(TOKEN) && !/OSL_DASHBOARD_TOKEN/.test(all));
+  assert.ok(!all.includes(TOKEN) && !/OSL_BUG_REPORT_ADMIN_TOKEN/.test(all));
 });
 
 test('every admin API needs the private token, whatever the method or the report', async () => {
@@ -66,8 +66,8 @@ test('every admin API needs the private token, whatever the method or the report
 test('an unset or short secret answers 503 and never lets anyone in', async () => {
   const env = makeEnv();
   assert.equal((await admin(env, '/admin/api/reports', { envVars: {} })).status, 503);
-  assert.equal((await admin(env, '/admin/api/reports', { token: 'short', envVars: { OSL_DASHBOARD_TOKEN: 'short' } })).status, 503);
-  assert.equal((await admin(env, '/admin/api/reports', { token: '', envVars: { OSL_DASHBOARD_TOKEN: '' } })).status, 503);
+  assert.equal((await admin(env, '/admin/api/reports', { token: 'short', envVars: { OSL_BUG_REPORT_ADMIN_TOKEN: 'short' } })).status, 503);
+  assert.equal((await admin(env, '/admin/api/reports', { token: '', envVars: { OSL_BUG_REPORT_ADMIN_TOKEN: '' } })).status, 503);
   assert.equal((await admin(env, '/admin/api/reports', { envVars: { OTHER_DASHBOARD_TOKEN: TOKEN } })).status, 503);
 });
 
@@ -186,8 +186,8 @@ test('an unreachable desk answers 502 without a stack or the token', async () =>
 test('the worker routes /admin before the public API and wires the one secret name', () => {
   const worker = readFileSync(join(SRC, 'worker.js'), 'utf8');
   const admin_source = readFileSync(join(SRC, 'admin.js'), 'utf8');
-  assert.ok(admin_source.includes('env.OSL_DASHBOARD_TOKEN'));
-  assert.ok(!/OSL_DASHBOARD_TOKEN\s*=\s*['"`]/.test(worker + admin_source));
+  assert.ok(admin_source.includes('env.OSL_BUG_REPORT_ADMIN_TOKEN'));
+  assert.ok(!/OSL_BUG_REPORT_ADMIN_TOKEN\s*=\s*['"`]/.test(worker + admin_source));
   const names = new Set([...(worker + admin_source).matchAll(/\benv\.([A-Z_]+)/g)].map((m) => m[1]));
-  assert.deepEqual([...names].sort(), ['OSL_DASHBOARD_TOKEN', 'REPORTS']);
+  assert.deepEqual([...names].sort(), ['OSL_BUG_REPORT_ADMIN_TOKEN', 'REPORTS']);
 });

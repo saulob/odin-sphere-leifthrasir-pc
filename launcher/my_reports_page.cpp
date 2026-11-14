@@ -326,7 +326,7 @@ void MyReports::DrawHeader(trg::Ui& ui, const ServiceConfig& service) {
         if (ImGui::Button(Tr(check_ ? "Checking..." : "Refresh"), ImVec2(width, 0))) Refresh(service, true);
         ImGui::EndDisabled();
     }
-    ui.Help("Only reports sent from this PC are listed here. Their status is checked when the launcher starts and when this page opens; Refresh checks again.");
+    ui.Help("Only reports sent from this PC are listed here.");
     if (check_failed_) {
         const char* title_text = OutcomeTitle(check_failure_);
         HelpLine(ui.theme().warn_dot, std::string(Tr("Could not check for updates")) + (title_text ? std::string(": ") + Tr(title_text) : std::string()) +

@@ -1,4 +1,4 @@
-// The Worker's private dashboard under /admin. Its secret, OSL_DASHBOARD_TOKEN, is a Cloudflare secret sent as a
+// The Worker's private dashboard under /admin. Its secret, OSL_BUG_REPORT_ADMIN_TOKEN, is a Cloudflare secret sent as a
 // Bearer header; the page itself is static and holds nothing. No Cloudflare import, so Node runs it in the tests.
 import { ADMIN_CSS, ADMIN_HTML, ADMIN_JS } from './admin_page.js';
 import { RateLimiter, PROTECTION, ipGroup } from './limits.js';
@@ -99,12 +99,12 @@ export async function handleAdmin(request, env, source, log = () => {}, now = Da
   if (asset) return reply(asset[0], 200, asset[1]);
   if (!api) return json({ error: 'not_found' }, 404);
   if (crossOrigin(request, url)) return json({ error: 'origin_not_allowed' }, 403);
-  if (typeof env.OSL_DASHBOARD_TOKEN !== 'string' || env.OSL_DASHBOARD_TOKEN.length < MIN_TOKEN_CHARS) {
+  if (typeof env.OSL_BUG_REPORT_ADMIN_TOKEN !== 'string' || env.OSL_BUG_REPORT_ADMIN_TOKEN.length < MIN_TOKEN_CHARS) {
     return json({ error: 'not_configured' }, 503);
   }
   const address = ipGroup(request.headers.get('CF-Connecting-IP') ?? 'local');
   if (!failedSignIns.allows(address, now)) return json({ error: 'limit' }, 429, { 'Retry-After': '60' });
-  if (!tokenMatches(request.headers.get('Authorization'), env.OSL_DASHBOARD_TOKEN)) {
+  if (!tokenMatches(request.headers.get('Authorization'), env.OSL_BUG_REPORT_ADMIN_TOKEN)) {
     failedSignIns.take(address, now);
     return json({ error: 'unauthorized' }, 401, { 'WWW-Authenticate': 'Bearer' });
   }
