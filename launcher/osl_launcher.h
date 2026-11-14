@@ -104,6 +104,10 @@ typedef struct {
 /* The supported game build a boot image folder was built from (its image.json); 0 when it is not one. */
 int osl_game_build(const char *image_dir, OslGameBuild *build);
 
+/* 1 when every title menu file of the build image_dir was built from carries the Exit Game art (title_exit_assets.h),
+ * so the title menu code may show the Exit Game row; otherwise 0 and the reason in `detail`. */
+int osl_title_exit_assets_ready(const char *app0, const char *image_dir, char *detail, size_t detail_size);
+
 /* The one readiness check (launcher/game_files.h): 1 when the prepared game and its boot image are a supported,
  * complete installation; otherwise 0 and the reason in `detail`. */
 int osl_check_game(const char *app0, const char *image_dir, char *detail, size_t detail_size);

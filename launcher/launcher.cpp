@@ -1029,6 +1029,9 @@ private:
         if (!settings_.SaveNow({{kControllerPromptsKey, PromptStyleKey(prompts_installed_)}})) {
             Log("could not save the controller prompts setting");
         }
+        for (const std::string& line : outcome->title_unsupported) {
+            Log("%s", line.c_str());
+        }
         if (outcome->ok) {
             Log("controller prompts: %s (%s)", PromptStyleKey(prompts_installed_), outcome->detail.c_str());
             launcher_->SetStatus(std::string("Controller prompts: ") + PromptStyleLabel(prompts_installed_) + ".", 6.0);
@@ -1247,4 +1250,13 @@ extern "C" OslLauncherResult osl_launcher_run(const OslLauncherConfig* config) {
         return ready ? PlayOrExplain(*config) : OSL_LAUNCHER_QUIT;
     }
     return outcome == Outcome::kPlay ? OSL_LAUNCHER_PLAY : OSL_LAUNCHER_QUIT;
+}
+
+extern "C" int osl_title_exit_assets_ready(const char* app0, const char* image_dir, char* detail, size_t detail_size) {
+    std::string why;
+    const bool ready = osl::TitleExitAssetsReady(app0, image_dir, osl::TitleExitPatch(), &why);
+    if (!ready && detail && detail_size) {
+        std::snprintf(detail, detail_size, "%s", why.c_str());
+    }
+    return ready ? 1 : 0;
 }

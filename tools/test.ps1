@@ -9,6 +9,14 @@
   Every test runs even after one fails; the exit code is non-zero when any of them failed. A step that cannot run here
   is SKIPPED with the reason; checks a test leaves out are listed as notes. Nothing is PASS unless it ran.
 
+  The Features group also proves the title menu's Exit Game art: for every build of SupportedBuilds and every text
+  language, the shipped title patch applied to the prepared original archives (read only; patch cycles run on temporary
+  copies) must show the whole localized label in the Refined and Classic menus, never INSTALL, through prompt switching,
+  rollback and the replacement of the 0.2.3 English layer. A build or language without prepared title archives is DATA
+  UNAVAILABLE, never PASS; its structure is still proved on synthetic archives of its own data files, and art the patch
+  was not made for must leave the Exit Game row off. Python 3 with numpy, scipy and Pillow is required (OSL_PYTHON names
+  an interpreter; tools\setup.ps1 -InstallPython installs them into .venv); without it the step FAILS.
+
   The tests use synthetic data in temporary folders. The network tests talk to a loopback server of their own. The Bug
   Report service tests run in Node on a disposable in-memory database and load the exact request the launcher's own test
   built (build\cmake\clang64\bin\bug-report-request.json); that file is deleted before the Launcher group runs, so a
@@ -53,7 +61,8 @@ function Invoke-Native([scriptblock]$Command) {
 }
 
 # One process with its output in order, a time limit, and the whole process tree stopped when the limit passes.
-function Invoke-Captured([string]$Exe, [string[]]$Arguments = @(), [string]$WorkingDirectory = '') {
+function Invoke-Captured([string]$Exe, [string[]]$Arguments = @(), [string]$WorkingDirectory = '', [int]$Seconds = 0) {
+    if ($Seconds -le 0) { $Seconds = $TimeoutSeconds }
     $command = '"' + $Exe + '"' + (($Arguments | ForEach-Object { ' "' + $_ + '"' }) -join '')
     $info = New-Object System.Diagnostics.ProcessStartInfo
     $info.FileName = Join-Path $env:SystemRoot 'System32\cmd.exe'
@@ -66,7 +75,7 @@ function Invoke-Captured([string]$Exe, [string[]]$Arguments = @(), [string]$Work
     $process = [System.Diagnostics.Process]::Start($info)
     $out = $process.StandardOutput.ReadToEndAsync()
     $err = $process.StandardError.ReadToEndAsync()
-    $finished = $process.WaitForExit($TimeoutSeconds * 1000)
+    $finished = $process.WaitForExit($Seconds * 1000)
     if (-not $finished) {
         & taskkill.exe /PID $process.Id /T /F 2>&1 | Out-Null
         $process.WaitForExit()
@@ -129,6 +138,67 @@ function Invoke-PatchWorkflow {
 
 $requestFile = Join-Path $buildDir 'bin\bug-report-request.json'
 
+$titleArtRows = New-Object System.Collections.Generic.List[object]
+$titleArtSeconds = 1800
+
+function Get-TitleArtPython {
+    $ErrorActionPreference = 'Continue'
+    $candidates = @()
+    if ($env:OSL_PYTHON) { $candidates += , @{ Exe = $env:OSL_PYTHON; Args = @() } }
+    $default = Get-Python
+    if ($default) { $candidates += , $default }
+    $launcher = Get-Command py -ErrorAction SilentlyContinue
+    if ($launcher) { $candidates += , @{ Exe = $launcher.Source; Args = @('-3') } }
+    $any = Get-Command python -ErrorAction SilentlyContinue
+    if ($any) { $candidates += , @{ Exe = $any.Source; Args = @() } }
+    foreach ($candidate in $candidates) {
+        $out = @(& $candidate.Exe @($candidate.Args) '-I' '-c' 'import numpy, scipy, PIL, sys; print(sys.executable)' 2>&1)
+        if ($LASTEXITCODE -eq 0 -and $out) { return @{ Exe = "$($out[-1])".Trim(); Args = @() } }
+    }
+    return $null
+}
+
+function Read-TitleArtRows($Run) {
+    foreach ($line in $Run.Lines) {
+        if ($line -notmatch '^TITLEART\|') { continue }
+        $field = $line.Split('|')
+        $titleArtRows.Add([pscustomobject]@{ Build = $field[1]; Subject = $field[2]; Result = $field[3]; Source = $field[4]; Note = $field[5] })
+    }
+}
+
+function Get-TitleArtFailures([int]$From) {
+    for ($i = $From; $i -lt $titleArtRows.Count; $i++) {
+        $row = $titleArtRows[$i]
+        if ($row.Result -match '^FAIL: (.*)$') { "FAIL $($row.Build) / $($row.Subject): $($Matches[1].Trim())" }
+    }
+}
+
+function Invoke-TitleArt([hashtable]$Built) {
+    if (-not $Built['osl-tests']) { return Result 'FAIL' 'osl-tests did not build (see the build output above); the old executable was not run' }
+    $python = Get-TitleArtPython
+    if (-not $python) { return Result 'FAIL' 'Python 3 with numpy, scipy and Pillow not found; the title art contract cannot be proved (set OSL_PYTHON, or run tools\setup.ps1 -InstallPython)' }
+    $first = $titleArtRows.Count
+    $manifest = Join-Path $buildDir 'title-art-builds.tsv'
+    $exe = Join-Path $buildDir 'bin\osl-tests.exe'
+    $units = Invoke-Captured $python.Exe (@($python.Args) + @('-I', (Join-Path $root 'scripts\title_exit\test_title_exit.py'))) $root $titleArtSeconds
+    $cpp = Invoke-Captured $exe @('--title-art', $manifest) '' $titleArtSeconds
+    Read-TitleArtRows $cpp
+    $verify = $null
+    if (Test-Path -LiteralPath $manifest) {
+        $verify = Invoke-Captured $python.Exe (@($python.Args) + @('-W', 'ignore', '-I', (Join-Path $root 'scripts\title_exit\verify_title_art.py'), $manifest, (Join-Path $root 'game\prepared'))) $root $titleArtSeconds
+        Read-TitleArtRows $verify
+    }
+    $problems = @(Get-TitleArtFailures $first)
+    if ($units.TimedOut -or $units.Code -ne 0) { $problems += "generator tests: $(Get-FailureReason $units)"; $units.Lines | Select-Object -Last 12 | ForEach-Object { Write-Host "    $_" } }
+    if ($cpp.TimedOut -or $cpp.Code -ne 0) { $problems += "title art tests: $(Get-FailureReason $cpp)" }
+    if (-not $verify) { $problems += 'the title art manifest was not written' }
+    elseif ($verify.TimedOut -or $verify.Code -ne 0) { $problems += "title art verification: $(Get-FailureReason $verify)"; $verify.Lines | Where-Object { $_ -notmatch '^TITLEART\|' } | Select-Object -Last 12 | ForEach-Object { Write-Host "    $_" } }
+    $summary = @($cpp.Lines | Where-Object { $_ -match '^(OK|FAILED) \(' }) | Select-Object -Last 1
+    if ($summary) { Write-Host "    $summary" -ForegroundColor DarkGray }
+    if ($problems) { return Result 'FAIL' ($problems -join '; ') }
+    return Result 'PASS'
+}
+
 function Invoke-BugReportService {
     $node = Get-Command node -ErrorAction SilentlyContinue
     if (-not $node) { return Result 'SKIPPED' 'Node.js 22 or newer not found' }
@@ -178,6 +248,7 @@ $steps = @(
     (Step 'Features' 'startup notice and frame counter visibility' 'osl-notice-tests'),
     (Step 'Features' 'cursor visibility' 'osl-cursor-tests'),
     (Step 'Features' 'local trophies' 'osl-trophy-tests'),
+    (Step 'Features' 'title menu Exit Game art: every supported build and language, Refined and Classic, never INSTALL on an active row' 'osl-tests' -Block { Invoke-TitleArt $built }),
     (Step 'Graphics' 'GPU tile layouts and addresses' 'osl-tiling-tests')
 )
 
@@ -232,6 +303,18 @@ foreach ($name in $wanted) {
     foreach ($entry in $failed) { Write-Host "    failed: $($entry.Step.Title): $($entry.Result.Reason)" -ForegroundColor Red }
     foreach ($entry in $skipped) { Write-Host "    skipped: $($entry.Step.Title): $($entry.Result.Reason)" -ForegroundColor Yellow }
     foreach ($entry in $mine) { foreach ($note in $entry.Result.Notes) { Write-Host "    note: $note" -ForegroundColor DarkGray } }
+}
+if ($titleArtRows.Count) {
+    Write-Host ''
+    Write-Host 'Title menu Exit Game art (real files = prepared archives read; DATA UNAVAILABLE is never PASS)' -ForegroundColor Cyan
+    foreach ($build in @($titleArtRows | ForEach-Object { $_.Build } | Select-Object -Unique)) {
+        Write-Host "  $build"
+        foreach ($row in @($titleArtRows | Where-Object { $_.Build -eq $build })) {
+            $color = if ($row.Result -match '^FAIL') { 'Red' } elseif ($row.Result -match 'UNAVAILABLE') { 'Yellow' } else { 'Gray' }
+            $detail = (@($row.Source, $row.Note) | Where-Object { $_ }) -join '; '
+            Write-Host ('    {0,-34}{1,-18}[{2}]' -f $row.Subject, $row.Result, $detail) -ForegroundColor $color
+        }
+    }
 }
 Write-Host ''
 Write-Host "Total: $($wanted.Count) groups"

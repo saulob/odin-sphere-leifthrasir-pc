@@ -15,6 +15,7 @@ import io
 import os
 import re
 import struct
+import zlib
 import sys
 from pathlib import Path
 
@@ -188,13 +189,17 @@ def read_undo(path):
     return b[start:start + hdr_len], toc
 
 
+# The same stored bytes recur across archives and builds; decompressing each once keeps the audits fast.
+_DECOMPRESSED = {}
+
+
 class Cpk:
     def __init__(self, path, original=False):
         """original: read the archive as it was before the launcher patched it, when an undo record is next to it."""
         self.path = Path(path)
         self.f = open(path, 'rb')
-        undo = Path(str(path) + '.undo')
-        saved = read_undo(undo) if original and undo.is_file() else None
+        undo = next((u for u in (Path(str(path) + '.undo'), Path(str(path) + '.title.undo')) if u.is_file()), None)
+        saved = read_undo(undo) if original and undo else None
         self.patched = saved is not None
         self.header = UtfTable(saved[0]) if saved else read_packet(self.f, 0, b'CPK ')
         h = self.header.rows[0]
@@ -222,7 +227,10 @@ class Cpk:
         self.f.seek(entry['offset'])
         data = self.f.read(entry['size'])
         if entry['size'] < entry['extract_size'] or data[:8] == b'CRILAYLA':
-            data = crilayla_decompress(data)
+            key = (len(data), zlib.crc32(data))
+            if key not in _DECOMPRESSED:
+                _DECOMPRESSED[key] = crilayla_decompress(data)
+            data = _DECOMPRESSED[key]
         return data
 
     def find(self, name):

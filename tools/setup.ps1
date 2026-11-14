@@ -2,9 +2,9 @@
 .SYNOPSIS
   Checks the prerequisites for building the project and says what is missing.
 .PARAMETER InstallPython
-  Creates .venv and installs the one Python package tools\prepare-game.ps1 needs (cryptography). Optional: only
-  for unpacking a PKG during development; the build and the launcher do not use Python.
-  Nothing else is installed by this script.
+  Creates .venv and installs the Python packages the development tools need: cryptography (tools\prepare-game.ps1)
+  and numpy, scipy and Pillow (the title menu art tests of tools\test.ps1 -Group Features). Optional: the build and
+  the launcher do not use Python. Nothing else is installed by this script.
 #>
 [CmdletBinding()]
 param([switch]$InstallPython)
@@ -21,9 +21,9 @@ if ($InstallPython) {
         & $python.Exe @($python.Args) -m venv (Join-Path $script:RepoRoot '.venv')
         if ($LASTEXITCODE -ne 0) { Stop-Tool 'Could not create .venv' }
     }
-    Write-Host '  installing cryptography into .venv'
-    & (Get-VenvPython) -m pip install --quiet --disable-pip-version-check cryptography
-    if ($LASTEXITCODE -ne 0) { Stop-Tool 'pip install cryptography failed' }
+    Write-Host '  installing cryptography, numpy, scipy and Pillow into .venv'
+    & (Get-VenvPython) -m pip install --quiet --disable-pip-version-check cryptography numpy scipy Pillow
+    if ($LASTEXITCODE -ne 0) { Stop-Tool 'pip install cryptography numpy scipy Pillow failed' }
 }
 $python = Get-Python
 if (-not $python) {
@@ -34,6 +34,8 @@ if (-not $python) {
     else { Write-Ok "Python $version ($($python.Exe))" }
     if (Test-PythonModule 'cryptography') { Write-Ok 'cryptography (PKG extraction)' }
     else { Write-Warn 'cryptography missing (tools\setup.ps1 -InstallPython adds it for tools\prepare-game.ps1)' }
+    if (Test-PythonModule 'numpy') { Write-Ok 'numpy (title menu art tests)' }
+    else { Write-Warn 'numpy, scipy or Pillow missing (tools\setup.ps1 -InstallPython adds them for the title menu art tests of tools\test.ps1)' }
 }
 
 Write-Step 'Git'

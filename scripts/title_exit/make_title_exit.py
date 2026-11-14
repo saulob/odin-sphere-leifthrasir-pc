@@ -548,6 +548,7 @@ class Plan:
     ratio: float
     edits: list
     turn: np.ndarray
+    shown: np.ndarray = None  # what the carrier's rectangle shows once painted
 
     def rect_of(self, part):
         quad = self.new_quads[part]
@@ -636,7 +637,7 @@ def plan_label(label, art, kind, canvas, ink_row, other_rects):
     turns = [orientation(p)[0] for p in parts]
     if len(parts) > 1 and not all(is_upright(t) for t in turns):
         raise Unsupported('a rotated label of several parts')
-    carrier = max(parts, key=lambda p: (p.rect[2] - p.rect[0]) * (p.rect[3] - p.rect[1]))
+    carrier = carrier_of(parts)
     turn, scale = orientation(carrier)
     upright = is_upright(turn)
     atlas = art.texture(carrier.texture)
@@ -684,6 +685,7 @@ def plan_label(label, art, kind, canvas, ink_row, other_rects):
         old = art.texture(p.texture)[rect[1]:rect[3], rect[0]:rect[2]]
         if p is carrier:
             new = render(old, rect, canvas, ink_row, centre_x, turn, ink_centre)
+            plan.shown = new
         else:
             new = old.copy()
             new[..., 3] = 0
@@ -718,7 +720,7 @@ def scale_wanted(native_height, source_height, vertical):
 
 def fit_label(label, art, kind, canvas, native_height, other_rects):
     """The label at the native letter height, or at the largest uniform scale the atlas space allows."""
-    carrier = max(label.parts, key=lambda p: (p.rect[2] - p.rect[0]) * (p.rect[3] - p.rect[1]))
+    carrier = carrier_of(label.parts)
     source = text_height(canvas)
     wanted = scale_wanted(native_height, source, text_scale(carrier)[0])
     floor = min(wanted, 1.0)
@@ -735,6 +737,53 @@ def fit_label(label, art, kind, canvas, native_height, other_rects):
         except Unsupported as e:
             last = e
     raise last
+
+
+def overlap(a, b):
+    return not (a[2] <= b[0] or b[2] <= a[0] or a[3] <= b[1] or b[3] <= a[1])
+
+
+def carrier_of(parts):
+    return max(parts, key=lambda p: (p.rect[2] - p.rect[0]) * (p.rect[3] - p.rect[1]))
+
+
+def share_art(labels, plans, fits, status):
+    """A sprite both title menus draw is painted once, for both; menus whose labels overlap in any other way are refused,
+    because the later paint would cut the earlier label."""
+    kinds = [kind for kind in KINDS if kind in plans]
+    for later in kinds:
+        for earlier in kinds[:kinds.index(later)]:
+            mine, theirs = carrier_of(labels[later].parts), carrier_of(labels[earlier].parts)
+            apart = not overlap(mine.rect, theirs.rect) and not overlap(plans[later].rect_of(mine.part),
+                                                                       plans[earlier].rect_of(theirs.part))
+            if mine.texture != theirs.texture or apart:
+                continue
+            same = (len(labels[later].parts) == len(labels[earlier].parts) == 1 and mine.rect == theirs.rect and
+                    mine.quad == theirs.quad and np.array_equal(fits[later].canvas, fits[earlier].canvas))
+            if not same:
+                status[later] = f'skipped: its label overlaps the {earlier} label in the atlas and is not the same art'
+                del plans[later]
+                break
+            first = plans[earlier]
+            fits[later].plan = plans[later] = Plan(labels[later], {mine.part: first.new_quads[theirs.part]}, first.ratio, [],
+                                                    first.turn, first.shown)
+            break
+
+
+def audit_labels(blob, art, plans, files):
+    """The finished atlas, read back through the finished menu files, shows every label as it was composed."""
+    decoded = {}
+    for kind, plan in plans.items():
+        carrier = carrier_of(find_label(Mbs(files[kind]), kind).parts)
+        x0, y0, x1, y1 = carrier.rect
+        if carrier.texture not in decoded:
+            decoded[carrier.texture] = np.array(ftex.decode(blob, art.textures[carrier.texture]))
+        alpha = decoded[carrier.texture][y0:y1, x0:x1, 3].astype(int)
+        assert alpha.shape == plan.shown.shape[:2], f'{kind}: the menu shows another rectangle than the one painted'
+        worst = int(np.abs(alpha - plan.shown[..., 3].astype(int)).max())
+        assert worst <= TOLERANCE, f'{kind}: the menu shows a label that differs from the composed one by {worst}'
+        ink = ink_box(decoded[carrier.texture][y0:y1, x0:x1])
+        assert ink[0] >= 1 and ink[2] <= x1 - x0 - 1, f'{kind}: the label touches the edge of its rectangle'
 
 
 def apply_edit(atlas, edit):
@@ -756,7 +805,7 @@ def apply_geometry(mbs, plan):
         mbs.set_part(p.part, rec)
     if plan.ratio == 1.0:
         return
-    carrier = max(plan.label.parts, key=lambda p: (p.rect[2] - p.rect[0]) * (p.rect[3] - p.rect[1]))
+    carrier = carrier_of(plan.label.parts)
     for g in carrier.geoms:
         grec = mbs.geom_record(g)
         xs = grec[2:10:2]
@@ -791,7 +840,7 @@ def check_painted(blob, textures, edit):
 
 
 def label_metrics(kind, language, phrase, label, fit):
-    carrier = max(label.parts, key=lambda p: (p.rect[2] - p.rect[0]) * (p.rect[3] - p.rect[1]))
+    carrier = carrier_of(label.parts)
     vertical, horizontal = text_scale(carrier)
     ink = np.nonzero(fit.canvas[..., 3] > ALPHA_FLOOR)
     return dict(kind=kind, language=language, phrase=phrase, source_height=fit.source_height,
@@ -820,7 +869,7 @@ def process_group(art, pool, notes, metrics=None):
         for (part, texture), rect in m.part_rects().items():
             if part not in mine:
                 others.setdefault(texture, []).append(rect)
-    plans, shared = {}, {}
+    plans, fits, chosen = {}, {}, {}
     for kind, label in labels.items():
         try:
             others_here = [r for t in {p.texture for p in label.parts} for r in others.get(t, [])]
@@ -833,6 +882,8 @@ def process_group(art, pool, notes, metrics=None):
                     canvas, _ = compose(letters, phrase)
                     fit = fit_label(label, art, kind, canvas, native, others_here)
                     plans[kind] = fit.plan
+                    fits[kind] = fit
+                    chosen[kind] = (language, phrase)
                     break
                 except Unsupported as e:
                     tried.append(f'{phrase}: {e}')
@@ -841,29 +892,35 @@ def process_group(art, pool, notes, metrics=None):
             own = ''.join(sorted(k for k, v in sources.items() if v == 'own')) or 'none'
             notes.append(f'{kind}: "{phrase}" ({language}), letters of its own atlas: {own}, the rest from the title art of '
                          f'other languages' + (f'; skipped {tried}' if tried else ''))
-            if metrics is not None:
-                metrics.append(label_metrics(kind, language, phrase, label, fit))
         except Unsupported as e:
             status[kind] = f'skipped: {e}'
+    share_art(labels, plans, fits, status)
+    if metrics is not None:
+        metrics += [label_metrics(kind, *chosen[kind], labels[kind], fits[kind]) for kind in KINDS if kind in plans]
     out_blob, done = art.blob, {}
     decoded = {}
     for kind, plan in plans.items():
         for edit in plan.edits:
             key = (edit.texture, edit.rect)
-            if key in done and not (done[key] == edit.rgba).all():
-                raise Unsupported(f'the Refined and Classic labels share {key} but would be painted differently')
-            if key not in done:
-                atlas = decoded.setdefault(edit.texture, art.texture(edit.texture).copy())
-                changed = apply_edit(atlas, edit)
-                previous = out_blob
-                out_blob, blocks = patch_ftx.patch(out_blob, art.textures[edit.texture], atlas, changed)
-                drift = edge_drift(previous, out_blob, art.textures[edit.texture], changed)
-                check_painted(out_blob, art.textures, edit)
-                done[key] = edit.rgba
-                notes.append(f'{kind}: tex{edit.texture} {edit.rect}, {blocks} blocks, edge drift alpha {drift[0]:.2f} colour {drift[1]:.2f}')
+            if key in done:
+                if not (done[key] == edit.rgba).all():
+                    raise Unsupported(f'the {kind} label rectangle {key} is painted differently by another menu')
+                continue
+            if any(t == edit.texture and overlap(r, edit.rect) for t, r in done):
+                raise Unsupported(f'the {kind} label rectangle {key} overlaps one already painted')
+            atlas = decoded.setdefault(edit.texture, art.texture(edit.texture).copy())
+            changed = apply_edit(atlas, edit)
+            previous = out_blob
+            out_blob, blocks = patch_ftx.patch(out_blob, art.textures[edit.texture], atlas, changed)
+            drift = edge_drift(previous, out_blob, art.textures[edit.texture], changed)
+            check_painted(out_blob, art.textures, edit)
+            done[key] = edit.rgba
+            notes.append(f'{kind}: tex{edit.texture} {edit.rect}, {blocks} blocks, edge drift alpha {drift[0]:.2f} colour {drift[1]:.2f}')
         apply_geometry(mbs[kind], plan)
         status[kind] = 'ok'
-    return out_blob, {k: bytes(v.data) for k, v in mbs.items()}, status
+    files = {k: bytes(v.data) for k, v in mbs.items()}
+    audit_labels(out_blob, art, plans, files)
+    return out_blob, files, status
 
 
 def previews(directory, name, blob, shown):

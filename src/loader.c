@@ -438,8 +438,14 @@ static void apply_unlock_bookshelf(const OslGameBuild *build, unsigned char *stu
     }
     protect(stubs,stub_bytes,5);
 }
-static void apply_title_menu_exit(unsigned char *stubs, uint64_t stub_offset, size_t stub_bytes, uint64_t size) {
+static void apply_title_menu_exit(const char *app0, const char *image_dir, unsigned char *stubs, uint64_t stub_offset,
+                                  size_t stub_bytes, uint64_t size) {
     char error[320]="";
+    /* The row order and the label are in the title files: without their update the row would show INSTALL. */
+    if (!osl_title_exit_assets_ready(app0,image_dir,error,sizeof(error))) {
+        printf("Title menu Exit Game: unavailable: %s\n",error);
+        return;
+    }
     osl_title_menu_exit_set_host(runtime_exit_clean);
     if (!osl_apply_title_menu_exit(image,size,stub_offset,stub_bytes,(uint64_t)(uintptr_t)osl_title_menu_exit_request,error,sizeof(error))) {
         printf("Title menu Exit Game: unavailable: %s\n",error);
@@ -981,7 +987,7 @@ int main(int argc, char **argv) {
     if (osl_skip_intro(settings_file)) apply_skip_intro(known_build ? &game_build : NULL,segments,ns,size);
     if (bookshelf_unlock)
         apply_unlock_bookshelf(known_build ? &game_build : NULL,image+round_page(size)+lzcnt_stub_bytes,bookshelf_stub_bytes,size);
-    apply_title_menu_exit(image+round_page(size)+lzcnt_stub_bytes+bookshelf_stub_bytes,
+    apply_title_menu_exit(app0,paths.image_dir,image+round_page(size)+lzcnt_stub_bytes+bookshelf_stub_bytes,
                           round_page(size)+lzcnt_stub_bytes+bookshelf_stub_bytes,title_exit_stub_bytes,size);
 #ifdef _WIN32
     printf("Guest TCB loads redirected to the TEB TLS slot: %" PRIu64 "\n", patch_tcb_loads(segments, ns));

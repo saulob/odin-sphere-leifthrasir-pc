@@ -580,6 +580,108 @@ class Bc3Edges(unittest.TestCase):
         self.assertEqual(len(out), len(blob))
 
 
+class SharedAtlas(unittest.TestCase):
+    """Refined and Classic draw one atlas: a label both menus use must be painted once, whole, for both."""
+
+    def setUp(self):
+        self.canvas, self.row = m.compose(LETTERS, 'EXIT GAME')
+        self.ink_width = int(np.ptp(np.nonzero(self.canvas[..., 3] > m.ALPHA_FLOOR)[1]) + 1)
+        self.image = atlas_with([LABEL_RECT])
+        pack = Bc3Edges().synthetic_pack(self.image)
+        self.blob, self.tex = pack
+        self.mbs = {kind: m.Mbs(synthetic_mbs(kind=kind, geom_scale=0.5 if kind == 'classic' else 1.0)) for kind in m.KINDS}
+        self.labels = {kind: m.find_label(mbs, kind) for kind, mbs in self.mbs.items()}
+
+    def art(self):
+        mbs = self.mbs['refined']
+        art = FakeArt({0: self.image}, mbs, {p: 0 for p in range(mbs.nparts)})
+        art.textures = {0: self.tex}
+        return art
+
+    def plans(self):
+        art = self.art()
+        plans = {kind: m.plan_label(label, art, kind, self.canvas, self.row, []) for kind, label in self.labels.items()}
+        fits = {kind: m.Fit(plan, self.canvas, 1.0, 1.0, 33.0, 33.0) for kind, plan in plans.items()}
+        return plans, fits
+
+    def painted(self, plans):
+        atlas, blob = self.image.copy(), self.blob
+        for plan in plans.values():
+            for edit in plan.edits:
+                blob, _ = patch_ftx.patch(blob, self.tex, atlas, m.apply_edit(atlas, edit))
+        return blob
+
+    def finished(self, plans):
+        for kind, plan in plans.items():
+            m.apply_geometry(self.mbs[kind], plan)
+        return {kind: bytes(mbs.data) for kind, mbs in self.mbs.items()}
+
+    def shown_width(self, blob, kind, files):
+        x0, y0, x1, y1 = m.carrier_of(m.find_label(m.Mbs(files[kind]), kind).parts).rect
+        crop = np.array(ftex.decode(blob, self.tex))[y0:y1, x0:x1]
+        return int(np.ptp(np.nonzero(crop[..., 3] > m.ALPHA_FLOOR)[1]) + 1), x1 - x0
+
+    def test_planned_alone_the_menus_overwrite_each_other(self):
+        plans, _ = self.plans()
+        rects = [plans[kind].rect_of(self.labels[kind].parts[0].part) for kind in m.KINDS]
+        self.assertNotEqual(rects[0], rects[1])
+        self.assertTrue(m.overlap(*rects))
+        files = self.finished(plans)
+        with self.assertRaises(AssertionError):
+            m.audit_labels(self.painted(plans), self.art(), plans, files)
+        self.assertLess(self.shown_width(self.painted(plans), 'refined', files)[0], self.ink_width)
+
+    def test_shared_label_is_painted_once_and_shows_every_letter_in_both_menus(self):
+        plans, fits = self.plans()
+        status = {}
+        m.share_art(self.labels, plans, fits, status)
+        self.assertEqual(status, {})
+        part = self.labels['refined'].parts[0].part
+        self.assertEqual(plans['classic'].rect_of(part), plans['refined'].rect_of(part))
+        self.assertEqual(plans['classic'].edits, [])
+        self.assertEqual(plans['classic'].ratio, plans['refined'].ratio)
+        files = self.finished(plans)
+        blob = self.painted(plans)
+        m.audit_labels(blob, self.art(), plans, files)
+        for kind in m.KINDS:
+            ink, rect = self.shown_width(blob, kind, files)
+            self.assertEqual(ink, self.ink_width, kind)
+            self.assertLessEqual(ink, rect - 2)
+
+    def test_different_art_on_a_shared_sprite_is_refused(self):
+        plans, fits = self.plans()
+        fits['classic'].canvas = self.canvas[:, :-4]
+        status = {}
+        m.share_art(self.labels, plans, fits, status)
+        self.assertIn('classic', status)
+        self.assertNotIn('classic', plans)
+        self.assertIn('refined', plans)
+
+    def test_a_label_over_another_rectangle_of_the_same_art_is_refused(self):
+        art = self.art()
+        refined = m.plan_label(self.labels['refined'], art, 'refined', self.canvas, self.row, [])
+        mbs = m.Mbs(synthetic_mbs(kind='classic', rects={4: (180, 40, 352, 78)}))
+        classic = m.plan_label(m.find_label(mbs, 'classic'), art, 'classic', self.canvas, self.row, [])
+        labels = {'refined': self.labels['refined'], 'classic': m.find_label(mbs, 'classic')}
+        plans = {'refined': refined, 'classic': classic}
+        fits = {kind: m.Fit(plan, self.canvas, 1.0, 1.0, 33.0, 33.0) for kind, plan in plans.items()}
+        status = {}
+        m.share_art(labels, plans, fits, status)
+        self.assertIn('classic', status)
+
+    def test_audit_catches_a_clipped_final_letter(self):
+        plans, fits = self.plans()
+        m.share_art(self.labels, plans, fits, {})
+        files = self.finished(plans)
+        atlas, blob = self.image.copy(), self.blob
+        edit = plans['refined'].edits[0]
+        clipped = m.Edit(edit.texture, edit.rect, edit.rgba.copy())
+        clipped.rgba[:, -30:, 3] = 0
+        blob, _ = patch_ftx.patch(blob, self.tex, atlas, m.apply_edit(atlas, clipped))
+        with self.assertRaises(AssertionError):
+            m.audit_labels(blob, self.art(), plans, files)
+
+
 @unittest.skipUnless(os.environ.get('TITLE_EXIT_GAME'), 'set TITLE_EXIT_GAME to the game/prepared folder')
 class LocalVariants(unittest.TestCase):
     """Every distinct title atlas of the local game folders gets EXIT GAME in both title variants."""
@@ -612,6 +714,19 @@ class LocalVariants(unittest.TestCase):
                 self.assertGreaterEqual(shown, 8, f'{crc:08x} {kind}')
                 self.check_install_layers_agree(patched, kind, f'{crc:08x}')
             self.check_sizes(crc, art, files, metrics)
+            self.check_whole_labels(crc, art, blob, files, metrics)
+
+    def check_whole_labels(self, crc, art, blob, files, metrics):
+        for mt in metrics:
+            carrier = m.carrier_of(m.find_label(m.Mbs(files[mt['kind']]), mt['kind']).parts)
+            x0, y0, x1, y1 = carrier.rect
+            crop = np.array(ftex.decode(blob, art.textures[carrier.texture]))[y0:y1, x0:x1]
+            ink = m.ink_box(crop)
+            along_text = 1 if m.is_upright(m.orientation(carrier)[0]) else 0
+            extent = np.ptp(np.nonzero(crop[..., 3] > m.ALPHA_FLOOR)[along_text]) + 1
+            self.assertAlmostEqual(extent * m.text_scale(carrier)[1], mt['visible_width'], delta=1.0,
+                                   msg=f'{crc:08x} {mt["kind"]} shows a clipped label')
+            self.assertTrue(ink[0] >= 1 and ink[1] >= 1 and ink[2] <= x1 - x0 - 1 and ink[3] <= y1 - y0 - 1, f'{crc:08x} {mt["kind"]}')
 
     def check_install_layers_agree(self, patched, kind, name):
         mine = {p.part for p in m.find_label(patched, kind).parts}

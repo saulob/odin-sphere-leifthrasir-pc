@@ -184,8 +184,9 @@ PromptsResult SetPromptStyle(const std::filesystem::path& app0, const GameBuild&
     }
     PromptsResult result = SetPromptLayer(app0, build, style, xbox_patch, hooks);
     if (!title_patch.empty() && !result.cancelled) {
-        const TitleExitResult on = ApplyTitleExit(app0, build, title_patch, hooks);
+        TitleExitResult on = ApplyTitleExit(app0, build, title_patch, hooks);
         Note(result.detail, on.ok ? "title menu: updated" : "title menu: " + on.detail);
+        result.title_unsupported = std::move(on.unsupported);
     }
     return result;
 }

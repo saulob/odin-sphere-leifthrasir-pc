@@ -2526,8 +2526,8 @@ void CheckShippedPatchCoversLocalBuilds(const BlockPatch& patch) {
                 std::vector<uint8_t> original = data;
                 if (match.state == EntryState::kPatched) {
                     for (const BlockRun& run : match.target->runs) std::memcpy(original.data() + run.offset, run.original.data(), 16);
-                    CHECK(Crc32(original) == match.target->crc_before);
                 }
+                CHECK(Crc32(original) == match.target->crc_before);
                 BlockPatch others;
                 for (const BlockPatchTarget& target : patch.targets) {
                     if (&target != match.target) others.targets.push_back(target);
@@ -5104,6 +5104,7 @@ void TestTitleExitAssets() {
         for (const char* name : files) {
             fs::remove(UndoPath(app0 / name));
             fs::remove(UndoPath(app0 / name, kTitleUndoSuffix));
+            fs::remove(UndoPath(app0 / name, ".title.stamp"));
         }
         WriteAll(app0 / "Odin2_BT_DE.CPK", bt);
         WriteAll(app0 / "Odin2_OR_DE.CPK", or_de);
@@ -5127,8 +5128,9 @@ void TestTitleExitAssets() {
     CHECK(!TitleExitPending(app0, build, Span(std::string("not a patch"))));
 
     // The layer: patched copies of every title file, the other entries and archives as they were, its own undo records.
+    CHECK(!TitleExitReady(app0, build, Span(title_patch)));
     TitleExitResult applied = ApplyTitleExit(app0, build, Span(title_patch));
-    CHECK(applied.ok && !TitleExitPending(app0, build, Span(title_patch)));
+    CHECK(applied.ok && !TitleExitPending(app0, build, Span(title_patch)) && TitleExitReady(app0, build, Span(title_patch)));
     CHECK(entry("Odin2_OR_DE.CPK", "title.ftx") == atlas_x && entry("Odin2_OR_DE.CPK", "title.mbs") == classic_x);
     CHECK(entry("Odin2_RE_DE.CPK", "GUI/HD_title.ftx") == atlas_x && entry("Odin2_RE_DE.CPK", "GUI/REHD_title.mbs") == refined_x);
     CHECK(entry("Odin2_OR_DE.CPK", "Interface.ftx") == iface && entry("Odin2_BT_DE.CPK", "other/x.bin") == other);
@@ -5157,11 +5159,12 @@ void TestTitleExitAssets() {
     CHECK(ApplyTitleExit(app0, build, Span(title_patch)).ok);
     PromptsResult prompts = SetPromptStyle(app0, build, PromptStyle::kXbox, Span(prompts_patch), {}, Span(title_patch));
     CHECK(prompts.ok && InstalledPromptStyle(app0, build, Span(prompts_patch)) == PromptStyle::kXbox);
-    CHECK(!TitleExitPending(app0, build, Span(title_patch)));
+    CHECK(!TitleExitPending(app0, build, Span(title_patch)) && TitleExitReady(app0, build, Span(title_patch)));
     CHECK(entry("Odin2_OR_DE.CPK", "Interface.ftx") == iface_x && entry("Odin2_OR_DE.CPK", "title.ftx") == atlas_x);
     CHECK(fs::exists(UndoPath(app0 / "Odin2_OR_DE.CPK")) && fs::exists(UndoPath(app0 / "Odin2_OR_DE.CPK", kTitleUndoSuffix)));
     prompts = SetPromptStyle(app0, build, PromptStyle::kPlayStation, {}, {}, Span(title_patch));
-    CHECK(prompts.ok && !AnyPromptPatch(app0, build) && !TitleExitPending(app0, build, Span(title_patch)));
+    CHECK(prompts.ok && !AnyPromptPatch(app0, build) && !TitleExitPending(app0, build, Span(title_patch)) &&
+          TitleExitReady(app0, build, Span(title_patch)));
     CHECK(entry("Odin2_OR_DE.CPK", "Interface.ftx") == iface && entry("Odin2_OR_DE.CPK", "title.ftx") == atlas_x);
     CHECK(RevertTitleExit(app0, build).ok && originals());
     CHECK(SetPromptStyle(app0, build, PromptStyle::kXbox, Span(prompts_patch)).ok && SetPromptStyle(app0, build, PromptStyle::kPlayStation, {}).ok &&
@@ -5176,8 +5179,8 @@ void TestTitleExitAssets() {
     CHECK(!cancelled.ok && cancelled.cancelled && originals());
     CHECK(TitleExitPending(app0, build, Span(title_patch)));
 
-    // A copy of the file with other bytes: taken when the blocks the patch changes are the ones it was made from, left
-    // alone when they are not, and refused when two targets would write different bytes into it.
+    // A copy of the file with other bytes: taken when the blocks the patch changes are the ones it was made from, refused
+    // when they are not or when two targets would write different bytes into it.
     const std::string compatible = Painted(atlas, {0x2000}, 'k'), incompatible = Painted(atlas, {0x340}, 'k');
     const BlockPatch parsed = *ParseBlockPatch(Span(title_patch));
     const EntryMatch exact = MatchEntry(parsed, "title.ftx", Span(atlas), Crc32(Span(atlas)));
@@ -5193,13 +5196,29 @@ void TestTitleExitAssets() {
     const std::string stranger = Painted(atlas, {0x4000}, 's');
     const EntryMatch refused = MatchEntry(*ParseBlockPatch(Span(ambiguous_patch)), "title.ftx", Span(stranger), Crc32(Span(stranger)));
     CHECK(refused.state == EntryState::kUnknown && refused.ambiguous);
+    // One title file the patch was not made for keeps every archive of the build original, recorded so it is not
+    // retried until the archive changes.
     WriteAll(app0 / "Odin2_OR_DE.CPK", BuildCpk({{"title.ftx", incompatible, true}}, true));
     const std::string foreign = ReadFile(app0 / "Odin2_OR_DE.CPK");
+    const auto untouched = [&] {
+        return ReadFile(app0 / "Odin2_OR_DE.CPK") == foreign && ReadFile(app0 / "Odin2_RE_DE.CPK") == re_de &&
+               ReadFile(app0 / "Odin2_BT_DE.CPK") == bt && !fs::exists(UndoPath(app0 / "Odin2_OR_DE.CPK", kTitleUndoSuffix)) &&
+               !fs::exists(UndoPath(app0 / "Odin2_RE_DE.CPK", kTitleUndoSuffix));
+    };
+    CHECK(TitleExitPending(app0, build, Span(title_patch)));
     const TitleExitResult skipped = ApplyTitleExit(app0, build, Span(title_patch));
-    CHECK(skipped.ok && ReadFile(app0 / "Odin2_OR_DE.CPK") == foreign && !fs::exists(UndoPath(app0 / "Odin2_OR_DE.CPK", kTitleUndoSuffix)));
+    CHECK(!skipped.ok && skipped.unavailable && !skipped.cancelled && untouched());
+    CHECK(skipped.unsupported.size() == 1 && Contains(skipped.unsupported.front(), "archive Odin2_OR_DE.CPK, entry title.ftx"));
+    std::string why;
+    CHECK(!TitleExitPending(app0, build, Span(title_patch)) && !TitleExitReady(app0, build, Span(title_patch), &why) &&
+          Contains(why, "Odin2_OR_DE.CPK"));
+    CHECK(!ApplyTitleExit(app0, build, Span(title_patch)).ok && untouched());
+    CHECK(TitleExitPending(app0, build, Span(newer)));
+    WriteAll(app0 / "Odin2_OR_DE.CPK", BuildCpk({{"title.ftx", incompatible, true}, {"title.mbs", classic, false}}, true));
+    CHECK(TitleExitPending(app0, build, Span(title_patch)));
     reset();
     WriteAll(app0 / "Odin2_OR_DE.CPK", BuildCpk({{"title.ftx", compatible, true}}, true));
-    CHECK(ApplyTitleExit(app0, build, Span(title_patch)).ok);
+    CHECK(ApplyTitleExit(app0, build, Span(title_patch)).ok && TitleExitReady(app0, build, Span(title_patch)));
     CHECK(entry("Odin2_OR_DE.CPK", "title.ftx") == Painted(compatible, {0x340, 0x1230, 0x5ff0}, 'T'));
     CHECK(RevertTitleExit(app0, build).ok);
     reset();
@@ -5221,6 +5240,18 @@ void TestTitleExitAssets() {
         CHECK(sound);
         const std::set<std::string> expected = {"GUI/HD_title.ftx", "GUI/REHD_title.mbs", "title.ftx", "title.mbs"};
         CHECK(names == expected);
+
+        // English atlases hold one label both menus draw: painted once, Classic no longer overwrites the Refined label's
+        // right end (EXIT GAM). Before the fix these targets changed 529 (USA, Japan) and 510 (UK) blocks.
+        const std::map<uint32_t, size_t> english_runs = {{0xbf7fa72a, 391}, {0x5529e262, 388}, {0x18910f2d, 396}, {0x1d02d31d, 396}};
+        for (const auto& [crc, runs] : english_runs) {
+            for (const char* name : {"GUI/HD_title.ftx", "title.ftx"}) {
+                const auto target = std::find_if(patch->targets.begin(), patch->targets.end(), [&](const BlockPatchTarget& t) {
+                    return t.name == name && t.crc_before == crc;
+                });
+                CHECK(target != patch->targets.end() && target->runs.size() == runs);
+            }
+        }
     }
 
     // The artwork is made from the game's own letters: the generator names no font, and none ships with it.
@@ -5234,6 +5265,166 @@ void TestTitleExitAssets() {
         fonts += extension == ".ttf" || extension == ".otf" || extension == ".woff";
     }
     CHECK(fonts == 0);
+}
+
+namespace title_exit_test {
+
+const BlockPatchTarget* ShippedTarget(const BlockPatch& patch, std::string_view name, uint32_t crc_before) {
+    for (const BlockPatchTarget& target : patch.targets) {
+        if (target.name == name && target.crc_before == crc_before) {
+            return &target;
+        }
+    }
+    return nullptr;
+}
+
+// A copy of the file the target was made from as far as the patch knows it: its source blocks, zeros elsewhere.
+std::string SourceCopy(const BlockPatchTarget& target) {
+    std::string out(target.size, '\0');
+    for (const BlockRun& run : target.runs) {
+        out.replace(run.offset, 16, reinterpret_cast<const char*>(run.original.data()), 16);
+    }
+    return out;
+}
+
+std::string PatchedCopy(const BlockPatchTarget& target, std::string data) {
+    for (const BlockRun& run : target.runs) {
+        data.replace(run.offset, 16, reinterpret_cast<const char*>(run.data.data()), 16);
+    }
+    return data;
+}
+
+} // namespace title_exit_test
+
+// Issue #4: CUSA03873 1.00 HK with Xbox prompts showed INSTALL as the last title row, and choosing it quit. The shipped
+// patch took HK's .mbs files (row order) but not its atlas (label art), and the layer still counted as installed.
+void TestIssue4TitleExitInstallLabel() {
+    using namespace cpk_test;
+    using namespace title_exit_test;
+    const GameBuild* hk = BuildWithLabel("CUSA03873 1.00 HK");
+    const std::string title_patch = ReadFile(std::filesystem::path(OSL_SOURCE_DIR) / "launcher" / "title" / "title-exit.dcpx");
+    const std::optional<BlockPatch> shipped = ParseBlockPatch(Span(title_patch));
+    CHECK(hk && shipped);
+    if (!hk || !shipped) {
+        return;
+    }
+    // The USA copies stand in for HK's: its prompts already take the USA art (kHkPromptProfiles).
+    const BlockPatchTarget* atlas_target = ShippedTarget(*shipped, "GUI/HD_title.ftx", 0xbf7fa72a);
+    const BlockPatchTarget* refined_target = ShippedTarget(*shipped, "GUI/REHD_title.mbs", 0xcb49d54c);
+    const BlockPatchTarget* classic_target = ShippedTarget(*shipped, "title.mbs", 0x24c6ab07);
+    CHECK(atlas_target && refined_target && classic_target);
+    if (!atlas_target || !refined_target || !classic_target) {
+        return;
+    }
+    const std::string atlas = SourceCopy(*atlas_target), refined = SourceCopy(*refined_target), classic = SourceCopy(*classic_target);
+    std::string hk_atlas = atlas; // the same art encoded differently in one replaced block
+    hk_atlas[atlas_target->runs.front().offset] ^= 0x5a;
+    const std::string refined_rows = PatchedCopy(*refined_target, refined), classic_rows = PatchedCopy(*classic_target, classic);
+    const std::string exit_art = PatchedCopy(*atlas_target, atlas);
+    CHECK(MatchEntry(*shipped, "GUI/REHD_title.mbs", Span(refined), Crc32(Span(refined))).state == EntryState::kOriginal);
+    CHECK(MatchEntry(*shipped, "title.mbs", Span(classic), Crc32(Span(classic))).state == EntryState::kOriginal);
+    CHECK(MatchEntry(*shipped, "GUI/HD_title.ftx", Span(atlas), Crc32(Span(atlas))).state == EntryState::kOriginal);
+    CHECK(MatchEntry(*shipped, "GUI/HD_title.ftx", Span(hk_atlas), Crc32(Span(hk_atlas))).state == EntryState::kUnknown);
+
+    const std::string iface = Pattern(20480, 7), iface_x = Painted(iface, {0x340, 0x1000}, 'X');
+    const std::string prompts_patch = MakePatch({{"Interface.ftx", {iface, iface_x}}, {"GUI/HD_Interface.ftx", {iface, iface_x}}});
+    const std::string bt = BuildCpk({{"other/x.bin", "BOOT" + std::string(600, '\0'), false}}, false);
+    const auto classic_archive = [&](const std::string& art) {
+        return BuildCpk({{"Interface.ftx", iface, true}, {"title.ftx", art, false}, {"title.mbs", classic, false}}, true);
+    };
+    const auto refined_archive = [&](const std::string& art) {
+        return BuildCpk({{"GUI/HD_Interface.ftx", iface, true}, {"GUI/HD_title.ftx", art, false}, {"GUI/REHD_title.mbs", refined, false}},
+                        false);
+    };
+    const fs::path app0 = TempDir("issue-4-title") / "app0";
+    fs::create_directories(app0);
+    const fs::path bt_cpk = app0 / "Odin2_BT_CN.CPK", or_cpk = app0 / "Odin2_OR_CN.CPK", re_cpk = app0 / "Odin2_RE_CN.CPK";
+    std::string or_cn = classic_archive(hk_atlas), re_cn = refined_archive(hk_atlas);
+    WriteAll(bt_cpk, bt);
+    WriteAll(or_cpk, or_cn);
+    WriteAll(re_cpk, re_cn);
+    const auto entry = [](const fs::path& archive, const char* name) {
+        CpkArchive cpk;
+        const CpkEntry* found = cpk.Open(archive) ? cpk.Find(name) : nullptr;
+        return found ? Bytes(cpk.Read(*found)) : std::string();
+    };
+    const auto originals = [&] { return ReadFile(bt_cpk) == bt && ReadFile(or_cpk) == or_cn && ReadFile(re_cpk) == re_cn; };
+    const auto prompts_are = [&](const std::string& art) {
+        return entry(or_cpk, "Interface.ftx") == art && entry(re_cpk, "GUI/HD_Interface.ftx") == art && ReadFile(bt_cpk) == bt;
+    };
+    const auto no_title_layer = [&] {
+        return !fs::exists(UndoPath(or_cpk, kTitleUndoSuffix)) && !fs::exists(UndoPath(re_cpk, kTitleUndoSuffix));
+    };
+
+    // The state 0.2.3 left: Xbox prompts, then the title layer with the atlases skipped and the rest applied.
+    CHECK(SetPromptStyle(app0, *hk, PromptStyle::kXbox, Span(prompts_patch)).ok);
+    char stamp[16];
+    std::snprintf(stamp, sizeof(stamp), "%08x", Crc32(Span(title_patch)));
+    for (const fs::path& archive : {or_cpk, re_cpk}) {
+        const PatchResult old = ApplyBlockPatch(archive, *shipped, {}, kTitleUndoSuffix);
+        CHECK(old.ok && old.patched == 1 && old.skipped == 1);
+        WriteAll(UndoPath(archive, ".title.stamp"), stamp);
+    }
+    CHECK(entry(re_cpk, "GUI/REHD_title.mbs") == refined_rows && entry(or_cpk, "title.mbs") == classic_rows);
+    CHECK(entry(re_cpk, "GUI/HD_title.ftx") == hk_atlas && entry(or_cpk, "title.ftx") == hk_atlas);
+    std::string why;
+    CHECK(TitleExitPending(app0, *hk, Span(title_patch)) && !TitleExitReady(app0, *hk, Span(title_patch), &why) &&
+          Contains(why, "not installed"));
+
+    // The launcher's next start (Xbox saved, title layer pending): the menu and its art stay the game's own, the prompts
+    // stay Xbox, the Exit Game row stays off, and the log names both atlases.
+    const auto original_menu = [&] {
+        return entry(re_cpk, "GUI/REHD_title.mbs") == refined && entry(or_cpk, "title.mbs") == classic &&
+               entry(re_cpk, "GUI/HD_title.ftx") == hk_atlas && entry(or_cpk, "title.ftx") == hk_atlas && no_title_layer() &&
+               !TitleExitPending(app0, *hk, Span(title_patch)) && !TitleExitReady(app0, *hk, Span(title_patch));
+    };
+    const auto names_both_atlases = [](const PromptsResult& result) {
+        return result.title_unsupported.size() == 2 &&
+               Contains(result.title_unsupported[0], "build CUSA03873 1.00 HK, archive Odin2_OR_CN.CPK, entry title.ftx") &&
+               Contains(result.title_unsupported[1], "build CUSA03873 1.00 HK, archive Odin2_RE_CN.CPK, entry GUI/HD_title.ftx");
+    };
+    PromptsResult switched = SetPromptStyle(app0, *hk, PromptStyle::kXbox, Span(prompts_patch), {}, Span(title_patch));
+    CHECK(switched.ok && names_both_atlases(switched) && Contains(switched.detail, "title menu: unavailable"));
+    CHECK(InstalledPromptStyle(app0, *hk, Span(prompts_patch)) == PromptStyle::kXbox && prompts_are(iface_x) && original_menu());
+
+    switched = SetPromptStyle(app0, *hk, PromptStyle::kPlayStation, {}, {}, Span(title_patch));
+    CHECK(switched.ok && names_both_atlases(switched) && !AnyPromptPatch(app0, *hk) && originals() && original_menu());
+    switched = SetPromptStyle(app0, *hk, PromptStyle::kXbox, Span(prompts_patch), {}, Span(title_patch));
+    CHECK(switched.ok && InstalledPromptStyle(app0, *hk, Span(prompts_patch)) == PromptStyle::kXbox && prompts_are(iface_x) &&
+          original_menu());
+    CHECK(SetPromptStyle(app0, *hk, PromptStyle::kPlayStation, {}, {}, Span(title_patch)).ok && originals());
+
+    // Art the patch was made for: both menus show EXIT GAME, through every prompts change, over the prompts layer.
+    or_cn = classic_archive(atlas);
+    re_cn = refined_archive(atlas);
+    WriteAll(or_cpk, or_cn);
+    WriteAll(re_cpk, re_cn);
+    CHECK(TitleExitPending(app0, *hk, Span(title_patch)));
+    const auto exit_menu = [&] {
+        return entry(re_cpk, "GUI/REHD_title.mbs") == refined_rows && entry(or_cpk, "title.mbs") == classic_rows &&
+               entry(re_cpk, "GUI/HD_title.ftx") == exit_art && entry(or_cpk, "title.ftx") == exit_art &&
+               !TitleExitPending(app0, *hk, Span(title_patch)) && TitleExitReady(app0, *hk, Span(title_patch));
+    };
+    switched = SetPromptStyle(app0, *hk, PromptStyle::kXbox, Span(prompts_patch), {}, Span(title_patch));
+    CHECK(switched.ok && switched.title_unsupported.empty() && prompts_are(iface_x) && exit_menu());
+    CHECK(fs::exists(UndoPath(or_cpk)) && fs::exists(UndoPath(or_cpk, kTitleUndoSuffix)) && !fs::exists(UndoPath(bt_cpk)));
+    switched = SetPromptStyle(app0, *hk, PromptStyle::kPlayStation, {}, {}, Span(title_patch));
+    CHECK(switched.ok && !AnyPromptPatch(app0, *hk) && prompts_are(iface) && exit_menu());
+    switched = SetPromptStyle(app0, *hk, PromptStyle::kXbox, Span(prompts_patch), {}, Span(title_patch));
+    CHECK(switched.ok && InstalledPromptStyle(app0, *hk, Span(prompts_patch)) == PromptStyle::kXbox && prompts_are(iface_x) &&
+          exit_menu());
+    CHECK(RevertTitleExit(app0, *hk).ok && SetPromptStyle(app0, *hk, PromptStyle::kPlayStation, {}).ok && originals() &&
+          no_title_layer());
+
+    // One implementation for Windows and Linux, and the loader asks before it turns the row on.
+    const std::filesystem::path root = OSL_SOURCE_DIR;
+    for (const char* file : {"launcher/title_exit_assets.cpp", "launcher/controller_prompts.cpp"}) {
+        const std::string text = ReadFile(root / file);
+        CHECK(!text.empty() && !Contains(text, "_WIN32") && !Contains(text, "windows.h") && !Contains(text, "__linux__"));
+    }
+    const std::string loader = ReadFile(root / "src" / "loader.c");
+    const size_t gate = loader.find("if (!osl_title_exit_assets_ready(app0,image_dir,error,sizeof(error)))");
+    CHECK(gate != std::string::npos && gate < loader.find("osl_apply_title_menu_exit(image,size"));
 }
 
 struct TitleExitFixture {
@@ -5563,7 +5754,407 @@ void TestUnsupportedPackageDiagnostics() {
 
 } // namespace
 
-int main() {
+namespace title_art {
+
+namespace fs = std::filesystem;
+
+bool g_report = false;
+constexpr char kOldPatchStamp[] = "621981ab";
+
+void Row(const GameBuild& build, const std::string& subject, const std::string& result, const std::string& source,
+         const std::string& note = {}) {
+    if (g_report) {
+        std::printf("TITLEART|%s|%s|%s|%s|%s\n", build.label, subject.c_str(), result.c_str(), source.c_str(), note.c_str());
+    }
+}
+
+bool Verdict(const GameBuild& build, const std::string& subject, bool ok, const std::string& reason) {
+    ++g_checks;
+    if (!ok) {
+        ++g_failures;
+        std::printf("TITLEART|%s|%s|FAIL: %s|checks|\n", build.label, subject.c_str(), reason.c_str());
+    }
+    return ok;
+}
+
+uint32_t Crc32Update(uint32_t crc, const unsigned char* data, size_t size) {
+    static const auto tables = [] {
+        std::array<std::array<uint32_t, 256>, 8> t{};
+        for (uint32_t i = 0; i < 256; ++i) {
+            uint32_t c = i;
+            for (int k = 0; k < 8; ++k) c = c & 1 ? 0xedb88320u ^ (c >> 1) : c >> 1;
+            t[0][i] = c;
+        }
+        for (uint32_t i = 0; i < 256; ++i) {
+            for (int s = 1; s < 8; ++s) t[s][i] = t[0][t[s - 1][i] & 255] ^ (t[s - 1][i] >> 8);
+        }
+        return t;
+    }();
+    crc = ~crc;
+    for (; size >= 8; size -= 8, data += 8) {
+        uint32_t a, b;
+        std::memcpy(&a, data, 4);
+        std::memcpy(&b, data + 4, 4);
+        a ^= crc;
+        crc = tables[7][a & 255] ^ tables[6][(a >> 8) & 255] ^ tables[5][(a >> 16) & 255] ^ tables[4][a >> 24] ^
+              tables[3][b & 255] ^ tables[2][(b >> 8) & 255] ^ tables[1][(b >> 16) & 255] ^ tables[0][b >> 24];
+    }
+    for (; size; --size, ++data) crc = tables[0][(crc ^ *data) & 255] ^ (crc >> 8);
+    return ~crc;
+}
+
+uint32_t FileCrc(const fs::path& file) {
+    std::ifstream in(file, std::ios::binary);
+    std::vector<unsigned char> buffer(4u << 20);
+    uint32_t crc = 0;
+    while (in) {
+        in.read(reinterpret_cast<char*>(buffer.data()), std::streamsize(buffer.size()));
+        crc = Crc32Update(crc, buffer.data(), size_t(in.gcount()));
+    }
+    return crc;
+}
+
+struct FileState {
+    uintmax_t size = 0;
+    fs::file_time_type written{};
+    uint32_t crc = 0;
+    bool operator==(const FileState& other) const { return size == other.size && written == other.written && crc == other.crc; }
+};
+
+FileState StateOf(const fs::path& file) {
+    std::error_code ec;
+    return {fs::file_size(file, ec), fs::last_write_time(file, ec), FileCrc(file)};
+}
+
+std::string Stamp(std::span<const uint8_t> patch) {
+    char text[16];
+    std::snprintf(text, sizeof(text), "%08x", Crc32(patch));
+    return text;
+}
+
+std::vector<std::string> SidecarNames(const std::string& archive) {
+    return {archive, archive + ".undo", archive + ".title.undo", archive + ".title.stamp"};
+}
+
+bool IsRefinedArchive(const std::string& name) {
+    return name.find("_RE") != std::string::npos;
+}
+
+std::vector<std::string> TitleArchiveNames(const GameBuild& build) {
+    std::vector<std::string> names;
+    for (const char* name : build.data_files) {
+        const std::string text = name;
+        if (text.find("_BT") == std::string::npos && text.find("BOOT") == std::string::npos) names.push_back(text);
+    }
+    return names;
+}
+
+// Synthetic stand-ins for the build's own archives: the title and button art entries of each, nothing else.
+struct Synthetic {
+    std::string atlas = cpk_test::Pattern(24576, 5), atlas_x, refined = cpk_test::Pattern(8192, 9), refined_x;
+    std::string classic = cpk_test::Pattern(6144, 3), classic_x, iface = cpk_test::Pattern(20480, 7), iface_x;
+    std::string title_patch, prompts_patch, bt = "BOOT" + std::string(600, '\0');
+
+    Synthetic() {
+        using namespace cpk_test;
+        atlas_x = Painted(atlas, {0x340, 0x1230, 0x5ff0}, 'T');
+        refined_x = Painted(refined, {0x80, 0x1000}, 'R');
+        classic_x = Painted(classic, {0x40}, 'C');
+        iface_x = Painted(iface, {0x340, 0x1000}, 'X');
+        title_patch = MakePatch({{"title.ftx", {atlas, atlas_x}},
+                                 {"GUI/HD_title.ftx", {atlas, atlas_x}},
+                                 {"GUI/REHD_title.mbs", {refined, refined_x}},
+                                 {"title.mbs", {classic, classic_x}}});
+        prompts_patch = MakePatch({{"Interface.ftx", {iface, iface_x}}, {"GUI/HD_Interface.ftx", {iface, iface_x}}});
+    }
+
+    std::string Archive(const std::string& name, const std::string& art) const {
+        using namespace cpk_test;
+        if (name.find("_BT") != std::string::npos || name.find("BOOT") != std::string::npos) {
+            return BuildCpk({{"other/x.bin", bt, false}}, false);
+        }
+        if (IsRefinedArchive(name)) {
+            return BuildCpk({{"GUI/HD_Interface.ftx", iface, true}, {"GUI/HD_title.ftx", art, false}, {"GUI/REHD_title.mbs", refined, false}}, false);
+        }
+        return BuildCpk({{"Interface.ftx", iface, true}, {"title.ftx", art, false}, {"title.mbs", classic, false}}, true);
+    }
+};
+
+std::string EntryBytes(const fs::path& archive, const char* name) {
+    CpkArchive cpk;
+    const CpkEntry* found = cpk.Open(archive) ? cpk.Find(name) : nullptr;
+    return found ? cpk_test::Bytes(cpk.Read(*found)) : std::string();
+}
+
+void WriteImageReport(const fs::path& dir, const GameBuild& build) {
+    fs::create_directories(dir);
+    std::ofstream(dir / "image.json") << "{\n  \"title_id\": \"" << build.title_id << "\",\n  \"app_ver\": \"" << FinishedLayer(build).app_ver
+                                      << "\",\n  \"eboot_sha256\": \"" << build.eboot_sha256 << "\"\n}\n";
+}
+
+// Every build from SupportedBuilds, with its own archive names: an active Exit Game row needs every title file
+// updated; art the patch was not made for leaves the originals and keeps the row off, whatever the prompts.
+void CheckStructure(const GameBuild& build) {
+    using namespace cpk_test;
+    const Synthetic data;
+    const std::string label = build.label;
+    std::string folder = build.folder;
+    const fs::path root = TempDir(("title-art-structure-" + folder).c_str());
+    const fs::path app0 = root / "app0", image = root / "image";
+    fs::create_directories(app0);
+    WriteImageReport(image, build);
+    const std::vector<std::string> names = TitleArchiveNames(build);
+    const std::span<const uint8_t> patch = Span(data.title_patch), prompts = Span(data.prompts_patch);
+    const auto write_all = [&](const std::string& art) {
+        for (const char* name : build.data_files) {
+            for (const std::string& file : SidecarNames(name)) fs::remove(app0 / file);
+            WriteAll(app0 / name, data.Archive(name, art));
+        }
+    };
+    const auto gate = [&] { return TitleExitAssetsReady(app0.string().c_str(), image.string().c_str(), patch); };
+    const auto entries_are = [&](bool title_patched, bool prompts_patched) {
+        for (const std::string& name : names) {
+            const bool refined = IsRefinedArchive(name);
+            const std::string atlas = EntryBytes(app0 / name, refined ? "GUI/HD_title.ftx" : "title.ftx");
+            const std::string mbs = EntryBytes(app0 / name, refined ? "GUI/REHD_title.mbs" : "title.mbs");
+            const std::string button = EntryBytes(app0 / name, refined ? "GUI/HD_Interface.ftx" : "Interface.ftx");
+            if (atlas != (title_patched ? data.atlas_x : data.atlas) ||
+                mbs != (refined ? (title_patched ? data.refined_x : data.refined) : (title_patched ? data.classic_x : data.classic)) ||
+                button != (prompts_patched ? data.iface_x : data.iface)) {
+                return false;
+            }
+        }
+        return true;
+    };
+    const auto bytes_of = [&] {
+        std::map<std::string, std::string> all;
+        for (const char* name : build.data_files) all[name] = ReadFile(app0 / name);
+        return all;
+    };
+
+    // Art the patch was made for: active in both prompt states, kept through every switch, removed byte for byte.
+    write_all(data.atlas);
+    const auto pristine = bytes_of();
+    Verdict(build, "structure", !gate() && TitleExitPending(app0, build, patch), "Exit Game gate open before the title art update");
+    Verdict(build, "structure", ApplyTitleExit(app0, build, patch).ok && gate() && entries_are(true, false), "supported title art not applied to every archive");
+    bool layered = SetPromptStyle(app0, build, PromptStyle::kXbox, prompts, {}, patch).ok && gate() && entries_are(true, true);
+    layered = layered && SetPromptStyle(app0, build, PromptStyle::kPlayStation, prompts, {}, patch).ok && gate() && entries_are(true, false);
+    layered = layered && SetPromptStyle(app0, build, PromptStyle::kXbox, prompts, {}, patch).ok && gate() && entries_are(true, true);
+    Verdict(build, "structure", layered, "prompt switching lost the title art or the prompts");
+    Verdict(build, "structure", RevertTitleExit(app0, build).ok && !gate() && SetPromptStyle(app0, build, PromptStyle::kPlayStation, prompts).ok && bytes_of() == pristine,
+            "rollback is not byte-identical");
+
+    // The state 0.2.3 left on a build whose title art the patch does not know: the menu files updated, an atlas skipped.
+    std::string unsupported = Painted(data.atlas, {0x340}, 'k');
+    write_all(unsupported);
+    const auto original_menu = bytes_of();
+    PatchHooks none;
+    const BlockPatch parsed = *ParseBlockPatch(patch);
+    for (const std::string& name : names) {
+        Verdict(build, "unsupported art", ApplyBlockPatch(app0 / name, parsed, none, kTitleUndoSuffix).ok, "cannot set up the 0.2.3 half-patched state");
+        std::ofstream(UndoPath(app0 / name, ".title.stamp"), std::ios::trunc) << Stamp(patch);
+    }
+    Verdict(build, "unsupported art", TitleExitPending(app0, build, patch) && !gate(), "a half-patched title layer counts as installed");
+    PromptsResult result = SetPromptStyle(app0, build, PromptStyle::kXbox, prompts, {}, patch);
+    Verdict(build, "unsupported art", result.ok && InstalledPromptStyle(app0, build, prompts) == PromptStyle::kXbox, "prompts do not switch beside unsupported title art");
+    Verdict(build, "unsupported art", !gate() && !TitleExitReady(app0, build, patch) && !result.title_unsupported.empty(),
+            "Exit Game gate open, or the unsupported file is not named");
+    bool menu_original = true;
+    for (const std::string& name : names) {
+        const bool refined = IsRefinedArchive(name);
+        menu_original &= EntryBytes(app0 / name, refined ? "GUI/HD_title.ftx" : "title.ftx") == unsupported &&
+                         EntryBytes(app0 / name, refined ? "GUI/REHD_title.mbs" : "title.mbs") == (refined ? data.refined : data.classic) &&
+                         !fs::exists(UndoPath(app0 / name, kTitleUndoSuffix));
+    }
+    Verdict(build, "unsupported art", menu_original, "a menu file or atlas is left half-patched");
+    Verdict(build, "unsupported art", SetPromptStyle(app0, build, PromptStyle::kPlayStation, prompts, {}, patch).ok && bytes_of() == original_menu,
+            "the original menu is not restored byte for byte");
+    Row(build, "structure", "PASS", "synthetic archives of its data files",
+        "active in both prompt states; unsupported art keeps the row off and the menu original");
+}
+
+struct TitleEntry {
+    std::string archive, name;
+    size_t size = 0;
+    uint32_t crc = 0;
+};
+
+std::vector<TitleEntry> TitleEntries(const fs::path& app0, const GameBuild& build, const BlockPatch& patch) {
+    std::vector<TitleEntry> out;
+    for (const fs::path& archive : PromptArchives(app0, build, patch)) {
+        CpkArchive cpk;
+        if (!cpk.Open(archive)) continue;
+        for (const char* name : {"GUI/HD_title.ftx", "GUI/REHD_title.mbs", "title.ftx", "title.mbs"}) {
+            if (const CpkEntry* entry = cpk.Find(name)) {
+                const std::vector<uint8_t> data = cpk.Read(*entry);
+                out.push_back({archive.filename().string(), entry->path, data.size(), Crc32(data)});
+            }
+        }
+    }
+    return out;
+}
+
+// Every title entry is the copy of the target that `after` selects (the original, or the patched one).
+std::string UnexpectedEntry(const std::vector<TitleEntry>& entries, const BlockPatch& patch, bool after) {
+    for (const TitleEntry& entry : entries) {
+        const bool known = std::any_of(patch.targets.begin(), patch.targets.end(), [&](const BlockPatchTarget& t) {
+            return t.name == entry.name && t.size == entry.size && entry.crc == (after ? t.crc_after : t.crc_before);
+        });
+        if (!known) {
+            char text[160];
+            std::snprintf(text, sizeof(text), "%s %s size %zu CRC32 %08x is not the %s copy of any target", entry.archive.c_str(),
+                          entry.name.c_str(), entry.size, entry.crc, after ? "patched" : "original");
+            return text;
+        }
+    }
+    return entries.empty() ? "no title entry found" : std::string();
+}
+
+BlockPatch PatchWithOldEnglish(const BlockPatch& shipped, const BlockPatch& old_targets) {
+    BlockPatch out = shipped;
+    for (BlockPatchTarget& target : out.targets) {
+        for (const BlockPatchTarget& old : old_targets.targets) {
+            if (old.name == target.name && old.size == target.size && old.crc_before == target.crc_before) target = old;
+        }
+    }
+    return out;
+}
+
+// The real prepared archives of the build, copied: original -> title art -> Xbox -> PlayStation -> rollback, and the
+// 0.2.3 English layer replaced. The prepared folder is only read; its files must be the same afterwards.
+void CheckRealFiles(const GameBuild& build, const std::string& title_bytes, const std::string& xbox_bytes) {
+    using namespace cpk_test;
+    const BlockPatch shipped = *ParseBlockPatch(Span(title_bytes));
+    const fs::path source = fs::path(OSL_SOURCE_DIR) / "game" / "prepared" / build.folder;
+    std::error_code ec;
+    const std::vector<fs::path> sources = fs::is_directory(source, ec) ? PromptArchives(source, build, shipped) : std::vector<fs::path>{};
+    if (sources.empty()) {
+        Row(build, "real files", "DATA UNAVAILABLE", fs::is_directory(source, ec) ? "no prepared title archives" : "no prepared folder",
+            "structure only");
+        return;
+    }
+    const fs::path app0 = TempDir(("title-art-real-" + std::string(build.folder)).c_str()) / "app0";
+    fs::create_directories(app0);
+    std::vector<std::string> names;
+    std::map<std::string, FileState> before;
+    for (const fs::path& archive : sources) {
+        const std::string name = archive.filename().string();
+        names.push_back(name);
+        before[name] = StateOf(archive);
+        for (const std::string& file : SidecarNames(name)) {
+            if (fs::exists(source / file)) fs::copy_file(source / file, app0 / file, fs::copy_options::overwrite_existing);
+        }
+    }
+    std::vector<const char*> data_files;
+    for (const std::string& name : names) data_files.push_back(name.c_str());
+    GameBuild copy = build;
+    copy.data_files = data_files;
+
+    const std::span<const uint8_t> patch = Span(title_bytes), xbox = Span(xbox_bytes);
+    const auto state_of_copies = [&] {
+        std::map<std::string, uint32_t> crcs;
+        for (const std::string& name : names) crcs[name] = FileCrc(app0 / name);
+        return crcs;
+    };
+    const auto ready = [&] { return TitleExitReady(app0, copy, patch) && !TitleExitPending(app0, copy, patch); };
+
+    Verdict(build, "real files", RevertTitleExit(app0, copy).ok && SetPromptStyle(app0, copy, PromptStyle::kPlayStation, xbox).ok,
+            "cannot bring the copies back to the original");
+    const auto pristine = state_of_copies();
+    std::string why = UnexpectedEntry(TitleEntries(app0, copy, shipped), shipped, false);
+    Verdict(build, "real files", why.empty(), "unsupported title art in the prepared original: " + why);
+    if (!why.empty()) {
+        Row(build, "real files", "FAIL: unsupported title art", "prepared archives", why);
+        return;
+    }
+
+    const TitleExitResult applied = ApplyTitleExit(app0, copy, patch);
+    why = UnexpectedEntry(TitleEntries(app0, copy, shipped), shipped, true);
+    Verdict(build, "real files", applied.ok && why.empty() && ready(), "title art not applied to the real archives: " + applied.detail + why);
+    bool layered = SetPromptStyle(app0, copy, PromptStyle::kXbox, xbox, {}, patch).ok && InstalledPromptStyle(app0, copy, xbox) == PromptStyle::kXbox;
+    layered = layered && ready() && UnexpectedEntry(TitleEntries(app0, copy, shipped), shipped, true).empty();
+    layered = layered && SetPromptStyle(app0, copy, PromptStyle::kPlayStation, xbox, {}, patch).ok && !AnyPromptPatch(app0, copy);
+    layered = layered && ready() && UnexpectedEntry(TitleEntries(app0, copy, shipped), shipped, true).empty();
+    Verdict(build, "real files", layered, "prompt switching lost the title art on the real archives");
+    Verdict(build, "real files", SetPromptStyle(app0, copy, PromptStyle::kXbox, xbox, {}, patch).ok && ready(), "Xbox after PlayStation lost the title art");
+
+    // The 0.2.3 layer: the English atlases painted as EXIT GAM, replaced in place by the current patch.
+    const std::string fixture = ReadFile(fs::path(OSL_SOURCE_DIR) / "tests" / "fixtures" / "title-exit-0.2.3-english.dcpx");
+    const std::optional<BlockPatch> old_targets = ParseBlockPatch(Span(fixture));
+    Verdict(build, "0.2.3 migration", old_targets.has_value(), "the 0.2.3 English fixture is unreadable");
+    std::string migration = "no 0.2.3 English art in this build";
+    if (old_targets && RevertTitleExit(app0, copy).ok) {
+        const std::vector<TitleEntry> originals = TitleEntries(app0, copy, shipped);
+        Verdict(build, "0.2.3 migration", UnexpectedEntry(originals, shipped, false).empty(), "cannot reach the original before the 0.2.3 layer");
+        const bool english = std::any_of(originals.begin(), originals.end(), [&](const TitleEntry& entry) {
+            return std::any_of(old_targets->targets.begin(), old_targets->targets.end(), [&](const BlockPatchTarget& t) {
+                return t.name == entry.name && t.size == entry.size && t.crc_before == entry.crc;
+            });
+        });
+        if (english) {
+            const BlockPatch old_patch = PatchWithOldEnglish(shipped, *old_targets);
+            bool layered_old = true;
+            for (const std::string& name : names) {
+                layered_old &= ApplyBlockPatch(app0 / name, old_patch, {}, kTitleUndoSuffix).ok;
+                std::ofstream(UndoPath(app0 / name, ".title.stamp"), std::ios::trunc) << kOldPatchStamp;
+            }
+            Verdict(build, "0.2.3 migration", layered_old && TitleExitPending(app0, copy, patch) && !TitleExitReady(app0, copy, patch),
+                    "the 0.2.3 title layer is not seen as stale");
+            const TitleExitResult replaced = ApplyTitleExit(app0, copy, patch);
+            Verdict(build, "0.2.3 migration", replaced.ok && ready() && UnexpectedEntry(TitleEntries(app0, copy, shipped), shipped, true).empty(),
+                    "the current patch did not replace the 0.2.3 layer: " + replaced.detail);
+            Verdict(build, "0.2.3 migration", SetPromptStyle(app0, copy, PromptStyle::kXbox, xbox, {}, patch).ok && ready() &&
+                    InstalledPromptStyle(app0, copy, xbox) == PromptStyle::kXbox, "prompts lost after replacing the 0.2.3 layer");
+            migration = "0.2.3 English layer replaced, prompts intact";
+        }
+    }
+
+    Verdict(build, "real files", RevertTitleExit(app0, copy).ok && SetPromptStyle(app0, copy, PromptStyle::kPlayStation, xbox).ok && state_of_copies() == pristine,
+            "rollback is not byte-identical to the prepared original");
+    std::map<std::string, FileState> after;
+    for (const std::string& name : names) after[name] = StateOf(source / name);
+    Verdict(build, "real files", before == after, "the prepared folder changed");
+    Row(build, "real files", "PASS", "temporary copies of " + std::to_string(names.size()) + " prepared archive(s)",
+        "original -> title -> Xbox -> PlayStation -> rollback; " + migration + "; prepared files unchanged (size, mtime, CRC32)");
+}
+
+void WriteManifest(const fs::path& file) {
+    std::ofstream out(file, std::ios::trunc);
+    for (const GameBuild& build : SupportedBuilds()) {
+        out << build.label << '\t' << build.folder << '\t';
+        for (size_t i = 0; i < build.data_files.size(); ++i) out << (i ? ";" : "") << build.data_files[i];
+        out << '\t';
+        const std::span<const TextLanguage> languages = TextLanguagesOf(&build);
+        for (size_t i = 0; i < languages.size(); ++i) out << (i ? ";" : "") << languages[i].key << '=' << languages[i].name;
+        out << '\n';
+    }
+}
+
+} // namespace title_art
+
+void TestTitleArtStructure() {
+    for (const GameBuild& build : SupportedBuilds()) title_art::CheckStructure(build);
+}
+
+int RunTitleArtReport(const char* manifest) {
+    title_art::g_report = true;
+    title_art::WriteManifest(manifest);
+    const std::filesystem::path root = std::filesystem::path(OSL_SOURCE_DIR);
+    const std::string title = ReadFile(root / "launcher" / "title" / "title-exit.dcpx");
+    const std::string xbox = ReadFile(root / "launcher" / "prompts" / "xbox-prompts.dcpx");
+    CHECK(ParseBlockPatch(cpk_test::Span(title)).has_value() && ParseBlockPatch(cpk_test::Span(xbox)).has_value());
+    for (const GameBuild& build : SupportedBuilds()) {
+        title_art::CheckStructure(build);
+        title_art::CheckRealFiles(build, title, xbox);
+    }
+    std::printf("%s (%d checks, %d failures)\n", g_failures ? "FAILED" : "OK", g_checks, g_failures);
+    return g_failures ? 1 : 0;
+}
+
+int main(int argc, char** argv) {
+    if (argc >= 3 && std::strcmp(argv[1], "--title-art") == 0) {
+        return RunTitleArtReport(argv[2]);
+    }
     TestBranding();
     TestProfile();
     TestBuildMetadata();
@@ -5626,6 +6217,8 @@ int main() {
     TestBuildMappingDiagnostics();
     TestTitleMenuExit();
     TestTitleExitAssets();
+    TestIssue4TitleExitInstallLabel();
+    TestTitleArtStructure();
     PrintParitySummary();
     std::printf("%s (%d checks, %d failures)\n", g_failures ? "FAILED" : "OK", g_checks, g_failures);
     runtime_log_flush();
