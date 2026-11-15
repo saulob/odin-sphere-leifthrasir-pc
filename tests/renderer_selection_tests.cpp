@@ -1,11 +1,15 @@
 // Renderer selection tests: the Renderer setting, Auto's fallback and the OpenGL requirements. Pure logic plus the
 // sources that must agree with it: no window, no OpenGL or Vulkan context, no game files.
 #include <cstdio>
+#include <cstdint>
 #include <fstream>
+#include <functional>
+#include <optional>
 #include <sstream>
 #include <string>
 
 #include "osl_renderer.h"
+#include "osl_vulkan_support.h"
 #include "video_core/renderer_opengl/gl_capabilities.h"
 #include "video_core/renderer_opengl/gl_primitives.h"
 
@@ -276,6 +280,160 @@ void TestGlesRequirements() {
     CHECK(!IsAngleDirect3D11("NVIDIA GeForce RTX 4070/PCIe/SSE2"));
 }
 
+// Vulkan decisions without a loader or a device: each step the probe may take is counted, so a test sees which ran.
+struct FakeVulkan {
+    bool loader = true;
+    std::uint32_t version = OslVulkan::Version(1, 3);
+    OslVulkan::DeviceProbe devices{OslVulkan::InstanceStatus::Created, {}, 1, 1};
+    int versions_asked = 0;
+    int instances_made = 0;
+
+    std::optional<OslVulkan::Problem> Find() {
+        const OslVulkan::Probe probe{[this] { return loader; },
+                                     [this] {
+                                         ++versions_asked;
+                                         return version;
+                                     },
+                                     [this] {
+                                         ++instances_made;
+                                         return devices;
+                                     }};
+        return OslVulkan::FindProblem(probe, OslVulkan::Version(1, 3));
+    }
+};
+
+void TestVulkanVersions() {
+    using namespace OslVulkan;
+    CHECK(Major(Version(1, 3)) == 1 && Minor(Version(1, 3)) == 3);
+    CHECK(Version(1, 3) == (1u << 22 | 3u << 12));
+    for (const std::uint32_t minor : {0u, 1u, 2u}) {
+        FakeVulkan vulkan;
+        vulkan.version = Version(1, minor);
+        const auto problem = vulkan.Find();
+        CHECK(problem.has_value());
+        CHECK(problem && problem->cause.find("supports only 1." + std::to_string(minor)) != std::string::npos);
+        CHECK(problem && problem->cause.find("Vulkan 1.3 or newer is required") != std::string::npos);
+        CHECK(problem && problem->advice.find("another renderer") != std::string::npos);
+        CHECK(vulkan.instances_made == 0);
+    }
+    for (const std::uint32_t minor : {3u, 4u}) {
+        FakeVulkan vulkan;
+        vulkan.version = Version(1, minor);
+        CHECK(!vulkan.Find().has_value());
+        CHECK(vulkan.instances_made == 1);
+    }
+    FakeVulkan newer_major;
+    newer_major.version = Version(2, 0);
+    CHECK(!newer_major.Find().has_value());
+}
+
+void TestVulkanProbeOutcomes() {
+    using namespace OslVulkan;
+    FakeVulkan no_loader;
+    no_loader.loader = false;
+    const auto missing = no_loader.Find();
+    CHECK(missing && missing->cause.find("not installed") != std::string::npos);
+    CHECK(no_loader.versions_asked == 0 && no_loader.instances_made == 0);
+
+    FakeVulkan incompatible;
+    incompatible.devices.status = InstanceStatus::IncompatibleDriver;
+    CHECK(incompatible.Find().value().cause.find("No Vulkan graphics driver") != std::string::npos);
+
+    FakeVulkan failed;
+    failed.devices.status = InstanceStatus::Failed;
+    failed.devices.failure = "ErrorInitializationFailed";
+    CHECK(failed.Find().value().cause.find("ErrorInitializationFailed") != std::string::npos);
+
+    FakeVulkan none;
+    none.devices.devices = 0;
+    none.devices.usable = 0;
+    CHECK(none.Find().value().cause.find("No Vulkan graphics driver") != std::string::npos);
+
+    FakeVulkan unusable;
+    unusable.devices.devices = 2;
+    unusable.devices.usable = 0;
+    CHECK(unusable.Find().value().cause.find("features the game needs") != std::string::npos);
+
+    FakeVulkan one_of_two;
+    one_of_two.devices.devices = 2;
+    one_of_two.devices.usable = 1;
+    CHECK(!one_of_two.Find().has_value());
+}
+
+// Without Vulkan, only Vulkan chosen by name stops Play; OpenGL, Direct3D 11 and Auto go on.
+void TestVulkanDoesNotGateOtherRenderers() {
+    using namespace OslRenderer;
+    CHECK(!PlayAllowed(Vulkan, false));
+    CHECK(PlayAllowed(Vulkan, true));
+    for (const Choice choice : {OslRenderer::OpenGL, Direct3D11, Auto}) {
+        CHECK(PlayAllowed(choice, false));
+        CHECK(PlayAllowed(choice, true));
+    }
+    CHECK(Resolve(OslRenderer::OpenGL, false, "No Vulkan graphics driver was found.").backend == Backend::OpenGL);
+    CHECK(Resolve(Direct3D11, false, "No Vulkan graphics driver was found.").backend == Backend::Direct3D11);
+    CHECK(Resolve(Auto, false, "No Vulkan graphics driver was found.").backend == Backend::OpenGL);
+
+    const std::string list = ReadAll("gpu/shim/osl_gpu_list.cpp");
+    const size_t check = list.find("extern \"C\" int osl_check_renderer");
+    const size_t gpu_names = list.find("extern \"C\" int osl_gpu_names");
+    CHECK(check != std::string::npos && check < gpu_names);
+    const std::string renderer = list.substr(check, gpu_names - check);
+    CHECK(renderer.find("choice == OslRenderer::OpenGL || choice == OslRenderer::Direct3D11") != std::string::npos);
+    CHECK(renderer.find("OslRenderer::PlayAllowed(choice, vulkan_usable)") != std::string::npos);
+}
+
+// Issue #23: on Windows the Graphics card list went straight to CreateInstance, whose assertion ended the launcher on a
+// Vulkan 1.0 runtime.
+void TestIssue23VulkanOneNeverAsserts() {
+    FakeVulkan vulkan;
+    vulkan.version = OslVulkan::Version(1, 0);
+    const auto problem = vulkan.Find();
+    CHECK(problem && problem->cause.find("supports only 1.0") != std::string::npos);
+    CHECK(vulkan.instances_made == 0);
+
+    const std::string list = ReadAll("gpu/shim/osl_gpu_list.cpp");
+    CHECK(list.find("_WIN32") == std::string::npos);
+    const size_t names = list.find("extern \"C\" int osl_gpu_names");
+    CHECK(names != std::string::npos);
+    const std::string body = list.substr(names);
+    const size_t guard = body.find("if (CheckVulkan())");
+    const size_t instance = body.find("CreateProbeInstance()");
+    CHECK(guard != std::string::npos && instance != std::string::npos && guard < instance);
+    CHECK(list.find("CreateInstance(") == std::string::npos);
+    CHECK(list.find("OslVulkan::FindProblem(probe, TargetVulkanApiVersion)") != std::string::npos);
+    CHECK(ReadAll("gpu/shadps4/video_core/renderer_vulkan/vk_platform.h")
+              .find("constexpr u32 TargetVulkanApiVersion = VK_API_VERSION_1_3;") != std::string::npos);
+
+    const std::string loader = ReadAll("src/loader.c");
+    const size_t launcher = loader.find("OslLauncherConfig launcher=");
+    CHECK(launcher != std::string::npos && loader.find("system_usable,log_path", launcher) != std::string::npos);
+    const size_t usable = loader.find("static int system_usable");
+    const size_t cpu = loader.find("static int cpu_usable");
+    CHECK(cpu != std::string::npos && usable != std::string::npos && cpu < usable);
+    CHECK(loader.substr(cpu, usable - cpu).find("#ifndef _WIN32") == std::string::npos);
+}
+
+// The CPU fallbacks in the issue's log (LZCNT, MOVBE, BMI1) take no part in the Vulkan decision.
+void TestIssue23CpuFallbacksAreSeparate() {
+    const std::string support = ReadAll("gpu/shim/osl_vulkan_support.h");
+    CHECK(support.find("isa") == std::string::npos && support.find("LZCNT") == std::string::npos);
+    const std::string list = ReadAll("gpu/shim/osl_gpu_list.cpp");
+    CHECK(list.find("isa_") == std::string::npos && list.find("cpu_") == std::string::npos);
+}
+
+// Missing game files open the launcher; the renderer starts only after it returned, and Play checks graphics only
+// when the files are ready. The launcher's "direct3d11 renderer" is SDL's own drawing backend.
+void TestMissingGameFilesStartNoRenderer() {
+    const std::string loader = ReadAll("src/loader.c");
+    const size_t launcher = loader.find("osl_launcher_run(&launcher)");
+    const size_t renderer = loader.find("oslgpu_init(&gpu)");
+    CHECK(launcher != std::string::npos && renderer != std::string::npos && launcher < renderer);
+    const std::string window = ReadAll("launcher/launcher.cpp");
+    CHECK(window.find("files_ == GameFileState::kValid && !GraphicsUsable()") != std::string::npos);
+    CHECK(window.find("oslgpu_init") == std::string::npos);
+    CHECK(ReadAll("launcher/host.cpp").find("SDL_GetRendererName(renderer_)") != std::string::npos);
+}
+
 } // namespace
 
 int main() {
@@ -291,6 +449,12 @@ int main() {
     TestLauncherAgrees();
     TestBoundary();
     TestRequirements();
+    TestVulkanVersions();
+    TestVulkanProbeOutcomes();
+    TestVulkanDoesNotGateOtherRenderers();
+    TestIssue23VulkanOneNeverAsserts();
+    TestIssue23CpuFallbacksAreSeparate();
+    TestMissingGameFilesStartNoRenderer();
     std::printf("renderer selection tests: %d checks, %d failures\n", g_checks, g_failures);
     return g_failures ? 1 : 0;
 }

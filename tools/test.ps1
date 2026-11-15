@@ -272,7 +272,7 @@ $steps = @(
     (Step 'Features' 'local trophies' 'osl-trophy-tests'),
     (Step 'Features' 'title menu Exit Game art: every supported build and language, Refined and Classic, never INSTALL on an active row' 'osl-tests' -Block { Invoke-TitleArt $built }),
     (Step 'Graphics' 'GPU tile layouts and addresses' 'osl-tiling-tests'),
-    (Step 'Graphics' 'renderer selection (Auto, Vulkan, OpenGL, Direct3D 11), the window API and the OpenGL requirements' 'osl-renderer-selection-tests'),
+    (Step 'Graphics' 'renderer selection (Auto, Vulkan, OpenGL, Direct3D 11), the Vulkan probe on runtimes 1.0 to 1.4 and without a loader, the window API and the OpenGL requirements' 'osl-renderer-selection-tests'),
     (Step 'Graphics' 'Vulkan buffer arenas without sparse binding: layouts, BDA entries, migration, write after migration, sparse path unchanged (no device)' 'osl-buffer-arena-tests'),
     (Step 'Graphics' 'OpenGL backend (detiler, emitted GLSL through glslang, no context)' 'osl-opengl-backend-tests'),
     (Step 'Graphics' 'OpenGL fast paths (write watch with real faults, state tracker, stream ring, no context)' 'osl-opengl-perf-tests'),

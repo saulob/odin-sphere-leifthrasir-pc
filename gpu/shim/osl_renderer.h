@@ -60,6 +60,11 @@ inline Resolution Resolve(Choice choice, bool vulkan_usable, std::string_view vu
     return {Backend::Vulkan, {}};
 }
 
+/// Play is refused only for Vulkan chosen by name and unable to run; the other renderers do not depend on it.
+inline bool PlayAllowed(Choice choice, bool vulkan_usable) {
+    return choice != Vulkan || vulkan_usable;
+}
+
 inline std::atomic<Backend> active_backend{Backend::Vulkan};
 
 inline std::string& FallbackReasonStorage() {

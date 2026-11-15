@@ -20,8 +20,11 @@ system cannot run Vulkan. A renderer chosen by name never falls back to another 
 game starts. Linux has no Direct3D 11 row, and an unknown or unavailable value reads as Vulkan. **Reset all settings** puts
 Vulkan back. The launcher and the video core share one parser (`gpu/shim/osl_renderer.h`).
 
-On Linux the launcher's Play check asks for Vulkan only when the saved renderer needs it: OpenGL does not, and Auto can do
-without it.
+On Linux and Windows the launcher opens whatever Vulkan the system has: no Vulkan loader, a Vulkan runtime older than 1.3 or no
+usable device leaves the Graphics card list empty and does not stop the launcher. Play asks for Vulkan only when the saved renderer
+needs it: Vulkan itself is refused with the reason and a hint to choose another renderer, while OpenGL, Direct3D 11 and Auto do
+not need it. The launcher window's own "direct3d11 renderer" log line is SDL's drawing backend for the launcher and says nothing
+about the game's renderers.
 
 ## Frame rate
 

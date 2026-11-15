@@ -188,12 +188,10 @@ static int cpu_usable(char *cause, size_t cause_size, char *advice, size_t advic
     snprintf(advice,advice_size,"The game needs an Intel Core 2nd generation (Sandy Bridge), AMD FX or newer processor.");
     return 0;
 }
-#ifndef _WIN32
 static const char *renderer_settings_file;
 static int system_usable(char *cause, size_t cause_size, char *advice, size_t advice_size) {
     return cpu_usable(cause,cause_size,advice,advice_size) && osl_check_renderer(renderer_settings_file,cause,cause_size,advice,advice_size);
 }
-#endif
 /* OSL_EMULATE_LZCNT=1 (test): the LZCNT rewrite also on a host that has LZCNT. */
 static int lzcnt_forced(void) {
     const char *value=getenv("OSL_EMULATE_LZCNT");
@@ -784,12 +782,8 @@ int main(int argc, char **argv) {
 #endif
     log_cpu();
     if (!cpu_only && !check_imports) {
-        OslGraphicsCheck check_graphics=cpu_usable;
-#ifndef _WIN32
         renderer_settings_file=settings_file;
-        check_graphics=system_usable;
-#endif
-        OslLauncherConfig launcher={app0,paths.image_dir,user_dir,settings_file,log_folder,skip_launcher,force_launcher,check_graphics,log_path[0] ? log_path : NULL};
+        OslLauncherConfig launcher={app0,paths.image_dir,user_dir,settings_file,log_folder,skip_launcher,force_launcher,system_usable,log_path[0] ? log_path : NULL};
         OslLauncherResult launched=osl_launcher_run(&launcher);
         runtime_log_set_detailed(osl_detailed_logging(settings_file));
         if (launched==OSL_LAUNCHER_QUIT) { runtime_log_mark_clean_exit(); exit(0); }

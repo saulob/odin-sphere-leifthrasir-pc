@@ -87,7 +87,7 @@ int osl_detailed_logging(const char *settings_file);
 int osl_logs_directory(const char *logs_dir, const char *log_file, char *out, size_t size);
 
 /* Fills `names` with the distinct names of the Vulkan devices the renderer can use and returns how many (none without a
- * usable Vulkan on Linux); enumerates only, no device is created. */
+ * usable Vulkan); enumerates only, no device is created, and never aborts on a system whose Vulkan is missing or too old. */
 int osl_gpu_names(char (*names)[256], int max);
 
 /* An OslGraphicsCheck: 1 when Vulkan can run the renderer. Otherwise logs why and returns 0. It asks again on every call

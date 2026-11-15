@@ -48,7 +48,9 @@ Renderer: selected opengl, active OpenGL
 Renderer: selected d3d11, active Direct3D 11 via ANGLE
 ```
 
-A Vulkan device that passes the check and still fails to start is not caught by Auto. If the OpenGL that Auto fell back to
+The check (`gpu/shim/osl_vulkan_support.h`) goes step by step and stops at the first failure: no loader, runtime below 1.3, no
+Vulkan driver, no device with the required features. None of these ends the process, and the Graphics card list and Play use it
+before anything that asserts. A Vulkan device that passes the check and still fails to start is not caught by Auto. If the OpenGL that Auto fell back to
 cannot start either, its message carries Vulkan's reason too.
 
 ### Graphics card
