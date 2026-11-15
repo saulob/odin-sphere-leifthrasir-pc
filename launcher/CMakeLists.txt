@@ -29,8 +29,8 @@ target_link_libraries(osl_imgui_sdl PUBLIC SDL3::SDL3)
 # Game files (check, PKG unpacking, install, boot image), the trophies (src/trophies), the settings file and the
 # Display options: no window needed (tests link only this).
 find_package(ZLIB REQUIRED)
-add_library(osl_launcher_core STATIC bookshelf.c boot_image.cpp build_diagnostics.cpp controller_prompts.cpp cpk_patch.cpp file_browser.cpp game_files.cpp
-    game_install.cpp game_profile.cpp header_art.cpp http_post.cpp incident_client.cpp incident_report.cpp json_lite.cpp log_scrubber.cpp options.cpp
+add_library(osl_launcher_core STATIC bookshelf.c boot_image.cpp build_diagnostics.cpp build_scan.cpp controller_prompts.cpp cpk_patch.cpp file_browser.cpp game_files.cpp
+    game_install.cpp game_profile.cpp game_source.cpp header_art.cpp http_post.cpp incident_client.cpp incident_report.cpp json_lite.cpp log_scrubber.cpp options.cpp
     page_icons.cpp pad_capture.cpp paths.cpp pkg_extract.cpp report_history.cpp resolution.c settings.cpp skip_intro.c title_exit_assets.cpp title_menu_exit.c
     trophy_content.cpp ${PROJECT_SOURCE_DIR}/src/lzcnt_compat.c
     ${PROJECT_SOURCE_DIR}/src/trophies/trophy_data.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trophy_key.cpp
@@ -163,6 +163,14 @@ target_compile_definitions(osl-bug-report-tests PRIVATE OSL_SOURCE_DIR="${PROJEC
 target_link_libraries(osl-bug-report-tests PRIVATE osl_launcher_core)
 set_target_properties(osl-bug-report-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
 target_compile_options(osl-bug-report-tests PRIVATE -Wall -Wextra)
+
+# Unsupported-build diagnostics on synthetic data, plus the local game folders and packages when present; no window.
+add_executable(osl-build-diagnostics-tests EXCLUDE_FROM_ALL ../tests/build_diagnostics_tests.cpp)
+target_compile_definitions(osl-build-diagnostics-tests PRIVATE OSL_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+target_include_directories(osl-build-diagnostics-tests PRIVATE ${PROJECT_SOURCE_DIR}/tests)
+target_link_libraries(osl-build-diagnostics-tests PRIVATE osl_launcher_core ZLIB::ZLIB)
+set_target_properties(osl-build-diagnostics-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_compile_options(osl-build-diagnostics-tests PRIVATE -Wall -Wextra -Werror)
 
 # The sidebar's page icons and the header art: lookup, rasterizing, placement and scaling; no window.
 add_executable(osl-launcher-asset-tests EXCLUDE_FROM_ALL ../tests/launcher_asset_tests.cpp)

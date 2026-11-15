@@ -23,8 +23,8 @@ update) and the European release (`CUSA05262` base 1.00 plus its 1.01 update) ar
 1.00 base packages are supported too: the Hong Kong release and an Asian release that adds Korean archives. The
 executable sites of the USA 1.01 and both `CUSA03873` 1.00 releases are found by
 scanning their `eboot.bin` when they are installed, instead of from a fixed table; a feature whose sites the scan cannot
-find uniquely is hidden, and the log holds the scan. Any other version is refused, and the log then holds diagnostic
-information useful for adding it.
+find uniquely is hidden, and the log holds the scan. Any other version of the game is refused as an unsupported build,
+and the log then holds detailed read-only diagnostics useful for adding it (see [Reporting problems](#reporting-problems)).
 
 Windows is the supported platform. The native Linux build, shipped as an AppImage, is **experimental**: it is built and
 checked by scripts, but it has not yet been tested on real Linux PCs or a Steam Deck.
@@ -285,6 +285,11 @@ the game froze without crashing, attach the newest `hang_NNN.txt` from the same 
 
 For a problem that is not a crash, keep **Detailed logging** on in the launcher (About, Diagnostics), reproduce it, and
 send the newest log. On Linux, please also give your distribution, your GPU and its driver.
+
+If the launcher says **Unsupported Odin Sphere Leifthrasir build**, attach that complete log to an issue. The launcher
+has already read the package or folder without changing or unpacking it and written what is needed to add the build:
+hashes, metadata, file sizes and the executable's structure, never the game's content. Never upload game files. The
+diagnostics alone do not make a build supported; it stays refused until a release adds it.
 
 The launcher's **Bug Report** page builds the report for you: it shows the description, the system details and the
 selected log after the privacy filter, and **Send report** sends it to the developer. **Save report** writes the same

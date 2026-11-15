@@ -23,6 +23,7 @@
 #include "boot_image.h"
 #include "build_diagnostics.h"
 #include "cpk_patch.h"
+#include "game_source.h"
 #include "pkg_extract.h"
 #include "utf8.h"
 
@@ -33,6 +34,7 @@ namespace fs = std::filesystem;
 
 constexpr uint64_t kSpaceMargin = 256ull << 20;
 constexpr int kRenameAttempts = 10;
+constexpr uint64_t kMaxEbootBytes = 128ull << 20;
 
 InstallResult Failure(InstallStatus status, std::string detail = {}) {
     InstallResult result;
@@ -454,6 +456,26 @@ InstallStatus FromPackage(PackageResult::Code code) {
     return InstallStatus::kReadFailed;
 }
 
+DiagnosticPatches PatchesOf(const InstallHooks& hooks) {
+    return {hooks.prompt_patch, hooks.title_patch};
+}
+
+// An Odin Sphere Leifthrasir of no supported build is refused with its read-only diagnostics; nothing is returned for
+// any other title.
+std::optional<InstallResult> Unsupported(const GameSource& source, const std::string& sfo, const std::string& detail,
+                                         const InstallHooks& hooks) {
+    if (hooks.phase) {
+        hooks.phase("Analyzing the game files...");
+    }
+    UnsupportedBuildReport diagnostics = DiagnoseUnsupportedBuild(source, sfo, detail, PatchesOf(hooks));
+    if (!diagnostics.odin) {
+        return std::nullopt;
+    }
+    InstallResult result = Failure(InstallStatus::kUnsupportedBuild, detail);
+    result.report = std::move(diagnostics.text);
+    return result;
+}
+
 // A staged game that is no supported build, such as one whose eboot.bin differs, is diagnosed before its staging
 // folder is removed.
 InstallResult StagedFailure(const fs::path& staged, const GameCheck& check, const InstallHooks& hooks) {
@@ -461,11 +483,8 @@ InstallResult StagedFailure(const fs::path& staged, const GameCheck& check, cons
         return Failure(InstallStatus::kWrongVersion, std::string("the unpacked game is ") + check.build->label);
     }
     if (check.state == GameFileState::kDifferentVersion) {
-        UnsupportedBuildReport diagnostics = DiagnoseUnsupportedBuild(staged, check.detail, hooks.prompt_patch);
-        if (diagnostics.odin) {
-            InstallResult result = Failure(InstallStatus::kUnsupportedBuild, check.detail);
-            result.report = std::move(diagnostics.text);
-            return result;
+        if (std::optional<InstallResult> unsupported = Unsupported(*OpenFolderSource(staged), {}, check.detail, hooks)) {
+            return *unsupported;
         }
     }
     return Failure(FromCheck(check), check.detail);
@@ -634,58 +653,29 @@ InstallResult InstallUpdatePackage(const fs::path& source, Package& package, con
     return result;
 }
 
-// An Odin Sphere Leifthrasir package of no supported build is refused with its diagnostics: its executables are
-// unpacked into a scratch folder for the scan, which is removed afterwards. Nothing is returned for any other title.
-std::optional<InstallResult> DiagnosePackage(Package& package, const GameRoots& roots, const InstallHooks& hooks,
-                                             const std::string& detail) {
-    const PackageResult loaded = package.LoadFiles();
-    const std::vector<PackageFile> files = loaded.ok() ? package.Files() : std::vector<PackageFile>{};
-    if (!IsOdinPackage(package.sfo(), files)) {
+// A package of no supported build is diagnosed in place: its files are read, never unpacked.
+std::optional<InstallResult> DiagnosePackage(Package& package, const InstallHooks& hooks, const std::string& detail) {
+    if (!package.LoadFiles().ok()) {
         return std::nullopt;
     }
-    if (hooks.phase) {
-        hooks.phase("Analyzing the package...");
-    }
-    const fs::path scratch = Normal(roots.prepared) / ".unsupported-build.install-temp";
-    std::error_code ec;
-    fs::remove_all(scratch, ec);
-    StagingGuard guard(scratch);
-    std::string note;
-    if (!loaded.ok()) {
-        note = "the package files cannot be read: " + loaded.detail;
-    } else if (const PackageResult extracted = package.Extract(scratch, nullptr, IsDiagnosedPackageFile);
-               !extracted.ok()) {
-        note = "the executables cannot be unpacked: " + extracted.detail;
-    }
-    UnsupportedBuildReport diagnostics =
-        DiagnoseUnsupportedPackage(package.sfo(), detail, note.empty() ? scratch : fs::path(), files, note);
-    if (!diagnostics.odin) {
-        return std::nullopt;
-    }
-    InstallResult result = Failure(InstallStatus::kUnsupportedBuild, detail);
-    result.report = std::move(diagnostics.text);
-    return result;
+    return Unsupported(*OpenPackageSource(package), package.sfo(), detail, hooks);
 }
 
-// Builds that share a package's param.sfo are told apart by its eboot.bin, unpacked alone into a scratch folder. An
-// eboot.bin that is none of theirs keeps the first build, whose check of the unpacked game then diagnoses it.
-const GameBuild& PackageBuild(Package& package, const GameRoots& roots, const InstallHooks& hooks,
-                              const GameBuild& build, std::span<const GameBuild> builds) {
-    if (SamePackageBuilds(build, builds).size() < 2 || !package.LoadFiles().ok()) {
-        return build;
+// Builds that share a package's param.sfo are told apart by its eboot.bin, read from the package. Nullptr when the
+// package carries an eboot.bin that is none of theirs.
+const GameBuild* PackageBuild(Package& package, const InstallHooks& hooks, const GameBuild& build,
+                              std::span<const GameBuild> builds) {
+    if (!package.LoadFiles().ok()) {
+        return &build;
     }
     if (hooks.phase) {
         hooks.phase("Identifying the build...");
     }
-    const fs::path scratch = Normal(roots.prepared) / ".identify-build.install-temp";
-    std::error_code ec;
-    fs::remove_all(scratch, ec);
-    StagingGuard guard(scratch);
-    if (!package.Extract(scratch, nullptr, [](const std::string& path) { return path == "eboot.bin"; }).ok()) {
-        return build;
+    std::vector<uint8_t> eboot;
+    if (!package.ReadFile("eboot.bin", kMaxEbootBytes, eboot).ok()) {
+        return &build;
     }
-    const GameBuild* variant = BuildWithEboot(build, Sha256Hex(scratch / "eboot.bin"), builds);
-    return variant ? *variant : build;
+    return BuildWithEboot(build, Sha256Hex(eboot), builds);
 }
 
 } // namespace
@@ -730,7 +720,13 @@ InstallResult InstallFromPackage(const fs::path& package_file, const GameRoots& 
     }
     GameCheck identity = CheckPackageIdentity(package.sfo(), builds);
     if (identity.state == GameFileState::kValid) {
-        identity.build = &PackageBuild(package, roots, hooks, *identity.build, builds);
+        if (const GameBuild* variant = PackageBuild(package, hooks, *identity.build, builds)) {
+            identity.build = variant;
+        } else {
+            identity.state = GameFileState::kDifferentVersion;
+            identity.detail = "eboot.bin is not the supported build";
+            identity.build = nullptr;
+        }
     }
     const PackageLogContext context{Utf8(source.filename()), package.sfo(), identity};
     const auto logged = [&](InstallResult result) {
@@ -738,7 +734,7 @@ InstallResult InstallFromPackage(const fs::path& package_file, const GameRoots& 
         return result;
     };
     if (identity.state != GameFileState::kValid) {
-        if (std::optional<InstallResult> diagnosed = DiagnosePackage(package, roots, hooks, identity.detail)) {
+        if (std::optional<InstallResult> diagnosed = DiagnosePackage(package, hooks, identity.detail)) {
             return logged(*diagnosed);
         }
         return logged(Failure(FromCheck(identity), identity.detail));
@@ -773,11 +769,8 @@ InstallResult InstallFromFolder(const fs::path& source_dir, const GameRoots& roo
     }
     const GameCheck check = CheckGameTree(source, builds);
     if (check.state == GameFileState::kDifferentVersion) {
-        UnsupportedBuildReport diagnostics = DiagnoseUnsupportedBuild(source, check.detail, hooks.prompt_patch);
-        if (diagnostics.odin) {
-            InstallResult result = Failure(InstallStatus::kUnsupportedBuild, check.detail);
-            result.report = std::move(diagnostics.text);
-            return result;
+        if (std::optional<InstallResult> unsupported = Unsupported(*OpenFolderSource(source), {}, check.detail, hooks)) {
+            return *unsupported;
         }
     }
     if (check.state != GameFileState::kValid) {

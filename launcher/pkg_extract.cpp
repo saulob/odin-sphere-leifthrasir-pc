@@ -444,11 +444,55 @@ size_t Package::file_count() const {
 std::vector<PackageFile> Package::Files() const {
     std::vector<PackageFile> files;
     for (const Item& item : impl_->items) {
-        if (item.type != kPfsDir) {
-            files.push_back({item.path, uint64_t(impl_->inodes[item.inode].size)});
+        if (item.type != kPfsDir && item.inode < impl_->inodes.size()) {
+            files.push_back({item.path, uint64_t(std::max<int64_t>(impl_->inodes[item.inode].size, 0))});
         }
     }
     return files;
+}
+
+PackageResult Package::ReadFile(const std::string& path, uint64_t max_bytes, std::vector<uint8_t>& out) {
+    out.clear();
+    const auto item = std::find_if(impl_->items.begin(), impl_->items.end(),
+                                   [&](const Item& candidate) { return candidate.type == kPfsFile && candidate.path == path; });
+    if (item == impl_->items.end() || item->inode >= impl_->inodes.size()) {
+        return Fail(PackageResult::kIncomplete, path + " is not in the package");
+    }
+    const int64_t size = impl_->inodes[item->inode].size;
+    if (size < 0 || uint64_t(size) > max_bytes) {
+        return Fail(PackageResult::kIncomplete, path + " is too large to read");
+    }
+    return ReadFileRange(path, 0, size_t(size), out);
+}
+
+PackageResult Package::ReadFileRange(const std::string& path, uint64_t offset, size_t length, std::vector<uint8_t>& out) {
+    Impl& p = *impl_;
+    out.clear();
+    const auto item = std::find_if(p.items.begin(), p.items.end(),
+                                   [&](const Item& candidate) { return candidate.type == kPfsFile && candidate.path == path; });
+    if (item == p.items.end() || item->inode >= p.inodes.size()) {
+        return Fail(PackageResult::kIncomplete, path + " is not in the package");
+    }
+    const Inode& node = p.inodes[item->inode];
+    if (node.size < 0 || offset > uint64_t(node.size) || length > uint64_t(node.size) - offset) {
+        return Fail(PackageResult::kIncomplete, "range outside " + path);
+    }
+    out.reserve(length);
+    Bytes chunk;
+    uint64_t at = offset;
+    while (out.size() < length) {
+        const uint64_t block = at / kBlockSize, skip = at - block * kBlockSize;
+        const uint64_t needed = (skip + (length - out.size()) + kBlockSize - 1) / kBlockSize;
+        const uint64_t count = std::min<uint64_t>({kChunkBlocks, needed, node.blocks > block ? node.blocks - block : 0});
+        if (count == 0 || !p.ReadBlocks(node.loc + block, count, chunk) || chunk.size() <= skip) {
+            out.clear();
+            return Fail(PackageResult::kReadFailed, "cannot read " + path);
+        }
+        const uint64_t take = std::min<uint64_t>(length - out.size(), chunk.size() - skip);
+        out.insert(out.end(), chunk.begin() + std::ptrdiff_t(skip), chunk.begin() + std::ptrdiff_t(skip + take));
+        at += take;
+    }
+    return {};
 }
 
 PackageResult Package::Open(const fs::path& path) {
@@ -657,8 +701,7 @@ PackageResult Package::LoadFiles() {
     return {};
 }
 
-PackageResult Package::Extract(const fs::path& out, const std::function<bool(uint64_t, uint64_t)>& progress,
-                               const std::function<bool(const std::string&)>& include) {
+PackageResult Package::Extract(const fs::path& out, const std::function<bool(uint64_t, uint64_t)>& progress) {
     Impl& p = *impl_;
     // The metadata entries go to sce_sys first, as shadPS4 writes them; the file system's own copies replace them.
     for (const Entry& entry : p.entries) {
@@ -684,9 +727,6 @@ PackageResult Package::Extract(const fs::path& out, const std::function<bool(uin
     uint64_t done = 0;
     Bytes chunk;
     for (const Item& item : p.items) {
-        if (include && (item.type == kPfsDir || !include(item.path))) {
-            continue;
-        }
         const fs::path target = out / PathFromUtf8(item.path);
         fs::create_directories(item.type == kPfsDir ? target : target.parent_path(), ec);
         if (ec) {

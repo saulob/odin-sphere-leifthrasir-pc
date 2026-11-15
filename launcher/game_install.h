@@ -53,6 +53,7 @@ struct InstallHooks {
     // Returns false to cancel. Cancelling is possible until the new files are activated.
     std::function<bool(uint64_t done, uint64_t total)> progress;
     std::span<const uint8_t> prompt_patch; // the Xbox prompts patch, for the unsupported-build diagnostics
+    std::span<const uint8_t> title_patch;  // the title menu patch, for the unsupported-build diagnostics
     bool replace_active = false; // install the package even when its build is the active, ready one
 };
 

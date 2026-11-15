@@ -119,6 +119,11 @@ no other file is needed. If the game froze without crashing, also attach the
 newest hang_NNN.txt from the same folder. For a problem that is not a crash, keep Detailed
 logging on (About page of the launcher), reproduce it, and send the newest log.
 
+If the launcher says "Unsupported Odin Sphere Leifthrasir build", attach that complete
+log: it already holds the read-only diagnostics needed to add the build (hashes,
+metadata and structure, never game content). Never upload game files. The build stays
+unsupported until a release adds it.
+
 The launcher's Bug Report page shows the description, the system details and the
 selected log after the privacy filter, and "Save report" writes that report to
 "logs\reports" so it can be attached to the issue. The report service that

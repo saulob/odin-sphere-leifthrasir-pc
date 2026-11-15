@@ -6,6 +6,7 @@
 #include <cstring>
 #include <exception>
 #include <fstream>
+#include <istream>
 #include <system_error>
 #include <utility>
 
@@ -66,7 +67,7 @@ void WriteNumber(uint8_t* p, int type, uint64_t v) {
     }
 }
 
-bool ReadFileRange(std::ifstream& in, uint64_t offset, size_t size, std::vector<uint8_t>& out) {
+bool ReadFileRange(std::istream& in, uint64_t offset, size_t size, std::vector<uint8_t>& out) {
     out.clear();
     in.clear();
     in.seekg(0, std::ios::end);
@@ -236,7 +237,7 @@ struct UtfTable {
 };
 
 // Reads the @UTF packet behind a 16-byte CPK section header (magic, u32, u64 size).
-bool ReadSection(std::ifstream& in, uint64_t offset, const char* magic, UtfTable& table, uint64_t* packet_pos,
+bool ReadSection(std::istream& in, uint64_t offset, const char* magic, UtfTable& table, uint64_t* packet_pos,
                  std::string* error) {
     std::vector<uint8_t> head;
     if (!ReadFileRange(in, offset, 16, head) || std::memcmp(head.data(), magic, 4) != 0) {
@@ -397,6 +398,12 @@ struct PatchWriter {
             if (error) *error = "cannot open";
             return false;
         }
+        if (!Load(a, in, header, toc, error)) return false;
+        a.file_ = file;
+        return true;
+    }
+
+    static bool Load(CpkArchive& a, std::istream& in, UtfTable& header, UtfTable& toc, std::string* error) {
         uint64_t header_pos = 0, toc_pos = 0;
         if (!ReadSection(in, 0, "CPK ", header, &header_pos, error)) return false;
         a.toc_offset_ = header.Number(0, "TocOffset").value_or(0);
@@ -431,7 +438,6 @@ struct PatchWriter {
         }
         Keep(a.header_, header, header_pos);
         Keep(a.toc_, toc, toc_pos);
-        a.file_ = file;
         return true;
     }
 
@@ -465,6 +471,12 @@ struct PatchWriter {
 bool CpkArchive::Open(const std::filesystem::path& file, std::string* error) {
     UtfTable header, toc;
     return PatchWriter::Load(*this, file, header, toc, error);
+}
+
+bool CpkArchive::OpenStream(std::istream& in, std::string* error) {
+    UtfTable header, toc;
+    file_.clear();
+    return PatchWriter::Load(*this, in, header, toc, error);
 }
 
 const CpkEntry* CpkArchive::Find(std::string_view path) const {

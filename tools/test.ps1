@@ -247,6 +247,7 @@ $steps = @(
         '(?m)^  CUSA05083 1\.00 USA\s+PASS\s*$', '(?m)^  CUSA05083 1\.01 USA\s+PASS\s*$', '(?m)^  CUSA01290 1\.00 Japan\s+PASS\s*$',
         '(?m)^  CUSA01290 1\.02 Japan\s+PASS\s*$', '(?m)^  CUSA05262 1\.00 Europe\s+PASS\s*$', '(?m)^  CUSA05262 1\.01 Europe\s+PASS\s*$',
         '(?m)^  CUSA03873 1\.00 HK\s+PASS\s*$', '(?m)^  CUSA03873 1\.00 Asia\s+PASS\s*$')),
+    (Step 'Packages' 'unsupported-build diagnostics: read-only sources, SELF/ELF, feature states, classification, report, prompt and title assets, issue #19, local builds and packages' 'osl-build-diagnostics-tests'),
     (Step 'Packages' 'scripts\game_profiles.py: releases that share a package identity, told apart by eboot.bin' -Block { Invoke-ProfileTests }),
     (Step 'Packages' 'patch workflow (cmake script, synthetic files)' -Block { Invoke-PatchWorkflow }),
     (Step 'Launcher' 'Bug Report: JSON, service address, log choice, privacy filter, report and preview, client against a stand-in transport, My Reports, nothing sent on its own' 'osl-bug-report-tests'),

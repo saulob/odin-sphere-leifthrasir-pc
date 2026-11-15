@@ -158,6 +158,47 @@ std::optional<uint32_t> SfoInteger(const std::string& sfo, const char* key, uint
     return Le32(reinterpret_cast<const unsigned char*>(entry->value.data()));
 }
 
+std::vector<SfoParameter> SfoParameters(const std::string& sfo) {
+    std::vector<SfoParameter> fields;
+    const auto* data = reinterpret_cast<const unsigned char*>(sfo.data());
+    const size_t size = sfo.size();
+    if (size < 20 || std::memcmp(data, "\0PSF", 4) != 0) {
+        return fields;
+    }
+    const uint32_t keys = Le32(data + 8), values = Le32(data + 12), count = Le32(data + 16);
+    for (uint32_t i = 0; i < count && i < 256 && 20 + static_cast<size_t>(i) * 16 + 16 <= size; ++i) {
+        const unsigned char* entry = data + 20 + static_cast<size_t>(i) * 16;
+        const uint16_t key_offset = Le16(entry), format = Le16(entry + 2);
+        const uint32_t length = Le32(entry + 4), offset = Le32(entry + 12);
+        if (static_cast<size_t>(keys) + key_offset >= size || static_cast<size_t>(values) + offset + length > size) {
+            continue;
+        }
+        const char* name = sfo.c_str() + keys + key_offset;
+        SfoParameter field;
+        field.key.assign(name, strnlen(name, std::min<size_t>(size - keys - key_offset, 64)));
+        const std::string raw = sfo.substr(values + offset, length);
+        if (format == 0x0204) {
+            for (const char c : raw) {
+                if (c == '\0') {
+                    break;
+                }
+                field.value += static_cast<unsigned char>(c) < 0x20 ? '?' : c;
+            }
+        } else if (format == 0x0404 && raw.size() == 4) {
+            char text[16];
+            std::snprintf(text, sizeof(text), "0x%08x", Le32(reinterpret_cast<const unsigned char*>(raw.data())));
+            field.value = text;
+        } else {
+            field.value = std::to_string(raw.size()) + " bytes";
+        }
+        if (field.value.size() > 80) {
+            field.value.resize(80);
+        }
+        fields.push_back(std::move(field));
+    }
+    return fields;
+}
+
 std::string JsonString(const std::string& text, const std::string& key) {
     const std::string needle = "\"" + key + "\"";
     size_t at = text.find(needle);
@@ -309,6 +350,20 @@ std::string Sha256Hex(const std::filesystem::path& file) {
             hex += digits[byte >> 4];
             hex += digits[byte & 15];
         }
+    }
+    return hex;
+}
+
+std::string Sha256Hex(std::span<const uint8_t> bytes) {
+    uint8_t digest[32];
+    if (!crypto::Sha256(bytes.data(), bytes.size(), digest)) {
+        return {};
+    }
+    static const char digits[] = "0123456789abcdef";
+    std::string hex;
+    for (const uint8_t byte : digest) {
+        hex += digits[byte >> 4];
+        hex += digits[byte & 15];
     }
     return hex;
 }

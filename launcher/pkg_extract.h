@@ -39,13 +39,17 @@ public:
     // The keys and the inner file system's file list, read once. Packages encrypted for a console are kUnsupported.
     PackageResult LoadFiles();
     // The metadata entries into sce_sys, then every file of the package, into `out`. `progress` returns false to
-    // cancel. When `include` is given, only the files it accepts are written.
+    // cancel.
     PackageResult Extract(const std::filesystem::path& out,
-                          const std::function<bool(uint64_t done, uint64_t total)>& progress,
-                          const std::function<bool(const std::string& path)>& include = {});
+                          const std::function<bool(uint64_t done, uint64_t total)>& progress);
 
     // The inner file system's files, once LoadFiles succeeded.
     std::vector<PackageFile> Files() const;
+
+    // One file's bytes, read without writing anything; kIncomplete when it is absent or larger than `max_bytes`.
+    PackageResult ReadFile(const std::string& path, uint64_t max_bytes, std::vector<uint8_t>& out);
+    // `length` bytes of one file from `offset`, read without writing anything.
+    PackageResult ReadFileRange(const std::string& path, uint64_t offset, size_t length, std::vector<uint8_t>& out);
 
     const std::string& content_id() const;
     const std::string& sfo() const;

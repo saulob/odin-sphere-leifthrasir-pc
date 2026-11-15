@@ -700,6 +700,7 @@ private:
                 InstallHooks hooks;
                 hooks.replace_active = replace;
                 hooks.prompt_patch = XboxPromptsPatch();
+                hooks.title_patch = TitleExitPatch();
                 hooks.phase = [&task](const char* text) {
                     task.SetLabel(text);
                     task.Progress(0, 0);

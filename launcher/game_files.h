@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "build_diagnostics.h"
+#include "build_scan.h"
 #include "game_profile.h"
 
 namespace osl {
@@ -64,14 +64,22 @@ GameCheck CheckPackageIdentity(const std::string& sfo, std::span<const GameBuild
 
 // A string value of param.sfo, empty when the key is absent or not a string.
 std::string SfoString(const std::string& sfo, const char* key);
-// An integer value of param.sfo: `absent` when the key is missing, nothing when it is not an integer.
 // The supported build a boot image folder (UTF-8 path) was built from, or nullptr when it is not one.
 const GameBuild* BuildOfImageDir(const char* image_dir);
 
+// An integer value of param.sfo: `absent` when the key is missing, nothing when it is not an integer.
 std::optional<uint32_t> SfoInteger(const std::string& sfo, const char* key, uint32_t absent);
+
+// Every parameter of param.sfo with a short printable value (integers in hex, binary values by length).
+struct SfoParameter {
+    std::string key;
+    std::string value;
+};
+std::vector<SfoParameter> SfoParameters(const std::string& sfo);
 
 // Lower-case hex SHA-256 of a file, empty when it cannot be read.
 std::string Sha256Hex(const std::filesystem::path& file);
+std::string Sha256Hex(std::span<const uint8_t> bytes);
 
 // The string value of a top-level-looking "key": "value" pair in JSON text; empty when absent.
 std::string JsonString(const std::string& text, const std::string& key);

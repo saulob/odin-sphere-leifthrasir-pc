@@ -116,6 +116,11 @@ the log ends with a CRASH REPORT section; no other file is needed. For a
 problem that is not a crash, keep Detailed logging on (About page of the
 launcher), reproduce it, and send the newest log.
 
+If the launcher says "Unsupported Odin Sphere Leifthrasir build", attach that
+complete log: it already holds the read-only diagnostics needed to add the build
+(hashes, metadata and structure, never game content). Never upload game files.
+The build stays unsupported until a release adds it.
+
 
 LICENSE
 -------

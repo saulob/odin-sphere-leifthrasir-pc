@@ -8,10 +8,11 @@
 #include <map>
 #include <optional>
 #include <stdexcept>
+#include <system_error>
 #include <unordered_map>
 #include <vector>
 
-#include "build_diagnostics.h"
+#include "build_scan.h"
 #include "crypto.h"
 #include "osl_launcher.h"
 #include "game_files.h"
@@ -466,7 +467,7 @@ public:
     }
 
     void LinkModules(const std::filesystem::path& game, const Module& main) {
-        uint64_t base = (image.size() + 65535) & ~uint64_t(65535);
+        uint64_t base = (image.size() + kModuleAlignment - 1) & ~(kModuleAlignment - 1);
         fs_patched = PatchFsLoads(image, main.ph, 0);
         uint64_t tls_module = 2;
         for (const char* filename : kBundledModules) {
@@ -561,7 +562,7 @@ public:
             table.push_back({file, base, modsize, base + (m.tags.count(DT_INIT) ? m.tags.at(DT_INIT) : 0),
                              tls ? base + tls->vaddr : 0, tls ? tls->memsz : 0, tls ? tls->filesz : 0, module_id,
                              tls_relocations, count, m.sha256});
-            base = (base + modsize + 65535) & ~uint64_t(65535);
+            base = (base + modsize + kModuleAlignment - 1) & ~(kModuleAlignment - 1);
         }
     }
 
@@ -839,13 +840,25 @@ void Build(const std::filesystem::path& game, const std::filesystem::path& out) 
 } // namespace
 
 std::string MapExecutable(const std::filesystem::path& file, MappedExecutable& out) {
+    std::error_code ec;
+    const std::uintmax_t file_size = std::filesystem::file_size(file, ec);
+    if (ec || file_size > kMaxImage) {
+        return "cannot read " + file.filename().string();
+    }
     try {
-        std::error_code ec;
-        const std::uintmax_t file_size = std::filesystem::file_size(file, ec);
-        if (ec || file_size > kMaxImage) {
-            Fail("cannot read " + file.filename().string());
-        }
         const Bytes source = ReadFile(file);
+        return MapExecutableBytes(source, out);
+    } catch (const std::exception& error) {
+        return error.what();
+    }
+}
+
+std::string MapExecutableBytes(std::span<const uint8_t> bytes, MappedExecutable& out) {
+    try {
+        if (bytes.size() > kMaxImage) {
+            Fail("executable exceeds the 512 MiB limit");
+        }
+        const Bytes source(bytes.begin(), bytes.end());
         Module module;
         ParseSelf(source, module);
         uint64_t size = 0;
@@ -878,11 +891,93 @@ std::string MapExecutable(const std::filesystem::path& file, MappedExecutable& o
         mapped.file_size = source.size();
         out = std::move(mapped);
         return {};
-    } catch (const Failure& failure) {
-        return failure.what();
     } catch (const std::exception& error) {
         return error.what();
     }
+}
+
+std::string LinkModule(MappedExecutable& image, const MappedExecutable& module, uint64_t* base_out) {
+    const uint64_t base = (image.image.size() + kModuleAlignment - 1) & ~(kModuleAlignment - 1);
+    uint64_t size = 0;
+    for (const MappedSegment& s : module.segments) {
+        size = std::max(size, s.vaddr + s.memsz);
+    }
+    if (base_out) {
+        *base_out = base;
+    }
+    if (base + size > kMaxImage || size < module.image.size()) {
+        return "linked image exceeds the 512 MiB limit";
+    }
+    image.image.resize(base + size, 0);
+    std::copy(module.image.begin(), module.image.end(), image.image.begin() + static_cast<std::ptrdiff_t>(base));
+    for (const MappedSegment& s : module.segments) {
+        image.segments.push_back({base + s.vaddr, s.memsz, s.flags});
+    }
+    return {};
+}
+
+ExecutableInfo InspectExecutable(std::span<const uint8_t> bytes) {
+    ExecutableInfo info;
+    const auto read = [&](uint64_t at, auto& value) {
+        if (at > bytes.size() || sizeof(value) > bytes.size() - at) {
+            return false;
+        }
+        std::memcpy(&value, bytes.data() + at, sizeof(value));
+        return true;
+    };
+    info.self = bytes.size() >= 32 && std::memcmp(bytes.data(), kSelfMagic, 4) == 0;
+    if (!info.self) {
+        info.error = bytes.empty() ? "empty file" : "expected PS4 SELF";
+        return info;
+    }
+    info.version = bytes[4];
+    info.mode = bytes[5];
+    info.endian = bytes[6];
+    info.attributes = bytes[7];
+    read(8, info.key_type);
+    read(12, info.header_size);
+    read(14, info.meta_size);
+    read(16, info.declared_size);
+    read(24, info.segment_count);
+    read(26, info.self_flags);
+    for (uint16_t i = 0; i < info.segment_count; ++i) {
+        SelfSegmentInfo segment;
+        const uint64_t at = 32 + uint64_t(i) * 32;
+        if (!read(at, segment.flags) || !read(at + 8, segment.offset) || !read(at + 16, segment.size) ||
+            !read(at + 24, segment.memory)) {
+            break;
+        }
+        info.segments.push_back(segment);
+    }
+    const uint64_t base = 32 + uint64_t(info.segment_count) * 32;
+    static const uint8_t elf_ident[] = {0x7f, 'E', 'L', 'F', 2, 1, 1};
+    info.elf = base + 64 <= bytes.size() && std::memcmp(bytes.data() + base, elf_ident, sizeof(elf_ident)) == 0;
+    if (info.elf) {
+        read(base + 16, info.elf_type);
+        read(base + 18, info.machine);
+        read(base + 24, info.entry);
+        uint64_t phoff = 0;
+        uint16_t phentsize = 0, phnum = 0;
+        read(base + 32, phoff);
+        read(base + 54, phentsize);
+        read(base + 56, phnum);
+        for (uint16_t i = 0; phentsize == 56 && phoff < bytes.size() && i < phnum && i < 256; ++i) {
+            ProgramHeaderInfo h;
+            const uint64_t at = base + phoff + uint64_t(i) * 56;
+            if (!read(at, h.type) || !read(at + 4, h.flags) || !read(at + 8, h.offset) || !read(at + 16, h.vaddr) ||
+                !read(at + 32, h.filesz) || !read(at + 40, h.memsz) || !read(at + 48, h.align)) {
+                break;
+            }
+            info.headers.push_back(h);
+        }
+    }
+    try {
+        Module module;
+        ParseSelf(Bytes(bytes.begin(), bytes.end()), module);
+    } catch (const std::exception& error) {
+        info.error = error.what();
+    }
+    return info;
 }
 
 std::string BuildBootImage(const std::filesystem::path& game, const std::filesystem::path& out) {
