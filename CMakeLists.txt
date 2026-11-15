@@ -191,6 +191,14 @@ target_include_directories(osl-renderer-selection-tests PRIVATE gpu/shim gpu/sha
 target_compile_definitions(osl-renderer-selection-tests PRIVATE OSL_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 target_compile_options(osl-renderer-selection-tests PRIVATE -Wall -Wextra -Werror)
 
+# Focused tests of the Vulkan buffer arenas (sparse and fully resident layouts, BDA entries, migration) on fake arenas
+# (tools/test.ps1); no Vulkan device. Not part of the default build.
+add_executable(osl-buffer-arena-tests EXCLUDE_FROM_ALL tests/buffer_arena_tests.cpp)
+set_target_properties(osl-buffer-arena-tests PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_include_directories(osl-buffer-arena-tests PRIVATE gpu/shadps4)
+target_compile_definitions(osl-buffer-arena-tests PRIVATE OSL_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+target_compile_options(osl-buffer-arena-tests PRIVATE -Wall -Wextra -Werror)
+
 # Focused tests of the OpenGL detiler against the game's tiler and of the emitted GLSL through glslangValidator
 # (tools/test.ps1); no OpenGL context. Not part of the default build.
 add_executable(osl-opengl-backend-tests EXCLUDE_FROM_ALL tests/opengl_backend_tests.cpp)

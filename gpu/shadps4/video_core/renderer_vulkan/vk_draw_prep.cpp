@@ -111,7 +111,7 @@ void PrepareResources(const Shader::Info& info, PreparedStage& stage, FlatArena&
     stage.num_buffers = static_cast<u32>(buffers.size());
 }
 
-/// Rasterizer::BindVertexBuffers' pure part (GraphicsPipeline::GetVertexInputs for the dynamic
+/// Rasterizer::ResolveVertexBuffers' pure part (GraphicsPipeline::GetVertexInputs for the dynamic
 /// vertex input path, and the merge of the stream memory into ranges).
 void PrepareVertexInputs(const Shader::Info& vs, const Shader::Gcn::FetchShaderData& fetch,
                          const AmdGpu::Regs& regs, PreparedVertexInputs& out, FlatArena& arena) {

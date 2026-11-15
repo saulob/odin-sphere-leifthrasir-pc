@@ -118,6 +118,11 @@ public:
         return features.depthBounds;
     }
 
+    /// Returns true if buffers can be sparsely bound and partially resident
+    bool IsSparseSupported() const {
+        return features.sparseBinding && features.sparseResidencyBuffer;
+    }
+
     /// Returns true if 16-bit floats are supported in shaders
     bool IsShaderFloat16Supported() const {
         return vk12_features.shaderFloat16;

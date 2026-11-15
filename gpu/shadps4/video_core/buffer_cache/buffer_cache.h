@@ -5,13 +5,16 @@
 
 #include "osl_copy_pool.h"
 
-#include <deque>
+#include <list>
 #include <mutex>
+#include <span>
 #include <string>
+#include <vector>
 #include <boost/container/small_vector.hpp>
 
 #include "common/interval_set.h"
 #include "common/types.h"
+#include "video_core/buffer_cache/arena_layout.h"
 #include "video_core/buffer_cache/buffer.h"
 #include "video_core/buffer_cache/fault_manager.h"
 #include "video_core/buffer_cache/range_set.h"
@@ -39,13 +42,7 @@ class MemoryTracker;
 class PageManager;
 
 class BufferCache {
-    static constexpr u64 ADDRESS_SPACE_BITS = 40;
-    // osl: arena pages are 4 GiB unless the driver's buffer size limit is lower (AMD's
-    // Windows driver: 2 GiB); an arena spans up to two pages, so they shrink to half the limit.
-    static constexpr u64 MAX_ARENA_PAGE_BITS = 32;
-    static constexpr u64 MIN_ARENA_PAGE_BITS = 30;
-    static constexpr u64 MAX_ARENA_PAGES = u64{1} << (ADDRESS_SPACE_BITS - MIN_ARENA_PAGE_BITS);
-    static constexpr u64 MIN_BLOCK_SIZE = 16_KB;
+    static constexpr u64 MAX_ARENA_PAGE_BITS = ArenaLayout::MAX_SPARSE_PAGE_BITS;
 
 public:
     /// Read-only bindings up to this size are copied into a stream buffer (osl: public for
@@ -119,6 +116,19 @@ public:
     /// Commits pending sparse buffer memory binds. Must be called before every scheduler submit.
     void SubmitPendingArenaBinds(Vulkan::SubmitInfo& info);
 
+    /// Changes whenever a migration replaces arenas.
+    [[nodiscard]] u64 ArenaGeneration() const noexcept {
+        return arena_migrations;
+    }
+
+    /// Redirects a binding resolved before a migration to the arena that now holds its range.
+    void RefreshBinding(const Buffer*& buffer, u64& offset) const;
+    void RefreshBinding(vk::Buffer& handle, vk::DeviceSize& offset) const;
+
+    /// Frees the fully resident arenas replaced by migrations once the GPU is done with them.
+    /// Called between command lists, where no caller holds an arena.
+    void RetireMigratedArenas();
+
 private:
     struct ArenaBinds {
         const Buffer* arena;
@@ -126,6 +136,7 @@ private:
     };
 
     ArenaBinds* BindsForArena(const Buffer* arena) {
+        ASSERT(sparse_supported);
         auto it = std::ranges::find(pending_binds, arena, &ArenaBinds::arena);
         if (it != pending_binds.end()) {
             return std::addressof(*it);
@@ -135,7 +146,16 @@ private:
 
     const Buffer* GetArena(u64 first_block, u64 last_block);
 
+    const Buffer* GetResidentArena(u64 first_block, u64 last_block);
+
+    const Buffer* FollowMigration(const Buffer* stale, VAddr device_addr, u32 size,
+                                  u64 first_block, u64 last_block);
+
     void EnsureResident(const Buffer* arena, u64 first_block, u64 last_block);
+
+    void PublishArenaBda(const Buffer* arena, std::span<const Interval> ranges);
+
+    void DownloadOwnedRange(VAddr start, VAddr end);
 
     void DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size);
 
@@ -177,17 +197,20 @@ private:
     std::unique_ptr<Buffer> bda_pagetable_buffer;
     std::unique_ptr<Buffer> null_index_buffer;
 
-    std::array<const Buffer*, MAX_ARENA_PAGES> address_space{};
+    std::vector<const Buffer*> address_space;
+    bool sparse_supported{true};
     u64 arena_page_bits{MAX_ARENA_PAGE_BITS};
     u64 arena_page_size{u64{1} << MAX_ARENA_PAGE_BITS};
-    u64 num_arena_pages{u64{1} << (ADDRESS_SPACE_BITS - MAX_ARENA_PAGE_BITS)};
-    std::deque<Buffer> arenas;
+    u64 num_arena_pages{ArenaLayout::NumPages(MAX_ARENA_PAGE_BITS)};
+    std::list<Buffer> arenas; ///< address_space and retired_arenas point into it
     mutable std::mutex arenas_mutex; ///< arenas and resident_ranges growth vs DescribeDeviceAddress
     std::vector<ArenaBinds> pending_binds;
+    std::vector<const Buffer*> retired_arenas;
+    u64 arena_migrations{};
     Vulkan::Semaphore memory_semaphore;
 
     struct Backing : public Interval {
-        vk::DeviceMemory memory;
+        vk::DeviceMemory memory; ///< null in fully resident arenas: never bound, never merged
         u64 offset;
         constexpr bool CanMergeWith(const Backing& other) const noexcept {
             return memory == other.memory && offset + (end - start) == other.offset;
