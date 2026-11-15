@@ -15,6 +15,7 @@
 #include "osl_copy_pool.h"
 #include "osl_overlay.h"
 #include "osl_png.h"
+#include "osl_renderer.h"
 #include "osl_settings.h"
 #include "osl_toggles.h"
 #include "osl_write_log.h"
@@ -29,7 +30,7 @@
 #include "core/memory.h"
 #include "core/signals.h"
 #include "sdl_window.h"
-#include "video_core/renderer_vulkan/vk_rasterizer.h"
+#include "video_core/renderer_backend.h"
 
 extern "C" {
 // runtime_memory.c
@@ -45,6 +46,8 @@ uint64_t runtime_process_time_counter(void);
 uint64_t runtime_tsc_frequency(void);
 int32_t* runtime_errno(void);
 void runtime_memory_set_gpu_hooks(RuntimeGpuRange map, RuntimeGpuRange unmap, RuntimeGpuRange invalidate);
+// osl_gpu_list.cpp
+int osl_check_vulkan(char* cause, size_t cause_size, char* advice, size_t advice_size);
 // runtime_log.c
 void runtime_log_flush(void);
 [[noreturn]] void runtime_exit_clean(void);
@@ -92,7 +95,7 @@ public:
     }
 };
 
-void MemoryManager::SetRasterizer(Vulkan::Rasterizer* rasterizer_) {
+void MemoryManager::SetRasterizer(VideoCore::RasterizerBackend* rasterizer_) {
     rasterizer = rasterizer_;
     // Existing guest mappings are replayed by the runtime when hooks are installed.
     runtime_memory_set_gpu_hooks(
@@ -191,8 +194,24 @@ extern "C" int oslgpu_available(void) {
     return 1;
 }
 
+// Each renderer needs its own kind of window, so Auto asks whether Vulkan can run before there is one.
+static void SelectRenderer() {
+    const auto choice = OslRenderer::Choice(OslSettings::Get().renderer.load());
+    char cause[320] = "", advice[320] = "";
+    const bool vulkan_usable = choice != OslRenderer::Auto ||
+                               osl_check_vulkan(cause, sizeof(cause), advice, sizeof(advice));
+    const auto resolution = OslRenderer::Resolve(choice, vulkan_usable, cause);
+    OslRenderer::SetActive(resolution.backend, resolution.fallback_reason);
+    std::printf("Renderer: selected %s, active %s\n", std::string(OslRenderer::ChoiceKeys[choice]).c_str(),
+                OslRenderer::BackendName(resolution.backend));
+    if (!resolution.fallback_reason.empty()) {
+        std::printf("Renderer: Auto fell back to OpenGL: %s\n", resolution.fallback_reason.c_str());
+    }
+}
+
 extern "C" int oslgpu_init(const OslGpuConfig* config) {
     OslSettings::Load(config->settings_file);
+    SelectRenderer();
     const auto& loaded = OslSettings::Get();
     if (loaded.skip_intro) {
         OslOverlay::QueueStartupNotice("Skip Intro: On");
@@ -208,7 +227,8 @@ extern "C" int oslgpu_init(const OslGpuConfig* config) {
     const s32 width = config->width, height = config->height;
     g_window_thread = std::thread([title, width, height] {
         Common::SetCurrentThreadName("osl:window");
-        auto* window = new Frontend::WindowSDL(width, height, title.c_str());
+        auto* window = new Frontend::WindowSDL(width, height, title.c_str(),
+                                               Frontend::GraphicsApiFor(OslRenderer::Active()));
         {
             std::scoped_lock lock{g_window_mutex};
             g_window = window;
@@ -256,6 +276,17 @@ extern "C" uintptr_t oslgpu_resolve(const char* scoped_nid) {
 
 extern "C" int oslgpu_handle_fault(void* ucontext, void* address) {
     return Core::Signals::Instance()->DispatchAccessViolation(ucontext, address) ? 1 : 0;
+}
+
+extern "C" const char* oslgpu_presenter_name(void) {
+    switch (OslRenderer::Active()) {
+    case OslRenderer::Backend::OpenGL:
+        return "OpenGL";
+    case OslRenderer::Backend::Direct3D11:
+        return "Direct3D 11";
+    default:
+        return "Vulkan";
+    }
 }
 
 extern "C" unsigned oslgpu_symbol_count(void) {

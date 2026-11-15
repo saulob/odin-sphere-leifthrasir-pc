@@ -5,6 +5,8 @@ Lineage: taken from uncharted-ndc-native/gpu, itself medievil_pc's copy of the g
 upscaler (FSR 3.1, FSR 4, DLSS, TAA) with its camera and object motion is not part of this tree; libSceAvPlayer (FFmpeg) and
 libSceVideodec2 are not built (the game imports neither).
 Local changes are marked with "osl:" comments.
+OpenGL renderer (video_core/renderer_opengl), GLSL backend (shader_recompiler/backend/glsl), renderer_backend.h and renderer_factory.cpp, the ANGLE glue and
+the ES 3 ImGui shim (shim/imgui_impl_gles3, shim/gles3_shim): ported from Dragon's Crown Pro PC and adapted to this tree (docs/opengl-renderer.md).
 Backported from upstream after b4e7ae7 (2026-10-02), recompiler correctness fixes only:
   233562929 V_INTERP_MOV_F32 P10/P20 selectors (#5087), d96278e1e compute shader floating-point
   mode (#5126), e518a6515 S_SUBB_U32 SCC wrap (#5031), 282e5c792 S_ADDC_U32 SCC carry-out (#5030),

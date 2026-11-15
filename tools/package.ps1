@@ -68,14 +68,20 @@ $BuiltInLicenses = [ordered]@{
     'nanosvg'       = 'launcher\third_party\nanosvg\LICENSE.txt'
     'xbyak'         = 'gpu\third_party\xbyak\COPYRIGHT'
 }
-# MSYS2 packages compiled in as headers or static libraries (libunwind: in trg-updater.exe; crt: in both programs).
-$StaticPackages = @('fmt', 'boost', 'robin-map', 'vulkan-memory-allocator', 'vulkan-headers', 'compiler-rt', 'libunwind', 'crt')
+# MSYS2 packages compiled in as headers or static libraries (libunwind: in trg-updater.exe; crt: in both programs);
+# spirv-tools and vulkan-loader only for their licences: ANGLE's libGLESv2.dll links its own copies.
+$StaticPackages = @('fmt', 'boost', 'robin-map', 'vulkan-memory-allocator', 'vulkan-headers', 'compiler-rt', 'libunwind', 'crt',
+    'spirv-tools', 'vulkan-loader')
 # The packages whose DLLs may ship, each listed in packaging\licenses\THIRD-PARTY-LICENSES.txt. A DLL from any other
 # package stops the packaging until its licence has been reviewed and added there.
 $DllPackages = @('sdl3', 'freetype', 'libpng', 'zydis', 'xxhash', 'libc++', 'libwinpthread', 'zlib', 'bzip2',
     'harfbuzz', 'brotli', 'graphite2', 'pcre2', 'glib2', 'gettext-runtime', 'libiconv')
-# Provided by the graphics driver.
-$SystemProvided = @('vulkan-1.dll')
+# ANGLE's own files come from gpu\angle-runtime.txt: SDL loads them by name, so no import table leads to them.
+$AnglePin = Read-AnglePin
+$AngleLicence = 'licenses\angleproject\LICENSE'
+$AngleLicenceSha256 = ($AnglePin.Files | Where-Object { $_.Name -eq 'LICENSE' }).Sha256
+# The licence folders of what libGLESv2.dll has compiled in.
+$AngleLinkedLicences = @('spirv-tools', 'vulkan-loader', 'VulkanMemoryAllocator', 'xxhash')
 # trg-updater.exe runs alone from a temporary folder: it may load nothing but Windows itself.
 $HelperSystemDlls = @('kernel32.dll', 'shell32.dll', 'user32.dll', 'advapi32.dll', 'ntdll.dll', 'shlwapi.dll',
     'ole32.dll', 'bcrypt.dll')
@@ -113,35 +119,20 @@ foreach ($word in @('VisualStudio', 'S:\Decomp', 'S:/Decomp', 'C:\Users\', 'C:/U
 # Each needle as ASCII/UTF-8 and as UTF-16LE, both read through Latin-1 so one search covers either.
 $LocalNeedles = foreach ($text in $LocalText) { $text; $Latin1.GetString([Text.Encoding]::Unicode.GetBytes($text)) }
 
-function Get-Imports([string]$Path) {
-    $out = & $objdump -p $Path
-    if ($LASTEXITCODE -ne 0) { Stop-Tool "llvm-objdump failed on $Path" }
-    foreach ($line in $out) { if ($line -match 'DLL Name:\s*(\S+)') { $Matches[1] } }
-}
-
 function Get-Sections([string]$Path) {
     $out = & $objdump -h $Path
     if ($LASTEXITCODE -ne 0) { Stop-Tool "llvm-objdump failed on $Path" }
     foreach ($line in $out) { if ($line -match '^\s*\d+\s+(\S+)') { $Matches[1] } }
 }
 
-# The DLLs that $Exe loads from $Dir, directly or through each other; Windows' own DLLs are not in $Dir.
-function Get-DllClosure([string]$Exe, [string]$Dir) {
-    $found = [ordered]@{}
-    $queue = New-Object System.Collections.Generic.Queue[string]
-    $queue.Enqueue($Exe)
-    while ($queue.Count -gt 0) {
-        foreach ($name in Get-Imports $queue.Dequeue()) {
-            $key = $name.ToLowerInvariant()
-            if ($SystemProvided -contains $key -or $found.Contains($key)) { continue }
-            $file = Join-Path $Dir $name
-            if (Test-Path -LiteralPath $file -PathType Leaf) {
-                $found[$key] = (Get-Item -LiteralPath $file).FullName
-                $queue.Enqueue($found[$key])
-            }
-        }
+# Adds what ANGLE's DLLs in $AngleDir load from $Dir.
+function Add-AngleDlls($Found, [string]$AngleDir, [string]$Dir) {
+    foreach ($file in Get-AngleDlls $AnglePin) {
+        $path = Join-Path $AngleDir $file.Name
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { continue }
+        $closure = Get-DllClosure $path $Dir $objdump
+        foreach ($dllName in $closure.Keys) { if (-not $Found.Contains($dllName)) { $Found[$dllName] = $closure[$dllName] } }
     }
-    return $found
 }
 
 function Get-PackageInfo([string]$Short) {
@@ -167,7 +158,7 @@ function Get-PackageInfo([string]$Short) {
 # Why trg-updater.exe is not the self-contained tools\build-updater.ps1 helper; empty when it is.
 function Get-HelperProblems([string]$Helper) {
     $problems = New-Object System.Collections.Generic.List[string]
-    $imports = @(Get-Imports $Helper)
+    $imports = @(Get-Imports $Helper $objdump)
     if ($imports.Count -eq 0) { $problems.Add('trg-updater.exe: no imports could be read') }
     foreach ($name in $imports) {
         if ($HelperSystemDlls -notcontains $name.ToLowerInvariant() -and $name -notmatch '^api-ms-win-') {
@@ -186,9 +177,19 @@ function Test-ReleaseFolder([string]$Dir) {
     $base = (Resolve-Path -LiteralPath $Dir).Path.TrimEnd('\')
     $exe = Join-Path $base 'odin_sphere_leifthrasir.exe'
     $helper = Join-Path $base 'trg-updater.exe'
-    $dlls = if (Test-Path -LiteralPath $exe) { Get-DllClosure $exe $base } else { [ordered]@{} }
+    $dlls = if (Test-Path -LiteralPath $exe) { Get-DllClosure $exe $base $objdump } else { [ordered]@{} }
+    foreach ($file in Get-AngleDlls $AnglePin) {
+        $path = Join-Path $base $file.Name
+        if (Test-Path -LiteralPath $path -PathType Leaf) { $dlls[$file.Name.ToLowerInvariant()] = $path }
+    }
+    Add-AngleDlls $dlls $base $base
+    foreach ($problem in Get-AngleRuntimeProblems $base $AnglePin { param($path) Get-Imports $path $objdump }) { $problems.Add($problem) }
+    if (-not (Test-Sha256 (Join-Path $base $AngleLicence) $AngleLicenceSha256)) { $problems.Add("missing or stale: $AngleLicence") }
+    foreach ($folder in $AngleLinkedLicences) {
+        if (-not (Test-Path -LiteralPath (Join-Path $base "licenses\$folder\*"))) { $problems.Add("missing licence: licenses\$folder") }
+    }
     if (Test-Path -LiteralPath $exe) {
-        foreach ($name in (Get-DllClosure $exe $bin).Keys) {
+        foreach ($name in (Get-DllClosure $exe $bin $objdump).Keys) {
             if (-not $dlls.Contains($name)) { $problems.Add("missing DLL: $name") }
         }
     }
@@ -359,7 +360,9 @@ $helperProblems = @(Get-HelperProblems (Join-Path $stage 'trg-updater.exe'))
 if ($helperProblems.Count) { Write-Problems $helperProblems; Stop-Tool 'trg-updater.exe is not the self-contained release helper' }
 
 Write-Step 'Staging the DLLs the loader uses'
-$dlls = Get-DllClosure $loader $bin
+$angleRuntime = Sync-AngleRuntime $bin
+$dlls = Get-DllClosure $loader $bin $objdump
+Add-AngleDlls $dlls $angleRuntime $bin
 $owners = [ordered]@{}
 foreach ($dll in $dlls.Values) {
     $owner = & $pacman -Qqo $dll.Substring($msys.Length).Replace('\', '/') 2>$null
@@ -372,6 +375,7 @@ foreach ($dll in $dlls.Values) {
     $owners[$short] += Split-Path $dll -Leaf
     Copy-Item -LiteralPath $dll $stage
 }
+foreach ($file in Get-AngleDlls $AnglePin) { Copy-Item -LiteralPath (Join-Path $angleRuntime $file.Name) $stage }
 
 Write-Step 'Staging the licences'
 Copy-Item -LiteralPath (Join-Path $root 'LICENSE') (Join-Path $stage 'LICENSE.txt')
@@ -399,6 +403,13 @@ foreach ($short in @($owners.Keys) + $StaticPackages) {
     $manifest.Add("  Licence: $($info.License)")
     $manifest.Add("  Source:  $($info.Source)")
 }
+New-Item -ItemType Directory -Force (Split-Path (Join-Path $stage $AngleLicence) -Parent) | Out-Null
+Copy-Item -LiteralPath (Join-Path $angleRuntime 'LICENSE') (Join-Path $stage $AngleLicence)
+$manifest.Add('')
+$manifest.Add("angleproject $($AnglePin.version) ($((Get-AngleDlls $AnglePin | ForEach-Object { $_.Name }) -join ', '))")
+$manifest.Add('  Licence: BSD-3-Clause')
+$manifest.Add("  Source:  https://repo.msys2.org/mingw/sources/mingw-w64-angleproject-$($AnglePin.version).src.tar.zst")
+$manifest.Add("  Upstream revision: $($AnglePin.revision)")
 Write-Text (Join-Path $licenses 'MSYS2-PACKAGES.txt') (($manifest -join "`n") + "`n")
 $readme = (Get-Content -LiteralPath (Join-Path $root 'packaging\README.txt') -Raw).Replace('@VERSION@', $version)
 Write-Text (Join-Path $stage 'README.txt') $readme

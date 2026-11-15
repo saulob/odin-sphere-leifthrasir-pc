@@ -37,7 +37,7 @@ add_library(osl_launcher_core STATIC bookshelf.c boot_image.cpp build_diagnostic
     ${PROJECT_SOURCE_DIR}/src/trophies/trophy_pack.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trophy_runtime.cpp
     ${PROJECT_SOURCE_DIR}/src/trophies/trophy_service.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trophy_store.cpp
     ${PROJECT_SOURCE_DIR}/src/trophies/trophy_view.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trp_archive.cpp)
-target_include_directories(osl_launcher_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src)
+target_include_directories(osl_launcher_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/gpu/shim)
 target_link_libraries(osl_launcher_core PUBLIC trg_core SDL3::SDL3 osl_keys PRIVATE ZLIB::ZLIB)
 target_compile_definitions(osl_launcher_core PRIVATE OSL_PORT_VERSION="${OSL_PORT_VERSION}")
 # Hashes and ciphers: CNG on Windows, OpenSSL's libcrypto elsewhere.

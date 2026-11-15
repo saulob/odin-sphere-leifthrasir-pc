@@ -1,4 +1,4 @@
-# Video core: shadPS4's Liverpool/Vulkan renderer, shader recompiler, GnmDriver, VideoOut and kernel
+# Video core: shadPS4's Liverpool with its Vulkan and OpenGL renderers, shader recompiler, GnmDriver, VideoOut and kernel
 # event queues, joined to the C loader through shim/oslgpu.cpp.
 cmake_minimum_required(VERSION 3.24)
 project(oslgpu LANGUAGES C CXX)
@@ -95,7 +95,8 @@ add_library(oslgpu STATIC ${VIDEO_CORE} ${RECOMPILER} ${COMMON} ${SHIM_SOURCES}
     shadps4/core/libraries/kernel/equeue.cpp
     third_party/imgui/imgui.cpp third_party/imgui/imgui_draw.cpp
     third_party/imgui/imgui_tables.cpp third_party/imgui/imgui_widgets.cpp
-    third_party/imgui/backends/imgui_impl_vulkan.cpp)
+    third_party/imgui/backends/imgui_impl_vulkan.cpp
+    third_party/imgui/backends/imgui_impl_opengl3.cpp)
 add_dependencies(oslgpu host_shaders)
 target_include_directories(oslgpu PRIVATE shim shadps4 ../src ${SHADER_INCLUDE} third_party/gcn/include
     third_party/half/include third_party/imgui third_party/imgui/backends third_party/xbyak)
@@ -103,6 +104,9 @@ target_compile_definitions(oslgpu PRIVATE BOOST_ASIO_STANDALONE NDEBUG IMGUI_IMP
     OSL_FONT_PATH="${CMAKE_CURRENT_SOURCE_DIR}/third_party/fonts/DejaVuSans.ttf")
 set_source_files_properties(shim/osl_overlay.cpp PROPERTIES
     OBJECT_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/fonts/DejaVuSans.ttf)
+# The real <GLES3/gl3.h> is not a build dependency: this folder gives imgui's ES3 backend the same names.
+set_source_files_properties(shim/imgui_impl_gles3.cpp PROPERTIES
+    INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/shim/gles3_shim)
 target_compile_options(oslgpu PRIVATE -Wno-deprecated-declarations -Wno-missing-field-initializers)
 target_link_libraries(oslgpu PUBLIC Vulkan::Headers Vulkan::Vulkan fmt::fmt Boost::headers magic_enum tsl::robin_map
     VulkanMemoryAllocator PkgConfig::XXHASH SDL3::SDL3 PNG::PNG miniz Zydis::Zydis sirit osl_keys)

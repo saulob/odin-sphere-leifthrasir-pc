@@ -45,6 +45,10 @@
 
 namespace Vulkan {
 
+void Presenter::ReportCompilerStats() {
+    rasterizer->GetPipelineCache().ReportCompilerStats();
+}
+
 bool CanBlitToSwapchain(const vk::PhysicalDevice physical_device, vk::Format format) {
     const vk::FormatProperties props{physical_device.getFormatProperties(format)};
     return static_cast<bool>(props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eBlitDst);

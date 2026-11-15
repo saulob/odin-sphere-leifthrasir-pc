@@ -106,20 +106,30 @@ constexpr char kShowLauncherHelp[] =
 constexpr char kWindowSizeHelp[] =
     "The game window's size in pixels in Windowed mode. The picture keeps its shape: other window shapes get black bars.";
 constexpr char kGraphicsCardHelp[] =
-    "The graphics card the game runs on. If the selected card is no longer available, the first card in the list is "
-    "used.";
+    "The graphics card the Vulkan renderer runs the game on. If the selected card is no longer available, the first "
+    "card in the list is used. OpenGL and Direct3D 11 use the system's default graphics adapter.";
+#ifdef _WIN32
+constexpr char kRendererHelp[] =
+    "Vulkan is the supported renderer. OpenGL and Direct3D 11 are experimental and render only part of the game's "
+    "features. Direct3D 11 is intended mainly for Windows systems where Vulkan or OpenGL has problems. Auto uses "
+    "Vulkan, and OpenGL when this system cannot run Vulkan. It takes effect the next time the game starts.";
+#else
+constexpr char kRendererHelp[] =
+    "Vulkan is the supported renderer. OpenGL is experimental and renders only part of the game's features. Auto uses "
+    "Vulkan, and OpenGL when this system cannot run Vulkan. It takes effect the next time the game starts.";
+#endif
 constexpr char kMonitorHelp[] = "The display the game opens on.";
 constexpr char kVSyncHelp[] = "On prevents tearing. Off allows it, for the lowest latency and G-Sync/FreeSync.";
 constexpr char kPresentationHelp[] =
     "Controls how the rendered image fits a window or display with a different aspect ratio.";
 constexpr char kUpscaleHelp[] =
     "Enlarges the game's picture to a bigger window with AMD FidelityFX Super Resolution 1. It has no effect when the "
-    "window is the size of the render resolution or smaller.";
+    "window is the size of the render resolution or smaller. Vulkan renderer only.";
 constexpr char kSharpenHelp[] =
     "Sharpens the final picture (AMD RCAS). It applies when the window is the size of the render resolution, or "
-    "together with FSR 1 in a bigger window.";
+    "together with FSR 1 in a bigger window. Vulkan renderer only.";
 constexpr char kAntiAliasingHelp[] =
-    "SMAA smooths jagged edges on the finished picture, at a small cost in performance.";
+    "SMAA smooths jagged edges on the finished picture, at a small cost in performance. Vulkan renderer only.";
 constexpr char kAnisotropyHelp[] =
     "Sharper textures on floors and walls seen at an angle. Game uses the game's own filtering.";
 constexpr char kTextLanguageHelp[] = "Language used by game menus and subtitles.";
@@ -773,6 +783,16 @@ private:
         return osl_aspect_ratios[osl_aspect_index(settings_.Get(kAspectRatioKey, kDefaultAspectRatio).c_str())];
     }
 
+    std::string SavedRendererName() const {
+        const std::string saved = settings_.Get(kRendererKey, kDefaultRenderer);
+        for (const RendererChoice& choice : kRendererChoices) {
+            if (saved == choice.key()) {
+                return std::string(choice.name);
+            }
+        }
+        return "Vulkan";
+    }
+
     void PageDisplay(trg::Ui& ui) {
         ui.Choice("Display mode", "Borderless Fullscreen fills the monitor. F11 switches while playing.", kDisplayModeKey,
                   "windowed", {{"windowed", "Windowed"}, {"borderless", "Borderless Fullscreen"}}, 2);
@@ -794,6 +814,11 @@ private:
             const int height = settings_.GetInt(kWindowHeightKey, kDefaultWindowHeight);
             settings_.SetInt(kWindowWidthKey, WindowSizeOf(height, SavedAspectRatio()).width);
         }
+        std::vector<trg::Option> renderers;
+        for (const RendererChoice& choice : kRendererChoices) {
+            renderers.push_back({std::string(choice.key()), std::string(choice.name)});
+        }
+        ui.Combo("Renderer", kRendererHelp, kRendererKey, kDefaultRenderer, renderers);
         ui.Row("Graphics card", kGraphicsCardHelp);
         GraphicsCardCombo();
         ui.Toggle("VSync", kVSyncHelp, kVSyncKey, true, "Off", "On");
@@ -1217,7 +1242,7 @@ private:
         ui.Info("Port version", OSL_PORT_VERSION);
         const std::string game = InstalledGameName(files_, build_);
         ui.Info("Game", game.c_str());
-        ui.Info("Renderer", "Vulkan");
+        ui.Info("Renderer", SavedRendererName().c_str());
 #ifdef _WIN32
         ui.Info("Platform", "Windows x64");
 #else

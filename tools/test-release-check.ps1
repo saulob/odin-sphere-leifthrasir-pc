@@ -3,8 +3,8 @@
   Checks that tools\package.ps1 -VerifyOnly accepts the staged release folder and refuses it once it holds the
   player's files, game data, logs, hang reports, crash dumps, symbols, build or Python leftovers, sources, test
   programs, updater leftovers, debugging tools, development markers, stale names or local paths, or lacks the update
-  helper, a DLL, the licences, the header art or the program's version resource, or when its trg-updater.exe is not
-  the stripped tools\build-updater.ps1 build. Nothing is built, launched or published.
+  helper, a DLL (ANGLE's included), the licences, the header art or the program's version resource, or when its trg-updater.exe is
+  not the stripped tools\build-updater.ps1 build. Nothing is built, launched or published.
 .DESCRIPTION
   Needs the staged folder of tools\package.ps1 (dist\OdinSphereLeifthrasirPC-v<version>-windows-x64). Each case is a
   copy made of hard links in build\release-check-tests; a file a case changes is replaced, never written through
@@ -79,6 +79,9 @@ $Cases = [ordered]@{
     'missing licences'          = @{ Missing = 'licenses\THIRD-PARTY-LICENSES.txt' }
     'missing header art'        = @{ Missing = 'assets\launcher\header-art.png' }
     'missing sponsor heart'     = @{ Missing = 'assets\launcher\sponsor-heart.png' }
+    'missing ANGLE DLL'         = @{ Missing = 'libGLESv2.dll' }
+    'missing ANGLE licence'     = @{ Missing = 'licenses\angleproject\LICENSE' }
+    'stale ANGLE DLL'           = @{ Item = 'libEGL.dll'; Text = 'not the pinned build' }
 }
 
 function New-LinkedCopy([string]$Source, [string]$Target) {

@@ -269,7 +269,11 @@ $steps = @(
         '(?m)^  Experience Multiplier +HOOK VERIFIED \(', '(?m)^  Experience Multiplier +LEVEL MODEL VERIFIED \(', '(?m)^Experience build parity: \d+ build\(s\) verified on real files')),
     (Step 'Features' 'local trophies' 'osl-trophy-tests'),
     (Step 'Features' 'title menu Exit Game art: every supported build and language, Refined and Classic, never INSTALL on an active row' 'osl-tests' -Block { Invoke-TitleArt $built }),
-    (Step 'Graphics' 'GPU tile layouts and addresses' 'osl-tiling-tests')
+    (Step 'Graphics' 'GPU tile layouts and addresses' 'osl-tiling-tests'),
+    (Step 'Graphics' 'renderer selection (Auto, Vulkan, OpenGL, Direct3D 11), the window API and the OpenGL requirements' 'osl-renderer-selection-tests'),
+    (Step 'Graphics' 'OpenGL backend (detiler, emitted GLSL through glslang, no context)' 'osl-opengl-backend-tests'),
+    (Step 'Graphics' 'OpenGL fast paths (write watch with real faults, state tracker, stream ring, no context)' 'osl-opengl-perf-tests'),
+    (Step 'Graphics' 'ANGLE dependency (pin, cache, extraction, DLL staging, package checks, no network)' -Block { Invoke-PowerShellScript 'tests\angle_dependency_tests.ps1' })
 )
 
 $wanted = @(if ($Group -contains 'All') { $groupOrder } else { $groupOrder | Where-Object { $Group -contains $_ } })

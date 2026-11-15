@@ -36,7 +36,10 @@ REQUIREMENTS
   Vulkan 1.3 (libvulkan.so.1)
 - A graphics card and Mesa or proprietary driver with Vulkan 1.3,
   VK_EXT_robustness2, VK_KHR_push_descriptor and
-  VK_EXT_vertex_attribute_divisor
+  VK_EXT_vertex_attribute_divisor. Vulkan is the supported renderer; the
+  launcher's Display page also offers Auto (Vulkan, then OpenGL when Vulkan
+  cannot run) and the experimental OpenGL renderer, which needs OpenGL 3.3 core
+  and renders only part of the game's features
 - FUSE is optional. The AppImage normally mounts itself with FUSE; if that is
   not possible it unpacks itself into a temporary folder and runs from there
   automatically. Setting APPIMAGE_EXTRACT_AND_RUN=1 (or starting with

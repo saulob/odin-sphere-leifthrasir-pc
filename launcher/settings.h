@@ -8,6 +8,7 @@
 #include <string>
 #include <string_view>
 
+#include "osl_renderer.h"
 #include "trg/settings.h"
 
 namespace osl {
@@ -19,6 +20,8 @@ inline constexpr char kWindowHeightKey[] = "window_height";
 inline constexpr char kMonitorKey[] = "monitor";
 inline constexpr char kVSyncKey[] = "vsync";
 inline constexpr char kPresentationKey[] = "presentation";
+// Which renderer runs the game (gpu/shim/osl_renderer.h: the same keys); read when the game starts.
+inline constexpr char kRendererKey[] = "renderer";
 inline constexpr char kUpscaleKey[] = "fsr1";
 inline constexpr char kSharpenKey[] = "rcas";
 inline constexpr char kSharpenStrengthKey[] = "rcas_strength";
@@ -60,6 +63,24 @@ inline constexpr PresentationChoice kPresentationChoices[] = {
     {"stretch", "Stretch"},
 };
 inline constexpr char kDefaultPresentation[] = "letterbox";
+
+struct RendererChoice {
+    OslRenderer::Choice choice;
+    std::string_view name;
+    std::string_view key() const { return OslRenderer::ChoiceKeys[choice]; }
+};
+
+// The Renderer row in launcher order; Direct3D 11 exists on Windows only.
+inline constexpr RendererChoice kRendererChoices[] = {
+    {OslRenderer::Auto, "Auto"},
+    {OslRenderer::Vulkan, "Vulkan"},
+    {OslRenderer::OpenGL, "OpenGL (experimental)"},
+#ifdef _WIN32
+    {OslRenderer::Direct3D11, "Direct3D 11 (experimental)"},
+#endif
+};
+inline constexpr char kDefaultRenderer[] = "vulkan";
+static_assert(OslRenderer::ChoiceKeys[OslRenderer::Vulkan] == kDefaultRenderer);
 
 using Values = std::map<std::string, std::string, std::less<>>;
 

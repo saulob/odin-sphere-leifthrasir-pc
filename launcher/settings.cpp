@@ -28,6 +28,7 @@ constexpr ManagedSetting kBaseSettings[] = {
     {kMonitorKey, "1"},
     {kVSyncKey, "1"},
     {kPresentationKey, kDefaultPresentation},
+    {kRendererKey, kDefaultRenderer},
     {kUpscaleKey, "0"},
     {kSharpenKey, "1"},
     {kSharpenStrengthKey, "75"},
@@ -115,6 +116,10 @@ bool IsValidSetting(std::string_view key, std::string_view value) {
     if (key == kPresentationKey) {
         return std::any_of(std::begin(kPresentationChoices), std::end(kPresentationChoices),
                            [&](const PresentationChoice& choice) { return value == choice.key; });
+    }
+    if (key == kRendererKey) {
+        return std::any_of(std::begin(kRendererChoices), std::end(kRendererChoices),
+                           [&](const RendererChoice& choice) { return value == choice.key(); });
     }
     if (key == kRenderResolutionKey) {
         return std::any_of(std::begin(osl_resolutions), std::end(osl_resolutions),

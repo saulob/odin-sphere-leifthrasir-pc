@@ -187,8 +187,9 @@ static int cpu_usable(char *cause, size_t cause_size, char *advice, size_t advic
     return 0;
 }
 #ifndef _WIN32
+static const char *renderer_settings_file;
 static int system_usable(char *cause, size_t cause_size, char *advice, size_t advice_size) {
-    return cpu_usable(cause,cause_size,advice,advice_size) && osl_check_vulkan(cause,cause_size,advice,advice_size);
+    return cpu_usable(cause,cause_size,advice,advice_size) && osl_check_renderer(renderer_settings_file,cause,cause_size,advice,advice_size);
 }
 #endif
 /* OSL_EMULATE_LZCNT=1 (test): the LZCNT rewrite also on a host that has LZCNT. */
@@ -781,6 +782,7 @@ int main(int argc, char **argv) {
     if (!cpu_only && !check_imports) {
         OslGraphicsCheck check_graphics=cpu_usable;
 #ifndef _WIN32
+        renderer_settings_file=settings_file;
         check_graphics=system_usable;
 #endif
         OslLauncherConfig launcher={app0,paths.image_dir,user_dir,settings_file,log_folder,skip_launcher,force_launcher,check_graphics,log_path[0] ? log_path : NULL};
@@ -958,7 +960,7 @@ int main(int argc, char **argv) {
         OslGpuConfig gpu={title,serial,user_dir,settings_file,(uint32_t)sdk,attributes,1920,1080};
         gpu_enabled=1; /* page tracking starts while the rasterizer registers guest memory */
         if (oslgpu_init(&gpu)) fail("GPU initialization failed");
-        printf("GPU: window and Vulkan presenter ready; SDK 0x%08x, %u HLE symbols\n",(unsigned)sdk,oslgpu_symbol_count());
+        printf("GPU: window and %s presenter ready; SDK 0x%08x, %u HLE symbols\n",oslgpu_presenter_name(),(unsigned)sdk,oslgpu_symbol_count());
 #ifdef _WIN32
         const HangWatchdogConfig watchdog={oslgpu_native_window(),log_folder,log_path[0] ? log_path : NULL,OSL_VERSION_STRING,
                                            crash_game_build,host_os,start_ms,oslgpu_presented_frames,guest_location};

@@ -29,6 +29,8 @@ void oslgpu_dump_guest_writes(void *context);
 void oslgpu_note_fatal_fault(void);
 /* Number of symbols registered by the video core (diagnostics). */
 unsigned oslgpu_symbol_count(void);
+/* The active renderer's presenter: "Vulkan", "OpenGL" or "Direct3D 11". */
+const char *oslgpu_presenter_name(void);
 /* The game window's HWND on Windows; NULL before oslgpu_init. */
 void *oslgpu_native_window(void);
 /* Frames presented so far, read without locks (the hang watchdog). */

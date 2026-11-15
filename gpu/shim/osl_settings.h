@@ -9,12 +9,15 @@
 
 #include <SDL3/SDL_scancode.h>
 
+#include "osl_renderer.h"
+
 namespace OslSettings {
 
 struct Values {
     // Frame counter: font size in percent and corner (0 top left, 1 top right, 2 bottom left, 3 bottom right).
     std::atomic<bool> show_fps{false};
     std::atomic<int> overlay_scale{100}, overlay_corner{1};
+    std::atomic<int> renderer{OslRenderer::Vulkan}; ///< OslRenderer::Choice; read once at start
     std::atomic<int> display_mode{0};
     std::atomic<bool> vsync{true};
     std::atomic<int> presentation{0}; ///< OslGraphics::Presentation: letterbox or stretch

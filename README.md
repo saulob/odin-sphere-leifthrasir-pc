@@ -8,7 +8,7 @@
 [![Downloads](https://img.shields.io/github/downloads/saulob/odin-sphere-leifthrasir-pc/total?style=for-the-badge&color=d12a78&labelColor=0e152a&cacheSeconds=300)](https://github.com/saulob/odin-sphere-leifthrasir-pc/releases)
 ![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20experimental%20%7C%20Steam%20Deck%20experimental-00acc1?style=for-the-badge&labelColor=0e152a)
 
-<sub>The original PS4 game code runs on the PC with a replacement for the PS4 system libraries and a Vulkan renderer derived from <a href="https://github.com/shadps4-emu/shadPS4">shadPS4</a>. <b>No game files included</b>: bring your own legally obtained Odin Sphere Leifthrasir PS4 package.</sub>
+<sub>The original PS4 game code runs on the PC with a replacement for the PS4 system libraries and a Vulkan renderer derived from <a href="https://github.com/shadps4-emu/shadPS4">shadPS4</a> (with experimental OpenGL and Direct3D 11 renderers). <b>No game files included</b>: bring your own legally obtained Odin Sphere Leifthrasir PS4 package.</sub>
 
 </div>
 
@@ -39,12 +39,13 @@ checked by scripts, but it has not yet been tested on real Linux PCs or a Steam 
 - **Windowed** and **Borderless Fullscreen**, switched with **F11** while playing
 - **Window size** and **monitor** selection for the game; the launcher remembers its own window placement
 - **Aspect Ratio**: 16:9 Original, 16:10, 21:9 Ultrawide, 32:9 Super Ultrawide, 4:3 and 5:4
-- **Graphics card selection**, **VSync** and **Presentation** (letterbox or stretch)
-- **Upscaling** (AMD FidelityFX Super Resolution 1) and **sharpening** (AMD RCAS)
+- **Renderer**: **Vulkan** (supported, the default), **Auto** (Vulkan, and OpenGL only when this system cannot run Vulkan), and the **experimental** **OpenGL** and, on Windows, **Direct3D 11** (through ANGLE) renderers, which render only part of the game's features; the choice applies at the next start ([docs/GRAPHICS.md](docs/GRAPHICS.md))
+- **Graphics card selection** (Vulkan), **VSync** and **Presentation** (letterbox or stretch)
+- **Upscaling** (AMD FidelityFX Super Resolution 1) and **sharpening** (AMD RCAS), on the Vulkan renderer
 
 ### Graphics
 - **Render resolution** from 480p through native 1080p, 1440p and 1800p to 4K, separate from the window size
-- **SMAA** anti-aliasing and **anisotropic texture filtering** (Game, 2x, 4x, 8x, 16x)
+- **SMAA** anti-aliasing (Vulkan) and **anisotropic texture filtering** (Game, 2x, 4x, 8x, 16x)
 
 ### Gameplay
 - **Skip intro**: start at the title's PRESS START, without the startup notice, logos and intro
@@ -81,7 +82,7 @@ checked by scripts, but it has not yet been tested on real Linux PCs or a Steam 
   Vulkan loader, and an X11 or Wayland desktop
 - A processor with **AVX** and POPCNT: Intel Core 2nd generation (Sandy Bridge), AMD FX or newer. MOVBE, BMI1 and LZCNT,
   which older processors lack, are handled in software
-- A graphics card and driver with **Vulkan 1.3**, `VK_EXT_robustness2`, `VK_KHR_push_descriptor` and `VK_EXT_vertex_attribute_divisor`
+- A graphics card and driver with **Vulkan 1.3**, `VK_EXT_robustness2`, `VK_KHR_push_descriptor` and `VK_EXT_vertex_attribute_divisor` for the Vulkan renderer. The experimental OpenGL renderer needs OpenGL 3.3 core, and the experimental Direct3D 11 renderer (Windows) a card with Direct3D feature level 10_1 or newer
 - **Your own legally obtained Odin Sphere Leifthrasir package**: a decrypted PS4 `.pkg` of a supported build, and about 4 GB of free space
 
 | | |
@@ -161,7 +162,7 @@ Everything is kept next to the program (next to the AppImage on Linux):
 ## The launcher
 
 - **Play**: install or reinstall the game from your `.pkg`, the **Ready to play** status and **Show this launcher**
-- **Display**: display mode, window size, monitor, Aspect Ratio, graphics card, VSync, Presentation, FSR 1 upscaling and RCAS sharpening
+- **Display**: display mode, window size, monitor, Aspect Ratio, Renderer (Auto, Vulkan, OpenGL, and on Windows Direct3D 11), graphics card, VSync, Presentation, FSR 1 upscaling and RCAS sharpening
 - **Graphics**: Render resolution, SMAA anti-aliasing and anisotropic texture filtering
 - **Gameplay**: Menu & Subtitles language (the European and Hong Kong builds), **Skip intro**, **Unlock Bookshelf**, frame rate and render resolution in the title, and the in-game frame counter
 - **Cheats**: seven optional gameplay modifiers in two groups, Resources and Combat, each Off or On, and the **Experience Multiplier** (Off, 2x, 5x, 10x or 100x) last; they set the state the game starts with, and **F10** changes them while playing
@@ -285,7 +286,7 @@ for 15 seconds while the game is in front and not minimized. The game keeps runn
 1. Install [MSYS2](https://www.msys2.org) with the CLANG64 toolchain. `.\tools\setup.ps1` checks it and prints the `pacman` command for anything missing.
 2. `.\tools\build.ps1` fetches the pinned dependencies (TRG Launcher, Dear ImGui and a few small libraries) and builds `build\cmake\clang64\bin\odin_sphere_leifthrasir.exe`.
 3. `.\tools\build.ps1 -Run` also starts it. Install the game from the launcher's Play page, as in a release; the development build keeps it in `game\prepared\<build folder>` and the boot image in `build\image\<build folder>` of the repository (`CUSA05083-1.00`, `CUSA05083-1.01`, `CUSA01290-1.00`, `CUSA01290-1.02`, `CUSA05262-1.00`, `CUSA05262-1.01` or `CUSA03873-1.00`).
-4. `.\tools\test.ps1` builds and runs the focused headless tests in groups (`-Group Runtime, CPU, Packages, Launcher, Updater, Features, Graphics`; the Launcher group includes the Bug Report page and its Worker, the Updater group the loopback network tests; the Features group proves the title menu's Exit Game art for every supported build and language, and needs Python with numpy, scipy and Pillow: `.\tools\setup.ps1 -InstallPython`). `.\tools\worker.ps1 -DryRun` checks the Bug Report Worker's deployment without uploading it, and `.\tools\worker.ps1` deploys it (see [docs/BUG_REPORTS.md](docs/BUG_REPORTS.md)). Python is not needed to build, run or play; the optional development scripts in `scripts\` use it (`.\tools\setup.ps1 -InstallPython`).
+4. `.\tools\test.ps1` builds and runs the focused headless tests in groups (`-Group Runtime, CPU, Packages, Launcher, Updater, Features, Graphics`; the Graphics group covers the renderer selection, the OpenGL backend and the pinned ANGLE runtime without creating a window or a graphics context; the Launcher group includes the Bug Report page and its Worker, the Updater group the loopback network tests; the Features group proves the title menu's Exit Game art for every supported build and language, and needs Python with numpy, scipy and Pillow: `.\tools\setup.ps1 -InstallPython`). `.\tools\worker.ps1 -DryRun` checks the Bug Report Worker's deployment without uploading it, and `.\tools\worker.ps1` deploys it (see [docs/BUG_REPORTS.md](docs/BUG_REPORTS.md)). Python is not needed to build, run or play; the optional development scripts in `scripts\` use it (`.\tools\setup.ps1 -InstallPython`).
 5. `.\tools\package.ps1` builds the Release configuration (`.\tools\build.ps1 -Release`, in `build\cmake\clang64-release`: `-O3` with ThinLTO across the program and its own libraries, without a symbol table or build id) and the release update helper (`.\tools\build-updater.ps1`: MSYS2 CLANG64 clang++ and LLD, static, only Windows system DLLs, its debug information split into `trg-updater.debug`), then packages `dist\OdinSphereLeifthrasirPC-v<version>-windows-x64.zip`, which holds one folder of that name, and its `.sha256` file. The ZIP is extracted again, compared file by file with the staging folder and scanned, checked with the updater's own rules, and the update helper tests run against the packaged `trg-updater.exe`; `trg-updater.debug` goes to `dist\OdinSphereLeifthrasirPC-v<version>-windows-x64-symbols\`, outside the ZIP. `.\tools\package.ps1 -VerifyOnly <ZIP>` checks a finished ZIP, and `.\tools\test-release-check.ps1` checks that the release check refuses player files, game data, symbols, local paths and leftovers. Nothing is published.
 6. Linux: `tools/build.sh` builds on Linux x86_64 (`--release` for the Release configuration in `build/cmake/linux-release`), and `tools/package-linux.sh` packages `dist/OdinSphereLeifthrasirPC-v<version>-x86_64.AppImage` and its `.sha256` on Ubuntu 20.04 (in WSL2 from this Windows checkout: `tools/package-release-linux.sh`); `--verify-only <AppImage>` checks a finished one. See [docs/LINUX.md](docs/LINUX.md).
 
@@ -341,6 +342,7 @@ Odin Sphere Leifthrasir PC is maintained and developed in my free time. If you e
 ## Credits
 
 - Odin Sphere Leifthrasir by Vanillaware, published by Atlus (2016). This is an unofficial fan-made PC port. It is not affiliated with or endorsed by Vanillaware, Atlus, SEGA, Sony Interactive Entertainment or any other rights holder, and it contains none of their files.
+- [ANGLE](https://chromium.googlesource.com/angle/angle) (BSD-3-Clause), which runs the experimental Direct3D 11 renderer on Windows; the OpenGL and Direct3D 11 renderers are ported from Dragon's Crown Pro PC ([docs/opengl-renderer.md](docs/opengl-renderer.md))
 - [shadPS4](https://github.com/shadps4-emu/shadPS4) for the Vulkan renderer, shader recompiler and GPU command processing the video core is built on, and for the PS4 package extractor the installer is adapted from
 - [gow3_pc](https://github.com/FelipePrado0/gow3_pc) and its lineage, uncharted-ndc-native, MediEvil PC and the HayatoG ports, for the loader, runtime and video core this port grew from
 - Dragon's Crown Pro PC, the port this architecture is reproduced from

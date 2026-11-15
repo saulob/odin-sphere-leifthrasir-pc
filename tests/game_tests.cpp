@@ -44,6 +44,8 @@
 #include "pad_capture.h"
 #include "osl_accent.h"
 #include "osl_graphics.h"
+#include "osl_renderer.h"
+#include "osl_settings.h"
 #include "osl_launcher.h"
 #include "osl_title.h"
 #include "placement.h"
@@ -604,6 +606,40 @@ void TestPresentation() {
     CHECK(presenter.find("OslSettings::Get().presentation.load() == OslGraphics::Stretch") != std::string::npos);
     CHECK(pick != std::string::npos && presenter.find("MakeImageBlitStretch(frame->width", pick) <
                                            presenter.find("MakeImageBlitFit(frame->width", pick));
+}
+
+// The Renderer setting: one key and one parser for the launcher and the video core, Vulkan by default.
+void TestRenderer() {
+    CHECK(std::string(kRendererKey) == "renderer" && std::string(kDefaultRenderer) == "vulkan");
+    CHECK(kRendererChoices[0].choice == OslRenderer::Auto && kRendererChoices[1].choice == OslRenderer::Vulkan &&
+          kRendererChoices[2].choice == OslRenderer::OpenGL);
+    CHECK(std::size(kRendererChoices) == (OslRenderer::Direct3D11Available ? 4u : 3u));
+    CHECK(OslRenderer::Direct3D11Available == (std::size(kRendererChoices) == 4));
+
+    const std::filesystem::path file = TempDir("renderer") / "osl.ini";
+    LauncherSettings settings(file);
+    settings.ResetToDefaults();
+    CHECK(settings.Get(kRendererKey, "") == "vulkan");
+    for (const RendererChoice& choice : kRendererChoices) {
+        CHECK(IsValidSetting(kRendererKey, choice.key()));
+        settings.Set(kRendererKey, std::string(choice.key()));
+        CHECK(settings.Save());
+        OslSettings::Values values;
+        CHECK(OslSettings::Read(file.string(), values));
+        CHECK(values.renderer.load() == choice.choice);
+    }
+    for (const char* invalid : {"", "Vulkan", "OpenGL", "direct3d11", "gl"}) {
+        CHECK(!IsValidSetting(kRendererKey, invalid));
+    }
+    CHECK(IsValidSetting(kRendererKey, "d3d11") == OslRenderer::Direct3D11Available);
+    settings.Set(kRendererKey, "opengl");
+    settings.ResetToDefaults();
+    CHECK(settings.Get(kRendererKey, "") == "vulkan");
+    {
+        std::ofstream(file, std::ios::trunc) << "renderer = bogus\n";
+        OslSettings::Values values;
+        CHECK(OslSettings::Read(file.string(), values) && values.renderer.load() == OslRenderer::Vulkan);
+    }
 }
 
 // The game window's title: the game's title, then the render resolution and the frame rate when shown. A text entry
@@ -6099,6 +6135,7 @@ int main(int argc, char** argv) {
     TestPadCapture();
     TestPadWiring();
     TestPresentation();
+    TestRenderer();
     TestWindowTitle();
     TestFrameCounterAndNotices();
     TestNoRuntimeOverlay();

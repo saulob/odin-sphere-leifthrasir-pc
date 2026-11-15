@@ -39,7 +39,10 @@ REQUIREMENTS
 ------------
 - Windows 10 version 1903 or later, or Windows 11, 64-bit
 - A graphics card and driver with Vulkan 1.3, VK_EXT_robustness2,
-  VK_KHR_push_descriptor and VK_EXT_vertex_attribute_divisor
+  VK_KHR_push_descriptor and VK_EXT_vertex_attribute_divisor. Vulkan is the
+  supported renderer. The Display page of the launcher also offers Auto and
+  the experimental OpenGL and Direct3D 11 renderers, which render only part of
+  the game's features; they apply at the next start
 - Your own Odin Sphere Leifthrasir package, plus about 4 GB of free disk space
   next to the program for the installed game
 - Nothing else: no Python or other tools are needed

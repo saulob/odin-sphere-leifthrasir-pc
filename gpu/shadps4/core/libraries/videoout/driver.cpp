@@ -25,14 +25,16 @@
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/videoout/driver.h"
 #include "core/libraries/videoout/videoout_error.h"
+#include "core/memory.h"
 #include "imgui/renderer/imgui_core.h"
 #include "video_core/amdgpu/liverpool.h"
+#include "video_core/renderer_backend.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_wait_diagnostics.h"
 
-extern std::unique_ptr<Vulkan::Presenter> presenter;
+extern std::unique_ptr<VideoCore::PresenterBackend> presenter;
 extern std::unique_ptr<AmdGpu::Liverpool> liverpool;
 
 namespace Vulkan {
@@ -240,7 +242,7 @@ int VideoOutDriver::RegisterBuffers(VideoOutPort* port, s32 startIndex, void* co
         port->buffer_labels[startIndex + i] = 0;
         port->SignalVoLabel();
 
-        presenter->RegisterVideoOutSurface(group, address);
+        presenter->RegisterDisplayBuffer(group, address);
         LOG_INFO(Lib_VideoOut, "buffers[{}] = {:#x}", i + startIndex, address);
     }
 
@@ -517,7 +519,7 @@ void VideoOutDriver::Flip(const Request& req) {
                         OslStats::tick_wait_ns.exchange(0) / (window * 1e7),
                         frames ? double(OslStats::reduced_draws.exchange(0)) / frames : 0.0,
                         frames ? double(OslStats::scene_draws.exchange(0)) / frames : 0.0);
-            presenter->GetRasterizer().GetPipelineCache().ReportCompilerStats();
+            presenter->ReportCompilerStats();
             Vulkan::WaitDiagnostics::Report();
             // Frame pacing: spread of the guest flip intervals (judder that the mean hides).
             if (intervals.size() > 2) {
@@ -620,8 +622,9 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
         // Non EOP flips can arrive from any thread so ask GPU thread to perform them. The fences
         // deferred to the recording threads are written before the guest can see the flip.
         liverpool->SendCommand([=, this]() {
-            presenter->GetRasterizer().WaitHostCopies();
-            presenter->GetRasterizer().WaitDeferredSignals();
+            auto* rasterizer = Core::Memory::Instance()->GetRasterizer();
+            rasterizer->WaitHostCopies();
+            rasterizer->WaitDeferredSignals();
             SubmitFlipInternal(port, index, flip_arg, is_eop);
         });
     } else {
@@ -632,7 +635,7 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
 }
 
 void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop) {
-    Vulkan::Frame* frame;
+    VideoCore::PresentFrame* frame;
     if (index == -1) {
         frame = presenter->PrepareBlankFrame(false);
     } else {

@@ -59,7 +59,7 @@ The boot path reports these stages in order:
 | Line | Meaning |
 | --- | --- |
 | `OSL: game build CUSA05083 1.00 USA` or `CUSA01290 1.02 Japan` | the boot image matches the supported executable |
-| `GPU: window and Vulkan presenter ready; ... HLE symbols` | the video core created its window, device and presenter |
+| `GPU: window and <Vulkan, OpenGL or Direct3D 11> presenter ready; ... HLE symbols` | the video core created its window, device and presenter |
 | `Mapped N bytes, ... applied N relocations` | the guest image was mapped and imports were written |
 | `Starting linked module ...` / `Module ... initializer returned 0` | `libc.prx` and `libSceFios2.prx` initialized |
 | `Entering original x86-64 code at guest offset ...` | the first guest instruction is about to run |

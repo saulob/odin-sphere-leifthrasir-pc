@@ -55,6 +55,8 @@ void Set(Values& v, const std::string& key, const std::string& value) {
     } else if (key == "overlay_corner") {
         const int corner = ParseInt(value, 1);
         v.overlay_corner = corner >= 0 && corner <= 3 ? corner : 1;
+    } else if (key == "renderer") {
+        v.renderer = OslRenderer::ParseChoice(value);
     } else if (key == "display_mode") {
         v.display_mode = OslGraphics::ParseDisplayMode(value);
     } else if (key == "vsync") {

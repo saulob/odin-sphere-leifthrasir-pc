@@ -148,7 +148,7 @@ else()
     set(OSL_TEST_LOG_SOURCES src/runtime_log_posix.c)
 endif()
 set(OSL_TEST_LOG_SOURCES ${OSL_TEST_LOG_SOURCES} src/runtime_session_log.c src/crash_report.c src/hang_report.c)
-add_executable(osl-tests EXCLUDE_FROM_ALL tests/game_tests.cpp ${OSL_TEST_LOG_SOURCES})
+add_executable(osl-tests EXCLUDE_FROM_ALL tests/game_tests.cpp gpu/shim/osl_settings.cpp ${OSL_TEST_LOG_SOURCES})
 set_target_properties(osl-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
 target_include_directories(osl-tests PRIVATE src launcher gpu/shim)
 target_compile_definitions(osl-tests PRIVATE OSL_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
@@ -183,6 +183,32 @@ target_include_directories(osl-tiling-tests PRIVATE gpu/shim gpu/shadps4 tests s
     gpu/third_party/gcn/include gpu/third_party/half/include gpu/third_party/xbyak)
 target_compile_options(osl-tiling-tests PRIVATE -Wall -Wextra -Werror)
 target_link_libraries(osl-tiling-tests PRIVATE oslgpu)
+
+# Focused tests of the Renderer setting and the OpenGL requirements (tools/test.ps1); not part of the default build.
+add_executable(osl-renderer-selection-tests EXCLUDE_FROM_ALL tests/renderer_selection_tests.cpp)
+set_target_properties(osl-renderer-selection-tests PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_include_directories(osl-renderer-selection-tests PRIVATE gpu/shim gpu/shadps4)
+target_compile_definitions(osl-renderer-selection-tests PRIVATE OSL_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+target_compile_options(osl-renderer-selection-tests PRIVATE -Wall -Wextra -Werror)
+
+# Focused tests of the OpenGL detiler against the game's tiler and of the emitted GLSL through glslangValidator
+# (tools/test.ps1); no OpenGL context. Not part of the default build.
+add_executable(osl-opengl-backend-tests EXCLUDE_FROM_ALL tests/opengl_backend_tests.cpp)
+set_target_properties(osl-opengl-backend-tests PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_include_directories(osl-opengl-backend-tests PRIVATE gpu/shim gpu/shadps4 tests src ${CMAKE_BINARY_DIR}/gpu/include
+    gpu/third_party/gcn/include gpu/third_party/half/include gpu/third_party/xbyak)
+target_compile_definitions(osl-opengl-backend-tests PRIVATE OSL_GLSLANG="${GLSLANG_COMPILER}"
+    OSL_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+target_link_libraries(osl-opengl-backend-tests PRIVATE oslgpu $<$<BOOL:${WIN32}>:onecore>)
+
+# Focused tests of the OpenGL write watch against real page faults, and of the state tracker and stream ring against
+# recording entry points (tools/test.ps1); no OpenGL context. Not part of the default build.
+add_executable(osl-opengl-perf-tests EXCLUDE_FROM_ALL tests/opengl_perf_tests.cpp)
+set_target_properties(osl-opengl-perf-tests PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_include_directories(osl-opengl-perf-tests PRIVATE gpu/shim gpu/shadps4)
+target_compile_definitions(osl-opengl-perf-tests PRIVATE OSL_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+target_compile_options(osl-opengl-perf-tests PRIVATE -Wall -Wextra -Werror)
+target_link_libraries(osl-opengl-perf-tests PRIVATE SDL3::SDL3 Threads::Threads)
 
 # Focused tests of the runtime's locks and guest memory table (tools/test.ps1); not part of the default build.
 add_executable(osl-runtime-tests EXCLUDE_FROM_ALL tests/runtime_sync_tests.c src/runtime_rwlock.c src/runtime_mutex.c src/runtime_eventflag.c src/runtime_thread.c src/runtime_sema.c)

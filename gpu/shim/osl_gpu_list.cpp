@@ -13,6 +13,8 @@
 
 #include "common/types.h"
 #include "osl_graphics.h"
+#include "osl_renderer.h"
+#include "osl_settings.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
@@ -95,6 +97,23 @@ extern "C" int osl_check_vulkan(char* cause, size_t cause_size, char* advice, si
     std::snprintf(cause, cause_size, "%s", problem->cause.c_str());
     std::snprintf(advice, advice_size, "%s", problem->advice.c_str());
     return 0;
+}
+
+// Vulkan stops the start only when the player's Renderer setting needs it.
+extern "C" int osl_check_renderer(const char* settings_file, char* cause, size_t cause_size,
+                                  char* advice, size_t advice_size) {
+    OslSettings::Values values;
+    OslSettings::Read(settings_file ? settings_file : "", values);
+    switch (OslRenderer::Choice(values.renderer.load())) {
+    case OslRenderer::OpenGL:
+    case OslRenderer::Direct3D11:
+        return 1;
+    case OslRenderer::Auto:
+        osl_check_vulkan(cause, cause_size, advice, advice_size);
+        return 1;
+    default:
+        return osl_check_vulkan(cause, cause_size, advice, advice_size);
+    }
 }
 
 extern "C" int osl_gpu_names(char (*names)[256], int max) {

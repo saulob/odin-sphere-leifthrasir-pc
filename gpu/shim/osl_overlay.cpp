@@ -21,6 +21,11 @@
 #include "runtime_cheats.h"
 #include "imgui.h"
 #include "imgui_internal.h" // RegisterUserTexture (save pictures)
+#include "imgui_impl_opengl3.h"
+#ifdef _WIN32
+#include "imgui_impl_gles3.h"
+#include "osl_renderer.h"
+#endif
 #include "imgui_impl_vulkan.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -336,11 +341,8 @@ void BackgroundLoading() {
 
 } // namespace
 
-void Init(const Vulkan::Instance& instance, vk::Format format, u32 image_count) {
-    std::scoped_lock lock{imgui_mutex};
-    if (initialized) {
-        return;
-    }
+// imgui_mutex held.
+static void CreateImGuiContext() {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
@@ -377,6 +379,14 @@ void Init(const Vulkan::Instance& instance, vk::Format format, u32 image_count) 
     font_config.FontDataOwnedByAtlas = false;
     io.Fonts->AddFontFromMemoryTTF(const_cast<unsigned char*>(osl_font_ttf),
                                    int(osl_font_ttf_end - osl_font_ttf), 18.0f, &font_config);
+}
+
+void Init(const Vulkan::Instance& instance, vk::Format format, u32 image_count) {
+    std::scoped_lock lock{imgui_mutex};
+    if (initialized) {
+        return;
+    }
+    CreateImGuiContext();
 
     const vk::Instance vk_instance = instance.GetInstance();
     ImGui_ImplVulkan_LoadFunctions(
@@ -407,6 +417,27 @@ void Init(const Vulkan::Instance& instance, vk::Format format, u32 image_count) 
     };
     if (!ImGui_ImplVulkan_Init(&info)) {
         std::printf("Runtime UI: ImGui Vulkan backend init failed\n");
+        ImGui::DestroyContext();
+        return;
+    }
+    initialized = true;
+}
+
+void InitOpenGL() {
+    std::scoped_lock lock{imgui_mutex};
+    if (initialized) {
+        return;
+    }
+    CreateImGuiContext();
+#ifdef _WIN32
+    const bool started = OslRenderer::Active() == OslRenderer::Backend::Direct3D11
+                             ? InitImGuiGles3()
+                             : ImGui_ImplOpenGL3_Init("#version 330 core");
+#else
+    const bool started = ImGui_ImplOpenGL3_Init("#version 330 core");
+#endif
+    if (!started) {
+        std::printf("Runtime UI: ImGui OpenGL backend init failed\n");
         ImGui::DestroyContext();
         return;
     }
@@ -944,26 +975,38 @@ void LogPresent() {
     presented_frames.fetch_add(1, std::memory_order_relaxed);
 }
 
-void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent) {
+namespace {
+
+float last_interval_ms = 0.0f;
+uint32_t cheat_buttons = 0;
+
+// Everything that runs every presented frame; false when nothing is on screen.
+bool BeginPresent() {
     // Present interval for the FPS readout (measured also while nothing is drawn).
     const auto now = std::chrono::steady_clock::now();
     const float ms = std::chrono::duration<float, std::milli>(now - last_present).count();
     last_present = now;
+    last_interval_ms = ms;
     if (ms > 0.0f && ms < 1000.0f) {
         frame_ms_avg = frame_ms_avg == 0.0f ? ms : frame_ms_avg * 0.95f + ms * 0.05f;
     }
     PollChoiceInput();
     if (!Visible()) {
-        return;
+        return false;
     }
     // The runtime's pad state is read before the UI lock, as the save list does.
-    const uint32_t cheat_buttons = cheat_open && choice_input ? choice_input() : 0;
-    std::scoped_lock lock{imgui_mutex};
+    cheat_buttons = cheat_open && choice_input ? choice_input() : 0;
+    return true;
+}
+
+// imgui_mutex held. `new_frame` is the renderer backend's.
+void BuildFrame(u32 width, u32 height, void (*new_frame)()) {
+    const float ms = last_interval_ms;
     ImGuiIO& io = ImGui::GetIO();
-    io.DisplaySize = ImVec2(float(extent.width), float(extent.height));
+    io.DisplaySize = ImVec2(float(width), float(height));
     io.DeltaTime = ms > 0.0f && ms < 1000.0f ? ms / 1000.0f : 1.0f / 60.0f;
     // UI scale follows the display height (1080p = 1).
-    const float scale = std::max(float(extent.height) / 1080.0f, 0.75f);
+    const float scale = std::max(float(height) / 1080.0f, 0.75f);
     if (std::abs(scale - base_scale) > 0.01f) {
         ImGuiStyle& style = ImGui::GetStyle();
         style.ScaleAllSizes(scale / base_scale);
@@ -972,7 +1015,7 @@ void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent) {
     }
 
     UpdateChoiceTextures();
-    ImGui_ImplVulkan_NewFrame();
+    new_frame();
     ImGui::NewFrame();
     if (loading) {
         LoadingScreen();
@@ -995,6 +1038,16 @@ void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent) {
         CheatMenu();
     }
     ImGui::Render();
+}
+
+} // namespace
+
+void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent) {
+    if (!BeginPresent()) {
+        return;
+    }
+    std::scoped_lock lock{imgui_mutex};
+    BuildFrame(extent.width, extent.height, ImGui_ImplVulkan_NewFrame);
 
     const vk::RenderingAttachmentInfo attachment{
         .imageView = view,
@@ -1014,6 +1067,22 @@ void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent) {
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdbuf);
     }
     cmdbuf.endRendering();
+}
+
+void RenderOpenGL(u32 width, u32 height) {
+    if (!BeginPresent()) {
+        return;
+    }
+    std::scoped_lock lock{imgui_mutex};
+#ifdef _WIN32
+    if (OslRenderer::Active() == OslRenderer::Backend::Direct3D11) {
+        BuildFrame(width, height, ImGuiGles3NewFrame);
+        ImGuiGles3RenderDrawData(ImGui::GetDrawData());
+        return;
+    }
+#endif
+    BuildFrame(width, height, ImGui_ImplOpenGL3_NewFrame);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 } // namespace OslOverlay

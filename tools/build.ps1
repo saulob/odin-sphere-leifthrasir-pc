@@ -2,8 +2,9 @@
 .SYNOPSIS
   Builds odin_sphere_leifthrasir.exe incrementally (MSYS2 CLANG64, CMake + Ninja). -Run launches it.
 .DESCRIPTION
-  Reuses what is current and updates only what is stale: the video core dependencies (gpu\deps.txt), the CMake
-  configuration and, once the game is installed, the boot image of the active prepared build. The development
+  Reuses what is current and updates only what is stale: the video core dependencies (gpu\deps.txt), the pinned ANGLE
+  runtime (gpu\angle-runtime.txt, cached in cache\deps), the CMake configuration and, once the game is installed, the
+  boot image of the active prepared build. Every DLL the game loads ends up beside it, ANGLE's included. The development
   configuration is RelWithDebInfo (-O2 -g -DNDEBUG) in build\cmake\clang64; -Release builds CMake's Release
   configuration in build\cmake\clang64-release, the one tools\package.ps1 packages. The game is installed from the
   launcher (Play page, Install game...), as in a release.
@@ -94,6 +95,7 @@ Write-Step "Toolchain clang64 ($($tc.Bin)), $config"
 
 $fetched = @(Sync-GpuDependencies)
 if ($fetched.Count -eq 0) { Write-Step 'Pinned sources (gpu\deps.txt): current' }
+$angleRuntime = Sync-AngleRuntime $tc.Bin
 
 if ($Clean -and (Test-Path -LiteralPath $buildDir)) {
     Write-Step "Cleaning $buildDir"
@@ -112,6 +114,7 @@ Write-Step 'Building incrementally'
 & ninja -C $buildDir odin_sphere_leifthrasir
 if ($LASTEXITCODE -ne 0) { Stop-Tool 'Build failed' }
 if (-not (Test-Path -LiteralPath $loader)) { Stop-Tool "Missing $loader" }
+Install-GameRuntime $loader $angleRuntime $tc.Bin
 
 $imageProblem = if (Test-Path -LiteralPath $marker) { Get-ImageProblem } else { $null }
 if (-not (Test-Path -LiteralPath $marker)) {
