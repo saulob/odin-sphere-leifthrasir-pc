@@ -26,10 +26,11 @@ WindowSize WindowSizeOf(int height, const OslAspectRatio& aspect);
 
 std::vector<WindowSize> WindowSizesFor(const OslAspectRatio& aspect);
 
-enum class PageId { kPlay, kDisplay, kGraphics, kGameplay, kControls, kTrophies, kBugReport, kAbout };
+enum class PageId { kPlay, kDisplay, kGraphics, kGameplay, kCheats, kControls, kTrophies, kBugReport, kAbout };
 
-inline constexpr PageId kPageOrder[] = {PageId::kPlay,     PageId::kDisplay,   PageId::kGraphics,  PageId::kGameplay,
-                                        PageId::kControls, PageId::kTrophies,  PageId::kBugReport, PageId::kAbout};
+inline constexpr PageId kPageOrder[] = {PageId::kPlay,     PageId::kDisplay,  PageId::kGraphics,
+                                        PageId::kGameplay, PageId::kCheats,   PageId::kControls,
+                                        PageId::kTrophies, PageId::kBugReport, PageId::kAbout};
 
 const char* PageName(PageId page);
 

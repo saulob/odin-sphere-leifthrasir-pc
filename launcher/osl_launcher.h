@@ -72,6 +72,13 @@ int osl_skip_intro(const char *settings_file);
 /* 1 when the settings file turns Unlock Bookshelf on (unlock_bookshelf; 0 by default). */
 int osl_unlock_bookshelf(const char *settings_file);
 
+/* The cheats the settings file turns on, as a mask of osl_cheat_bit (osl_cheats.h); 0 by default. Anything but 1 is
+ * off. */
+unsigned osl_cheats_enabled(const char *settings_file);
+
+/* The saved Experience Multiplier: 1 (Off), 2, 5, 10 or 100. */
+int osl_experience_multiplier_saved(const char *settings_file);
+
 /* 1 when the settings file keeps the logs of normal sessions (detailed_logging; 1 by default). */
 int osl_detailed_logging(const char *settings_file);
 

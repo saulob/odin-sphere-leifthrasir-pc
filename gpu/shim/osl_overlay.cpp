@@ -10,12 +10,15 @@
 #include <cstdlib>
 #include <cstring>
 #include <mutex>
+#include <set>
 #include <vector>
 
 #include <SDL3/SDL.h>
 #include "osl_accent.h"
+#include "osl_cheat_menu.h"
 #include "osl_notice.h"
 #include "osl_settings.h"
+#include "runtime_cheats.h"
 #include "imgui.h"
 #include "imgui_internal.h" // RegisterUserTexture (save pictures)
 #include "imgui_impl_vulkan.h"
@@ -537,12 +540,337 @@ void SetChoiceInput(uint32_t (*buttons)()) {
     choice_input = buttons;
 }
 
-bool HandleEvent(const SDL_Event& event) {
-    std::scoped_lock lock{imgui_mutex};
-    if (!initialized || !choice_active) {
+// The cheat menu (F10): open, or closing and still holding the game's input until what it received is released.
+// Guarded by imgui_mutex.
+namespace {
+
+std::atomic<bool> cheat_open{false};
+osl::menu::CloseGate cheat_close;
+osl::menu::PadNav cheat_pad;
+osl::cheats::MenuList cheat_list;
+std::set<int> cheat_keys_held; // SDL scancodes that went down while the menu was open
+bool cheat_focused = false;
+
+float PixelDensity(SDL_WindowID id) {
+    SDL_Window* window = SDL_GetWindowFromID(id);
+    const float density = window ? SDL_GetWindowPixelDensity(window) : 1.0f;
+    return density > 0.0f ? density : 1.0f;
+}
+
+void ActivateCheatRow(size_t index) {
+    const auto rows = osl::cheats::MenuRows();
+    if (index >= rows.size()) {
+        return;
+    }
+    if (rows[index].kind == osl::cheats::RowKind::Experience) {
+        const int multiplier = runtime_experience_cycle();
+        if (multiplier >= 0) {
+            std::printf("%s\n", osl::cheats::ExperienceLogLine(multiplier).c_str());
+        }
+        return;
+    }
+    const int state = runtime_cheat_toggle(int(rows[index].cheat));
+    if (state >= 0) {
+        std::printf("%s\n", osl::cheats::ToggleLogLine(rows[index].label, state != 0).c_str());
+    }
+}
+
+void StepCheatList(int move) {
+    cheat_list.Step(move, int(osl::cheats::kMenuRowCount));
+}
+
+void OpenCheatMenu() {
+    cheat_open = true;
+    cheat_close = {};
+    cheat_keys_held.clear();
+    cheat_pad = {};
+    cheat_focused = false;
+    cheat_list.Open();
+}
+
+void CloseCheatMenu() {
+    cheat_open = false;
+    cheat_close = {};
+    cheat_keys_held.clear();
+    cheat_pad = {};
+    cheat_focused = false;
+    ImGui::GetIO().ClearInputKeys();
+}
+
+// The menu's key opens and closes it; it stays away from the game's own dialogs and the loading screen.
+void PressCheatMenuKey(bool repeat) {
+    const bool busy = text_entry_active || choice_active || loading;
+    switch (osl::cheats::TogglePress(repeat, cheat_open, busy)) {
+    case osl::menu::ToggleAction::Open: OpenCheatMenu(); break;
+    case osl::menu::ToggleAction::Close: cheat_close.Request(); break;
+    case osl::menu::ToggleAction::None: break;
+    }
+}
+
+// The controller's steps, from the runtime's pad state polled every frame.
+void PollCheatPad(uint32_t buttons) {
+    if (!choice_input || choice_active) {
+        return;
+    }
+    const osl::menu::NavStep step = cheat_pad.Poll(buttons, NowSeconds());
+    if (cheat_close.requested()) {
+        return;
+    }
+    if (step.move) {
+        StepCheatList(step.move);
+    }
+    if (step.activate) {
+        ActivateCheatRow(size_t(cheat_list.selected));
+    }
+    if (step.close) {
+        cheat_close.Request();
+    }
+}
+
+// True when the row was clicked.
+bool DrawCheatRow(const osl::cheats::MenuRow& row, size_t index, bool selected, float scale, const ImVec4& accent,
+                  const ImVec4& focus, const ImVec4& dim) {
+    const float height = ImGui::GetFrameHeight() + 4.0f * scale;
+    ImGui::PushID(int(index));
+    const bool pressed = ImGui::Selectable("##row", false, ImGuiSelectableFlags_None, ImVec2(0.0f, height));
+    const ImVec2 min = ImGui::GetItemRectMin();
+    const ImVec2 max = ImGui::GetItemRectMax();
+    ImDrawList* draw = ImGui::GetWindowDrawList();
+    if (selected) {
+        draw->AddRectFilled(min, max, ImGui::GetColorU32(focus), 3.0f * scale);
+    }
+    const float pad = ImGui::GetFontSize() * 0.4f;
+    const float y = min.y + (height - ImGui::GetFontSize()) * 0.5f;
+    const char* text;
+    bool unavailable, lit;
+    if (row.kind == osl::cheats::RowKind::Experience) {
+        const bool available = runtime_experience_available() != 0;
+        const int multiplier = runtime_experience_multiplier();
+        text = osl::cheats::ExperienceText(available, multiplier);
+        unavailable = !available;
+        lit = osl::cheats::ExperienceLit(available, multiplier);
+    } else {
+        const osl::cheats::RowState state = osl::cheats::StateOf(runtime_cheat_available(int(row.cheat)) != 0,
+                                                                runtime_cheat_enabled(int(row.cheat)) != 0);
+        text = osl::cheats::StateText(state);
+        unavailable = state == osl::cheats::RowState::Unavailable;
+        lit = state == osl::cheats::RowState::On;
+    }
+    draw->AddText(ImVec2(min.x + pad, y), ImGui::GetColorU32(unavailable ? dim : ImGui::GetStyleColorVec4(ImGuiCol_Text)),
+                  row.label);
+    draw->AddText(ImVec2(max.x - pad - ImGui::CalcTextSize(text).x, y), ImGui::GetColorU32(lit ? accent : dim), text);
+    ImGui::PopID();
+    return pressed;
+}
+
+std::string CheatCloseHint() {
+    const char* name = SDL_GetScancodeName(SDL_Scancode(OslSettings::Get().cheat_hotkey.load()));
+    return osl::cheats::CloseHint(name && *name ? name : "F10");
+}
+
+void CheatMenu() {
+    ImGuiIO& io = ImGui::GetIO();
+    if (cheat_close.requested()) {
+        if (cheat_close.Step(!cheat_keys_held.empty() || cheat_pad.Held() != 0, NowSeconds())) {
+            CloseCheatMenu();
+        }
+        return;
+    }
+    const auto rows = osl::cheats::MenuRows();
+    const int count = int(rows.size());
+    cheat_list.Clamp(count);
+    const ImVec4 accent = AccentColor();
+    const ImVec4 dim(0.64f, 0.66f, 0.76f, 1.0f);
+    const ImVec4 focus(accent.x, accent.y, accent.z, 0.42f);
+    const float scale = osl::cheats::MenuScale(display_scale, io.DisplaySize.x, ImGui::GetFontSize());
+    const float em = ImGui::GetFontSize() * scale;
+    const float margin = em * 0.8f;
+    float top = margin;
+    if (FpsCounterShown() && OslSettings::Get().overlay_corner == 1) {
+        top = FpsCounterBox(OverlayText().c_str()).p1.y + margin * 0.5f;
+    }
+    const ImGuiStyle& style = ImGui::GetStyle();
+    const float spacing = style.ItemSpacing.y * scale;
+    const float separator = std::max(style.SeparatorSize, 1.0f);
+    const float row_height = em + 2.0f * style.FramePadding.y * scale + 4.0f * scale;
+    const float body_height = osl::cheats::MenuBodyHeight(rows.size(), row_height, spacing);
+    const float header_height = em + spacing + separator + spacing;
+    const float footer_height = spacing + separator + spacing + em + spacing + em;
+    const float window_padding = em * 0.5f;
+    const float available_height = std::max(io.DisplaySize.y - top - margin, em);
+    const bool opening = !cheat_focused;
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - margin, top), ImGuiCond_Always, ImVec2(1.0f, 0.0f));
+    ImGui::SetNextWindowSize(ImVec2(em * osl::cheats::kMenuWidthEm, 0.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(FLT_MAX, available_height));
+    if (opening) {
+        cheat_focused = true;
+        ImGui::SetNextWindowFocus();
+    }
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.04f, 0.05f, 0.11f, 0.92f));
+    ImGui::PushStyleColor(ImGuiCol_Border, accent);
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, focus);
+    ImGui::PushStyleColor(ImGuiCol_HeaderActive, focus);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(em * 0.7f, window_padding));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(style.FramePadding.x * scale, style.FramePadding.y * scale));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(style.ItemSpacing.x * scale, spacing));
+    // No ImGui navigation: the list is moved by the menu's own steps.
+    constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                                       ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
+                                       ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings |
+                                       ImGuiWindowFlags_NoNav;
+    if (ImGui::Begin("##osl_cheat_menu", nullptr, flags)) {
+        ImGui::SetWindowFontScale(scale);
+        ImGui::TextColored(accent, "%s", osl::cheats::kMenuTitle);
+        ImGui::Separator();
+        const float body_available = available_height - window_padding * 2.0f - header_height - footer_height;
+        const float child_height = std::max(std::min(body_height, body_available), 1.0f);
+        const bool needs_scrollbar = osl::cheats::MenuNeedsScrollbar(body_height, child_height);
+        const ImGuiWindowFlags child_flags =
+            (needs_scrollbar ? ImGuiWindowFlags_AlwaysVerticalScrollbar : ImGuiWindowFlags_NoScrollbar) |
+            ImGuiWindowFlags_NoNav;
+        ImGui::BeginChild("##cheat_rows", ImVec2(0.0f, child_height), ImGuiChildFlags_None, child_flags);
+        ImGui::SetWindowFontScale(scale); // the child does not inherit the outer window's font scale
+        ImVec2 selected_min{}, selected_max{};
+        int clicked = -1;
+        for (int i = 0; i < count; ++i) {
+            const bool selected = i == cheat_list.selected;
+            if (DrawCheatRow(rows[size_t(i)], size_t(i), selected, scale, accent, focus, dim)) {
+                clicked = i;
+            }
+            if (selected) {
+                selected_min = ImGui::GetItemRectMin();
+                selected_max = ImGui::GetItemRectMax();
+            }
+        }
+        const ImDrawList* list = ImGui::GetWindowDrawList();
+        const float scroll = ImGui::GetScrollY();
+        const float wanted = cheat_list.Resolve(scroll, ImGui::GetScrollMaxY(), selected_min.y, selected_max.y,
+                                                list->GetClipRectMin().y, list->GetClipRectMax().y);
+        if (wanted != scroll) {
+            ImGui::SetScrollY(wanted);
+        }
+        if (clicked >= 0) {
+            cheat_list.Click(clicked, count);
+            ActivateCheatRow(size_t(clicked));
+        }
+        ImGui::EndChild();
+        ImGui::Separator();
+        ImGui::TextColored(dim, "%s", CheatCloseHint().c_str());
+        ImGui::TextColored(dim, "%s", osl::cheats::kMenuNote);
+    }
+    ImGui::End();
+    ImGui::PopStyleVar(4);
+    ImGui::PopStyleColor(4);
+}
+
+bool HandleCheatKey(const SDL_Event& event, bool down) {
+    const SDL_Scancode code = event.key.scancode;
+    if (code == OslSettings::Get().cheat_hotkey) {
+        if (cheat_open) {
+            if (down) {
+                cheat_keys_held.insert(int(code));
+            } else {
+                cheat_keys_held.erase(int(code));
+            }
+        }
+        if (down) {
+            PressCheatMenuKey(event.key.repeat);
+        }
+        return true;
+    }
+    if (!cheat_open) {
         return false;
     }
-    return HandleChoiceEvent(event);
+    if (code == OslSettings::Get().window_mode_key || code == SDL_SCANCODE_F2) {
+        return false; // the port's own shortcuts keep working with the menu open
+    }
+    if (down) {
+        cheat_keys_held.insert(int(code));
+    } else {
+        cheat_keys_held.erase(int(code));
+    }
+    if (!down || cheat_close.requested()) {
+        return true;
+    }
+    switch (osl::menu::KeyIntentOf(event.key.key, event.key.repeat)) {
+    case osl::menu::KeyIntent::Up: StepCheatList(-1); break;
+    case osl::menu::KeyIntent::Down: StepCheatList(1); break;
+    case osl::menu::KeyIntent::Activate: ActivateCheatRow(size_t(cheat_list.selected)); break;
+    case osl::menu::KeyIntent::Close: cheat_close.Request(); break;
+    case osl::menu::KeyIntent::None: break;
+    }
+    return true;
+}
+
+bool HandleCheatEvent(const SDL_Event& event) {
+    ImGuiIO& io = ImGui::GetIO();
+    switch (event.type) {
+    case SDL_EVENT_KEY_DOWN:
+    case SDL_EVENT_KEY_UP: return HandleCheatKey(event, event.type == SDL_EVENT_KEY_DOWN);
+    case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+    case SDL_EVENT_GAMEPAD_BUTTON_UP: {
+        if (!cheat_open) {
+            return false;
+        }
+        if (event.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN && !choice_input && !cheat_close.requested()) {
+            const u8 button = event.gbutton.button; // before the runtime's pad state is available
+            if (button == SDL_GAMEPAD_BUTTON_DPAD_UP) {
+                StepCheatList(-1);
+            } else if (button == SDL_GAMEPAD_BUTTON_DPAD_DOWN) {
+                StepCheatList(1);
+            } else if (button == SDL_GAMEPAD_BUTTON_SOUTH) {
+                ActivateCheatRow(size_t(cheat_list.selected));
+            } else if (button == SDL_GAMEPAD_BUTTON_EAST) {
+                cheat_close.Request();
+            }
+        }
+        return true;
+    }
+    case SDL_EVENT_GAMEPAD_AXIS_MOTION: return cheat_open;
+    case SDL_EVENT_TEXT_INPUT: return cheat_open;
+    case SDL_EVENT_MOUSE_MOTION:
+        if (!cheat_open) {
+            return false;
+        }
+        io.AddMousePosEvent(event.motion.x * PixelDensity(event.motion.windowID),
+                            event.motion.y * PixelDensity(event.motion.windowID));
+        return true;
+    case SDL_EVENT_MOUSE_BUTTON_DOWN:
+    case SDL_EVENT_MOUSE_BUTTON_UP: {
+        if (!cheat_open) {
+            return false;
+        }
+        const int button = event.button.button == SDL_BUTTON_LEFT    ? 0
+                           : event.button.button == SDL_BUTTON_RIGHT  ? 1
+                           : event.button.button == SDL_BUTTON_MIDDLE ? 2
+                                                                      : -1;
+        if (button >= 0 && !cheat_close.requested()) {
+            io.AddMouseButtonEvent(button, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN);
+        }
+        return true;
+    }
+    case SDL_EVENT_MOUSE_WHEEL:
+        if (!cheat_open) {
+            return false;
+        }
+        io.AddMouseWheelEvent(event.wheel.x, event.wheel.y);
+        return true;
+    default: return false;
+    }
+}
+
+} // namespace
+
+bool HandleEvent(const SDL_Event& event) {
+    std::scoped_lock lock{imgui_mutex};
+    if (!initialized) {
+        return false;
+    }
+    if (choice_active) {
+        return HandleChoiceEvent(event);
+    }
+    return HandleCheatEvent(event);
 }
 
 void SetBackgroundLoading(u32 done, u32 total) {
@@ -570,7 +898,7 @@ void QueueStartupNotice(std::string text) {
 
 bool Visible() {
     const auto& s = OslSettings::Get();
-    return initialized && (loading || background_total || text_entry_active || choice_active ||
+    return initialized && (loading || background_total || cheat_open || text_entry_active || choice_active ||
                            choice_retiring || s.show_fps || AnyStartupNoticePending());
 }
 
@@ -579,7 +907,7 @@ void SetDisplayScale(float scale) {
 }
 
 bool CapturesInput() {
-    return text_entry_active || choice_active;
+    return cheat_open || text_entry_active || choice_active;
 }
 
 void BeginChoice(const std::string& title, const std::vector<std::string>& items,
@@ -628,6 +956,8 @@ void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent) {
     if (!Visible()) {
         return;
     }
+    // The runtime's pad state is read before the UI lock, as the save list does.
+    const uint32_t cheat_buttons = cheat_open && choice_input ? choice_input() : 0;
     std::scoped_lock lock{imgui_mutex};
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize = ImVec2(float(extent.width), float(extent.height));
@@ -659,6 +989,10 @@ void Render(vk::CommandBuffer cmdbuf, vk::ImageView view, vk::Extent2D extent) {
     }
     if (choice_active) {
         ChoiceBox();
+    }
+    if (cheat_open) {
+        PollCheatPad(cheat_buttons);
+        CheatMenu();
     }
     ImGui::Render();
 

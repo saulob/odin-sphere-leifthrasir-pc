@@ -9,6 +9,8 @@
 #include "runtime.h"
 #include "trophies/trophy_runtime.h"
 #include "oslgpu.h"
+#include "osl_cheats.h"
+#include "runtime_cheats.h"
 #include "osl_launcher.h"
 #include "osl_resolution.h"
 #include "osl_version.h"
@@ -454,6 +456,50 @@ static void apply_title_menu_exit(const char *app0, const char *image_dir, unsig
     protect(stubs,stub_bytes,5);
     puts("Title menu Exit Game: installed");
 }
+/* Only the eboot's own code is searched: the bundled modules are linked after it. */
+static unsigned install_cheats(const char *settings_file, int known_build, const Segment *segments, uint64_t count,
+                               uint64_t size, unsigned char *stubs, unsigned char *flags) {
+    const unsigned saved = osl_cheats_enabled(settings_file);
+    char summary[256];
+    osl_cheat_summary(saved, summary, sizeof(summary));
+    printf("Cheats: %s\n", summary);
+    const int experience = osl_experience_multiplier_saved(settings_file);
+    printf("Cheats: %s %s\n", osl_experience_multiplier.label, osl_experience_label(experience));
+    runtime_cheats_start(saved);
+    runtime_experience_start(experience);
+    volatile uint8_t *experience_flag = flags + OSL_CHEAT_COUNT;
+    if (!known_build) {
+        runtime_cheats_set_available(0, flags);
+        runtime_experience_set_available(0, experience_flag);
+        puts("Cheats: unavailable: not a supported game build");
+        return 0;
+    }
+    uint64_t eboot_end = size;
+    for (uint64_t m = 0; m < module_count; ++m)
+        if (modules[m].base < eboot_end) eboot_end = modules[m].base;
+    OslCodeRange ranges[64];
+    size_t range_count = 0;
+    for (uint64_t i = 0; i < count && range_count < sizeof(ranges) / sizeof(*ranges); ++i)
+        if ((segments[i].flags & 1) && segments[i].address < eboot_end) {
+            const uint64_t end = segments[i].address + segments[i].size;
+            ranges[range_count++] = (OslCodeRange){segments[i].address, end < eboot_end ? end : eboot_end};
+        }
+    OslCheatScan scans[OSL_CHEAT_COUNT];
+    const unsigned available = osl_install_cheats(image, size, ranges, range_count, stubs, OSL_CHEAT_STUBS_BYTES, flags, scans);
+    runtime_cheats_set_available(available, flags);
+    for (int c = 0; c < OSL_CHEAT_COUNT; ++c)
+        if (!(available & osl_cheat_bit((OslCheat)c)))
+            printf("Cheats: %s unavailable (%s): %s\n", osl_cheats[c].label, osl_cheat_state_name(scans[c].state),
+                   scans[c].reason);
+    OslCheatScan experience_scan;
+    const int experience_hooked = osl_install_experience(image, size, ranges, range_count, stubs + OSL_CHEAT_STUBS_BYTES,
+                                                         OSL_CHEAT_STUB_BYTES, flags + OSL_CHEAT_COUNT, &experience_scan);
+    runtime_experience_set_available(experience_hooked, experience_flag);
+    if (!experience_hooked)
+        printf("Cheats: %s unavailable (%s): %s\n", osl_experience_multiplier.label,
+               osl_cheat_state_name(experience_scan.state), experience_scan.reason);
+    return available || experience_hooked;
+}
 #ifndef _WIN32
 static void fault(int sig, siginfo_t *info, void *context) {
     /* GPU page tracking (write-protected guest pages) is resolved first, except during a speculative
@@ -887,7 +933,9 @@ int main(int argc, char **argv) {
     const int bookshelf_unlock = osl_unlock_bookshelf(settings_file);
     const size_t bookshelf_stub_bytes = bookshelf_unlock ? round_page(OSL_BOOKSHELF_STUB_BYTES) : 0;
     const size_t title_exit_stub_bytes = round_page(OSL_TITLE_EXIT_STUB_BYTES);
-    image = allocate(round_page(size) + lzcnt_stub_bytes + bookshelf_stub_bytes + title_exit_stub_bytes);
+    const size_t cheat_stub_bytes = round_page(OSL_CHEAT_STUBS_BYTES + OSL_CHEAT_STUB_BYTES);
+    const size_t cheat_flag_bytes = round_page(OSL_CHEAT_COUNT + 1);
+    image = allocate(round_page(size) + lzcnt_stub_bytes + bookshelf_stub_bytes + title_exit_stub_bytes + cheat_stub_bytes + cheat_flag_bytes);
     if (fread(image, 1, size, f) != size || fgetc(f) != EOF) fail("incorrect memory image size");
     fclose(f);
     if (runtime_memory_prepare()) {
@@ -989,6 +1037,8 @@ int main(int argc, char **argv) {
         apply_unlock_bookshelf(known_build ? &game_build : NULL,image+round_page(size)+lzcnt_stub_bytes,bookshelf_stub_bytes,size);
     apply_title_menu_exit(app0,paths.image_dir,image+round_page(size)+lzcnt_stub_bytes+bookshelf_stub_bytes,
                           round_page(size)+lzcnt_stub_bytes+bookshelf_stub_bytes,title_exit_stub_bytes,size);
+    unsigned char *cheat_stubs=image+round_page(size)+lzcnt_stub_bytes+bookshelf_stub_bytes+title_exit_stub_bytes;
+    if (install_cheats(settings_file,known_build,segments,ns,size,cheat_stubs,cheat_stubs+cheat_stub_bytes)) protect(cheat_stubs,cheat_stub_bytes,5);
 #ifdef _WIN32
     printf("Guest TCB loads redirected to the TEB TLS slot: %" PRIu64 "\n", patch_tcb_loads(segments, ns));
     /* After every other change to guest code except the LZCNT rewrite, whose ranges the stubs keep clear of. Only GPU

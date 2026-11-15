@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "osl_cheats.h"
 #include "osl_keys.h"
 #include "osl_launcher.h"
 #include "osl_pad.h"
@@ -74,6 +75,10 @@ std::span<const ManagedSetting> ManagedSettings() {
             default_names.emplace_back(osl_pad_source_name(action.default_source, name, sizeof(name)));
             all.push_back({action.ini_key, default_names.back()});
         }
+        for (const OslCheatInfo& cheat : osl_cheats) {
+            all.push_back({cheat.key, "0"});
+        }
+        all.push_back({osl_experience_multiplier.key, osl_experience_choices[0].saved});
         return all;
     }();
     return settings;
@@ -90,6 +95,13 @@ bool IsValidSetting(std::string_view key, std::string_view value) {
     if (std::any_of(std::begin(osl_pad_actions), std::end(osl_pad_actions),
                     [&](const OslPadInfo& action) { return key == action.ini_key; })) {
         return osl_pad_source_from_name(std::string(value).c_str()) != OSL_PAD_SOURCE_NONE;
+    }
+    if (std::any_of(std::begin(osl_cheats), std::end(osl_cheats),
+                    [&](const OslCheatInfo& cheat) { return key == cheat.key; })) {
+        return one_of({"0", "1"});
+    }
+    if (key == osl_experience_multiplier.key) {
+        return osl_experience_from_saved(std::string(value).c_str()) != 0;
     }
     if (key == kDisplayModeKey) {
         return one_of({"windowed", "borderless"});
@@ -271,4 +283,22 @@ extern "C" int osl_unlock_bookshelf(const char* settings_file) {
     using namespace osl;
     const LauncherSettings settings(PathFromUtf8(settings_file ? settings_file : ""));
     return settings.GetBool(kUnlockBookshelfKey, false) ? 1 : 0;
+}
+
+extern "C" unsigned osl_cheats_enabled(const char* settings_file) {
+    using namespace osl;
+    const LauncherSettings settings(PathFromUtf8(settings_file ? settings_file : ""));
+    unsigned enabled = 0;
+    for (const OslCheatInfo& cheat : osl_cheats) {
+        if (settings.GetBool(cheat.key, false)) {
+            enabled |= osl_cheat_bit(cheat.cheat);
+        }
+    }
+    return enabled;
+}
+
+extern "C" int osl_experience_multiplier_saved(const char* settings_file) {
+    using namespace osl;
+    const LauncherSettings settings(PathFromUtf8(settings_file ? settings_file : ""));
+    return osl_experience_listed(osl_experience_from_saved(settings.Get(osl_experience_multiplier.key).c_str()));
 }

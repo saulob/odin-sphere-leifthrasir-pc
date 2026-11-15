@@ -31,11 +31,14 @@ CC0 asks for no attribution; the sources are kept for provenance.
 | `play.svg` | Play | https://www.svgrepo.com/svg/522228/play | CC0 |
 | `graphics.svg` | Controls Alt | https://www.svgrepo.com/svg/348105/controls-alt | CC0 |
 | `gameplay.svg` | Gamepad | https://www.svgrepo.com/svg/523439/gamepad | CC0 |
+| `cheats.svg` | Star Alt 1 | https://www.svgrepo.com/svg/532289/star-alt-1 | CC0 |
 | `controls.svg` | Keyboard | https://www.svgrepo.com/svg/524665/keyboard | CC0 |
 | `trophies.svg` | Achievements | https://www.svgrepo.com/svg/304482/achievements | CC0 |
 | `about.svg` | About | https://www.svgrepo.com/svg/486929/about | CC0 |
 
+`cheats.svg` is the same file as the Dragon's Crown Pro PC launcher's.
+
 ## Changes from the downloaded files
 
-the drop-shadow filter on its lower line, because neither can be tinted. No path was changed, and each file keeps the
-colours it was published with: the launcher uses only their shape.
+All files have LF line endings and their canonical names. No path was changed, and each file keeps the colours it was
+published with: the launcher uses only their shape.

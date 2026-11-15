@@ -47,8 +47,16 @@ struct ScanResult {
     bool anything_found = false;         // at least one Odin Sphere Leifthrasir pattern matched
     ScannedMapping mapping;
     std::vector<FeatureScan> features;   // Skip intro, Unlock Bookshelf, Snapshot scale, Resolution, Legacy CPU LZCNT
+    std::vector<FeatureScan> cheats;     // osl_cheats order; optional, so never part of `unresolved`
+    std::optional<FeatureScan> experience; // the Experience Multiplier, reported apart from the cheats
     bool complete() const { return unresolved.empty(); }
 };
+
+// "Cheats: 7/7 COMPLETE" or "Cheats: 5/7 COMPLETE, Infinite PP PARTIAL, Infinite POW MISSING".
+std::string CheatSummary(const ScanResult& scan);
+
+// "Experience Multiplier: COMPLETE", or MISSING, AMBIGUOUS, PARTIAL or INVALID.
+std::string ExperienceSummary(const ScanResult& scan);
 
 // Finds the candidate sites of every executable-dependent feature with the production patterns and the sites of
 // `templates` as the shape to expect. `image` is the eboot's mapping with the bundled modules linked after it;

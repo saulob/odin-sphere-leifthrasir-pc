@@ -87,9 +87,12 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         v.skip_intro = ParseBool(value, v.skip_intro);
     } else if (key == "unlock_bookshelf") {
         v.unlock_bookshelf = ParseBool(value, v.unlock_bookshelf);
-    } else if (const int scancode = osl_key_from_name(value.c_str());
-               scancode != 0 && key == osl_key_actions[OSL_KEY_HOTKEY_WINDOW_MODE].ini_key) {
-        v.window_mode_key = scancode;
+    } else if (const int scancode = osl_key_from_name(value.c_str()); scancode != 0) {
+        if (key == osl_key_actions[OSL_KEY_HOTKEY_WINDOW_MODE].ini_key) {
+            v.window_mode_key = scancode;
+        } else if (key == osl_key_actions[OSL_KEY_HOTKEY_CHEATS].ini_key) {
+            v.cheat_hotkey = scancode;
+        }
     }
 }
 

@@ -1169,6 +1169,8 @@ UnsupportedBuildReport DiagnoseUnsupportedBuild(const GameSource& source, const 
     out.Add("  Features: %zu/%zu COMPLETE", complete, kScannedFeatures);
     out.Add("  Controller prompts: %s", prompts.c_str());
     out.Add("  Exit Game title art: %s", title.c_str());
+    out.Add("  %s (identification only: cheats stay off while the build is unsupported)", CheatSummary(scan).c_str());
+    out.Add("  %s", ExperienceSummary(scan).c_str());
     const bool all = executable && complete == kScannedFeatures && scan.complete();
     if (all) {
         out.Add("  Mapping appears complete");
@@ -1226,6 +1228,8 @@ std::string DiagnoseBuildMapping(const std::filesystem::path& app0, const GameBu
         out.Raw(kLzcntNotice);
     }
     out.Add("Overall diagnostic result:");
+    out.Add("  %s", CheatSummary(scan).c_str());
+    out.Add("  %s", ExperienceSummary(scan).c_str());
     if (scan.complete()) {
         out.Add("  Mapping appears complete");
     } else {

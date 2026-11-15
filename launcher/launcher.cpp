@@ -28,6 +28,7 @@
 #include "osl_graphics.h"
 #include "osl_png.h"
 #include "osl_resolution.h"
+#include "cheats_page.h"
 #include "controller_prompts.h"
 #include "game_files.h"
 #include "game_install.h"
@@ -138,7 +139,8 @@ constexpr char kShowFpsTitleHelp[] = "Shows the frame rate in the window title: 
 constexpr char kShowResolutionTitleHelp[] =
     "Shows the game's render resolution in the window title: Odin Sphere Leifthrasir | 1920x1080";
 constexpr char kFrameCounterHelp[] = "Shows the game's frame rate in the corner. F2 toggles it while playing.";
-constexpr char kWindowModeKeyHelp[] = "Switches between Windowed and Borderless Fullscreen while playing.";
+constexpr char kPortHotkeysHelp[] =
+    "Cheats menu opens the in-game cheats while playing. Window mode switches between Windowed and Borderless Fullscreen.";
 constexpr char kControllerPromptsHelp[] = "The button images shown in the game's prompts. They do not change the bindings.";
 constexpr char kControllerBindingsHelp[] =
     "Click a row, then press a controller button or pull a trigger. Esc cancels. Each row is a PlayStation button, "
@@ -615,6 +617,8 @@ private:
                     nullptr, nullptr};
         case PageId::kGameplay:
             return {name, "Language and readouts.", [this](trg::Ui& ui) { PageGameplay(ui); }, nullptr, nullptr};
+        case PageId::kCheats:
+            return {name, kCheatsSubtitle, [this](trg::Ui& ui) { PageCheats(ui); }, nullptr, nullptr};
         case PageId::kControls:
             return {name, "Controller and keyboard.", [this](trg::Ui& ui) { PageControls(ui); }, nullptr, nullptr};
         case PageId::kTrophies:
@@ -906,6 +910,37 @@ private:
         ui.EndRows();
     }
 
+    void PageCheats(trg::Ui& ui) {
+        std::string help = kCheatsHelp;
+        if (const size_t at = help.find(kCheatsHotkeyName); at != std::string::npos) {
+            help.replace(at, sizeof(kCheatsHotkeyName) - 1, KeyDisplayName(SavedKey(settings_, OSL_KEY_HOTKEY_CHEATS)));
+        }
+        ui.Help(help.c_str());
+        ui.Spacer(6);
+        const bool available = CheatsAvailable(files_, build_);
+        if (!available) {
+            ui.Help(kCheatsUnavailableHelp);
+            ui.Spacer(4);
+        }
+        ImGui::BeginDisabled(!available);
+        for (const CheatPageRow& row : CheatPageRows()) {
+            if (row.heading) {
+                ui.Heading(row.heading);
+            } else if (row.cheat) {
+                ui.Toggle(row.cheat->label, row.cheat->description, row.cheat->key, kCheatDefault, "Off", "On");
+            } else {
+                std::vector<trg::Option> choices;
+                for (const OslChoice& choice : osl_experience_choices) {
+                    choices.push_back({choice.saved, choice.label});
+                }
+                ui.Combo(row.setting->label, row.setting->description, row.setting->key, osl_experience_choices[0].saved,
+                         choices);
+            }
+        }
+        ImGui::EndDisabled();
+        ui.EndRows();
+    }
+
     void PageControls(trg::Ui& ui) {
         ui.Info("Controller", "Automatic: Xbox controllers work without setup.");
         ui.Row("Controller prompts", kControllerPromptsHelp);
@@ -934,7 +969,7 @@ private:
             }
         }
         if (ui.Section("Port hotkeys", true)) {
-            ui.Help(kWindowModeKeyHelp);
+            ui.Help(kPortHotkeysHelp);
             for (int action = OSL_KEY_FIRST_HOTKEY; action < OSL_KEY_COUNT; ++action) {
                 KeyRow(ui, static_cast<OslKeyAction>(action));
             }

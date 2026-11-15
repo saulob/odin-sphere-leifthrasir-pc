@@ -261,6 +261,12 @@ $steps = @(
     (Step 'Updater' 'the same helper tests against the release CLANG64 helper' -Block { Invoke-ReleaseHelper $built }),
     (Step 'Features' 'startup notice and frame counter visibility' 'osl-notice-tests'),
     (Step 'Features' 'cursor visibility' 'osl-cursor-tests'),
+    (Step 'Features' 'cheats and Experience Multiplier: hooks and live switches on the game''s own instructions (original against cheat), level-up model, session state, F10 menu logic and hotkey, local builds, coexistence, diagnostics' 'osl-cheats-tests' -Expect @(
+        '(?m)^HK reference: 7 sites, 23 bytes written, 22 changed', '(?m)^Cheat build parity: \d+ build\(s\) verified on real files',
+        '(?m)^  Max Gold Gain +BYTE PATCH VERIFIED  SEMANTIC MODEL VERIFIED  LIVE TOGGLE VERIFIED', '(?m)^  Max Phozon Gain +BYTE PATCH VERIFIED  SEMANTIC MODEL VERIFIED  LIVE TOGGLE VERIFIED',
+        '(?m)^  No AP Consumption +BYTE PATCH VERIFIED  SEMANTIC MODEL VERIFIED  LIVE TOGGLE VERIFIED', '(?m)^  Infinite PP +BYTE PATCH VERIFIED  SEMANTIC MODEL VERIFIED  LIVE TOGGLE VERIFIED',
+        '(?m)^  Infinite POW +BYTE PATCH VERIFIED  SEMANTIC MODEL VERIFIED  LIVE TOGGLE VERIFIED', '(?m)^  Infinite Health +HOOK VERIFIED +SEMANTIC MODEL VERIFIED  LIVE TOGGLE VERIFIED', '(?m)^  Infinite Arrows +BYTE PATCH VERIFIED  SEMANTIC MODEL VERIFIED  LIVE TOGGLE VERIFIED',
+        '(?m)^  Experience Multiplier +HOOK VERIFIED \(', '(?m)^  Experience Multiplier +LEVEL MODEL VERIFIED \(', '(?m)^Experience build parity: \d+ build\(s\) verified on real files')),
     (Step 'Features' 'local trophies' 'osl-trophy-tests'),
     (Step 'Features' 'title menu Exit Game art: every supported build and language, Refined and Classic, never INSTALL on an active row' 'osl-tests' -Block { Invoke-TitleArt $built }),
     (Step 'Graphics' 'GPU tile layouts and addresses' 'osl-tiling-tests')

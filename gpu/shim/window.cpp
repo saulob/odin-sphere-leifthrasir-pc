@@ -359,7 +359,8 @@ bool WindowSDL::PollEvents() {
         case SDL_EVENT_KEY_DOWN: {
             const bool window_shortcut = event.key.scancode == OslSettings::Get().window_mode_key;
             const bool frame_counter_shortcut = event.key.scancode == SDL_SCANCODE_F2;
-            const bool host_shortcut = window_shortcut || frame_counter_shortcut;
+            const bool cheat_menu_shortcut = event.key.scancode == OslSettings::Get().cheat_hotkey;
+            const bool host_shortcut = window_shortcut || frame_counter_shortcut || cheat_menu_shortcut;
             if (window_shortcut && !event.key.repeat) {
                 ToggleBorderless();
             } else if (frame_counter_shortcut && !event.key.repeat) {

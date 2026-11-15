@@ -655,6 +655,16 @@ void TestIssue19Regression() {
         CHECK(Contains(text, line));
     }
     CHECK(!Contains(text, "Supported-build self-check"));
+    // The synthetic issue #19 executable holds none of the Issue #20 cheat code: Asia's real cheat mapping is DATA
+    // UNAVAILABLE, and the report must say MISSING rather than borrow HK's.
+    CHECK(Contains(text, "Cheats (identified only; applied only for a supported build whose sites validate):") &&
+          Contains(text, "    P7 PP setter: not found") && Contains(text, "    relationship: not checked") &&
+          Contains(text, "  Cheats: 0/7 COMPLETE, Max Gold Gain MISSING, Max Phozon Gain MISSING, No AP Consumption MISSING, "
+                         "Infinite PP MISSING, Infinite POW MISSING, Infinite Health MISSING, Infinite Arrows MISSING "
+                         "(identification only: cheats stay off while the build is unsupported)\n"
+                         "  Experience Multiplier: MISSING\n"));
+    CHECK(Contains(text, "    E1 experience award: not found") && Contains(text, "  Cheats: 0/7 COMPLETE, Max Gold Gain MISSING") &&
+          Contains(text, "Infinite Arrows MISSING\n  Experience Multiplier: MISSING\n"));
 
     // The folder path: CheckGameTree keeps HK for an unknown hash and the diagnostics refuse it without writing.
     const fs::path root = TempDir("diag-issue19");

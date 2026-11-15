@@ -53,6 +53,12 @@ checked by scripts, but it has not yet been tested on real Linux PCs or a Steam 
 - Frame rate and render resolution in the window title, and an in-game **frame counter** with the frame time, toggled with **F2** while playing
 - Startup hints confirm **Skip intro** and **Unlock Bookshelf** when either is on, then disappear on their own
 
+### Cheats
+- Seven optional cheats, all **Off** by default: **Max Gold Gain**, **Max Phozon Gain**, **No AP Consumption**, **Infinite PP**, **Infinite POW**, **Infinite Health** and **Infinite Arrows**
+- **Experience Multiplier**: **Off** (the default), **2x**, **5x**, **10x** or **100x** experience from every award
+- The launcher sets the state the game starts with; **F10** opens the in-game **Cheats** menu, whose changes apply immediately and last for the current session only
+- Applied natively in memory; no game file is modified
+
 ### Controls
 - Xbox controllers without setup, with every controller button and keyboard binding changeable
 - **Controller prompts**: the game's PlayStation button pictures (the default) or **Xbox** prompts
@@ -158,6 +164,7 @@ Everything is kept next to the program (next to the AppImage on Linux):
 - **Display**: display mode, window size, monitor, Aspect Ratio, graphics card, VSync, Presentation, FSR 1 upscaling and RCAS sharpening
 - **Graphics**: Render resolution, SMAA anti-aliasing and anisotropic texture filtering
 - **Gameplay**: Menu & Subtitles language (the European and Hong Kong builds), **Skip intro**, **Unlock Bookshelf**, frame rate and render resolution in the title, and the in-game frame counter
+- **Cheats**: seven optional gameplay modifiers in two groups, Resources and Combat, each Off or On, and the **Experience Multiplier** (Off, 2x, 5x, 10x or 100x) last; they set the state the game starts with, and **F10** changes them while playing
 - **Controls**: **Controller prompts** (PlayStation or Xbox), **Controller bindings**, every keyboard binding and the port hotkeys, each with **Reset to defaults**. Xbox changes the button pictures the game shows (A/B/X/Y, LB/RB, LT/RT, MENU and VIEW) in the port's own copy of the game; the touchpad prompt becomes VIEW. PlayStation puts the originals back. Your `.pkg` file is never changed.
 - **Trophies**: your local PS4 trophy progress, the trophy list and the Trophy Key setup
 - **About**: the port version, the game, the renderer and the library versions, the game, saves and logs folders, the settings file, **Reset all settings**, and **Diagnostics** with Detailed logging and a button that opens the logs folder
@@ -173,8 +180,34 @@ The Render resolution and Aspect Ratio options change the game's verified intern
 5:4 squeeze it. The HUD, menus and prerendered videos are not adjusted either. CUSA05083 1.01 USA and both CUSA03873 1.00
 releases offer them when their installation scan found their sites.
 
-Cheats are not exposed: Odin Sphere's gameplay values have not yet been verified for a launcher option. Each build's own
-text is used, and no region's assets are ever mixed.
+Each build's own text is used, and no region's assets are ever mixed.
+
+**Cheats** (all Off by default): the Cheats page sets the state the game starts with. While playing, **F10** (the default;
+the Controls page can rebind it) opens the in-game **CHEATS** menu: move with the arrow keys, the D-pad or the left stick,
+turn a row Off or On with **Enter**, **Space** or **Cross (A)** (or click it), and close the menu with **F10**, **Esc** or
+**Circle (B)**. Each row shows
+**Off**, **On** or **Unavailable**; the last row, **Experience Multiplier**, steps through Off, 2x, 5x, 10x and 100x. A change made there applies immediately, lasts for the current session only and never
+touches your launcher settings: the next start follows the launcher again. Each cheat hooks a few instructions of the game's
+code in memory, found by their code and checked byte for byte first, and the hooks stay in place while a switch decides
+what they do; the game files, `boot.bin` and your saves are never modified. A cheat whose code is not found exactly once
+in the installed build shows as **Unavailable**, and the run log says why. They are stored in `user\osl.ini` as `cheat_max_gold_gain`, `cheat_max_phozon_gain`,
+`cheat_no_ap_consumption`, `cheat_infinite_pp`, `cheat_infinite_pow`, `cheat_infinite_health` and `cheat_infinite_arrows`,
+and the multiplier as `cheat_experience_multiplier` (1, 2, 5, 10 or 100; anything else is Off).
+
+- **Max Gold Gain**: picking up gold or selling at a shop sets your gold to 999,999; buying still costs gold
+- **Max Phozon Gain**: absorbing a phozon fills your phozon stock to its maximum
+- **No AP Consumption**: learning an ability on the Ability screen does not spend AP
+- **Infinite PP**: PP refills to its maximum whenever it changes
+- **Infinite POW**: using a skill refills POW instead of spending it
+- **Infinite Health**: damage does not lower the controlled character's HP; healing still raises it, and enemies take damage as usual
+- **Infinite Arrows**: Mercedes's normal crossbow shots refill her POW instead of spending it
+- **Experience Multiplier**: multiplies the experience each award adds, once, before the game's own bonuses; one award
+  is never worth more than 2,500,000 (the total the last level needs). Level-ups, their thresholds and the AP they give
+  follow the game's own rules, so a large award can raise several levels at once
+
+Their availability depends on the executable's verified code: the five builds this port is tested with locally (USA
+1.00, Japan 1.00 and 1.02, Europe 1.00 and 1.01) hold every cheat's code and the Experience Multiplier's; the other builds are checked the same way at
+game start.
 
 **Menu & Subtitles** is offered for the European build (CUSA05262) and the CUSA03873 builds (HK and Asia), whose executables
 select their menu and subtitle text from the console's System Language. Europe offers English, French, German, Spanish
@@ -205,6 +238,7 @@ and it is available for every supported build.
 
 ## Controls
 
+- **F10** opens the in-game Cheats menu while playing, for the current session only; the key can be changed on the Controls page.
 - **F11** switches between Windowed and Borderless Fullscreen while playing; the key can be changed on the Controls page.
 - **F2** shows or hides the in-game frame counter while playing, for the current session only.
 - Xbox controllers work without setup (on Linux through SDL's gamepad support).
@@ -310,6 +344,7 @@ Odin Sphere Leifthrasir PC is maintained and developed in my free time. If you e
 - [shadPS4](https://github.com/shadps4-emu/shadPS4) for the Vulkan renderer, shader recompiler and GPU command processing the video core is built on, and for the PS4 package extractor the installer is adapted from
 - [gow3_pc](https://github.com/FelipePrado0/gow3_pc) and its lineage, uncharted-ndc-native, MediEvil PC and the HayatoG ports, for the loader, runtime and video core this port grew from
 - Dragon's Crown Pro PC, the port this architecture is reproduced from
+- Initial CUSA03873 cheat patch research was contributed by @zarawong272-cloud in [Issue #20](https://github.com/saulob/odin-sphere-leifthrasir-pc/issues/20)
 - [TRG Launcher](https://github.com/TekRantGaming/trg-launcher) by TekRantGaming, the launcher interface, pinned at v1.1.0, licensed under the MIT License
 - The licenses of the libraries the release includes are in the `licenses` folder of the ZIP
 
