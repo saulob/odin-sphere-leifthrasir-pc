@@ -36,7 +36,7 @@ public:
 
     // The header, the entry table and param.sfo.
     PackageResult Open(const std::filesystem::path& path);
-    // The keys and the inner file system's file list. Packages encrypted for a console are kUnsupported.
+    // The keys and the inner file system's file list, read once. Packages encrypted for a console are kUnsupported.
     PackageResult LoadFiles();
     // The metadata entries into sce_sys, then every file of the package, into `out`. `progress` returns false to
     // cancel. When `include` is given, only the files it accepts are written.

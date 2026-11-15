@@ -6,9 +6,10 @@
 
 A build is its base package and then its updates (scripts/game_profiles.py). <folder> is the build's folder, CUSA05083-1.00
 for the USA 1.00 build and CUSA01290-1.02 for the Japanese 1.02 build. A package that several builds share (the base) is
-extracted once.
+extracted once. Builds whose packages share a param.sfo identity are told apart by the package's eboot.bin.
 
-Usage: python scripts/prepare_game.py [--title CUSA05083|CUSA01290|CUSA05262] [--version 1.00|1.01|1.02]
+Usage: python scripts/prepare_game.py [--title CUSA05083|CUSA01290|CUSA05262|CUSA03873]
+       [--version 1.00|1.01|1.02|1.00-Asia]
        [--scope core|full] [--game-root DIR]
 """
 import argparse
@@ -39,6 +40,23 @@ def sha256(path):
     return digest.hexdigest()
 
 
+_eboot_sha256 = {}
+
+
+def package_eboot_sha256(path):
+    """SHA-256 of a package's eboot.bin, unpacked alone: builds that share a package identity differ only there."""
+    if path not in _eboot_sha256:
+        import tempfile
+        import pkg_extract
+        with tempfile.TemporaryDirectory() as scratch:
+            try:
+                pkg_extract.extract(str(path), scratch, None, None, ['eboot.bin'])
+                _eboot_sha256[path] = sha256(Path(scratch) / 'eboot.bin')
+            except (OSError, ValueError) as error:
+                fail(f'{path.name}: cannot read eboot.bin: {error}')
+    return _eboot_sha256[path]
+
+
 def find_build_packages(game_root, title, version):
     """The build to prepare and its packages, one per layer: (title, version, profile, [(path, info), ...]).
 
@@ -65,6 +83,9 @@ def find_build_packages(game_root, title, version):
             if version and found_version != version:
                 continue
             found = [by_identity.get(game_profiles.layer_identity(found_title, layer), []) for layer in build['layers']]
+            finished = game_profiles.layer_identity(found_title, game_profiles.finished_layer(build))
+            if len(game_profiles.finishing_versions(found_title, finished)) > 1:
+                found[-1] = [c for c in found[-1] if package_eboot_sha256(c[0]) == build['eboot_sha256']]
             if all(len(candidates) == 1 for candidates in found):
                 builds.append((found_title, found_version, profile, [candidates[0] for candidates in found]))
     if not builds:
@@ -106,7 +127,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--game-root', type=Path, default=ROOT / 'game')
     parser.add_argument('--title', help='title to prepare: CUSA05083, CUSA01290 or CUSA05262')
-    parser.add_argument('--version', help='profile version to prepare (1.00, 1.01 or 1.02)')
+    parser.add_argument('--version', help='build to prepare (1.00, 1.01, 1.02 or 1.00-Asia)')
     parser.add_argument('--scope', choices=('core', 'full'), default='core',
                         help='core: executables, modules and metadata only; full: all game data')
     args = parser.parse_args()
@@ -134,7 +155,9 @@ def main():
 
     layers = []
     for index, (package, info) in enumerate(packages):
-        owner = game_profiles.finishing_version(title, game_profiles.package_identity(info))
+        identity = game_profiles.package_identity(info)
+        shared = len(game_profiles.finishing_versions(title, identity)) > 1
+        owner = game_profiles.finishing_version(title, identity, package_eboot_sha256(package) if shared else None)
         layers.append(root / 'extracted' / profile['versions'][owner]['folder'])
         extract(package, layers[-1], only, f'layer {index}')
 
@@ -164,7 +187,8 @@ def main():
         fail('prepared tree is not valid:\n  ' + '\n  '.join(problems))
     scope = 'full' if all(json.loads((layer / '.pkg_extracted').read_text())['only'] is None for layer in layers) else 'core'
     (view / game_view.MARKER).write_text(json.dumps(
-        {**json.loads((view / game_view.MARKER).read_text()), 'version': version, 'scope': scope}, indent=2))
+        {**json.loads((view / game_view.MARKER).read_text()), 'version': game_profiles.profile_version(version, build),
+         'scope': scope}, indent=2))
     print(f'ready  : {view}  ({title} {version}, extracted scope {scope})')
 
 

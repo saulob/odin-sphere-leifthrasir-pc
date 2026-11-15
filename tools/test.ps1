@@ -136,6 +136,18 @@ function Invoke-PatchWorkflow {
     return Result 'PASS'
 }
 
+function Invoke-ProfileTests {
+    $python = Get-Python
+    if (-not $python) { return Result 'FAIL' 'Python 3 not found (tools\setup.ps1 installs it)' }
+    $run = Invoke-Captured $python.Exe (@($python.Args) + @('-I', (Join-Path $root 'tests\game_profiles_tests.py'))) $root
+    if ($run.TimedOut -or $run.Code -ne 0) {
+        $run.Lines | ForEach-Object { Write-Host "    $_" }
+        return Result 'FAIL' (Get-FailureReason $run)
+    }
+    $run.Lines | Select-Object -Last 1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+    return Result 'PASS'
+}
+
 $requestFile = Join-Path $buildDir 'bin\bug-report-request.json'
 
 $titleArtRows = New-Object System.Collections.Generic.List[object]
@@ -234,7 +246,8 @@ $steps = @(
     (Step 'Packages' 'game profile, package identity, build parity of every supported build, layering, settings, keys, controller bindings, controller prompts' 'osl-tests' -Expect @(
         '(?m)^  CUSA05083 1\.00 USA\s+PASS\s*$', '(?m)^  CUSA05083 1\.01 USA\s+PASS\s*$', '(?m)^  CUSA01290 1\.00 Japan\s+PASS\s*$',
         '(?m)^  CUSA01290 1\.02 Japan\s+PASS\s*$', '(?m)^  CUSA05262 1\.00 Europe\s+PASS\s*$', '(?m)^  CUSA05262 1\.01 Europe\s+PASS\s*$',
-        '(?m)^  CUSA03873 1\.00 HK\s+PASS\s*$')),
+        '(?m)^  CUSA03873 1\.00 HK\s+PASS\s*$', '(?m)^  CUSA03873 1\.00 Asia\s+PASS\s*$')),
+    (Step 'Packages' 'scripts\game_profiles.py: releases that share a package identity, told apart by eboot.bin' -Block { Invoke-ProfileTests }),
     (Step 'Packages' 'patch workflow (cmake script, synthetic files)' -Block { Invoke-PatchWorkflow }),
     (Step 'Launcher' 'Bug Report: JSON, service address, log choice, privacy filter, report and preview, client against a stand-in transport, My Reports, nothing sent on its own' 'osl-bug-report-tests'),
     (Step 'Launcher' 'Bug Report service (Node, disposable database): submission, receipts, limits, retention, admin, dashboard, and the launcher''s own request' -Block { Invoke-BugReportService }),

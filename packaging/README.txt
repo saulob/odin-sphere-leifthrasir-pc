@@ -26,6 +26,9 @@ Leifthrasir PS4 package (.pkg). This port runs:
          the base package first, then the update.
   Hong Kong: Title ID CUSA03873, version 1.00 (the base package, APP_VER
          01.00, VERSION 01.00).
+  Asia:  Title ID CUSA03873, version 1.00 with Korean data archives
+         (Odin2_*_KO.CPK). Its package metadata is the Hong Kong one; the
+         launcher tells them apart by eboot.bin.
 
 Any other version is refused with "Different version of Odin Sphere
 Leifthrasir". A package still encrypted for a PS4 console cannot be unpacked on

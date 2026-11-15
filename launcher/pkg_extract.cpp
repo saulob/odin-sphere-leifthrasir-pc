@@ -289,6 +289,7 @@ struct Package::Impl {
     std::vector<Item> items;
     uint64_t total = 0;
     size_t files = 0;
+    bool files_loaded = false;
     Bytes buffer, mask, tweaks;
 
     const Entry* Find(uint32_t id) const {
@@ -507,6 +508,9 @@ PackageResult Package::Open(const fs::path& path) {
 
 PackageResult Package::LoadFiles() {
     Impl& p = *impl_;
+    if (p.files_loaded) {
+        return {};
+    }
     const Entry* keys = p.Find(kEntryKeys);
     const Entry* image_key = p.Find(kImageKey);
     if (!keys || !image_key || keys->size < 32 + 7 * 32 + 4 * 256 || image_key->size < 256) {
@@ -649,6 +653,7 @@ PackageResult Package::LoadFiles() {
         }
     }
     std::sort(p.items.begin(), p.items.end(), [](const Item& a, const Item& b) { return a.path < b.path; });
+    p.files_loaded = true;
     return {};
 }
 

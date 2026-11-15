@@ -457,6 +457,9 @@ InstallStatus FromPackage(PackageResult::Code code) {
 // A staged game that is no supported build, such as one whose eboot.bin differs, is diagnosed before its staging
 // folder is removed.
 InstallResult StagedFailure(const fs::path& staged, const GameCheck& check, const InstallHooks& hooks) {
+    if (check.state == GameFileState::kValid) {
+        return Failure(InstallStatus::kWrongVersion, std::string("the unpacked game is ") + check.build->label);
+    }
     if (check.state == GameFileState::kDifferentVersion) {
         UnsupportedBuildReport diagnostics = DiagnoseUnsupportedBuild(staged, check.detail, hooks.prompt_patch);
         if (diagnostics.odin) {
@@ -664,6 +667,27 @@ std::optional<InstallResult> DiagnosePackage(Package& package, const GameRoots& 
     return result;
 }
 
+// Builds that share a package's param.sfo are told apart by its eboot.bin, unpacked alone into a scratch folder. An
+// eboot.bin that is none of theirs keeps the first build, whose check of the unpacked game then diagnoses it.
+const GameBuild& PackageBuild(Package& package, const GameRoots& roots, const InstallHooks& hooks,
+                              const GameBuild& build, std::span<const GameBuild> builds) {
+    if (SamePackageBuilds(build, builds).size() < 2 || !package.LoadFiles().ok()) {
+        return build;
+    }
+    if (hooks.phase) {
+        hooks.phase("Identifying the build...");
+    }
+    const fs::path scratch = Normal(roots.prepared) / ".identify-build.install-temp";
+    std::error_code ec;
+    fs::remove_all(scratch, ec);
+    StagingGuard guard(scratch);
+    if (!package.Extract(scratch, nullptr, [](const std::string& path) { return path == "eboot.bin"; }).ok()) {
+        return build;
+    }
+    const GameBuild* variant = BuildWithEboot(build, Sha256Hex(scratch / "eboot.bin"), builds);
+    return variant ? *variant : build;
+}
+
 } // namespace
 
 InstallResult StageUpdate(const fs::path& base_app0, const fs::path& update_dir, const fs::path& staged_app0) {
@@ -704,7 +728,10 @@ InstallResult InstallFromPackage(const fs::path& package_file, const GameRoots& 
     if (const PackageResult opened = package.Open(source); !opened.ok()) {
         return Failure(FromPackage(opened.code), opened.detail);
     }
-    const GameCheck identity = CheckPackageIdentity(package.sfo(), builds);
+    GameCheck identity = CheckPackageIdentity(package.sfo(), builds);
+    if (identity.state == GameFileState::kValid) {
+        identity.build = &PackageBuild(package, roots, hooks, *identity.build, builds);
+    }
     const PackageLogContext context{Utf8(source.filename()), package.sfo(), identity};
     const auto logged = [&](InstallResult result) {
         result.report = PackageInstallLog(context, result, roots, builds);

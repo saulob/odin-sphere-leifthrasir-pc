@@ -437,7 +437,21 @@ GameCheck CheckGameTree(const std::filesystem::path& app0, std::span<const GameB
     if (identity.state != GameFileState::kValid) {
         return identity;
     }
-    const GameBuild& build = *identity.build;
+    std::string sha;
+    const GameBuild* chosen = identity.build;
+    if (SamePackageBuilds(*chosen, builds).size() > 1) {
+        if (!IsRegularNonEmpty(app0 / "eboot.bin")) {
+            return Result(GameFileState::kMissing, "missing eboot.bin", {}, chosen);
+        }
+        sha = Sha256Hex(app0 / "eboot.bin");
+        if (sha.empty()) {
+            return Result(GameFileState::kReadError, "cannot read eboot.bin", {}, chosen);
+        }
+        if (const GameBuild* variant = BuildWithEboot(*chosen, sha, builds)) {
+            chosen = variant;
+        }
+    }
+    const GameBuild& build = *chosen;
 
     for (const char* name : kSharedGameFiles) {
         if (!IsRegularNonEmpty(app0 / name)) {
@@ -455,7 +469,9 @@ GameCheck CheckGameTree(const std::filesystem::path& app0, std::span<const GameB
         }
     }
 
-    const std::string sha = Sha256Hex(app0 / "eboot.bin");
+    if (sha.empty()) {
+        sha = Sha256Hex(app0 / "eboot.bin");
+    }
     if (sha.empty()) {
         return Result(GameFileState::kReadError, "cannot read eboot.bin", {}, &build);
     }

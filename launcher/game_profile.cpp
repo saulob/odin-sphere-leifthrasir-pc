@@ -180,6 +180,13 @@ constexpr KnownEntryProfile kHkPromptProfiles[] = {
     {"HK", "GUI/HD_Interface.ftx", 4458000, 0xc2d4a197, 0xe47e29e5},
 };
 
+constexpr const char* kAsiaDataFiles[] = {"Odin2_BT_CN.CPK", "Odin2_OR_CN.CPK", "Odin2_RE_CN.CPK",
+                                          "Odin2_BT_KO.CPK", "Odin2_OR_KO.CPK", "Odin2_RE_KO.CPK"};
+constexpr KnownEntryProfile kAsiaPromptProfiles[] = {
+    {"Asia", "Interface.ftx", 4458000, 0xc2d4a197, 0xe47e29e5},
+    {"Asia", "GUI/HD_Interface.ftx", 4458000, 0xc2d4a197, 0xe47e29e5},
+};
+
 constexpr GameBuild kGameBuilds[] = {
     {
         "CUSA05083",
@@ -317,6 +324,28 @@ constexpr GameBuild kGameBuilds[] = {
         nullptr,
         kHkPromptProfiles,
     },
+    // Another Asian release of the same package identity, with Korean archives: told apart from HK by its eboot.bin.
+    {
+        "CUSA03873",
+        "HP0177-CUSA03873_00-ODINSPHERELE0000",
+        "1.00",
+        "CUSA03873-1.00-Asia",
+        "85ea2e4396b94a7b228d11e35a267f401cb2957bd116b3a5d23f5b3cb15a2fb2",
+        {},
+        kAsiaDataFiles,
+        "CUSA03873 1.00 Asia",
+        "Asia",
+        kHkLayers,
+        {},
+        0,
+        nullptr,
+        nullptr,
+        kHkLanguages,
+        ExecutableMapping::kScanned,
+        TextLanguageMode::kSelectable,
+        nullptr,
+        kAsiaPromptProfiles,
+    },
 };
 
 bool SameLayer(const PackageLayer& a, const PackageLayer& b) {
@@ -382,6 +411,30 @@ const GameBuild* UpdateBuildOf(const GameBuild& build, std::span<const GameBuild
         }
     }
     return found;
+}
+
+std::vector<const GameBuild*> SamePackageBuilds(const GameBuild& build, std::span<const GameBuild> builds) {
+    const auto same_merged = [](const char* a, const char* b) {
+        return a == b || (a && b && std::string_view(a) == b);
+    };
+    std::vector<const GameBuild*> found;
+    for (const GameBuild& candidate : builds) {
+        if (std::string_view(candidate.title_id) == build.title_id && std::string_view(candidate.content_id) == build.content_id &&
+            std::equal(candidate.layers.begin(), candidate.layers.end(), build.layers.begin(), build.layers.end(), SameLayer) &&
+            same_merged(candidate.merged_sfo_version, build.merged_sfo_version)) {
+            found.push_back(&candidate);
+        }
+    }
+    return found;
+}
+
+const GameBuild* BuildWithEboot(const GameBuild& build, std::string_view sha256, std::span<const GameBuild> builds) {
+    for (const GameBuild* candidate : SamePackageBuilds(build, builds)) {
+        if (candidate->eboot_sha256 == sha256) {
+            return candidate;
+        }
+    }
+    return nullptr;
 }
 
 std::string SupportedBuildsText() {

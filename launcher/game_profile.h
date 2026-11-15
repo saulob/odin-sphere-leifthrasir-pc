@@ -5,6 +5,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "cpk_patch.h"
 #include "osl_bookshelf.h"
@@ -48,7 +49,8 @@ struct GameBuild {
     const char* title_id;
     const char* content_id;
     const char* version;          // the profile version: the preparation marker's "version"
-    const char* folder;           // under game\prepared and game\image; distinct for each build
+    const char* folder;           // under game\prepared and game\image; distinct for each build, a region suffix for
+                                  // a release that shares an earlier build's package identity
     const char* eboot_sha256;     // lower-case hex of the finished game's eboot.bin
     std::span<const char* const> extra_files; // files the update adds, required like the game data
     std::span<const char* const> data_files;  // the game's archives; required by a complete installation
@@ -87,6 +89,14 @@ const GameBuild* BaseBuildOf(const GameBuild& build, std::span<const GameBuild> 
 // The newest build that continues this build's layers with another update, or nullptr when there is none.
 const GameBuild* UpdateBuildOf(const GameBuild& build, std::span<const GameBuild> builds = SupportedBuilds());
 
+// The builds whose packages have the same param.sfo identity as this build's (TITLE_ID, CONTENT_ID, layers), this build
+// among them, in SupportedBuilds order. Only their eboot.bin tells such releases apart.
+std::vector<const GameBuild*> SamePackageBuilds(const GameBuild& build,
+                                                std::span<const GameBuild> builds = SupportedBuilds());
+
+// The build among SamePackageBuilds(build) whose eboot.bin has this SHA-256, or nullptr.
+const GameBuild* BuildWithEboot(const GameBuild& build, std::string_view sha256,
+                                std::span<const GameBuild> builds = SupportedBuilds());
 
 std::string SupportedBuildsText();
 

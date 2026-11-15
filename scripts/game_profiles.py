@@ -3,7 +3,12 @@
 A version's layers are its packages, the base first and then the updates applied over it; the
 last layer's param.sfo is the finished game's. launcher/game_profile.cpp mirrors these values,
 and tests/game_tests.cpp checks that the two agree.
+
+Each key of 'versions' is one build. A release whose packages have the same param.sfo identity
+as another build's has a key of its own, with the profile 'version' it shares and its own
+'region'; only its eboot.bin tells them apart.
 """
+import hashlib
 from pathlib import Path
 
 from ps4_module import parse_sfo
@@ -109,6 +114,14 @@ PROFILES = {
                 'folder': 'CUSA03873-1.00', 'extra_files': (),
                 'data_files': ('Odin2_BT_CN.CPK', 'Odin2_OR_CN.CPK', 'Odin2_RE_CN.CPK'),
             },
+            '1.00-Asia': {
+                'version': '1.00', 'region': 'Asia',
+                'layers': ({'app_ver': '01.00', 'sfo_version': '01.00', 'update': False},),
+                'eboot_sha256': '85ea2e4396b94a7b228d11e35a267f401cb2957bd116b3a5d23f5b3cb15a2fb2',
+                'folder': 'CUSA03873-1.00-Asia', 'extra_files': (),
+                'data_files': ('Odin2_BT_CN.CPK', 'Odin2_OR_CN.CPK', 'Odin2_RE_CN.CPK',
+                               'Odin2_BT_KO.CPK', 'Odin2_OR_KO.CPK', 'Odin2_RE_KO.CPK'),
+            },
         },
         'entry': 'eboot.bin',
         'extra_executables': (),
@@ -139,6 +152,26 @@ def finished_layer(build):
     return build['layers'][-1]
 
 
+def profile_version(key, build):
+    """The version a build's preparation marker records: its own key unless it shares another's."""
+    return build.get('version', key)
+
+
+def file_sha256(path):
+    digest = hashlib.sha256()
+    with open(path, 'rb') as f:
+        for block in iter(lambda: f.read(1 << 20), b''):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _one(versions, keys, eboot_sha256):
+    """The only key, or among keys that share a package identity the one whose eboot.bin has eboot_sha256."""
+    if len(keys) > 1:
+        keys = [key for key in keys if versions[key]['eboot_sha256'] == eboot_sha256]
+    return keys[0] if len(keys) == 1 else None
+
+
 def layer_identity(title, layer):
     """(TITLE_ID, APP_VER, VERSION, is an update) of the package a layer is."""
     return title, layer['app_ver'], layer['sfo_version'], layer['update']
@@ -153,12 +186,18 @@ def package_identity(info):
     return sfo['TITLE_ID'], sfo.get('APP_VER'), sfo.get('VERSION'), sfo.get('CATEGORY') == 'gp'
 
 
-def finishing_version(title, identity):
-    """The version of `title` whose finished game is the package with this identity, or None."""
-    for version, build in PROFILES[title]['versions'].items():
-        if layer_identity(title, finished_layer(build)) == identity:
-            return version
-    return None
+def finishing_versions(title, identity):
+    """The keys of the builds of `title` whose finished game is the package with this identity."""
+    return [key for key, build in PROFILES[title]['versions'].items()
+            if layer_identity(title, finished_layer(build)) == identity]
+
+
+def finishing_version(title, identity, eboot_sha256=None):
+    """The key of the build of `title` whose finished game is the package with this identity, or None.
+
+    Builds that share the identity need the package's eboot.bin SHA-256 to be told apart.
+    """
+    return _one(PROFILES[title]['versions'], finishing_versions(title, identity), eboot_sha256)
 
 
 def _finished_identity(build, sfo):
@@ -168,7 +207,7 @@ def _finished_identity(build, sfo):
 
 
 def version_of(game):
-    """The profile version whose finished param.sfo matches the game folder, or None."""
+    """The key of the build whose finished param.sfo (and, when shared, eboot.bin) the game folder has, or None."""
     try:
         sfo = parse_sfo((Path(game) / 'sce_sys' / 'param.sfo').read_bytes())
     except (OSError, ValueError):
@@ -176,18 +215,31 @@ def version_of(game):
     found = PROFILES.get(sfo.get('TITLE_ID', ''))
     if not found:
         return None
-    return next((v for v, build in found['versions'].items() if _finished_identity(build, sfo)), None)
+    keys = [key for key, build in found['versions'].items() if _finished_identity(build, sfo)]
+    sha = None
+    if len(keys) > 1:
+        try:
+            sha = file_sha256(Path(game) / 'eboot.bin')
+        except OSError:
+            return None
+    return _one(found['versions'], keys, sha)
 
 
-def package_layer(info):
-    """(TITLE_ID, profile version, layer index) of the package of a supported build's finished game, or None.
-
-    `info` is what scripts/pkg_info.py reads. The index is the package's place in the build's layers.
-    """
+def package_layers(info):
+    """(TITLE_ID, build key, layer index) of every build whose finished game the package is; several when they
+    share its identity. `info` is what scripts/pkg_info.py reads. The index is the package's place in the layers."""
     identity = package_identity(info)
     if identity is None:
+        return []
+    title = identity[0]
+    return [(title, key, len(PROFILES[title]['versions'][key]['layers']) - 1)
+            for key in finishing_versions(title, identity)]
+
+
+def package_layer(info, eboot_sha256=None):
+    """The one entry of package_layers(info), chosen by the package's eboot.bin SHA-256 when several; else None."""
+    layers = package_layers(info)
+    if not layers:
         return None
-    version = finishing_version(identity[0], identity)
-    if version is None:
-        return None
-    return identity[0], version, len(PROFILES[identity[0]]['versions'][version]['layers']) - 1
+    key = _one(PROFILES[layers[0][0]]['versions'], [key for _, key, _ in layers], eboot_sha256)
+    return next((layer for layer in layers if layer[1] == key), None)

@@ -235,7 +235,7 @@ void TestBranding() {
 
 void TestProfile() {
     const std::span<const GameBuild> builds = SupportedBuilds();
-    CHECK(builds.size() == 7);
+    CHECK(builds.size() == 8);
     const GameBuild& build = builds[0];
     CHECK(std::string(kGameTitle) == "Odin Sphere Leifthrasir");
     CHECK(std::string(build.title_id) == "CUSA05083");
@@ -330,7 +330,7 @@ void TestProfile() {
 
     CHECK(SupportedBuildsText() ==
           "CUSA05083 1.00 USA, CUSA05083 1.01 USA, CUSA01290 1.00 Japan, CUSA01290 1.02 Japan, CUSA05262 1.00 Europe, "
-          "CUSA05262 1.01 Europe and CUSA03873 1.00 HK");
+          "CUSA05262 1.01 Europe, CUSA03873 1.00 HK and CUSA03873 1.00 Asia");
     CHECK(std::string(kPreparedMarker) == ".osl_view.json");
     const std::vector<std::string> shared(std::begin(kSharedGameFiles), std::end(kSharedGameFiles));
     for (const char* name : {"eboot.bin", "sce_discmap.plt", "sce_module/libc.prx", "sce_module/libSceFios2.prx",
@@ -358,6 +358,7 @@ void TestBuildMetadata() {
         {"CUSA05262-1.00", "CUSA05262 1.00 Europe", "APP_VER 1.00 \xC2\xB7 VERSION 1.00", nullptr},
         {"CUSA05262-1.01", "CUSA05262 1.01 Europe", "APP_VER 1.01 \xC2\xB7 VERSION 1.00", "CUSA05262-1.00"},
         {"CUSA03873-1.00", "CUSA03873 1.00 HK", "APP_VER 1.00 \xC2\xB7 VERSION 1.00", nullptr},
+        {"CUSA03873-1.00-Asia", "CUSA03873 1.00 Asia", "APP_VER 1.00 \xC2\xB7 VERSION 1.00", nullptr},
     };
     const std::span<const GameBuild> builds = SupportedBuilds();
     CHECK(builds.size() == std::size(expected));
@@ -3560,10 +3561,18 @@ void TestBuildContract() {
     std::set<std::string> shas, folders, labels, contents;
     std::map<std::string, std::string> content_of_title;
     const size_t table_resolution_sites = SupportedBuilds()[0].resolution_sites.size();
+    bool pads_build_neutral = true;
+    for (const char* file : {"src/osl_pad.c", "src/runtime_pad.c", "launcher/pad_capture.cpp"}) {
+        const std::string text = ReadFile(root / file);
+        pads_build_neutral = pads_build_neutral && !text.empty() && !Contains(text, "GameBuild") &&
+                             !Contains(text, "osl_game_build") && !Contains(text, "title_id");
+    }
     for (const GameBuild& build : SupportedBuilds()) {
         const std::string title = build.title_id, version = build.version, folder = build.folder;
         const PackageLayer& finished = FinishedLayer(build);
         const std::filesystem::path image_dir = dir / "image" / folder;
+        const std::vector<const GameBuild*> same_package = SamePackageBuilds(build);
+        const GameBuild& first = *same_package.front();
 
         // Installation
         PARITY("Installation", title.size() == 9 && title.starts_with("CUSA") &&
@@ -3571,7 +3580,11 @@ void TestBuildContract() {
         PARITY("Installation", std::string_view(build.content_id).ends_with("_00-ODINSPHERELE0000") &&
                                    Contains(build.content_id, title));
         PARITY("Installation", IsHexSha(build.eboot_sha256) && shas.insert(build.eboot_sha256).second);
-        PARITY("Installation", folder == title + "-" + version && folders.insert(folder).second);
+        PARITY("Installation", folder == title + "-" + version + (&first == &build ? "" : "-" + std::string(build.region)) &&
+                                   folders.insert(folder).second);
+        PARITY("Installation", BuildWithEboot(build, build.eboot_sha256) == &build &&
+                                   BuildWithEboot(build, std::string(64, '0')) == nullptr);
+        PARITY("Installation", same_package.size() == 1 || (build.layers.size() == 1 && UpdateBuildOf(build) == nullptr));
         PARITY("Installation", std::string(build.label) == title + " " + version + " " + build.region &&
                                    labels.insert(build.label).second && std::string(build.region).size() >= 2);
         PARITY("Installation", !build.layers.empty() && finished.update == (build.layers.size() > 1) &&
@@ -3589,7 +3602,7 @@ void TestBuildContract() {
                                               {"CATEGORY", finished.update ? "gp" : "gd"}, {"APP_VER", finished.app_ver},
                                               {"VERSION", finished.sfo_version}});
         const GameCheck package = CheckPackageIdentity(sfo);
-        PARITY("Installation", package.state == GameFileState::kValid && package.build == &build &&
+        PARITY("Installation", package.state == GameFileState::kValid && package.build == &first &&
                                    package.layer == build.layers.size() - 1);
         if (finished.update) {
             const GameCheck complete = CheckPackageIdentity(
@@ -3599,7 +3612,7 @@ void TestBuildContract() {
             PARITY("Installation", !!build.merged_sfo_version == (complete.state == GameFileState::kValid &&
                                                                   complete.build == &build && complete.layer == 0));
         }
-        PARITY("Installation", CheckSfoIdentity(sfo).build == &build);
+        PARITY("Installation", CheckSfoIdentity(sfo).build == &first);
         PARITY("Installation", BuildPaths({"prepared", "image"}, build).app0.filename() == folder &&
                                    BuildPaths({"prepared", "image"}, build).image_dir.filename() == folder);
         const GameBuild* base = BaseBuildOf(build);
@@ -3725,6 +3738,7 @@ void TestBuildContract() {
         }
 
         // Controls
+        PARITY("Controls", pads_build_neutral);
         PARITY("Controls", PromptsRollBackOnUnknownArchives(build, dir / "prompts"));
         PARITY("Controls", PromptsFollowPatchArchive(build, dir / "prompts-patch"));
         PARITY("Controls", PromptsAcceptCompatibleVariants(build, dir / "prompts-compatible"));
@@ -4430,9 +4444,11 @@ void TestHongKongPromptProfile() {
 
     // The same files in the same archive names, under every other build.
     size_t other_builds = 0;
+    const std::vector<const GameBuild*> same_package = SamePackageBuilds(*hk);
     for (const GameBuild& build : SupportedBuilds()) {
-        CHECK(build.prompt_profiles.empty() == (&build != hk));
-        if (&build == hk) {
+        const bool shares = std::find(same_package.begin(), same_package.end(), &build) != same_package.end();
+        CHECK(build.prompt_profiles.empty() == !shares);
+        if (shares) {
             continue;
         }
         GameBuild moved = build;
@@ -4502,7 +4518,7 @@ void TestHongKongPromptProfile() {
 
 void TestHongKongBuild() {
     const GameBuild* found = BuildWithLabel("CUSA03873 1.00 HK");
-    CHECK(found && found == &SupportedBuilds().back());
+    CHECK(found && found + 1 == BuildWithLabel("CUSA03873 1.00 Asia"));
     if (!found) {
         return;
     }
@@ -5428,6 +5444,489 @@ void TestIssue4TitleExitInstallLabel() {
     const std::string loader = ReadFile(root / "src" / "loader.c");
     const size_t gate = loader.find("if (!osl_title_exit_assets_ready(app0,image_dir,error,sizeof(error)))");
     CHECK(gate != std::string::npos && gate < loader.find("osl_apply_title_menu_exit(image,size"));
+}
+
+// Issue #19: a second CUSA03873 1.00 release with the same package identity as HK and Korean archives besides the
+// Chinese ones. Only its eboot.bin tells the two apart, and both install side by side.
+void TestAsiaBuild() {
+    namespace fs = std::filesystem;
+    const GameBuild* hk_found = BuildWithLabel("CUSA03873 1.00 HK");
+    const GameBuild* asia_found = BuildWithLabel("CUSA03873 1.00 Asia");
+    CHECK(hk_found && asia_found);
+    if (!hk_found || !asia_found) {
+        return;
+    }
+    const GameBuild& hk = *hk_found;
+    const GameBuild& asia = *asia_found;
+    CHECK(std::string(asia.title_id) == hk.title_id && std::string(asia.content_id) == hk.content_id);
+    CHECK(std::string(asia.version) == "1.00" && std::string(asia.region) == "Asia");
+    CHECK(std::string(asia.folder) == "CUSA03873-1.00-Asia" && std::string(hk.folder) == "CUSA03873-1.00");
+    CHECK(std::string(asia.eboot_sha256) == "85ea2e4396b94a7b228d11e35a267f401cb2957bd116b3a5d23f5b3cb15a2fb2");
+    CHECK(std::string(hk.eboot_sha256) == "8c483dc2c06d958ccd84bdbf726df6d23e31592c7c1bb39eb5425718b5bc1eb3");
+    CHECK(asia.layers.size() == 1 && std::string(asia.layers[0].app_ver) == "01.00" &&
+          std::string(asia.layers[0].sfo_version) == "01.00" && !asia.layers[0].update);
+    CHECK(asia.extra_files.empty() && !asia.merged_sfo_version && !BaseBuildOf(asia) && !UpdateBuildOf(asia));
+    const std::vector<std::string> asia_data(asia.data_files.begin(), asia.data_files.end());
+    const std::vector<std::string> hk_data(hk.data_files.begin(), hk.data_files.end());
+    CHECK((asia_data == std::vector<std::string>{"Odin2_BT_CN.CPK", "Odin2_OR_CN.CPK", "Odin2_RE_CN.CPK", "Odin2_BT_KO.CPK",
+                                                 "Odin2_OR_KO.CPK", "Odin2_RE_KO.CPK"}));
+    CHECK((hk_data == std::vector<std::string>{"Odin2_BT_CN.CPK", "Odin2_OR_CN.CPK", "Odin2_RE_CN.CPK"}));
+    CHECK(asia.mapping == ExecutableMapping::kScanned && asia.resolution_sites.empty() && asia.snapshot_scale_site == 0 &&
+          !asia.skip_intro && !asia.bookshelf);
+    CHECK(std::none_of(std::begin(lzcnt_builds), std::end(lzcnt_builds),
+                       [&](const LzcntBuild& lzcnt) { return std::string_view(lzcnt.build) == asia.label; }));
+    CHECK(BuildMetadataText(asia) == "APP_VER 1.00 \xC2\xB7 VERSION 1.00");
+    CHECK(InstalledGameName(GameFileState::kValid, &asia) == "PS4 CUSA03873 1.00 Asia");
+
+    // Traditional Chinese (the default) and Korean, as on HK: the game picks its CN or KO archives from that language.
+    const std::span<const TextLanguage> languages = TextLanguagesOf(&asia);
+    CHECK(asia.text_mode == TextLanguageMode::kSelectable && languages.size() == 2);
+    if (languages.size() == 2) {
+        CHECK(languages[0].key == "traditional_chinese" && languages[0].ps4_id == 10);
+        CHECK(languages[1].key == "korean" && languages[1].ps4_id == 9);
+    }
+    const fs::path root = TempDir("asia-build");
+    for (const GameBuild* build : {&hk, &asia}) {
+        const fs::path image_dir = root / "language" / build->folder;
+        WriteImageReport(image_dir, *build);
+        const fs::path ini = root / "language" / (std::string(build->folder) + ".ini");
+        const auto language = [&](const char* key) {
+            std::ofstream(ini, std::ios::trunc) << "text_language = " << key << "\n";
+            return osl_text_language(ini.string().c_str(), image_dir.string().c_str());
+        };
+        CHECK(language("korean") == 9 && language("traditional_chinese") == 10 && language("english") == 10 &&
+              language("invalid") == 10);
+    }
+
+    // The package identity is the same; the eboot.bin decides.
+    const std::vector<const GameBuild*> same = SamePackageBuilds(hk);
+    CHECK((same == std::vector<const GameBuild*>{&hk, &asia}) && SamePackageBuilds(asia) == same);
+    for (const GameBuild& other : SupportedBuilds()) {
+        CHECK(&other == &hk || &other == &asia || SamePackageBuilds(other).size() == 1);
+    }
+    CHECK(BuildWithEboot(hk, hk.eboot_sha256) == &hk && BuildWithEboot(hk, asia.eboot_sha256) == &asia);
+    CHECK(BuildWithEboot(asia, hk.eboot_sha256) == &hk && BuildWithEboot(asia, asia.eboot_sha256) == &asia);
+    CHECK(BuildWithEboot(hk, std::string(64, 'f')) == nullptr && BuildWithEboot(hk, SupportedBuilds()[0].eboot_sha256) == nullptr);
+    const std::vector<std::pair<std::string, std::string>> sfo_values = {
+        {"TITLE_ID", "CUSA03873"}, {"CONTENT_ID", "HP0177-CUSA03873_00-ODINSPHERELE0000"},
+        {"CATEGORY", "gd"},        {"APP_VER", "01.00"},
+        {"VERSION", "01.00"},
+    };
+    const std::string sfo = SfoText(root, sfo_values);
+    const GameCheck package = CheckPackageIdentity(sfo);
+    CHECK(package.state == GameFileState::kValid && package.build == &hk && package.layer == 0);
+    CHECK(CheckSfoIdentity(sfo).build == &hk);
+
+    // Synthetic games: a build list whose hashes are the synthetic executables' stands in for the real ones.
+    std::vector<GameBuild> builds(SupportedBuilds().begin(), SupportedBuilds().end());
+    const size_t hk_at = static_cast<size_t>(&hk - SupportedBuilds().data()), asia_at = static_cast<size_t>(&asia - SupportedBuilds().data());
+    const auto write_game = [&](const fs::path& dir, const std::string& eboot, std::span<const char* const> data) {
+        fs::create_directories(dir / "sce_sys");
+        WriteSfo(dir / "sce_sys" / "param.sfo", sfo_values);
+        WriteGameFile(dir, "eboot.bin", eboot);
+        WriteGameFile(dir, "sce_discmap.plt", "plt");
+        WriteGameFile(dir, "sce_module/libc.prx", "libc");
+        WriteGameFile(dir, "sce_module/libSceFios2.prx", "fios");
+        for (const char* name : data) {
+            WriteGameFile(dir, name, std::string("archive ") + name);
+        }
+    };
+    const fs::path hk_source = root / "sources" / "hk", asia_source = root / "sources" / "asia";
+    write_game(hk_source, "hk-eboot", hk.data_files);
+    write_game(asia_source, "asia-eboot", asia.data_files);
+    const std::string hk_sha = Sha256Hex(hk_source / "eboot.bin"), asia_sha = Sha256Hex(asia_source / "eboot.bin");
+    builds[hk_at].eboot_sha256 = hk_sha.c_str();
+    builds[asia_at].eboot_sha256 = asia_sha.c_str();
+    const GameBuild& hk_b = builds[hk_at];
+    const GameBuild& asia_b = builds[asia_at];
+
+    const GameCheck asia_tree = CheckGameTree(asia_source, builds);
+    CHECK(asia_tree.state == GameFileState::kValid && asia_tree.build == &asia_b && asia_tree.eboot_sha256 == asia_sha);
+    const GameCheck hk_tree = CheckGameTree(hk_source, builds);
+    CHECK(hk_tree.state == GameFileState::kValid && hk_tree.build == &hk_b);
+    for (const char* korean : {"Odin2_BT_KO.CPK", "Odin2_OR_KO.CPK", "Odin2_RE_KO.CPK"}) {
+        fs::rename(asia_source / korean, root / korean);
+        const GameCheck missing = CheckGameTree(asia_source, builds);
+        CHECK(missing.state == GameFileState::kMissing && missing.build == &asia_b && missing.detail == std::string("missing ") + korean);
+        fs::rename(root / korean, asia_source / korean);
+    }
+    const fs::path mixed = root / "mixed";
+    write_game(mixed, "hk-eboot", asia.data_files);
+    CHECK(CheckGameTree(mixed, builds).state == GameFileState::kValid && CheckGameTree(mixed, builds).build == &hk_b);
+
+    // An unknown CUSA03873 1.00 executable stays unsupported, is checked as HK's family and is diagnosed.
+    const fs::path unknown = root / "unknown";
+    write_game(unknown, "another-asian-eboot", asia.data_files);
+    const GameCheck other = CheckGameTree(unknown, builds);
+    CHECK(other.state == GameFileState::kDifferentVersion && other.build == &hk_b &&
+          other.detail == "eboot.bin is not the supported build" && other.eboot_sha256 == Sha256Hex(unknown / "eboot.bin"));
+    fs::remove(unknown / "Odin2_RE_CN.CPK");
+    CHECK(CheckGameTree(unknown, builds).detail == "missing Odin2_RE_CN.CPK" && CheckGameTree(unknown, builds).build == &hk_b);
+    WriteGameFile(unknown, "Odin2_RE_CN.CPK", "archive");
+    const GameRoots roots{root / "prepared", root / "image"};
+    const InstallResult diagnosed = InstallFromFolder(unknown, roots, {}, builds);
+    CHECK(diagnosed.status == InstallStatus::kUnsupportedBuild &&
+          Contains(diagnosed.report, "SHA-256: " + Sha256Hex(unknown / "eboot.bin")) &&
+          Contains(diagnosed.report, "Supported-build check: eboot.bin is not the supported build"));
+    fs::remove(unknown / "eboot.bin");
+    CHECK(CheckGameTree(unknown, builds).detail == "missing eboot.bin");
+    CHECK(!fs::exists(roots.prepared) && !fs::exists(roots.image));
+
+    // Both prepared: separate folders, each checked against its own boot image, the active one the last chosen.
+    const GamePaths hk_paths = BuildPaths(roots, hk_b), asia_paths = BuildPaths(roots, asia_b);
+    CHECK(hk_paths.app0 != asia_paths.app0 && hk_paths.image_dir != asia_paths.image_dir);
+    CHECK(asia_paths.app0.filename() == "CUSA03873-1.00-Asia" && hk_paths.app0.filename() == "CUSA03873-1.00");
+    const auto prepare = [&](const GameBuild& build, const fs::path& source, int seconds) {
+        const GamePaths paths = BuildPaths(roots, build);
+        fs::create_directories(paths.app0.parent_path());
+        fs::copy(source, paths.app0, fs::copy_options::recursive);
+        std::ofstream(paths.app0 / kPreparedMarker) << "{\"version\": \"" << build.version << "\", \"scope\": \"full\"}\n";
+        fs::last_write_time(paths.app0 / kPreparedMarker,
+                            fs::file_time_type::clock::now() - std::chrono::hours(24) + std::chrono::seconds(seconds));
+        WriteGameFile(paths.image_dir, "boot.bin", "image");
+        WriteImageReport(paths.image_dir, build);
+    };
+    prepare(hk_b, hk_source, 10);
+    prepare(asia_b, asia_source, 20);
+    const GameCheck asia_ready = CheckGameFiles(asia_paths, builds), hk_ready = CheckGameFiles(hk_paths, builds);
+    CHECK(asia_ready.state == GameFileState::kValid && asia_ready.build == &asia_b);
+    CHECK(hk_ready.state == GameFileState::kValid && hk_ready.build == &hk_b);
+    CHECK(LastPreparedBuild(roots, builds) == &asia_b && ActiveBuildPaths(roots, builds).app0 == asia_paths.app0);
+    WriteImageReport(asia_paths.image_dir, hk_b);
+    CHECK(CheckGameFiles(asia_paths, builds).detail == "the boot image was built from another eboot.bin");
+    WriteImageReport(asia_paths.image_dir, asia_b);
+
+    const std::map<std::string, std::string> hk_prepared = TreeContents(hk_paths.app0), asia_prepared = TreeContents(asia_paths.app0);
+    CHECK(InstallFromFolder(asia_source, roots, {}, builds).status == InstallStatus::kUpToDate);
+    const InstallResult to_hk = InstallFromFolder(hk_source, roots, {}, builds);
+    CHECK(to_hk.status == InstallStatus::kActivated && to_hk.build == &hk_b && LastPreparedBuild(roots, builds) == &hk_b);
+    const InstallResult to_asia = InstallFromFolder(asia_source, roots, {}, builds);
+    CHECK(to_asia.status == InstallStatus::kActivated && to_asia.build == &asia_b && LastPreparedBuild(roots, builds) == &asia_b);
+    CHECK(TreeContents(hk_paths.app0) == hk_prepared && TreeContents(asia_paths.app0) == asia_prepared);
+
+    // A failed installation of one release leaves both installations as they were.
+    InstallHooks reinstall;
+    reinstall.replace_active = true;
+    const InstallResult failed = InstallFromFolder(asia_source, roots, reinstall, builds);
+    CHECK(failed.status == InstallStatus::kPrepareFailed);
+    CHECK(TreeContents(hk_paths.app0) == hk_prepared && TreeContents(asia_paths.app0) == asia_prepared);
+    CHECK(CheckGameFiles(asia_paths, builds).build == &asia_b && LastPreparedBuild(roots, builds) == &asia_b);
+    fs::remove_all(asia_paths.app0);
+    fs::remove_all(asia_paths.image_dir);
+    const InstallResult fresh = InstallFromFolder(asia_source, roots, {}, builds);
+    CHECK(fresh.status == InstallStatus::kPrepareFailed && !fs::exists(asia_paths.app0) && !fs::exists(asia_paths.image_dir));
+    CHECK(TreeContents(hk_paths.app0) == hk_prepared && LastPreparedBuild(roots, builds) == &hk_b);
+    for (const fs::path& folder : {roots.prepared, roots.image}) {
+        std::error_code ec;
+        for (fs::directory_iterator it(folder, ec), end; !ec && it != end; it.increment(ec)) {
+            CHECK(!Contains(it->path().filename().string(), ".install-"));
+        }
+    }
+
+    // The installation log names the release the eboot.bin selected, and its own folder.
+    PackageLogContext context{"HP0177-CUSA03873_00-ODINSPHERELE0000-A0100-V0100.pkg", sfo, package};
+    context.identity.build = &asia;
+    InstallResult installed;
+    installed.build = &asia;
+    const std::string log = PackageInstallLog(context, installed, roots);
+    CHECK(Contains(log, "Package recognized: HP0177-CUSA03873_00-ODINSPHERELE0000-A0100-V0100.pkg is CUSA03873 1.00 Asia (base, layer 1 of 1)"));
+    CHECK(Contains(log, "Final prepared build: CUSA03873 1.00 Asia (CUSA03873-1.00-Asia)") && !Contains(log, "1.00 HK"));
+    InstallResult incomplete;
+    incomplete.status = InstallStatus::kIncomplete;
+    incomplete.detail = "missing Odin2_RE_KO.CPK";
+    const std::string failure = PackageInstallLog(context, incomplete, roots);
+    CHECK(Contains(failure, "Matched build: CUSA03873 1.00 Asia") && Contains(failure, "Target prepared folder: CUSA03873-1.00-Asia"));
+
+    // One identity path for Windows and Linux.
+    for (const char* file : {"launcher/game_profile.cpp", "launcher/game_files.cpp"}) {
+        const std::string text = ReadFile(fs::path(OSL_SOURCE_DIR) / file);
+        CHECK(!text.empty() && !Contains(text, "_WIN32") && !Contains(text, "__linux__"));
+    }
+}
+
+// The issue #19 executable as its unsupported-build log describes it: segments, entry, linked size and every site at
+// the offset the log names. The scan has to find exactly those sites again.
+constexpr uint32_t kIssue19Resolution[] = {0x6a9bb7, 0x6aa6d8, 0x6aa6dd, 0x6aa809, 0x6aa80e, 0x6aa9c8,
+                                           0x6aa9cd, 0x6aa9e5, 0x6aa9ea, 0x6aa9fe, 0x6aaa03, 0x6ab2f0,
+                                           0x6ab2f5, 0x6acca2, 0x6acca7, 0x6b2392, 0x6b7f6d};
+constexpr OslSkipIntroSites kIssue19SkipIntro{0x53d, 0x66aa9b, 0x1791dd, 0x146980, 0xa8ace0};
+constexpr OslBookshelfSites kIssue19Bookshelf{
+    0x5c1910,
+    0x5759b7,
+    {0x5e849e, 0x5e92f6, 0x5e9343, 0x5e9d9e, 0x5e9df6, 0x5e9ee6, 0x5e9f36, 0x5ea2c4, 0x5ea334, 0x5ea4e8, 0x5ea53c,
+     0x5ea64c, 0x5ea796, 0x5eacd2},
+    {0x5eab81, 0x5eae36},
+    0};
+constexpr uint32_t kIssue19Lzcnt[] = {
+    0x682bd0, 0x682ca0, 0x68405c, 0x684073, 0x684118, 0x6841a9, 0x68423a, 0x684283, 0x6844c0, 0x6844cf,
+    0x68458c, 0x684626, 0x6846be, 0x6846e8, 0x684830, 0xde361c, 0xde3649, 0xde36df, 0xde3854, 0xde3873,
+    0xde3901, 0xde3af6, 0xde3b7f, 0xde458c, 0xde45aa, 0xde4c76, 0xde4c90, 0xde5268, 0xde5b23, 0xde5b7e,
+    0xde6008, 0xde6048, 0xde6919, 0xde6937, 0xde7075, 0xde7090, 0xde7f62, 0xde7fdf, 0xde7fe4, 0xde801b,
+    0xde8020, 0xde82ba, 0xde82bf, 0xde8352, 0xde8357, 0xde8398, 0xde839d, 0xde862a, 0xde862f};
+constexpr uint32_t kIssue19Snapshot = 0x542f87, kIssue19NativeScale = 0x968b6c, kIssue19LayerScale = 0xd6c800;
+constexpr uint64_t kIssue19EbootImage = 0xd9d4e0, kIssue19LinkedImage = 0x1004570;
+
+MappedExecutable Issue19Image() {
+    PlantedLayout l;
+    l.notice = kIssue19SkipIntro.notice_scene - osl_skip_intro_notice_code.site;
+    l.hd = kIssue19SkipIntro.hd_title_check - osl_skip_intro_hd_title_code.site;
+    l.classic = kIssue19SkipIntro.classic_title_check - osl_skip_intro_classic_title_code.site;
+    l.classic_target = kIssue19SkipIntro.classic_button;
+    l.snapshot = kIssue19Snapshot;
+    l.data = kIssue19NativeScale;
+    l.getter = kIssue19Bookshelf.accessor;
+    l.total = kIssue19Bookshelf.total;
+    l.reads.assign(kIssue19Bookshelf.reads, kIssue19Bookshelf.reads + OSL_BOOKSHELF_READS);
+    l.marks.assign(kIssue19Bookshelf.marks, kIssue19Bookshelf.marks + OSL_BOOKSHELF_MARKS);
+    l.lzcnt.assign(std::begin(kIssue19Lzcnt), std::end(kIssue19Lzcnt));
+    const std::span<const OslResolutionSite> shapes = SupportedBuilds()[0].resolution_sites;
+    for (size_t i = 0; i < shapes.size() && i < std::size(kIssue19Resolution); ++i) {
+        OslResolutionSite site = shapes[i];
+        site.offset = kIssue19Resolution[i];
+        l.resolution.push_back(site);
+    }
+    MappedExecutable image;
+    image.image.assign(kIssue19LinkedImage, 0);
+    image.segments = {{0, 0xa8acd8, 5}, {0xa8c000, 0x1f8000, 4}, {0xc84000, 0x1194e0, 6},
+                      {0xda0000, kIssue19LinkedImage - 0xda0000, 5}};
+    image.entry = 0x67d610;
+    PlantFeatures(image, l);
+    std::fill_n(image.image.begin() + l.data + 8, 8, uint8_t{0});
+    PlantRelative(image, l.snapshot + OSL_SNAPSHOT_PAIR, kIssue19LayerScale, l.snapshot + OSL_SNAPSHOT_PAIR + 4);
+    return image;
+}
+
+void TestAsiaScannedMapping() {
+    const GameBuild* asia = BuildWithLabel("CUSA03873 1.00 Asia");
+    const GameBuild* hk = BuildWithLabel("CUSA03873 1.00 HK");
+    const GameBuild* usa = BuildWithLabel("CUSA05083 1.00 USA");
+    CHECK(asia && hk && usa);
+    if (!asia || !hk || !usa) {
+        return;
+    }
+    const MappedExecutable image = Issue19Image();
+    const ScanResult scan = ScanExecutable(image, kIssue19EbootImage);
+    const ScannedMapping& mapping = scan.mapping;
+    CHECK(scan.complete() && scan.unresolved.empty() && UnresolvedFeatures(mapping).empty());
+    CHECK(std::equal(mapping.resolution_offsets.begin(), mapping.resolution_offsets.end(), std::begin(kIssue19Resolution),
+                     std::end(kIssue19Resolution)));
+    CHECK(mapping.snapshot_scale_site == kIssue19Snapshot);
+    CHECK(SameSkipIntro(mapping.skip_intro, &kIssue19SkipIntro) && SameBookshelf(mapping.bookshelf, &kIssue19Bookshelf));
+    CHECK(std::equal(mapping.lzcnt_offsets.begin(), mapping.lzcnt_offsets.end(), std::begin(kIssue19Lzcnt), std::end(kIssue19Lzcnt)));
+    for (const char* line : {"notice scene: unique 0x53d", "hd title check: unique 0x66aa9b", "classic title check: unique 0x1791dd",
+                             "classic button: inside the code 0x146980", "stub space: free 0xa8acd8 (808 bytes to the page end)",
+                             "getter: unique 0x5c1910", "special test: unique 0x5759b7", "reads: 14/14",
+                             "read order: consistent, page read: through a helper", "marks: 2/2 0x5eab81 0x5eae36",
+                             "site: unique 0x542f87", "native scale: 1.5 at 0x968b6c (the expected 1.5)",
+                             "layer scale base: 0 0 at 0xd6c800", "sites: 17/17", "linked image: 0x1004570, entry 0x67d610",
+                             "instructions found: 50 (the shapes hold 50)", "ranges: unique (49 shapes placed in order)",
+                             "unexpected instructions: 0", "rewrite check on a scratch copy: ok"}) {
+        CHECK(Contains(scan.text, line));
+    }
+
+    // The log's sites are the USA 1.00 code shifted as one block: the same instructions, not a lookalike elsewhere.
+    for (size_t i = 0; i < std::size(kIssue19Resolution) && i < usa->resolution_sites.size(); ++i) {
+        CHECK(usa->resolution_sites[i].offset - kIssue19Resolution[i] == 0x19e0);
+    }
+    CHECK(usa->bookshelf->accessor - kIssue19Bookshelf.accessor == 0x1740);
+    for (int i = 0; i < OSL_BOOKSHELF_READS; ++i) {
+        CHECK(usa->bookshelf->reads[i] - kIssue19Bookshelf.reads[i] == 0x1740);
+    }
+    for (int i = 0; i < OSL_BOOKSHELF_MARKS; ++i) {
+        CHECK(usa->bookshelf->marks[i] - kIssue19Bookshelf.marks[i] == 0x1740);
+    }
+    CHECK(usa->snapshot_scale_site - kIssue19Snapshot == 0x1230 && usa->bookshelf->total - kIssue19Bookshelf.total == 0x1230);
+    CHECK(usa->bookshelf->in_place_page_read == kIssue19Bookshelf.in_place_page_read);
+
+    // Deterministic, and no table build's sites.
+    CHECK(SameMapping(ScanExecutable(image, kIssue19EbootImage).mapping, mapping));
+    for (const GameBuild& build : SupportedBuilds()) {
+        if (build.mapping == ExecutableMapping::kTable) {
+            CHECK(!SameResolution(mapping.resolution_offsets, build.resolution_sites) && !SameLzcnt(mapping.lzcnt_offsets, build));
+            CHECK(!SameSkipIntro(mapping.skip_intro, build.skip_intro) && !SameBookshelf(mapping.bookshelf, build.bookshelf));
+        }
+    }
+
+    // The patches accept every site on a copy of the image.
+    std::vector<unsigned char> scratch(image.image.begin(), image.image.end());
+    scratch.resize(image.image.size() + lzcnt_compat_stub_bytes() + OSL_BOOKSHELF_STUB_BYTES, 0);
+    const OslResolution target = osl_render_target(&osl_resolutions[OSL_RESOLUTION_COUNT - 1], &osl_aspect_ratios[0]);
+    const std::vector<OslResolutionSite> sites = ResolutionSitesAt(SupportedBuilds(), mapping.resolution_offsets);
+    char error[320] = "";
+    CHECK(sites.size() == 17 && osl_apply_resolution(scratch.data(), image.image.size(), sites.data(), sites.size(), &target, error, sizeof(error)));
+    CHECK(osl_apply_snapshot_scale(scratch.data(), image.image.size(), mapping.snapshot_scale_site, &target, error, sizeof(error)));
+    CHECK(osl_apply_skip_intro(scratch.data(), 0xa8b000, &*mapping.skip_intro, 1, error, sizeof(error)));
+    unsigned char* shelf_stubs = scratch.data() + image.image.size() + lzcnt_compat_stub_bytes();
+    CHECK(osl_apply_bookshelf(scratch.data(), image.image.size(), &*mapping.bookshelf, shelf_stubs, OSL_BOOKSHELF_STUB_BYTES, error,
+                              sizeof(error)));
+    CHECK(lzcnt_compat_apply(scratch.data(), image.image.size(), mapping.lzcnt_offsets.data(), lzcnt_shapes, LZCNT_RANGE_COUNT,
+                             scratch.data() + image.image.size(), lzcnt_compat_stub_bytes()) == LZCNT_COMPAT_OK);
+
+    // Recorded at installation and read back by the loader for this release only.
+    const std::filesystem::path dir = TempDir("asia-scanned");
+    const std::filesystem::path image_dir = dir / "image", ini = dir / "osl.ini";
+    WriteImageReport(image_dir, *asia, MappingExtra(mapping));
+    CHECK(SameMapping(ScannedMappingOfImageDir(image_dir), mapping));
+    OslGameBuild loaded{};
+    CHECK(osl_game_build(image_dir.string().c_str(), &loaded) && std::string(loaded.label) == "CUSA03873 1.00 Asia");
+    CHECK(loaded.resolution_site_count == 17 && loaded.snapshot_scale_site == kIssue19Snapshot && loaded.lzcnt_offsets &&
+          std::equal(mapping.lzcnt_offsets.begin(), mapping.lzcnt_offsets.end(), loaded.lzcnt_offsets));
+    CHECK(SameSkipIntro(mapping.skip_intro, loaded.skip_intro) && SameBookshelf(mapping.bookshelf, loaded.bookshelf));
+    for (size_t i = 0; i < loaded.resolution_site_count && i < std::size(kIssue19Resolution); ++i) {
+        CHECK(loaded.resolution_sites[i].offset == kIssue19Resolution[i]);
+    }
+    const BuildFeatures features = FeaturesOf(asia, image_dir);
+    CHECK(features.custom_resolution && features.skip_intro && features.unlock_bookshelf && features.lzcnt_rewrite);
+    std::ofstream(ini) << "render_resolution = " << osl_resolutions[OSL_RESOLUTION_COUNT - 1].key
+                       << "\naspect_ratio = " << osl_aspect_ratios[OSL_ASPECT_COUNT - 1].key << "\n";
+    CHECK(osl_render_resolution(ini.string().c_str(), image_dir.string().c_str()) == OSL_RESOLUTION_COUNT - 1);
+    CHECK(osl_aspect_ratio(ini.string().c_str(), image_dir.string().c_str()) == OSL_ASPECT_COUNT - 1);
+    WriteImageReport(image_dir, *hk, MappingExtra(mapping));
+    CHECK(osl_game_build(image_dir.string().c_str(), &loaded) && std::string(loaded.label) == "CUSA03873 1.00 HK");
+}
+
+// Issue #19: the Asia release's Chinese button art is taken through HK's identity only when it is HK's exact file.
+// Its Korean archives are its own data: art in them the patch does not know refuses Xbox for the whole build.
+void TestAsiaPrompts() {
+    using namespace cpk_test;
+    const GameBuild* hk = BuildWithLabel("CUSA03873 1.00 HK");
+    const GameBuild* asia = BuildWithLabel("CUSA03873 1.00 Asia");
+    CHECK(hk && asia);
+    if (!hk || !asia) {
+        return;
+    }
+    CHECK(asia->prompt_profiles.size() == 2 && asia->prompt_profiles.size() == hk->prompt_profiles.size());
+    for (size_t i = 0; i < asia->prompt_profiles.size() && i < hk->prompt_profiles.size(); ++i) {
+        const KnownEntryProfile &mine = asia->prompt_profiles[i], &theirs = hk->prompt_profiles[i];
+        CHECK(std::string_view(mine.label) == "Asia" && mine.name == theirs.name && mine.size == theirs.size &&
+              mine.crc == theirs.crc && mine.reference_crc == theirs.reference_crc);
+    }
+    constexpr size_t kSize = 4458000, kRuns = 3368, kFirstRun = 0x4004d0;
+    const auto xbox = [&](std::string data) {
+        for (size_t run = 0; run < kRuns; ++run) data.replace(kFirstRun + run * 16, 16, 16, 'X');
+        return data;
+    };
+    const std::string usa_art = WithCrc32(Pattern(kSize, 3), 0xe47e29e5);
+    const std::string chinese = WithCrc32(Pattern(kSize, 11), 0xc2d4a197);
+    const std::string other_chinese = Pattern(kSize, 19), korean = Pattern(kSize, 29);
+    CHECK(Crc32(Span(chinese)) == 0xc2d4a197 && Crc32(Span(korean)) != 0xc2d4a197 && Crc32(Span(other_chinese)) != 0xc2d4a197);
+    const std::string patch = MakePatch({{"Interface.ftx", {usa_art, xbox(usa_art)}}, {"GUI/HD_Interface.ftx", {usa_art, xbox(usa_art)}}});
+
+    const fs::path app0 = TempDir("prompts-asia") / asia->folder;
+    fs::create_directories(app0);
+    const std::string boot = BuildCpk({{"other/x.bin", "BOOT" + std::string(600, '\0'), false}}, false);
+    const std::string ko_text = BuildCpk({{"text/ko.bin", Pattern(4096, 31), false}}, true);
+    const std::string ko_hd_text = BuildCpk({{"text/ko_hd.bin", Pattern(4096, 37), false}}, false);
+    const auto install = [&](const std::string& cn_art, const std::string& or_ko, const std::string& re_ko) {
+        const std::map<std::string, std::string> files = {
+            {"Odin2_BT_CN.CPK", boot}, {"Odin2_OR_CN.CPK", BuildCpk({{"Interface.ftx", cn_art, false}}, true)},
+            {"Odin2_RE_CN.CPK", BuildCpk({{"GUI/HD_Interface.ftx", cn_art, false}}, false)},
+            {"Odin2_BT_KO.CPK", boot}, {"Odin2_OR_KO.CPK", or_ko}, {"Odin2_RE_KO.CPK", re_ko}};
+        for (const auto& [name, bytes] : files) {
+            fs::remove(UndoPath(app0 / name));
+            WriteAll(app0 / name, bytes);
+        }
+        return files;
+    };
+    const auto unchanged = [&](const std::map<std::string, std::string>& files) {
+        return std::all_of(files.begin(), files.end(), [&](const auto& file) {
+            return ReadFile(app0 / file.first) == file.second && !fs::exists(UndoPath(app0 / file.first));
+        });
+    };
+    const auto entry = [&](const char* archive, const char* name) {
+        CpkArchive cpk;
+        const CpkEntry* found = cpk.Open(app0 / archive) ? cpk.Find(name) : nullptr;
+        return found ? Bytes(cpk.Read(*found)) : std::string();
+    };
+
+    // Korean archives without button art: the Chinese art is HK's file, so it is patched, then restored exactly.
+    std::map<std::string, std::string> files = install(chinese, ko_text, ko_hd_text);
+    PromptsResult r = SetPromptStyle(app0, *asia, PromptStyle::kXbox, Span(patch));
+    CHECK(r.ok && r.unsupported.empty() && InstalledPromptStyle(app0, *asia, Span(patch)) == PromptStyle::kXbox);
+    CHECK(Contains(r.detail, "Controller prompts Asia compatibility: Interface.ftx, CRC32 c2d4a197, reference e47e29e5"));
+    CHECK(Contains(r.detail, "Controller prompts Asia compatibility: GUI/HD_Interface.ftx, CRC32 c2d4a197, reference e47e29e5"));
+    CHECK(entry("Odin2_OR_CN.CPK", "Interface.ftx") == xbox(chinese) && entry("Odin2_RE_CN.CPK", "GUI/HD_Interface.ftx") == xbox(chinese));
+    for (const char* korean_archive : {"Odin2_BT_KO.CPK", "Odin2_OR_KO.CPK", "Odin2_RE_KO.CPK"}) {
+        CHECK(ReadFile(app0 / korean_archive) == files[korean_archive] && !fs::exists(UndoPath(app0 / korean_archive)));
+    }
+    CHECK(SetPromptStyle(app0, *asia, PromptStyle::kPlayStation, {}).ok && unchanged(files) && !AnyPromptPatch(app0, *asia));
+
+    // Korean button art the patch does not know: nothing stays patched, and the Korean archive is named.
+    files = install(chinese, BuildCpk({{"Interface.ftx", korean, false}}, true), BuildCpk({{"GUI/HD_Interface.ftx", korean, false}}, false));
+    r = SetPromptStyle(app0, *asia, PromptStyle::kXbox, Span(patch));
+    CHECK(!r.ok && !AnyPromptPatch(app0, *asia) && InstalledPromptStyle(app0, *asia, Span(patch)) == PromptStyle::kPlayStation);
+    CHECK(unchanged(files) && AnyContains(r.unsupported, "build CUSA03873 1.00 Asia, archive Odin2_OR_KO.CPK, entry Interface.ftx"));
+
+    // Chinese art that is not HK's file is refused the same way.
+    files = install(other_chinese, ko_text, ko_hd_text);
+    r = SetPromptStyle(app0, *asia, PromptStyle::kXbox, Span(patch));
+    CHECK(!r.ok && unchanged(files) && !Contains(r.detail, "Asia compatibility") &&
+          AnyContains(r.unsupported, "build CUSA03873 1.00 Asia, archive Odin2_OR_CN.CPK, entry Interface.ftx"));
+}
+
+// Issue #19: title art the Exit Game patch was not made for keeps the Asia release's menu its own and the row off,
+// in its Chinese or its Korean archives; art the patch knows in every archive turns it on.
+void TestAsiaTitleExit() {
+    using namespace cpk_test;
+    using namespace title_exit_test;
+    const GameBuild* asia = BuildWithLabel("CUSA03873 1.00 Asia");
+    const std::string title_patch = ReadFile(std::filesystem::path(OSL_SOURCE_DIR) / "launcher" / "title" / "title-exit.dcpx");
+    const std::optional<BlockPatch> shipped = ParseBlockPatch(Span(title_patch));
+    CHECK(asia && shipped);
+    if (!asia || !shipped) {
+        return;
+    }
+    const BlockPatchTarget* atlas_target = ShippedTarget(*shipped, "GUI/HD_title.ftx", 0xbf7fa72a);
+    const BlockPatchTarget* refined_target = ShippedTarget(*shipped, "GUI/REHD_title.mbs", 0xcb49d54c);
+    const BlockPatchTarget* classic_target = ShippedTarget(*shipped, "title.mbs", 0x24c6ab07);
+    CHECK(atlas_target && refined_target && classic_target);
+    if (!atlas_target || !refined_target || !classic_target) {
+        return;
+    }
+    const std::string atlas = SourceCopy(*atlas_target), refined = SourceCopy(*refined_target), classic = SourceCopy(*classic_target);
+    std::string unknown_atlas = atlas;
+    unknown_atlas[atlas_target->runs.front().offset] ^= 0x5a;
+    const std::string boot = BuildCpk({{"other/x.bin", "BOOT" + std::string(600, '\0'), false}}, false);
+    const auto classic_archive = [&](const std::string& art) {
+        return BuildCpk({{"title.ftx", art, false}, {"title.mbs", classic, false}}, true);
+    };
+    const auto refined_archive = [&](const std::string& art) {
+        return BuildCpk({{"GUI/HD_title.ftx", art, false}, {"GUI/REHD_title.mbs", refined, false}}, false);
+    };
+    const fs::path root = TempDir("asia-title"), app0 = root / asia->folder, image = root / "image";
+    fs::create_directories(app0);
+    WriteImageReport(image, *asia);
+    const auto gate = [&] { return TitleExitAssetsReady(app0.string().c_str(), image.string().c_str(), Span(title_patch)); };
+    const auto install = [&](const std::string& chinese, const std::string& korean) {
+        const std::map<std::string, std::string> files = {
+            {"Odin2_BT_CN.CPK", boot}, {"Odin2_OR_CN.CPK", classic_archive(chinese)}, {"Odin2_RE_CN.CPK", refined_archive(chinese)},
+            {"Odin2_BT_KO.CPK", boot}, {"Odin2_OR_KO.CPK", classic_archive(korean)}, {"Odin2_RE_KO.CPK", refined_archive(korean)}};
+        for (const auto& [name, bytes] : files) {
+            fs::remove(UndoPath(app0 / name, kTitleUndoSuffix));
+            fs::remove(UndoPath(app0 / name, ".title.stamp"));
+            WriteAll(app0 / name, bytes);
+        }
+        return files;
+    };
+    const auto unchanged = [&](const std::map<std::string, std::string>& files) {
+        return std::all_of(files.begin(), files.end(), [&](const auto& file) {
+            return ReadFile(app0 / file.first) == file.second && !fs::exists(UndoPath(app0 / file.first, kTitleUndoSuffix));
+        });
+    };
+    const auto refused = [&](const std::string& chinese, const std::string& korean, const char* named) {
+        const std::map<std::string, std::string> files = install(chinese, korean);
+        const TitleExitResult result = ApplyTitleExit(app0, *asia, Span(title_patch));
+        return !result.ok && result.unavailable && unchanged(files) && !gate() && !TitleExitReady(app0, *asia, Span(title_patch)) &&
+               !TitleExitPending(app0, *asia, Span(title_patch)) && AnyContains(result.unsupported, std::string("build CUSA03873 1.00 Asia, ") + named);
+    };
+    CHECK(refused(unknown_atlas, unknown_atlas, "archive Odin2_OR_CN.CPK, entry title.ftx"));
+    CHECK(refused(unknown_atlas, atlas, "archive Odin2_RE_CN.CPK, entry GUI/HD_title.ftx"));
+    CHECK(refused(atlas, unknown_atlas, "archive Odin2_OR_KO.CPK, entry title.ftx"));
+
+    const std::map<std::string, std::string> files = install(atlas, atlas);
+    CHECK(!gate() && TitleExitPending(app0, *asia, Span(title_patch)));
+    CHECK(ApplyTitleExit(app0, *asia, Span(title_patch)).ok && gate() && TitleExitReady(app0, *asia, Span(title_patch)));
+    CHECK(RevertTitleExit(app0, *asia).ok && unchanged(files) && !gate());
 }
 
 struct TitleExitFixture {
@@ -6500,6 +6999,10 @@ int main(int argc, char** argv) {
     TestTitleMenuExit();
     TestTitleExitAssets();
     TestIssue4TitleExitInstallLabel();
+    TestAsiaBuild();
+    TestAsiaScannedMapping();
+    TestAsiaPrompts();
+    TestAsiaTitleExit();
     TestTitleArtStructure();
     PrintParitySummary();
     std::printf("%s (%d checks, %d failures)\n", g_failures ? "FAILED" : "OK", g_checks, g_failures);

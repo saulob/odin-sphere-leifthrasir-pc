@@ -19,8 +19,9 @@
 **v0.2.3** is the current release. The loader and runtime map and run the game's own x86-64 code, with the
 shadPS4-derived Vulkan video core, the launcher and installer, local trophies, the self-updater and the diagnostics.
 The USA release (`CUSA05083` base 1.00 plus its 1.01 update), the Japanese release (`CUSA01290` base 1.00 plus its 1.02
-update) and the European release (`CUSA05262` base 1.00 plus its 1.01 update) are supported. The Hong Kong 1.00 base
-package (`CUSA03873`) is supported too. The executable sites of the USA 1.01 and the Hong Kong 1.00 are found by
+update) and the European release (`CUSA05262` base 1.00 plus its 1.01 update) are supported. Both known `CUSA03873`
+1.00 base packages are supported too: the Hong Kong release and an Asian release that adds Korean archives. The
+executable sites of the USA 1.01 and both `CUSA03873` 1.00 releases are found by
 scanning their `eboot.bin` when they are installed, instead of from a fixed table; a feature whose sites the scan cannot
 find uniquely is hidden, and the log holds the scan. Any other version is refused, and the log then holds diagnostic
 information useful for adding it.
@@ -88,10 +89,14 @@ checked by scripts, but it has not yet been tested on real Linux PCs or a Steam 
 | European base | Title ID `CUSA05262`, Content ID `EP1063-CUSA05262_00-ODINSPHERELE0000`, `APP_VER` `01.00`, `VERSION` `01.00`, `eboot.bin` SHA-256 `3e6b1741e8a404d0f8fbe10bce93c6887974566f5be09ef1bddc22a00ba29feb` |
 | European 1.01 update | Same Title and Content ID, `APP_VER` `01.01`, `VERSION` `01.00`, `eboot.bin` SHA-256 `572bf21e57febee415d739cded5516def9ca81e867ad3184c989367248edcd7e` |
 | Hong Kong base | Title ID `CUSA03873`, Content ID `HP0177-CUSA03873_00-ODINSPHERELE0000`, `APP_VER` `01.00`, `VERSION` `01.00`, `eboot.bin` SHA-256 `8c483dc2c06d958ccd84bdbf726df6d23e31592c7c1bb39eb5425718b5bc1eb3` |
+| Asian base | The same Title ID, Content ID, `APP_VER` and `VERSION` as the Hong Kong base, `eboot.bin` SHA-256 `85ea2e4396b94a7b228d11e35a267f401cb2957bd116b3a5d23f5b3cb15a2fb2`; `Odin2_BT_KO.CPK`, `Odin2_OR_KO.CPK` and `Odin2_RE_KO.CPK` besides the `_CN` archives |
 
 The launcher checks the Title ID, Content ID and versions in the package's `param.sfo` before it unpacks anything, and
 the `eboot.bin` hash before it installs the result. An update is only laid over the base package of its own region,
-with the same Title ID and Content ID. A package encrypted for a PS4 console cannot be unpacked on a PC.
+with the same Title ID and Content ID. A package encrypted for a PS4 console cannot be unpacked on a PC. The two
+`CUSA03873` 1.00 releases share every `param.sfo` field, so the launcher reads the package's `eboot.bin` to tell them
+apart; the launcher calls them **CUSA03873 1.00 HK** and **CUSA03873 1.00 Asia**, and each has its own game folder, so
+both can be installed.
 
 ## Installing
 
@@ -165,15 +170,15 @@ in X11 sessions; anywhere, starting with `--launcher` (or the desktop entry's **
 The Render resolution and Aspect Ratio options change the game's verified internal render-target sites. Only
 **16:9 Original** is undistorted: the game's 2D scene is still laid out for its original 16:9 canvas, so
 21:9 and 32:9 stretch the gameplay horizontally instead of showing more of the world, and 16:10, 4:3 and
-5:4 squeeze it. The HUD, menus and prerendered videos are not adjusted either. CUSA05083 1.01 USA and CUSA03873 1.00 HK
-offer them when their installation scan found their sites.
+5:4 squeeze it. The HUD, menus and prerendered videos are not adjusted either. CUSA05083 1.01 USA and both CUSA03873 1.00
+releases offer them when their installation scan found their sites.
 
 Cheats are not exposed: Odin Sphere's gameplay values have not yet been verified for a launcher option. Each build's own
 text is used, and no region's assets are ever mixed.
 
-**Menu & Subtitles** is offered for the European build (CUSA05262) and the Hong Kong build (CUSA03873), whose executables
+**Menu & Subtitles** is offered for the European build (CUSA05262) and the CUSA03873 builds (HK and Asia), whose executables
 select their menu and subtitle text from the console's System Language. Europe offers English, French, German, Spanish
-or Italian (English by default); Hong Kong offers Traditional Chinese or Korean (Traditional Chinese by default). The
+or Italian (English by default); CUSA03873 offers Traditional Chinese or Korean (Traditional Chinese by default). The
 setting is stored in `user\osl.ini` as `text_language` and is passed to the game as the PS4 System Language. The USA
 build contains a single English text set and the Japanese build Japanese text, so neither shows the control. A saved
 language the selected build does not offer is replaced by that build's default.

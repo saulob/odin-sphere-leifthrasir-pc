@@ -50,14 +50,16 @@ GameRoots RootsOf(const GamePaths& paths);
 GameCheck CheckGameFiles(const GamePaths& paths, std::span<const GameBuild> builds = SupportedBuilds());
 
 // The game itself, without a preparation marker or boot image: param.sfo, the required files and eboot.bin. The
-// installer checks what it unpacked or the folder the player chose with it.
+// installer checks what it unpacked or the folder the player chose with it. Releases that share a param.sfo identity
+// are told apart by eboot.bin; an unknown one is checked as the first of them and fails as a different version.
 GameCheck CheckGameTree(const std::filesystem::path& app0, std::span<const GameBuild> builds = SupportedBuilds());
 
 // TITLE_ID, CONTENT_ID, APP_VER and VERSION of a finished game's param.sfo name a supported build.
 GameCheck CheckSfoIdentity(const std::string& sfo, std::span<const GameBuild> builds = SupportedBuilds());
 
 // The build whose finished game a package's param.sfo names, and the package's layer in that build. A merged package
-// (merged_sfo_version) is layer 0: it is installed like a base package.
+// (merged_sfo_version) is layer 0: it is installed like a base package. When several builds share the identity, the
+// first is named; the installer picks among SamePackageBuilds by the package's eboot.bin.
 GameCheck CheckPackageIdentity(const std::string& sfo, std::span<const GameBuild> builds = SupportedBuilds());
 
 // A string value of param.sfo, empty when the key is absent or not a string.
