@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "osl_settings.h"
+#include "osl_frame_pacing.h"
 #include "osl_graphics.h"
 #include "osl_keys.h"
 
@@ -61,6 +62,8 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         v.display_mode = OslGraphics::ParseDisplayMode(value);
     } else if (key == "vsync") {
         v.vsync = ParseBool(value, v.vsync);
+    } else if (key == "frame_rate") {
+        v.frame_rate = OslFramePacing::ParseFrameRate(value);
     } else if (key == "presentation") {
         v.presentation = OslGraphics::ParsePresentation(value);
     } else if (key == "fsr1") {

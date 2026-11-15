@@ -47,6 +47,7 @@ public:
     Frame* PrepareLastFrame() override;
     void Present(VideoCore::PresentFrame* frame, bool is_reusing_frame,
                  bool is_game_frame) override;
+    void RetireFrame(VideoCore::PresentFrame*) override {}
     void ReportCompilerStats() override {}
 
 private:

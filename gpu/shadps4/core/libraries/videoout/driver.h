@@ -111,6 +111,7 @@ private:
     void Flip(const Request& req);
     void DrawBlankFrame(); // Video port out not open
     void DrawLastFrame();  // Used when there is no flip request
+    void RepeatLastFrame(); // Frame rate above 60: the last frame again between two flips
     void SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop = false);
     void PresentThread(std::stop_token token);
     /// Runs presenter work (acquire, blit, vkQueuePresent) off the vblank thread, in order:
@@ -129,6 +130,7 @@ private:
     VideoOutPort main_port{};
     std::jthread present_thread;
     std::queue<Request> requests;
+    u64 flips_consumed = 0; ///< present thread only
 };
 
 } // namespace Libraries::VideoOut

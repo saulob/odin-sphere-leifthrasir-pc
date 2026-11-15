@@ -38,6 +38,7 @@ constexpr ManagedSetting kBaseSettings[] = {
     {kAntiAliasingKey, "0"},
     {kAnisotropyKey, "0"},
     {kTextLanguageKey, "english"},
+    {kFrameRateKey, "60"},
     {kSkipIntroKey, "0"},
     {kUnlockBookshelfKey, "0"},
     {kShowFpsTitleKey, "0"},
@@ -85,6 +86,16 @@ std::span<const ManagedSetting> ManagedSettings() {
     return settings;
 }
 
+std::string FrameRateLabel(int fps) {
+    if (fps == 0) {
+        return "Unlimited";
+    }
+    if (fps == 60) {
+        return "60 FPS (Original)";
+    }
+    return std::to_string(fps) + " FPS";
+}
+
 bool IsValidSetting(std::string_view key, std::string_view value) {
     const auto one_of = [&](std::initializer_list<std::string_view> values) {
         return std::find(values.begin(), values.end(), value) != values.end();
@@ -109,6 +120,9 @@ bool IsValidSetting(std::string_view key, std::string_view value) {
     }
     if (key == kAnisotropyKey) {
         return one_of({"0", "2", "4", "8", "16"});
+    }
+    if (key == kFrameRateKey) {
+        return one_of({"30", "60", "90", "120", "144", "165", "240", "0"});
     }
     if (key == kControllerPromptsKey) {
         return one_of({"playstation", "xbox"});

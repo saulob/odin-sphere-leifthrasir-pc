@@ -43,6 +43,7 @@
 #include "options.h"
 #include "pad_capture.h"
 #include "osl_accent.h"
+#include "osl_frame_pacing.h"
 #include "osl_graphics.h"
 #include "osl_renderer.h"
 #include "osl_settings.h"
@@ -639,6 +640,112 @@ void TestRenderer() {
         std::ofstream(file, std::ios::trunc) << "renderer = bogus\n";
         OslSettings::Values values;
         CHECK(OslSettings::Read(file.string(), values) && values.renderer.load() == OslRenderer::Vulkan);
+    }
+}
+
+// The Frame rate setting is a host-side VideoOut feature: one key, one accepted set and one default for every supported
+// build and every language, read by the launcher and the video core alike.
+void TestFrameRate() {
+    CHECK(std::string(kFrameRateKey) == "frame_rate");
+    const std::span<const GameBuild> builds = SupportedBuilds();
+    const char* const expected[] = {"CUSA05083 1.00 USA",    "CUSA05083 1.01 USA",    "CUSA01290 1.00 Japan",
+                                    "CUSA01290 1.02 Japan",  "CUSA05262 1.00 Europe", "CUSA05262 1.01 Europe",
+                                    "CUSA03873 1.00 HK",     "CUSA03873 1.00 Asia"};
+    CHECK(builds.size() == std::size(expected));
+    for (size_t i = 0; i < builds.size() && i < std::size(expected); ++i) {
+        CHECK(std::string_view(builds[i].label) == expected[i]);
+    }
+
+    bool managed = false;
+    for (const ManagedSetting& setting : ManagedSettings()) {
+        managed |= setting.key == kFrameRateKey && setting.default_value == "60";
+    }
+    CHECK(managed);
+
+    // The launcher accepts exactly the video core's modes (30, 60, 90, 120, 144, 165, 240, 0 for Unlimited).
+    for (int value = -5; value <= 1000; ++value) {
+        const std::string text = std::to_string(value);
+        CHECK(IsValidSetting(kFrameRateKey, text) == OslFramePacing::IsFrameRateMode(value));
+        CHECK(OslFramePacing::ParseFrameRate(text) == (OslFramePacing::IsFrameRateMode(value) ? value : 60));
+    }
+    for (const char* invalid : {"", "abc", "45", "-1", "090", "120.0", "120fps", " 120", "unlimited"}) {
+        CHECK(!IsValidSetting(kFrameRateKey, invalid));
+        CHECK(OslFramePacing::ParseFrameRate(invalid) == 60);
+    }
+    CHECK(FrameRateLabel(0) == "Unlimited" && FrameRateLabel(60) == "60 FPS (Original)" &&
+          FrameRateLabel(30) == "30 FPS" && FrameRateLabel(120) == "120 FPS" && FrameRateLabel(240) == "240 FPS");
+
+    // Every build, and every language it offers: the same default, the same modes, the same stored value.
+    for (const GameBuild& build : builds) {
+        const std::string name = std::string("frame-rate-") + build.title_id + (build.version ? build.version : "");
+        const std::filesystem::path file = TempDir(name.c_str()) / "osl.ini";
+        {
+            LauncherSettings fresh(file);
+            fresh.ResetToDefaults();
+            CHECK(fresh.Get(kFrameRateKey, "") == "60");
+            for (const int mode : OslFramePacing::kFrameRateModes) {
+                const std::string text = std::to_string(mode);
+                CHECK(IsValidSetting(kFrameRateKey, text));
+                fresh.Set(kFrameRateKey, text);
+                CHECK(fresh.Get(kFrameRateKey, "") == text);
+            }
+        }
+        std::vector<std::string_view> languages{""};
+        for (const TextLanguage& language : TextLanguagesOf(&build)) {
+            languages.push_back(language.key);
+        }
+        for (const std::string_view language : languages) {
+            std::ofstream(file, std::ios::trunc) << "";
+            LauncherSettings settings(file);
+            settings.ResetToDefaults();
+            if (!language.empty()) {
+                settings.Set(kTextLanguageKey, std::string(language));
+            }
+            settings.Set(kFrameRateKey, "120");
+            CHECK(settings.Save());
+            const LauncherSettings reloaded(file);
+            CHECK(reloaded.Get(kFrameRateKey, "") == "120");
+            OslSettings::Values values;
+            CHECK(OslSettings::Read(file.string(), values) && values.frame_rate.load() == 120);
+            // Changing the language afterwards leaves the frame rate alone.
+            LauncherSettings other(file);
+            other.Set(kTextLanguageKey, std::string(language.empty() ? "english" : language));
+            CHECK(other.Save() && other.Get(kFrameRateKey, "") == "120");
+            OslSettings::Values again;
+            CHECK(OslSettings::Read(file.string(), again) && again.frame_rate.load() == 120);
+            CHECK(OslFramePacing::RepeatCadenceHz(again.frame_rate.load()) == 120);
+        }
+    }
+
+    // Unset, invalid and reset values are the original 60; unrelated lines of osl.ini are kept.
+    const std::filesystem::path file = TempDir("frame-rate") / "osl.ini";
+    {
+        OslSettings::Values values;
+        std::ofstream(file, std::ios::trunc) << "";
+        CHECK(OslSettings::Read(file.string(), values) && values.frame_rate.load() == 60);
+        for (const char* invalid : {"45", "-1", "garbage", ""}) {
+            std::ofstream(file, std::ios::trunc) << "frame_rate = " << invalid << "\n";
+            OslSettings::Values loaded;
+            CHECK(OslSettings::Read(file.string(), loaded) && loaded.frame_rate.load() == 60);
+            CHECK(LauncherSettings(file).Get(kFrameRateKey, "60") == "60");
+        }
+    }
+    std::ofstream(file, std::ios::trunc) << "# kept comment\nunrelated_key = kept value\nframe_rate = 144\n";
+    {
+        LauncherSettings settings(file);
+        CHECK(settings.Get(kFrameRateKey, "") == "144");
+        settings.Set(kFrameRateKey, "240");
+        CHECK(settings.Save());
+        const std::string text = ReadFile(file);
+        CHECK(text.find("# kept comment") != std::string::npos && text.find("unrelated_key = kept value") != std::string::npos);
+        CHECK(text.find("frame_rate = 240") != std::string::npos && text.find("frame_rate = 144") == std::string::npos);
+        settings.ResetToDefaults();
+        CHECK(settings.Get(kFrameRateKey, "") == "60");
+        CHECK(settings.Save());
+        const std::string reset = ReadFile(file);
+        CHECK(reset.find("frame_rate = 60") != std::string::npos && reset.find("unrelated_key = kept value") != std::string::npos);
+        OslSettings::Values values;
+        CHECK(OslSettings::Read(file.string(), values) && values.frame_rate.load() == 60);
     }
 }
 
@@ -6117,6 +6224,11 @@ int main(int argc, char** argv) {
     if (argc >= 3 && std::strcmp(argv[1], "--title-art") == 0) {
         return RunTitleArtReport(argv[2]);
     }
+    if (argc >= 2 && std::strcmp(argv[1], "--frame-rate") == 0) {
+        TestFrameRate();
+        std::printf("frame rate: %s (%d checks, %d failures)\n", g_failures ? "FAILED" : "OK", g_checks, g_failures);
+        return g_failures ? 1 : 0;
+    }
     TestBranding();
     TestProfile();
     TestBuildMetadata();
@@ -6124,6 +6236,7 @@ int main(int argc, char** argv) {
     TestGameTree();
     TestBuildSelection();
     TestSettings();
+    TestFrameRate();
     TestGraphicsCard();
     TestTextLanguages();
     TestVoicePolicy();

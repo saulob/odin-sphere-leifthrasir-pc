@@ -63,6 +63,7 @@ adapter, and Direct3D 11 through ANGLE uses the default adapter; neither has a w
 | Render resolution, Aspect Ratio | yes | yes | yes | Shared: they rewrite the game's own render target sizes (`launcher/resolution.c`) |
 | Window modes, F11, window size, monitor, DPI | yes | yes | yes | Shared: `gpu/shim/window.cpp` |
 | Frame rate and resolution in the title, frame counter | yes | yes | yes | Shared: `window.cpp`, `osl_overlay.cpp` |
+| Frame rate (30 to 240, Unlimited) | yes | yes | yes | Shared: the VideoOut present thread (`videoout/driver.cpp`, `osl_frame_pacing.h`) |
 | Presentation (letterbox, stretch) | yes | yes | yes | Each presenter |
 | VSync | yes | yes | yes | Each presenter |
 | F10 Cheats menu, save list, text entry, startup notices, controller navigation | yes | yes | yes | Shared overlay logic; Vulkan, OpenGL and GLES 3 each submit it |
@@ -73,6 +74,28 @@ adapter, and Direct3D 11 through ANGLE uses the default adapter; neither has a w
 | Reduced scene targets, HDR | yes | no | no | Vulkan only |
 | Frame capture, GPU read back of images to guest memory | yes | no | no | Vulkan only |
 | Compute, indirect draws, MSAA, geometry and tessellation stages | yes | no | no | Not implemented in OpenGL; see below |
+
+## Frame rate
+
+The Frame rate setting (`frame_rate`, launcher Gameplay page) is scheduled once, in the VideoOut present thread, above the
+presenter boundary in `renderer_backend.h`; no presenter implements any of it. The game's vblank stays 60 Hz and the game
+still makes 60 unique frames a second.
+
+- Every guest flip is taken from the queue as before. At 30 FPS every second flip goes back with `RetireFrame` instead of
+  `Present`; the others are presented.
+- Above 60 (and Unlimited), the present thread schedules presentation slots on absolute times between two vblank ticks
+  (`FrameLimiter`) and shows the last frame again through the same `PrepareLastFrame` and `Present(frame, true)` pair the
+  idle redraw uses. A repeat never takes a request, never advances the flip counters and is skipped while the presenter is
+  still busy with a queued frame. On OpenGL and Direct3D 11 the repeat is handed to the GPU command thread, which owns the
+  context, like every other present.
+- The repeat cadence is the requested rate, bounded by the monitor's refresh rate when VSync is On (read from the window's
+  display) and by 480 for Unlimited. At 60 nothing is scheduled and the path is the one the game had before.
+- The overlay (F10 Cheats, save list, text entry, frame counter) is drawn on every presentation, repeats included. Controller
+  input is edge detected per press, so a repeated presentation does not repeat an action.
+- The frame counter and the frame rate in the title count presentations.
+
+On OpenGL and Direct3D 11 with VSync On, a presentation waits for the display's vertical blank on the GPU command thread, as
+it did before this setting; rates above the monitor's refresh rate are not presented there.
 
 ## Presentation
 

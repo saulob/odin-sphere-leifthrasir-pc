@@ -108,6 +108,8 @@ public:
     virtual PresentFrame* PrepareLastFrame() = 0;
     virtual void Present(PresentFrame* frame, bool is_reusing_frame = false,
                          bool is_game_frame = true) = 0;
+    /// Gives back a prepared frame that is not shown (Frame rate 30 skips every second flip).
+    virtual void RetireFrame(PresentFrame* frame) = 0;
 
     virtual void ReportCompilerStats() = 0;
 };

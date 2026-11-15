@@ -7,6 +7,8 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <string>
+#include <thread>
 #include <time.h>
 #ifdef _WIN32
 #include <windows.h>
@@ -15,6 +17,8 @@
 #include <sys/resource.h>
 #endif
 #include "common/assert.h"
+#include "osl_frame_pacing.h"
+#include "osl_settings.h"
 #include "osl_toggles.h"
 #include "osl_overlay.h"
 #include "video_core/renderer_vulkan/vk_frame_capture.h"
@@ -307,8 +311,14 @@ int VideoOutDriver::ChangeBufferAttribute(VideoOutPort* port, s32 attributeIndex
 }
 
 void VideoOutDriver::Flip(const Request& req) {
+    const bool present =
+        OslFramePacing::PresentsFlip(OslSettings::Get().frame_rate.load(), flips_consumed++);
     // Update HDR status before presenting, then present the frame on the swap thread.
-    RunPresenter([this, frame = req.frame, hdr = req.port->is_hdr] {
+    RunPresenter([this, frame = req.frame, hdr = req.port->is_hdr, present] {
+        if (!present) {
+            presenter->RetireFrame(frame);
+            return;
+        }
         presenter->SetHDR(hdr);
         presenter->Present(frame);
     });
@@ -602,6 +612,40 @@ void VideoOutDriver::DrawLastFrame() {
     }, true);
 }
 
+void VideoOutDriver::RepeatLastFrame() {
+    DrawLastFrame();
+}
+
+namespace {
+constexpr auto kLimiterSpinWindow = std::chrono::microseconds(500);
+
+// A coarse wait can return about a millisecond late, so it stops short and the rest is yielded.
+void WaitUntilSlot(std::chrono::steady_clock::time_point slot) {
+    using Clock = std::chrono::steady_clock;
+    const auto coarse = slot - Clock::now() - kLimiterSpinWindow;
+#ifdef _WIN32
+    thread_local const HANDLE timer =
+        CreateWaitableTimerExW(nullptr, nullptr, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
+    if (coarse > Clock::duration::zero()) {
+        LARGE_INTEGER due;
+        due.QuadPart = -std::chrono::duration_cast<std::chrono::nanoseconds>(coarse).count() / 100;
+        if (timer && SetWaitableTimer(timer, &due, 0, nullptr, nullptr, FALSE)) {
+            WaitForSingleObject(timer, INFINITE);
+        } else {
+            std::this_thread::sleep_for(coarse);
+        }
+    }
+#else
+    if (coarse > Clock::duration::zero()) {
+        std::this_thread::sleep_for(coarse);
+    }
+#endif
+    while (Clock::now() < slot) {
+        std::this_thread::yield();
+    }
+}
+} // namespace
+
 bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
                                 bool is_eop /*= false*/) {
     {
@@ -665,7 +709,17 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     Common::SetCurrentThreadRealtime(vblank_period);
 
     Common::AccurateTimer timer{vblank_period};
-    std::printf("VideoOut: vblank %u Hz\n", EmulatorSettings.GetVblankFrequency());
+    const int target_fps = OslSettings::Get().frame_rate.load();
+    const double display_hz = OslSettings::Get().display_refresh_hz;
+    bool vsync = OslSettings::Get().vsync;
+    OslFramePacing::FrameLimiter limiter{OslFramePacing::RepeatCadenceHz(target_fps, vsync, display_hz),
+                                         std::chrono::steady_clock::now()};
+    const std::string cadence_text =
+        limiter.Enabled() ? std::to_string(OslFramePacing::RepeatCadenceHz(target_fps, vsync, display_hz)) + " FPS"
+                          : "none";
+    std::printf("VideoOut: vblank %u Hz, frame rate %s, repeat cadence %s, VSync %s\n",
+                EmulatorSettings.GetVblankFrequency(), OslFramePacing::ModeName(target_fps).c_str(),
+                cadence_text.c_str(), vsync ? "on" : "off");
 
     const auto receive_request = [this] -> Request {
         std::scoped_lock lk{mutex};
@@ -679,6 +733,13 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
 
     while (!token.stop_requested()) {
         timer.Start();
+        const auto tick_start = std::chrono::steady_clock::now();
+        if (const bool vsync_now = OslSettings::Get().vsync; vsync_now != vsync) {
+            vsync = vsync_now;
+            limiter = OslFramePacing::FrameLimiter{OslFramePacing::RepeatCadenceHz(target_fps, vsync, display_hz),
+                                                   tick_start};
+        }
+        const auto tick_deadline = tick_start + vblank_period;
 
         if (DebugState.IsGuestThreadsPaused()) {
             DrawLastFrame();
@@ -706,6 +767,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
                     }
                 }
             } else {
+                limiter.Release(tick_start);
                 Flip(request);
                 FRAME_END;
             }
@@ -733,6 +795,20 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
             vblank_status.process_time = Libraries::Kernel::sceKernelGetProcessTime();
             vblank_status.tsc = Libraries::Kernel::sceKernelReadTsc();
             main_port.vblank_cv.notify_all();
+        }
+
+        // Frame rate above 60: the game makes one new frame per vblank, so the slots left before the next one
+        // show the last frame again.
+        while (limiter.Enabled() && main_port.is_open && !token.stop_requested()) {
+            const auto slot = limiter.NextSlot();
+            if (slot >= tick_deadline) {
+                break;
+            }
+            if (std::chrono::steady_clock::now() < slot) {
+                WaitUntilSlot(slot);
+            }
+            limiter.Release(std::chrono::steady_clock::now());
+            RepeatLastFrame();
         }
 
         timer.End();

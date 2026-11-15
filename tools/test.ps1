@@ -261,6 +261,8 @@ $steps = @(
     (Step 'Updater' 'the same helper tests against the release CLANG64 helper' -Block { Invoke-ReleaseHelper $built }),
     (Step 'Features' 'startup notice and frame counter visibility' 'osl-notice-tests'),
     (Step 'Features' 'cursor visibility' 'osl-cursor-tests'),
+    (Step 'Features' 'Frame rate pacing: modes, 30 / 60 / 90 / 120 / 144 / 165 / 240 / Unlimited, repeat cadence, VSync and display limits, absolute-slot limiter, one VideoOut path above every renderer, build and language independence' 'osl-frame-pacing-tests'),
+    (Step 'Features' 'Frame rate setting for every supported build and language: launcher and video core accept the same modes, default and invalid values are 60, 120 stored and read back, reset, unrelated lines kept' 'osl-tests' -Block { Invoke-TestExe 'osl-tests' $built @('(?m)^frame rate: OK \(') @('--frame-rate') }),
     (Step 'Features' 'cheats and Experience Multiplier: hooks and live switches on the game''s own instructions (original against cheat), level-up model, session state, F10 menu logic and hotkey, local builds, coexistence, diagnostics' 'osl-cheats-tests' -Expect @(
         '(?m)^HK reference: 7 sites, 23 bytes written, 22 changed', '(?m)^Cheat build parity: \d+ build\(s\) verified on real files',
         '(?m)^  Max Gold Gain +BYTE PATCH VERIFIED  SEMANTIC MODEL VERIFIED  LIVE TOGGLE VERIFIED', '(?m)^  Max Phozon Gain +BYTE PATCH VERIFIED  SEMANTIC MODEL VERIFIED  LIVE TOGGLE VERIFIED',

@@ -145,7 +145,14 @@ constexpr char kRenderResolutionHelp[] =
     "1440p and above need a powerful graphics card.";
 constexpr char kRestrictedRenderResolutionHelp[] =
     "This game build renders at its original size; the custom render resolutions are not available for it.";
-constexpr char kShowFpsTitleHelp[] = "Shows the frame rate in the window title: Odin Sphere Leifthrasir | FPS: 60.00";
+constexpr char kFrameRateHelp[] =
+    "60 FPS is the original game rate. 30 shows every second frame. Faster targets show the last frame again until the "
+    "next one: the game still makes 60 new frames a second, so game speed and motion are unchanged. Unlimited repeats "
+    "as often as the display allows, up to 480 a second. VSync keeps it at the display's refresh rate. Applies to "
+    "Vulkan, OpenGL and Direct3D 11.";
+constexpr char kShowFpsTitleHelp[] =
+    "Shows the rate the window is presented at in its title: Odin Sphere Leifthrasir | FPS: 60.00. It counts repeated "
+    "frames, so it follows the Frame rate setting.";
 constexpr char kShowResolutionTitleHelp[] =
     "Shows the game's render resolution in the window title: Odin Sphere Leifthrasir | 1920x1080";
 constexpr char kFrameCounterHelp[] = "Shows the game's frame rate in the corner. F2 toggles it while playing.";
@@ -929,6 +936,11 @@ private:
         if (features_.unlock_bookshelf) {
             ui.Toggle("Unlock Bookshelf", kUnlockBookshelfHelp, kUnlockBookshelfKey, false, "Off", "On");
         }
+        std::vector<trg::Option> frame_rates;
+        for (const int fps : {30, 60, 90, 120, 144, 165, 240, 0}) {
+            frame_rates.push_back({std::to_string(fps), FrameRateLabel(fps)});
+        }
+        ui.Combo("Frame rate", kFrameRateHelp, kFrameRateKey, "60", frame_rates);
         ui.Toggle("Frame rate in title", kShowFpsTitleHelp, kShowFpsTitleKey, false, "Off", "On");
         ui.Toggle("Render resolution in title", kShowResolutionTitleHelp, kShowResolutionTitleKey, false, "Off", "On");
         ui.Toggle("Frame counter", kFrameCounterHelp, kShowFrameCounterKey, false, "Hidden", "Shown");

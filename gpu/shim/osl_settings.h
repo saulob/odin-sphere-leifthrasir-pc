@@ -20,6 +20,8 @@ struct Values {
     std::atomic<int> renderer{OslRenderer::Vulkan}; ///< OslRenderer::Choice; read once at start
     std::atomic<int> display_mode{0};
     std::atomic<bool> vsync{true};
+    std::atomic<int> frame_rate{60}; ///< OslFramePacing mode; 0: Unlimited. Read once at start
+    std::atomic<double> display_refresh_hz{0.0}; ///< Set by the window: the refresh rate of its display; 0 when unknown
     std::atomic<int> presentation{0}; ///< OslGraphics::Presentation: letterbox or stretch
     std::atomic<bool> fsr1{false};
     std::atomic<bool> rcas{true};

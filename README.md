@@ -51,7 +51,8 @@ checked by scripts, but it has not yet been tested on real Linux PCs or a Steam 
 - **Skip intro**: start at the title's PRESS START, without the startup notice, logos and intro
 - **EXIT GAME** at the end of the native title menu, in Refined and Classic mode, on Windows and Linux, leaves the game cleanly. The label is drawn from the game's own title art and follows the title language where its letters allow (Italian, Spanish, French and German); other languages show EXIT GAME
 - **Menu & Subtitles** language for the European build (English, French, German, Spanish, Italian) and the Hong Kong build (Traditional Chinese, Korean)
-- Frame rate and render resolution in the window title, and an in-game **frame counter** with the frame time, toggled with **F2** while playing
+- **Frame rate**: 30, 60 (Original, the default), 90, 120, 144, 165, 240 or Unlimited frames per second reaching the window, on Vulkan, OpenGL and Direct3D 11. The game still makes 60 new frames a second, so game speed is unchanged and the frames above 60 show the latest frame again (no interpolation)
+- Frame rate and render resolution in the window title, and an in-game **frame counter** with the frame time, toggled with **F2** while playing; both show the rate the window is presented at
 - Startup hints confirm **Skip intro** and **Unlock Bookshelf** when either is on, then disappear on their own
 
 ### Cheats
@@ -164,7 +165,7 @@ Everything is kept next to the program (next to the AppImage on Linux):
 - **Play**: install or reinstall the game from your `.pkg`, the **Ready to play** status and **Show this launcher**
 - **Display**: display mode, window size, monitor, Aspect Ratio, Renderer (Auto, Vulkan, OpenGL, and on Windows Direct3D 11), graphics card, VSync, Presentation, FSR 1 upscaling and RCAS sharpening
 - **Graphics**: Render resolution, SMAA anti-aliasing and anisotropic texture filtering
-- **Gameplay**: Menu & Subtitles language (the European and Hong Kong builds), **Skip intro**, **Unlock Bookshelf**, frame rate and render resolution in the title, and the in-game frame counter
+- **Gameplay**: Menu & Subtitles language (the European and Hong Kong builds), **Skip intro**, **Unlock Bookshelf**, **Frame rate**, frame rate and render resolution in the title, and the in-game frame counter
 - **Cheats**: seven optional gameplay modifiers in two groups, Resources and Combat, each Off or On, and the **Experience Multiplier** (Off, 2x, 5x, 10x or 100x) last; they set the state the game starts with, and **F10** changes them while playing
 - **Controls**: **Controller prompts** (PlayStation or Xbox), **Controller bindings**, every keyboard binding and the port hotkeys, each with **Reset to defaults**. Xbox changes the button pictures the game shows (A/B/X/Y, LB/RB, LT/RT, MENU and VIEW) in the port's own copy of the game; the touchpad prompt becomes VIEW. PlayStation puts the originals back. Your `.pkg` file is never changed.
 - **Trophies**: your local PS4 trophy progress, the trophy list and the Trophy Key setup
@@ -232,6 +233,23 @@ every entry in it: the Prophecies, Alchemy, Notes, Cafe and Kitchen recipes, and
 what the Bookshelf shows. Your save is not changed, nothing is marked as found, no trophy is affected, and turning the
 option Off puts the Bookshelf back to what your save has earned. It is stored in `user\osl.ini` as `unlock_bookshelf`,
 and it is available for every supported build.
+
+**Frame rate** (Gameplay, 60 FPS (Original) by default) chooses how many frames a second reach the window: 30 FPS, 60 FPS
+(Original), 90 FPS, 120 FPS, 144 FPS, 165 FPS, 240 FPS or Unlimited. It is stored in `user\osl.ini` as `frame_rate` (30, 60,
+90, 120, 144, 165, 240 or 0 for Unlimited; anything else reads as 60), it applies the next time the game starts, and it is
+available for every supported build, language and renderer.
+
+- The game still creates 60 unique frames per second whatever the setting. Its logic, animation, physics, input and vblank
+  stay at their original rate, so game speed does not change. Nothing is interpolated or synthesised, and the game's
+  executable is not patched.
+- Above 60 the latest completed frame is presented again between the game's own frames (120 FPS shows each frame twice).
+  30 FPS shows every second frame. Unlimited repeats up to 480 times a second.
+- VSync can cap the rate at the monitor's refresh rate: 120 FPS on a 60 Hz display with VSync On is presented at 60. Turn
+  VSync Off on the Display page, or use a faster monitor, to present more.
+- **Frame rate in title** and the **frame counter** show the presentation rate, so they follow this setting.
+
+This is the Frame rate part of [issue #13](https://github.com/saulob/odin-sphere-leifthrasir-pc/issues/13). HD texture pack
+support and DLSS from the same issue are separate requests and are not part of it.
 
 ## Screenshots
 

@@ -114,6 +114,11 @@ public:
         Present(static_cast<Frame*>(frame), is_reusing_frame, is_game_frame);
     }
     void Present(Frame* frame, bool is_reusing_frame = false, bool is_game_frame = true);
+    void RetireFrame(VideoCore::PresentFrame* frame) override {
+        RetireFrame(static_cast<Frame*>(frame));
+    }
+    /// Returns a rendered frame to the free queue without presenting it.
+    void RetireFrame(Frame* frame);
     /// A black frame with the loading screen (OslOverlay::SetLoading) only.
     void PresentLoadingFrame();
     Frame* PrepareLastFrame() override;
