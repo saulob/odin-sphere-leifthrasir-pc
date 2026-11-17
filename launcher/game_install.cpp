@@ -10,6 +10,7 @@
 #include <windows.h>
 #endif
 
+#include <algorithm>
 #include <chrono>
 #include <fstream>
 #include <optional>
