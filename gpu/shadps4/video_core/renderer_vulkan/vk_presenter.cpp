@@ -27,6 +27,7 @@
 #include <cmath>
 #include <csetjmp>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <filesystem>
@@ -153,8 +154,17 @@ Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_
     pp_pass.Create(device, swapchain.GetSurfaceFormat().format);
     OslOverlay::Init(instance, swapchain.GetSurfaceFormat().format, num_images);
 
+    // Pipeline binaries make a cached pipeline cheaper, not free: on AMD's Windows driver each one
+    // still takes 8-15 ms (up to 100+) to create, on the GPU thread, the first time a draw needs it
+    // in a session - a hitch whenever a new kind of object comes on screen. So the known pipelines
+    // are built in the background with binaries as well. OSL_PIPELINE_ON_DEMAND=1 restores the
+    // old on-demand startup.
     if (instance.GetPipelineBinaryGlobalKey().keySize != 0) {
-        rasterizer->GetPipelineCache().StartOnDemand();
+        const char* on_demand = std::getenv("OSL_PIPELINE_ON_DEMAND");
+        if ((on_demand && *on_demand && *on_demand != '0') ||
+            !rasterizer->GetPipelineCache().StartBackgroundWarmUp()) {
+            rasterizer->GetPipelineCache().StartOnDemand();
+        }
         return;
     }
 
