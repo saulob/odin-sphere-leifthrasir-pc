@@ -3,6 +3,7 @@
 #define OSL_LAUNCHER_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 #include "osl_resolution.h"
 #include "osl_bookshelf.h"
@@ -62,6 +63,54 @@ int osl_aspect_ratio(const char *settings_file, const char *image_dir);
  * image_dir was built from: the build's default (English when the build is unknown) when the file or the value is
  * missing or not one of them. */
 int osl_text_language(const char* settings_file, const char* image_dir);
+
+/* A game archive as the port's Menu & Subtitles language serves it: byte ranges in place of the archive's own bytes,
+ * possibly past its end (runtime_file_overlay). */
+typedef struct {
+    uint64_t offset, size;
+    const unsigned char *data;
+} OslFilePatch;
+
+typedef struct {
+    const char *archive; /* file name in the game folder */
+    uint64_t length;
+    const OslFilePatch *patches;
+    size_t count;
+} OslArchiveOverlay;
+
+/* The archive overlays of the saved Menu & Subtitles language (game_translation.h); *count is 0 for a native language.
+ * The data stays valid for the life of the process. Logs a summary. */
+const OslArchiveOverlay *osl_text_translation(const char *settings_file, const char *image_dir, const char *app0,
+                                              size_t *count);
+
+/* Localized visual entries of the last osl_text_translation whose first read the runtime reports (Portuguese (Brazil)
+ * only): kind is a RUNTIME_WATCH_* value, offset/size as the game reads the archive, source the archive's language
+ * slot ("ES") or "" when its name does not say. */
+typedef struct {
+    const char *archive, *entry, *source;
+    uint64_t offset, size;
+    int kind;
+} OslVisualWatch;
+const OslVisualWatch *osl_text_visual_watches(size_t *count);
+
+/* Glyph records the loaded executable's fonts gain for the Portuguese (Brazil) slot: a copy of `template_code`'s record
+ * drawing atlas `cell`, added to the descriptor at image offset `descriptor` whose 16-byte header is `header`; and
+ * unassigned Shift-JIS codes given a letter in the decoder table at image offset `table`. From the last
+ * osl_text_translation. */
+typedef struct {
+    uint64_t descriptor;
+    uint8_t header[16];
+    uint32_t code, template_code;
+    uint16_t cell;
+} OslGlyphPatch;
+
+typedef struct {
+    uint64_t table;
+    uint8_t lead, trail;
+    uint16_t code;
+} OslSjisPatch;
+
+const OslGlyphPatch *osl_text_glyph_patches(size_t *count, const OslSjisPatch **sjis, size_t *sjis_count);
 
 /* Prints into the run log the Gameplay choices the loader applies, starting with the menus-and-subtitles language. */
 void osl_log_gameplay_settings(const char* settings_file, const char* image_dir);

@@ -138,16 +138,31 @@ constexpr OslBookshelfSites kEu101Bookshelf{
     {0x5ece81, 0x5ed136},
     0};
 
-// The European executable picks its menu and subtitle archives from the system language; these are the languages it
-// maps (UK is its English). The USA and Japanese builds ship one text language each and list none.
+// The European executable picks its menu and subtitle archives from the system language (UK is its English). The USA
+// and Japanese executables have one text set; Japan keeps being told the system language it was always told. English
+// on a build without it and Portuguese (Brazil) run in a native slot that the port's text is served over.
+constexpr TextLanguage kUsaLanguages[] = {
+    {kEnglishKey, "English", 1, "US"},
+    {kPortugueseBrazilKey, "Portuguese (Brazil)", 1, "US", TextSource::kPortTranslation},
+};
+
+constexpr TextLanguage kJapanLanguages[] = {
+    {"japanese", "Japanese", 1, ""},
+    {kEnglishKey, "English", 1, "", TextSource::kPortEnglish},
+    {kPortugueseBrazilKey, "Portuguese (Brazil)", 1, "", TextSource::kPortTranslation},
+};
+
 constexpr TextLanguage kEuLanguages[] = {
-    {"english", "English", 1}, {"french", "French", 2}, {"german", "German", 4},
-    {"spanish", "Spanish", 3}, {"italian", "Italian", 5},
+    {kEnglishKey, "English", 1, "UK"},  {"french", "French", 2, "FR"},   {"german", "German", 4, "DE"},
+    {"spanish", "Spanish", 3, "ES"},    {"italian", "Italian", 5, "IT"},
+    {kPortugueseBrazilKey, "Portuguese (Brazil)", 3, "ES", TextSource::kPortTranslation},
 };
 
 constexpr TextLanguage kHkLanguages[] = {
-    {"traditional_chinese", "Traditional Chinese", 10},
-    {"korean", "Korean", 9},
+    {"traditional_chinese", "Traditional Chinese", 10, "CN"},
+    {"korean", "Korean", 9, "KO"},
+    {kEnglishKey, "English", 10, "CN", TextSource::kPortEnglish},
+    {kPortugueseBrazilKey, "Portuguese (Brazil)", 10, "CN", TextSource::kPortTranslation},
 };
 
 constexpr const char* kUsaDataFiles[] = {"Odin2_BT_US.CPK", "Odin2_OR_US.CPK", "Odin2_RE_US.CPK"};
@@ -203,9 +218,9 @@ constexpr GameBuild kGameBuilds[] = {
         0x5441b7,
         &kUsaSkipIntro,
         &kUsaBookshelf,
-        {},
+        kUsaLanguages,
         ExecutableMapping::kTable,
-        TextLanguageMode::kFixed,
+        TextLanguageMode::kSelectable,
     },
     {
         "CUSA05083",
@@ -222,9 +237,9 @@ constexpr GameBuild kGameBuilds[] = {
         0,
         nullptr,
         nullptr,
-        {},
+        kUsaLanguages,
         ExecutableMapping::kScanned,
-        TextLanguageMode::kFixed,
+        TextLanguageMode::kSelectable,
         "01.01",
     },
     {
@@ -242,9 +257,9 @@ constexpr GameBuild kGameBuilds[] = {
         0x53cea7,
         &kJapanBaseSkipIntro,
         &kJapanBaseBookshelf,
-        {},
+        kJapanLanguages,
         ExecutableMapping::kTable,
-        TextLanguageMode::kFixed,
+        TextLanguageMode::kSelectable,
     },
     {
         "CUSA01290",
@@ -261,9 +276,9 @@ constexpr GameBuild kGameBuilds[] = {
         0x542827,
         &kJapan102SkipIntro,
         &kJapan102Bookshelf,
-        {},
+        kJapanLanguages,
         ExecutableMapping::kTable,
-        TextLanguageMode::kFixed,
+        TextLanguageMode::kSelectable,
     },
     {
         "CUSA05262",
@@ -363,6 +378,20 @@ std::span<const GameBuild> SupportedBuilds() {
 
 std::span<const TextLanguage> TextLanguagesOf(const GameBuild* build) {
     return build ? build->text_languages : std::span<const TextLanguage>{};
+}
+
+std::vector<const TextLanguage*> TextLanguageDisplayOrder(const GameBuild* build) {
+    std::vector<const TextLanguage*> order;
+    for (const TextLanguage& language : TextLanguagesOf(build)) {
+        order.push_back(&language);
+    }
+    const auto rank = [](const TextLanguage* language) {
+        return language->key == kEnglishKey ? 0 : language->key == kPortugueseBrazilKey ? 1 : 2;
+    };
+    std::stable_sort(order.begin(), order.end(), [&](const TextLanguage* a, const TextLanguage* b) {
+        return rank(a) != rank(b) ? rank(a) < rank(b) : rank(a) == 2 && a->name < b->name;
+    });
+    return order;
 }
 
 const TextLanguage& ResolveTextLanguage(const GameBuild* build, std::string_view key) {

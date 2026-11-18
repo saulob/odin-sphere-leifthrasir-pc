@@ -1,0 +1,2247 @@
+{
+ "letters": "ÀÁÂÃÇÉÊÍÓÔÕÚÜàáâãçéêíóôõúü",
+ "builds": [
+  {
+   "eboot_sha256": "7c517194aba4e5eea55d9197efae47d1567bd785b8c0dced7d1b0f4028d3eed6",
+   "label": "CUSA05083 1.00 USA",
+   "families": [
+    {
+     "map_sha256": "cf4f4c8401de8aa90c594324ed77ef7d34ea1b606e327b02d6a20a93c9cb8648",
+     "descriptors": [
+      {
+       "va": "0xb6c240",
+       "header": "00000000000800080152520a0a181800"
+      },
+      {
+       "va": "0xb6ba30",
+       "header": "0000000000040004012a2a0505181800"
+      }
+     ],
+     "atlases": [
+      {
+       "archive": "Odin2_BT_US.CPK",
+       "entry": "HD_font_c.ftx",
+       "size": 4194768,
+       "crc32": "b1238b66",
+       "textures": 1,
+       "cell": 82,
+       "cols": 24,
+       "rows": 24
+      }
+     ],
+     "glyphs": [
+      {
+       "mark": "grave",
+       "punctuation": 96,
+       "code": 192,
+       "cell": 312,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 64
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 193,
+       "cell": 313,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 194,
+       "cell": 314,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 65374,
+       "code": 195,
+       "cell": 315,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 127
+      },
+      {
+       "mark": "cedilla",
+       "punctuation": 12289,
+       "code": 199,
+       "cell": 316,
+       "template": 67,
+       "base_cell": 35,
+       "punctuation_cell": 96
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 201,
+       "cell": 317,
+       "template": 69,
+       "base_cell": 37,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 202,
+       "cell": 318,
+       "template": 69,
+       "base_cell": 37,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 205,
+       "cell": 319,
+       "template": 73,
+       "base_cell": 41,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 211,
+       "cell": 320,
+       "template": 79,
+       "base_cell": 47,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 212,
+       "cell": 321,
+       "template": 79,
+       "base_cell": 47,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 65374,
+       "code": 213,
+       "cell": 322,
+       "template": 79,
+       "base_cell": 47,
+       "punctuation_cell": 127
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 218,
+       "cell": 323,
+       "template": 85,
+       "base_cell": 53,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "diaeresis",
+       "punctuation": 168,
+       "code": 220,
+       "cell": 324,
+       "template": 85,
+       "base_cell": 53,
+       "punctuation_cell": 109
+      },
+      {
+       "mark": "grave",
+       "punctuation": 96,
+       "code": 224,
+       "cell": 325,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 64
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 225,
+       "cell": 326,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 226,
+       "cell": 327,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 65374,
+       "code": 227,
+       "cell": 328,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 127
+      },
+      {
+       "mark": "cedilla",
+       "punctuation": 12289,
+       "code": 231,
+       "cell": 329,
+       "template": 99,
+       "base_cell": 67,
+       "punctuation_cell": 96
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 233,
+       "cell": 330,
+       "template": 101,
+       "base_cell": 69,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 234,
+       "cell": 331,
+       "template": 101,
+       "base_cell": 69,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 237,
+       "cell": 332,
+       "template": 105,
+       "base_cell": 73,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 243,
+       "cell": 333,
+       "template": 111,
+       "base_cell": 79,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 244,
+       "cell": 334,
+       "template": 111,
+       "base_cell": 79,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 65374,
+       "code": 245,
+       "cell": 335,
+       "template": 111,
+       "base_cell": 79,
+       "punctuation_cell": 127
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 250,
+       "cell": 336,
+       "template": 117,
+       "base_cell": 85,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "diaeresis",
+       "punctuation": 168,
+       "code": 252,
+       "cell": 337,
+       "template": 117,
+       "base_cell": 85,
+       "punctuation_cell": 109
+      }
+     ],
+     "native": [
+      167,
+      168,
+      176,
+      177,
+      180,
+      215,
+      247
+     ]
+    },
+    {
+     "map_sha256": "e0c494f000ee963028668c5d89cdbab635d252d8822d6a2179e6a7eb45554cfa",
+     "descriptors": [
+      {
+       "va": "0xb6ca50",
+       "header": "00000000000800080142420a0a1f1f00"
+      },
+      {
+       "va": "0xb6d260",
+       "header": "0000000000080008012e2e00002c2c00"
+      },
+      {
+       "va": "0xb6da70",
+       "header": "0000000000040004012a2a0505181800"
+      },
+      {
+       "va": "0xb6e280",
+       "header": "00000000000400040120200000202000"
+      }
+     ],
+     "atlases": [
+      {
+       "archive": "Odin2_BT_US.CPK",
+       "entry": "HD_font_a.ftx",
+       "size": 4194768,
+       "crc32": "631f3f01",
+       "textures": 1,
+       "cell": 66,
+       "cols": 31,
+       "rows": 31
+      },
+      {
+       "archive": "Odin2_BT_US.CPK",
+       "entry": "HD_font_b.ftx",
+       "size": 4194768,
+       "crc32": "19557797",
+       "textures": 1,
+       "cell": 46,
+       "cols": 44,
+       "rows": 44
+      }
+     ],
+     "glyphs": [
+      {
+       "mark": "tilde",
+       "donor": 209,
+       "donor_base": 78,
+       "code": 195,
+       "cell": 310,
+       "template": 65,
+       "base_cell": 33,
+       "donor_cell": 124,
+       "donor_base_cell": 46
+      },
+      {
+       "mark": "cedilla",
+       "donor": 231,
+       "donor_base": 99,
+       "code": 199,
+       "cell": 311,
+       "template": 67,
+       "base_cell": 35,
+       "donor_cell": 107,
+       "donor_base_cell": 67
+      },
+      {
+       "mark": "tilde",
+       "donor": 209,
+       "donor_base": 78,
+       "code": 213,
+       "cell": 312,
+       "template": 79,
+       "base_cell": 47,
+       "donor_cell": 124,
+       "donor_base_cell": 46
+      },
+      {
+       "mark": "tilde",
+       "donor": 241,
+       "donor_base": 110,
+       "code": 227,
+       "cell": 313,
+       "template": 97,
+       "base_cell": 65,
+       "donor_cell": 125,
+       "donor_base_cell": 78
+      },
+      {
+       "mark": "tilde",
+       "donor": 241,
+       "donor_base": 110,
+       "code": 245,
+       "cell": 314,
+       "template": 111,
+       "base_cell": 79,
+       "donor_cell": 125,
+       "donor_base_cell": 78
+      }
+     ],
+     "native": [
+      161,
+      167,
+      168,
+      171,
+      176,
+      177,
+      180,
+      187,
+      191,
+      192,
+      193,
+      194,
+      196,
+      200,
+      201,
+      202,
+      203,
+      204,
+      205,
+      206,
+      207,
+      209,
+      210,
+      211,
+      212,
+      214,
+      215,
+      217,
+      218,
+      219,
+      220,
+      223,
+      224,
+      225,
+      226,
+      228,
+      231,
+      232,
+      233,
+      234,
+      235,
+      236,
+      237,
+      238,
+      239,
+      241,
+      242,
+      243,
+      244,
+      246,
+      247,
+      249,
+      250,
+      251,
+      252,
+      255
+     ]
+    }
+   ]
+  },
+  {
+   "eboot_sha256": "d0add7e35bc5f58d5c9017fdce0878006c32f944fa8eb3d7ce62671257f5bcc7",
+   "label": "CUSA01290 1.00 Japan",
+   "families": [
+    {
+     "map_sha256": "22c899167fea6b74ae5dbf0ffdcc07b85cb155a77943b7eca1c562d981bcfcd4",
+     "descriptors": [
+      {
+       "va": "0xc3a840",
+       "header": "00000000000800080342420a0a1f1f00"
+      },
+      {
+       "va": "0xc5bae0",
+       "header": "00000000000800080342420a0a1f1f00"
+      },
+      {
+       "va": "0xc5cb00",
+       "header": "0000000000080008022e2e00002c2c00"
+      },
+      {
+       "va": "0xc3a030",
+       "header": "0000000000040004042a2a0505181800"
+      },
+      {
+       "va": "0xc5b2d0",
+       "header": "0000000000040004042a2a0505181800"
+      },
+      {
+       "va": "0xc5c2f0",
+       "header": "00000000000400040320200000202000"
+      }
+     ],
+     "atlases": [
+      {
+       "archive": "Odin2_BOOT.CPK",
+       "entry": "HD_font_a.ftx",
+       "size": 12584080,
+       "crc32": "d3d7afcf",
+       "textures": 3,
+       "cell": 66,
+       "cols": 31,
+       "rows": 31
+      },
+      {
+       "archive": "Odin2_BOOT.CPK",
+       "entry": "HD_font_b.ftx",
+       "size": 8389392,
+       "crc32": "323039b8",
+       "textures": 2,
+       "cell": 46,
+       "cols": 44,
+       "rows": 44
+      }
+     ],
+     "glyphs": [
+      {
+       "mark": "grave",
+       "punctuation": 96,
+       "code": 192,
+       "cell": 2294,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 64
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 193,
+       "cell": 2295,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 194,
+       "cell": 2296,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 12316,
+       "code": 195,
+       "cell": 2297,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 436
+      },
+      {
+       "mark": "cedilla",
+       "punctuation": 12289,
+       "code": 199,
+       "cell": 2298,
+       "template": 67,
+       "base_cell": 35,
+       "punctuation_cell": 96
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 201,
+       "cell": 2299,
+       "template": 69,
+       "base_cell": 37,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 202,
+       "cell": 2300,
+       "template": 69,
+       "base_cell": 37,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 205,
+       "cell": 2301,
+       "template": 73,
+       "base_cell": 41,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 211,
+       "cell": 2302,
+       "template": 79,
+       "base_cell": 47,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 212,
+       "cell": 2303,
+       "template": 79,
+       "base_cell": 47,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 12316,
+       "code": 213,
+       "cell": 2304,
+       "template": 79,
+       "base_cell": 47,
+       "punctuation_cell": 436
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 218,
+       "cell": 2305,
+       "template": 85,
+       "base_cell": 53,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "diaeresis",
+       "punctuation": 168,
+       "code": 220,
+       "cell": 2306,
+       "template": 85,
+       "base_cell": 53,
+       "punctuation_cell": 109
+      },
+      {
+       "mark": "grave",
+       "punctuation": 96,
+       "code": 224,
+       "cell": 2307,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 64
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 225,
+       "cell": 2308,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 226,
+       "cell": 2309,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 12316,
+       "code": 227,
+       "cell": 2310,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 436
+      },
+      {
+       "mark": "cedilla",
+       "punctuation": 12289,
+       "code": 231,
+       "cell": 2311,
+       "template": 99,
+       "base_cell": 67,
+       "punctuation_cell": 96
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 233,
+       "cell": 2312,
+       "template": 101,
+       "base_cell": 69,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 234,
+       "cell": 2313,
+       "template": 101,
+       "base_cell": 69,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 237,
+       "cell": 2314,
+       "template": 105,
+       "base_cell": 73,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 243,
+       "cell": 2315,
+       "template": 111,
+       "base_cell": 79,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 244,
+       "cell": 2316,
+       "template": 111,
+       "base_cell": 79,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 12316,
+       "code": 245,
+       "cell": 2317,
+       "template": 111,
+       "base_cell": 79,
+       "punctuation_cell": 436
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 250,
+       "cell": 2318,
+       "template": 117,
+       "base_cell": 85,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "diaeresis",
+       "punctuation": 168,
+       "code": 252,
+       "cell": 2319,
+       "template": 117,
+       "base_cell": 85,
+       "punctuation_cell": 109
+      }
+     ],
+     "native": [
+      167,
+      168,
+      176,
+      177,
+      180,
+      215,
+      247
+     ]
+    },
+    {
+     "map_sha256": "cf4f4c8401de8aa90c594324ed77ef7d34ea1b606e327b02d6a20a93c9cb8648",
+     "descriptors": [
+      {
+       "va": "0xc5db20",
+       "header": "00000000000800080152520a0a181800"
+      },
+      {
+       "va": "0xc493b8",
+       "header": "000000000004000402424200000f0f00"
+      },
+      {
+       "va": "0xc5d310",
+       "header": "0000000000040004012a2a0505181800"
+      }
+     ],
+     "atlases": [
+      {
+       "archive": "Odin2_BOOT.CPK",
+       "entry": "HD_font_c.ftx",
+       "size": 4194768,
+       "crc32": "e7e93e71",
+       "textures": 1,
+       "cell": 82,
+       "cols": 24,
+       "rows": 24
+      }
+     ],
+     "glyphs": [
+      {
+       "mark": "grave",
+       "punctuation": 96,
+       "code": 192,
+       "cell": 312,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 64
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 193,
+       "cell": 313,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 194,
+       "cell": 314,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 65374,
+       "code": 195,
+       "cell": 315,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 127
+      },
+      {
+       "mark": "cedilla",
+       "punctuation": 12289,
+       "code": 199,
+       "cell": 316,
+       "template": 67,
+       "base_cell": 35,
+       "punctuation_cell": 96
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 201,
+       "cell": 317,
+       "template": 69,
+       "base_cell": 37,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 202,
+       "cell": 318,
+       "template": 69,
+       "base_cell": 37,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 205,
+       "cell": 319,
+       "template": 73,
+       "base_cell": 41,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 211,
+       "cell": 320,
+       "template": 79,
+       "base_cell": 47,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 212,
+       "cell": 321,
+       "template": 79,
+       "base_cell": 47,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 65374,
+       "code": 213,
+       "cell": 322,
+       "template": 79,
+       "base_cell": 47,
+       "punctuation_cell": 127
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 218,
+       "cell": 323,
+       "template": 85,
+       "base_cell": 53,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "diaeresis",
+       "punctuation": 168,
+       "code": 220,
+       "cell": 324,
+       "template": 85,
+       "base_cell": 53,
+       "punctuation_cell": 109
+      },
+      {
+       "mark": "grave",
+       "punctuation": 96,
+       "code": 224,
+       "cell": 325,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 64
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 225,
+       "cell": 326,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 226,
+       "cell": 327,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 65374,
+       "code": 227,
+       "cell": 328,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 127
+      },
+      {
+       "mark": "cedilla",
+       "punctuation": 12289,
+       "code": 231,
+       "cell": 329,
+       "template": 99,
+       "base_cell": 67,
+       "punctuation_cell": 96
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 233,
+       "cell": 330,
+       "template": 101,
+       "base_cell": 69,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 234,
+       "cell": 331,
+       "template": 101,
+       "base_cell": 69,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 237,
+       "cell": 332,
+       "template": 105,
+       "base_cell": 73,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 243,
+       "cell": 333,
+       "template": 111,
+       "base_cell": 79,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 244,
+       "cell": 334,
+       "template": 111,
+       "base_cell": 79,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 65374,
+       "code": 245,
+       "cell": 335,
+       "template": 111,
+       "base_cell": 79,
+       "punctuation_cell": 127
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 250,
+       "cell": 336,
+       "template": 117,
+       "base_cell": 85,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "diaeresis",
+       "punctuation": 168,
+       "code": 252,
+       "cell": 337,
+       "template": 117,
+       "base_cell": 85,
+       "punctuation_cell": 109
+      }
+     ],
+     "native": [
+      167,
+      168,
+      176,
+      177,
+      180,
+      215,
+      247
+     ]
+    }
+   ],
+   "sjis": {
+    "table_va": "0xc63030",
+    "lead": 129,
+    "letters": {
+     "192": 173,
+     "193": 174,
+     "194": 175,
+     "195": 176,
+     "199": 177,
+     "201": 178,
+     "202": 179,
+     "205": 180,
+     "211": 181,
+     "212": 182,
+     "213": 183,
+     "218": 192,
+     "220": 193,
+     "224": 194,
+     "225": 195,
+     "226": 196,
+     "227": 197,
+     "231": 198,
+     "233": 199,
+     "234": 207,
+     "237": 208,
+     "243": 209,
+     "244": 210,
+     "245": 211,
+     "250": 212,
+     "252": 213
+    }
+   }
+  },
+  {
+   "eboot_sha256": "db96b839fe31adba4b3eb3547202f761d34881325c2fea650c4c020eded5d071",
+   "label": "CUSA01290 1.02 Japan",
+   "families": [
+    {
+     "map_sha256": "cf4f4c8401de8aa90c594324ed77ef7d34ea1b606e327b02d6a20a93c9cb8648",
+     "descriptors": [
+      {
+       "va": "0xc07ae0",
+       "header": "00000000000800080152520a0a181800"
+      },
+      {
+       "va": "0xbf53b8",
+       "header": "000000000004000402424200000f0f00"
+      },
+      {
+       "va": "0xc072d0",
+       "header": "0000000000040004012a2a0505181800"
+      }
+     ],
+     "atlases": [
+      {
+       "archive": "Odin2_BOOT.CPK",
+       "entry": "HD_font_c.ftx",
+       "size": 4194768,
+       "crc32": "e7e93e71",
+       "textures": 1,
+       "cell": 82,
+       "cols": 24,
+       "rows": 24
+      }
+     ],
+     "glyphs": [
+      {
+       "mark": "grave",
+       "punctuation": 96,
+       "code": 192,
+       "cell": 312,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 64
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 193,
+       "cell": 313,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 194,
+       "cell": 314,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 65374,
+       "code": 195,
+       "cell": 315,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 127
+      },
+      {
+       "mark": "cedilla",
+       "punctuation": 12289,
+       "code": 199,
+       "cell": 316,
+       "template": 67,
+       "base_cell": 35,
+       "punctuation_cell": 96
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 201,
+       "cell": 317,
+       "template": 69,
+       "base_cell": 37,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 202,
+       "cell": 318,
+       "template": 69,
+       "base_cell": 37,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 205,
+       "cell": 319,
+       "template": 73,
+       "base_cell": 41,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 211,
+       "cell": 320,
+       "template": 79,
+       "base_cell": 47,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 212,
+       "cell": 321,
+       "template": 79,
+       "base_cell": 47,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 65374,
+       "code": 213,
+       "cell": 322,
+       "template": 79,
+       "base_cell": 47,
+       "punctuation_cell": 127
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 218,
+       "cell": 323,
+       "template": 85,
+       "base_cell": 53,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "diaeresis",
+       "punctuation": 168,
+       "code": 220,
+       "cell": 324,
+       "template": 85,
+       "base_cell": 53,
+       "punctuation_cell": 109
+      },
+      {
+       "mark": "grave",
+       "punctuation": 96,
+       "code": 224,
+       "cell": 325,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 64
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 225,
+       "cell": 326,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 226,
+       "cell": 327,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 65374,
+       "code": 227,
+       "cell": 328,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 127
+      },
+      {
+       "mark": "cedilla",
+       "punctuation": 12289,
+       "code": 231,
+       "cell": 329,
+       "template": 99,
+       "base_cell": 67,
+       "punctuation_cell": 96
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 233,
+       "cell": 330,
+       "template": 101,
+       "base_cell": 69,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 234,
+       "cell": 331,
+       "template": 101,
+       "base_cell": 69,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 237,
+       "cell": 332,
+       "template": 105,
+       "base_cell": 73,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 243,
+       "cell": 333,
+       "template": 111,
+       "base_cell": 79,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 244,
+       "cell": 334,
+       "template": 111,
+       "base_cell": 79,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 65374,
+       "code": 245,
+       "cell": 335,
+       "template": 111,
+       "base_cell": 79,
+       "punctuation_cell": 127
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 250,
+       "cell": 336,
+       "template": 117,
+       "base_cell": 85,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "diaeresis",
+       "punctuation": 168,
+       "code": 252,
+       "cell": 337,
+       "template": 117,
+       "base_cell": 85,
+       "punctuation_cell": 109
+      }
+     ],
+     "native": [
+      167,
+      168,
+      176,
+      177,
+      180,
+      215,
+      247
+     ]
+    },
+    {
+     "map_sha256": "22c899167fea6b74ae5dbf0ffdcc07b85cb155a77943b7eca1c562d981bcfcd4",
+     "descriptors": [
+      {
+       "va": "0xc09330",
+       "header": "00000000000800080342420a0a1f1f00"
+      },
+      {
+       "va": "0xc09b40",
+       "header": "0000000000080008022e2e00002c2c00"
+      },
+      {
+       "va": "0xc08300",
+       "header": "0000000000040004042a2a0505181800"
+      },
+      {
+       "va": "0xc08b10",
+       "header": "00000000000400040320200000202000"
+      }
+     ],
+     "atlases": [
+      {
+       "archive": "Odin2_BOOT.CPK",
+       "entry": "HD_font_a.ftx",
+       "size": 12584080,
+       "crc32": "d3d7afcf",
+       "textures": 3,
+       "cell": 66,
+       "cols": 31,
+       "rows": 31
+      },
+      {
+       "archive": "Odin2_BOOT.CPK",
+       "entry": "HD_font_b.ftx",
+       "size": 8389392,
+       "crc32": "323039b8",
+       "textures": 2,
+       "cell": 46,
+       "cols": 44,
+       "rows": 44
+      }
+     ],
+     "glyphs": [
+      {
+       "mark": "grave",
+       "punctuation": 96,
+       "code": 192,
+       "cell": 2294,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 64
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 193,
+       "cell": 2295,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 194,
+       "cell": 2296,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 12316,
+       "code": 195,
+       "cell": 2297,
+       "template": 65,
+       "base_cell": 33,
+       "punctuation_cell": 436
+      },
+      {
+       "mark": "cedilla",
+       "punctuation": 12289,
+       "code": 199,
+       "cell": 2298,
+       "template": 67,
+       "base_cell": 35,
+       "punctuation_cell": 96
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 201,
+       "cell": 2299,
+       "template": 69,
+       "base_cell": 37,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 202,
+       "cell": 2300,
+       "template": 69,
+       "base_cell": 37,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 205,
+       "cell": 2301,
+       "template": 73,
+       "base_cell": 41,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 211,
+       "cell": 2302,
+       "template": 79,
+       "base_cell": 47,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 212,
+       "cell": 2303,
+       "template": 79,
+       "base_cell": 47,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 12316,
+       "code": 213,
+       "cell": 2304,
+       "template": 79,
+       "base_cell": 47,
+       "punctuation_cell": 436
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 218,
+       "cell": 2305,
+       "template": 85,
+       "base_cell": 53,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "diaeresis",
+       "punctuation": 168,
+       "code": 220,
+       "cell": 2306,
+       "template": 85,
+       "base_cell": 53,
+       "punctuation_cell": 109
+      },
+      {
+       "mark": "grave",
+       "punctuation": 96,
+       "code": 224,
+       "cell": 2307,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 64
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 225,
+       "cell": 2308,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 226,
+       "cell": 2309,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 12316,
+       "code": 227,
+       "cell": 2310,
+       "template": 97,
+       "base_cell": 65,
+       "punctuation_cell": 436
+      },
+      {
+       "mark": "cedilla",
+       "punctuation": 12289,
+       "code": 231,
+       "cell": 2311,
+       "template": 99,
+       "base_cell": 67,
+       "punctuation_cell": 96
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 233,
+       "cell": 2312,
+       "template": 101,
+       "base_cell": 69,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 234,
+       "cell": 2313,
+       "template": 101,
+       "base_cell": 69,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 237,
+       "cell": 2314,
+       "template": 105,
+       "base_cell": 73,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 243,
+       "cell": 2315,
+       "template": 111,
+       "base_cell": 79,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "circumflex",
+       "punctuation": 94,
+       "code": 244,
+       "cell": 2316,
+       "template": 111,
+       "base_cell": 79,
+       "punctuation_cell": 62
+      },
+      {
+       "mark": "tilde",
+       "punctuation": 12316,
+       "code": 245,
+       "cell": 2317,
+       "template": 111,
+       "base_cell": 79,
+       "punctuation_cell": 436
+      },
+      {
+       "mark": "acute",
+       "punctuation": 180,
+       "code": 250,
+       "cell": 2318,
+       "template": 117,
+       "base_cell": 85,
+       "punctuation_cell": 107
+      },
+      {
+       "mark": "diaeresis",
+       "punctuation": 168,
+       "code": 252,
+       "cell": 2319,
+       "template": 117,
+       "base_cell": 85,
+       "punctuation_cell": 109
+      }
+     ],
+     "native": [
+      167,
+      168,
+      176,
+      177,
+      180,
+      215,
+      247
+     ]
+    }
+   ],
+   "sjis": {
+    "table_va": "0xc0f050",
+    "lead": 129,
+    "letters": {
+     "192": 173,
+     "193": 174,
+     "194": 175,
+     "195": 176,
+     "199": 177,
+     "201": 178,
+     "202": 179,
+     "205": 180,
+     "211": 181,
+     "212": 182,
+     "213": 183,
+     "218": 192,
+     "220": 193,
+     "224": 194,
+     "225": 195,
+     "226": 196,
+     "227": 197,
+     "231": 198,
+     "233": 199,
+     "234": 207,
+     "237": 208,
+     "243": 209,
+     "244": 210,
+     "245": 211,
+     "250": 212,
+     "252": 213
+    }
+   }
+  },
+  {
+   "eboot_sha256": "3e6b1741e8a404d0f8fbe10bce93c6887974566f5be09ef1bddc22a00ba29feb",
+   "label": "CUSA05262 1.00 Europe",
+   "families": [
+    {
+     "map_sha256": "be03c643f5c792e703fbffd6635d0f26a14e0afbcc46c14302ec028e794e883b",
+     "descriptors": [
+      {
+       "va": "0xb54e80",
+       "header": "00000000000800080152520a0a181800"
+      },
+      {
+       "va": "0xb54670",
+       "header": "0000000000040004012a2a0505181800"
+      }
+     ],
+     "atlases": [
+      {
+       "archive": "Odin2_BT_UK.CPK",
+       "entry": "HD_font_c.ftx",
+       "size": 4194768,
+       "crc32": "0a85d52a",
+       "textures": 1,
+       "cell": 82,
+       "cols": 24,
+       "rows": 24
+      }
+     ],
+     "glyphs": [
+      {
+       "mark": "circumflex",
+       "donor": 202,
+       "donor_base": 69,
+       "code": 194,
+       "cell": 360,
+       "template": 65,
+       "base_cell": 33,
+       "donor_cell": 280,
+       "donor_base_cell": 37
+      },
+      {
+       "mark": "tilde",
+       "donor": 209,
+       "donor_base": 78,
+       "code": 195,
+       "cell": 361,
+       "template": 65,
+       "base_cell": 33,
+       "donor_cell": 284,
+       "donor_base_cell": 46
+      },
+      {
+       "mark": "tilde",
+       "donor": 209,
+       "donor_base": 78,
+       "code": 213,
+       "cell": 362,
+       "template": 79,
+       "base_cell": 47,
+       "donor_cell": 284,
+       "donor_base_cell": 46
+      },
+      {
+       "mark": "tilde",
+       "donor": 241,
+       "donor_base": 110,
+       "code": 227,
+       "cell": 363,
+       "template": 97,
+       "base_cell": 65,
+       "donor_cell": 304,
+       "donor_base_cell": 78
+      },
+      {
+       "mark": "tilde",
+       "donor": 241,
+       "donor_base": 110,
+       "code": 245,
+       "cell": 364,
+       "template": 111,
+       "base_cell": 79,
+       "donor_cell": 304,
+       "donor_base_cell": 78
+      }
+     ],
+     "native": [
+      160,
+      161,
+      167,
+      168,
+      171,
+      174,
+      176,
+      177,
+      180,
+      187,
+      191,
+      192,
+      193,
+      196,
+      199,
+      200,
+      201,
+      202,
+      205,
+      206,
+      207,
+      209,
+      211,
+      212,
+      214,
+      215,
+      218,
+      220,
+      223,
+      224,
+      225,
+      226,
+      228,
+      231,
+      232,
+      233,
+      234,
+      235,
+      236,
+      237,
+      238,
+      239,
+      241,
+      242,
+      243,
+      244,
+      246,
+      247,
+      249,
+      250,
+      251,
+      252,
+      338,
+      339
+     ]
+    },
+    {
+     "map_sha256": "c63328801ab62c40ecdcc01084efad9bc1a9f8a141eeeb2ecc3e38a7776def5f",
+     "descriptors": [
+      {
+       "va": "0xb55690",
+       "header": "00000000000800080142420a0a1f1f00"
+      },
+      {
+       "va": "0xb55ea0",
+       "header": "0000000000080008012e2e00002c2c00"
+      },
+      {
+       "va": "0xb566b0",
+       "header": "0000000000040004012a2a0505181800"
+      },
+      {
+       "va": "0xb56ec0",
+       "header": "00000000000400040120200000202000"
+      }
+     ],
+     "atlases": [
+      {
+       "archive": "Odin2_BT_UK.CPK",
+       "entry": "HD_font_a.ftx",
+       "size": 4194768,
+       "crc32": "b29c9dd2",
+       "textures": 1,
+       "cell": 66,
+       "cols": 31,
+       "rows": 31
+      },
+      {
+       "archive": "Odin2_BT_UK.CPK",
+       "entry": "HD_font_b.ftx",
+       "size": 4194768,
+       "crc32": "3abee9c0",
+       "textures": 1,
+       "cell": 46,
+       "cols": 44,
+       "rows": 44
+      }
+     ],
+     "glyphs": [
+      {
+       "mark": "circumflex",
+       "donor": 202,
+       "donor_base": 69,
+       "code": 194,
+       "cell": 310,
+       "template": 65,
+       "base_cell": 33,
+       "donor_cell": 215,
+       "donor_base_cell": 37
+      },
+      {
+       "mark": "tilde",
+       "donor": 209,
+       "donor_base": 78,
+       "code": 195,
+       "cell": 311,
+       "template": 65,
+       "base_cell": 33,
+       "donor_cell": 219,
+       "donor_base_cell": 46
+      },
+      {
+       "mark": "tilde",
+       "donor": 209,
+       "donor_base": 78,
+       "code": 213,
+       "cell": 312,
+       "template": 79,
+       "base_cell": 47,
+       "donor_cell": 219,
+       "donor_base_cell": 46
+      },
+      {
+       "mark": "tilde",
+       "donor": 241,
+       "donor_base": 110,
+       "code": 227,
+       "cell": 313,
+       "template": 97,
+       "base_cell": 65,
+       "donor_cell": 239,
+       "donor_base_cell": 78
+      },
+      {
+       "mark": "tilde",
+       "donor": 241,
+       "donor_base": 110,
+       "code": 245,
+       "cell": 314,
+       "template": 111,
+       "base_cell": 79,
+       "donor_cell": 239,
+       "donor_base_cell": 78
+      }
+     ],
+     "native": [
+      160,
+      161,
+      167,
+      168,
+      171,
+      174,
+      176,
+      177,
+      180,
+      187,
+      191,
+      192,
+      193,
+      196,
+      199,
+      200,
+      201,
+      202,
+      205,
+      206,
+      207,
+      209,
+      211,
+      212,
+      214,
+      215,
+      218,
+      220,
+      223,
+      224,
+      225,
+      226,
+      228,
+      231,
+      232,
+      233,
+      234,
+      235,
+      236,
+      237,
+      238,
+      239,
+      241,
+      242,
+      243,
+      244,
+      246,
+      247,
+      249,
+      250,
+      251,
+      252,
+      338,
+      339
+     ]
+    }
+   ]
+  },
+  {
+   "eboot_sha256": "572bf21e57febee415d739cded5516def9ca81e867ad3184c989367248edcd7e",
+   "label": "CUSA05262 1.01 Europe",
+   "families": [
+    {
+     "map_sha256": "be03c643f5c792e703fbffd6635d0f26a14e0afbcc46c14302ec028e794e883b",
+     "descriptors": [
+      {
+       "va": "0xb54e80",
+       "header": "00000000000800080152520a0a181800"
+      },
+      {
+       "va": "0xb54670",
+       "header": "0000000000040004012a2a0505181800"
+      }
+     ],
+     "atlases": [
+      {
+       "archive": "Odin2_BT_UK.CPK",
+       "entry": "HD_font_c.ftx",
+       "size": 4194768,
+       "crc32": "0a85d52a",
+       "textures": 1,
+       "cell": 82,
+       "cols": 24,
+       "rows": 24
+      }
+     ],
+     "glyphs": [
+      {
+       "mark": "circumflex",
+       "donor": 202,
+       "donor_base": 69,
+       "code": 194,
+       "cell": 360,
+       "template": 65,
+       "base_cell": 33,
+       "donor_cell": 280,
+       "donor_base_cell": 37
+      },
+      {
+       "mark": "tilde",
+       "donor": 209,
+       "donor_base": 78,
+       "code": 195,
+       "cell": 361,
+       "template": 65,
+       "base_cell": 33,
+       "donor_cell": 284,
+       "donor_base_cell": 46
+      },
+      {
+       "mark": "tilde",
+       "donor": 209,
+       "donor_base": 78,
+       "code": 213,
+       "cell": 362,
+       "template": 79,
+       "base_cell": 47,
+       "donor_cell": 284,
+       "donor_base_cell": 46
+      },
+      {
+       "mark": "tilde",
+       "donor": 241,
+       "donor_base": 110,
+       "code": 227,
+       "cell": 363,
+       "template": 97,
+       "base_cell": 65,
+       "donor_cell": 304,
+       "donor_base_cell": 78
+      },
+      {
+       "mark": "tilde",
+       "donor": 241,
+       "donor_base": 110,
+       "code": 245,
+       "cell": 364,
+       "template": 111,
+       "base_cell": 79,
+       "donor_cell": 304,
+       "donor_base_cell": 78
+      }
+     ],
+     "native": [
+      160,
+      161,
+      167,
+      168,
+      171,
+      174,
+      176,
+      177,
+      180,
+      187,
+      191,
+      192,
+      193,
+      196,
+      199,
+      200,
+      201,
+      202,
+      205,
+      206,
+      207,
+      209,
+      211,
+      212,
+      214,
+      215,
+      218,
+      220,
+      223,
+      224,
+      225,
+      226,
+      228,
+      231,
+      232,
+      233,
+      234,
+      235,
+      236,
+      237,
+      238,
+      239,
+      241,
+      242,
+      243,
+      244,
+      246,
+      247,
+      249,
+      250,
+      251,
+      252,
+      338,
+      339
+     ]
+    },
+    {
+     "map_sha256": "c63328801ab62c40ecdcc01084efad9bc1a9f8a141eeeb2ecc3e38a7776def5f",
+     "descriptors": [
+      {
+       "va": "0xb55690",
+       "header": "00000000000800080142420a0a1f1f00"
+      },
+      {
+       "va": "0xb55ea0",
+       "header": "0000000000080008012e2e00002c2c00"
+      },
+      {
+       "va": "0xb566b0",
+       "header": "0000000000040004012a2a0505181800"
+      },
+      {
+       "va": "0xb56ec0",
+       "header": "00000000000400040120200000202000"
+      }
+     ],
+     "atlases": [
+      {
+       "archive": "Odin2_BT_UK.CPK",
+       "entry": "HD_font_a.ftx",
+       "size": 4194768,
+       "crc32": "b29c9dd2",
+       "textures": 1,
+       "cell": 66,
+       "cols": 31,
+       "rows": 31
+      },
+      {
+       "archive": "Odin2_BT_UK.CPK",
+       "entry": "HD_font_b.ftx",
+       "size": 4194768,
+       "crc32": "3abee9c0",
+       "textures": 1,
+       "cell": 46,
+       "cols": 44,
+       "rows": 44
+      }
+     ],
+     "glyphs": [
+      {
+       "mark": "circumflex",
+       "donor": 202,
+       "donor_base": 69,
+       "code": 194,
+       "cell": 310,
+       "template": 65,
+       "base_cell": 33,
+       "donor_cell": 215,
+       "donor_base_cell": 37
+      },
+      {
+       "mark": "tilde",
+       "donor": 209,
+       "donor_base": 78,
+       "code": 195,
+       "cell": 311,
+       "template": 65,
+       "base_cell": 33,
+       "donor_cell": 219,
+       "donor_base_cell": 46
+      },
+      {
+       "mark": "tilde",
+       "donor": 209,
+       "donor_base": 78,
+       "code": 213,
+       "cell": 312,
+       "template": 79,
+       "base_cell": 47,
+       "donor_cell": 219,
+       "donor_base_cell": 46
+      },
+      {
+       "mark": "tilde",
+       "donor": 241,
+       "donor_base": 110,
+       "code": 227,
+       "cell": 313,
+       "template": 97,
+       "base_cell": 65,
+       "donor_cell": 239,
+       "donor_base_cell": 78
+      },
+      {
+       "mark": "tilde",
+       "donor": 241,
+       "donor_base": 110,
+       "code": 245,
+       "cell": 314,
+       "template": 111,
+       "base_cell": 79,
+       "donor_cell": 239,
+       "donor_base_cell": 78
+      }
+     ],
+     "native": [
+      160,
+      161,
+      167,
+      168,
+      171,
+      174,
+      176,
+      177,
+      180,
+      187,
+      191,
+      192,
+      193,
+      196,
+      199,
+      200,
+      201,
+      202,
+      205,
+      206,
+      207,
+      209,
+      211,
+      212,
+      214,
+      215,
+      218,
+      220,
+      223,
+      224,
+      225,
+      226,
+      228,
+      231,
+      232,
+      233,
+      234,
+      235,
+      236,
+      237,
+      238,
+      239,
+      241,
+      242,
+      243,
+      244,
+      246,
+      247,
+      249,
+      250,
+      251,
+      252,
+      338,
+      339
+     ]
+    }
+   ]
+  }
+ ]
+}

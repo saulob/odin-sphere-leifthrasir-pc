@@ -14,7 +14,8 @@
   copies) must show the whole localized label in the Refined and Classic menus, never INSTALL, through prompt switching,
   rollback and the replacement of the 0.2.3 English layer. A build or language without prepared title archives is DATA
   UNAVAILABLE, never PASS; its structure is still proved on synthetic archives of its own data files, and art the patch
-  was not made for must leave the Exit Game row off. Python 3 with numpy, scipy and Pillow is required (OSL_PYTHON names
+  was not made for must leave the Exit Game row off. Portuguese (Brazil) applies localization\pt-BR\visual\title-exit-ptbr.dcpx
+  over the English layer and must show SAIR DO JOGO. Python 3 with numpy, scipy and Pillow is required (OSL_PYTHON names
   an interpreter; tools\setup.ps1 -InstallPython installs them into .venv); without it the step FAILS.
 
   The tests use synthetic data in temporary folders. The network tests talk to a loopback server of their own. The Bug
@@ -150,6 +151,46 @@ function Invoke-ProfileTests {
 
 $requestFile = Join-Path $buildDir 'bin\bug-report-request.json'
 
+# The localization tools: unit checks, the committed corpus and maps, then the text containers of every prepared game
+# parsed and rebuilt byte for byte (a build without prepared files is reported, not passed).
+function Invoke-LocalizationScripts {
+    $python = Get-Python
+    if (-not $python) { return Result 'FAIL' 'Python 3 not found (tools\setup.ps1 installs it)' }
+    $scripts = Join-Path $root 'scripts\localization'
+    $runs = @(
+        @((Join-Path $root 'tests\localization_tests.py')),
+        @((Join-Path $root 'tests\prologue_tests.py')),
+        @((Join-Path $root 'tests\prologue_runtime_map_tests.py')),
+        @((Join-Path $root 'tests\prologue_pages_tests.py')),
+        @((Join-Path $root 'tests\visual_parity_tests.py')),
+        @((Join-Path $root 'tests\stage_card_tests.py')),
+        @((Join-Path $root 'tests\visual_family_tests.py')),
+        @((Join-Path $scripts 'visual_parity.py'), 'check'),
+        @((Join-Path $scripts 'prologue_map.py'), 'check'),
+        @((Join-Path $scripts 'installation_poems.py'), 'check'),
+        @((Join-Path $scripts 'english.py'), 'validate'),
+        @((Join-Path $scripts 'ptbr.py'), 'validate'),
+        @((Join-Path $scripts 'glyphs.py'), 'check'),
+        @((Join-Path $scripts 'review.py'), '--category', 'glyphs', '--strict')
+    )
+    $prepared = @(Get-ChildItem -Directory (Join-Path $root 'game\prepared') -ErrorAction SilentlyContinue |
+        Where-Object { Test-Path (Join-Path $_.FullName 'eboot.bin') } | ForEach-Object { $_.FullName })
+    if ($prepared.Count) { $runs += ,(@((Join-Path $scripts 'odin_text.py'), 'roundtrip') + $prepared) }
+    $notes = @()
+    foreach ($arguments in $runs) {
+        $run = Invoke-Captured $python.Exe (@($python.Args) + @('-I') + $arguments) $root 1800
+        if ($run.TimedOut -or $run.Code -ne 0) {
+            $run.Lines | Select-Object -Last 20 | ForEach-Object { Write-Host "    $_" }
+            return Result 'FAIL' (Get-FailureReason $run)
+        }
+        $last = $run.Lines | Select-Object -Last 1
+        Write-Host "    $last" -ForegroundColor DarkGray
+        $notes += $last
+    }
+    if (-not $prepared.Count) { $notes += 'round trip: DATA UNAVAILABLE (no prepared game)' }
+    return Result 'PASS' '' $notes
+}
+
 $titleArtRows = New-Object System.Collections.Generic.List[object]
 $titleArtSeconds = 1800
 
@@ -193,7 +234,8 @@ function Invoke-TitleArt([hashtable]$Built) {
     $manifest = Join-Path $buildDir 'title-art-builds.tsv'
     $exe = Join-Path $buildDir 'bin\osl-tests.exe'
     $units = Invoke-Captured $python.Exe (@($python.Args) + @('-I', (Join-Path $root 'scripts\title_exit\test_title_exit.py'))) $root $titleArtSeconds
-    $cpp = Invoke-Captured $exe @('--title-art', $manifest) '' $titleArtSeconds
+    $visual = Invoke-Captured $python.Exe (@($python.Args) + @('-I', (Join-Path $root 'tests\visual_patch_tests.py'))) $root $titleArtSeconds
+    $cpp =Invoke-Captured $exe @('--title-art', $manifest) '' $titleArtSeconds
     Read-TitleArtRows $cpp
     $verify = $null
     if (Test-Path -LiteralPath $manifest) {
@@ -202,6 +244,7 @@ function Invoke-TitleArt([hashtable]$Built) {
     }
     $problems = @(Get-TitleArtFailures $first)
     if ($units.TimedOut -or $units.Code -ne 0) { $problems += "generator tests: $(Get-FailureReason $units)"; $units.Lines | Select-Object -Last 12 | ForEach-Object { Write-Host "    $_" } }
+    if ($visual.TimedOut -or $visual.Code -ne 0) { $problems += "PT-BR visual patch tests: $(Get-FailureReason $visual)"; $visual.Lines | Select-Object -Last 12 | ForEach-Object { Write-Host "    $_" } }
     if ($cpp.TimedOut -or $cpp.Code -ne 0) { $problems += "title art tests: $(Get-FailureReason $cpp)" }
     if (-not $verify) { $problems += 'the title art manifest was not written' }
     elseif ($verify.TimedOut -or $verify.Code -ne 0) { $problems += "title art verification: $(Get-FailureReason $verify)"; $verify.Lines | Where-Object { $_ -notmatch '^TITLEART\|' } | Select-Object -Last 12 | ForEach-Object { Write-Host "    $_" } }
@@ -242,6 +285,7 @@ $steps = @(
     (Step 'Runtime' 'runtime locks and the guest memory table' 'osl-runtime-tests'),
     (Step 'Runtime' 'Windows guest memory (sparse backing, commitment, aliases, release)' 'osl-memory-windows-tests'),
     (Step 'Runtime' 'run log retention and capture in a Windows-subsystem process without standard handles' 'osl-log-tests'),
+    (Step 'Runtime' 'game file read overlay: replaced ranges, data past the end, size, seek, the host file untouched' 'osl-runtime-overlay-tests' -Expect @('(?m)^runtime file overlay: OK')),
     (Step 'CPU' 'MOVBE, BMI1 and LZCNT emulation and rewrite' 'osl-isa-tests'),
     (Step 'Packages' 'game profile, package identity, build parity of every supported build, layering, settings, keys, controller bindings, controller prompts' 'osl-tests' -Expect @(
         '(?m)^  CUSA05083 1\.00 USA\s+PASS\s*$', '(?m)^  CUSA05083 1\.01 USA\s+PASS\s*$', '(?m)^  CUSA01290 1\.00 Japan\s+PASS\s*$',
@@ -255,6 +299,8 @@ $steps = @(
     (Step 'Launcher' 'worker.ps1 (stand-in npx): placeholders, missing files, dry run, failures; nothing deployed' -Block { Invoke-PowerShellScript 'tests\worker_script_tests.ps1' }),
     (Step 'Launcher' 'sidebar page icons and header art' 'osl-launcher-asset-tests'),
     (Step 'Launcher' 'window fit' 'osl-window-tests'),
+    (Step 'Launcher' 'Portuguese (Brazil) launcher and in-game UI text: table, language switch, composed text, rows for every drawn literal' 'osl-ui-text-tests' -Expect @(
+        '(?m)^  source scan: \d+ files \(\+\d+ TRG\), \d+ UI literals, 0 without a row, 0 drawn without Tr', '(?m)^  data tables: 0 without a row')),
     (Step 'Updater' 'versions, release JSON, SHA-256, ZIP safety, staging, protected game and user data, jobs, install, rollback, address policy' 'osl-update-tests'),
     (Step 'Updater' 'loopback HTTP server only: 404, 500, 504, dropped and stalled transfers, cancellation, redirects, address policy, retries, partial files' 'osl-update-network-tests'),
     (Step 'Updater' 'trg-updater.exe end to end on temporary folders: waits for its parent, installs, restarts a marker program, rolls back' 'osl-update-helper-tests'),
@@ -270,7 +316,17 @@ $steps = @(
         '(?m)^  Infinite POW +BYTE PATCH VERIFIED  SEMANTIC MODEL VERIFIED  LIVE TOGGLE VERIFIED', '(?m)^  Infinite Health +HOOK VERIFIED +SEMANTIC MODEL VERIFIED  LIVE TOGGLE VERIFIED', '(?m)^  Infinite Arrows +BYTE PATCH VERIFIED  SEMANTIC MODEL VERIFIED  LIVE TOGGLE VERIFIED',
         '(?m)^  Experience Multiplier +HOOK VERIFIED \(', '(?m)^  Experience Multiplier +LEVEL MODEL VERIFIED \(', '(?m)^Experience build parity: \d+ build\(s\) verified on real files')),
     (Step 'Features' 'local trophies' 'osl-trophy-tests'),
-    (Step 'Features' 'title menu Exit Game art: every supported build and language, Refined and Classic, never INSTALL on an active row' 'osl-tests' -Block { Invoke-TitleArt $built }),
+    (Step 'Features' 'Menu & Subtitles: English and Portuguese (Brazil) on every build, saved choice across builds, text containers, control tokens, Portuguese letters, embedded corpus, real archives through the overlay (known fingerprint served, changed one refused, no game file written)' 'osl-text-tests' -Expect @('(?m)^text translation: OK', '(?m)^fingerprint check: ', '(?m)^visual telemetry: \d+ watched',
+        '(?m)^Localization visual: PT-BR served prologue asset archive=Odin2_RE_ES\.CPK entry=GUI/REHD_Installation\.mbs',
+        '(?m)^Localization visual WARNING: untranslated localized asset archive=Odin2_RE_ES\.CPK entry=Other/HD_M00\.ftx source=ES')),
+    (Step 'Features' 'localized visual telemetry: an entry reported on its first read only, PT-BR hit, replacement miss, untranslated asset, unwatched file silent, session summary' 'osl-runtime-overlay-tests' -Expect @(
+        '(?m)^runtime file overlay: OK',
+        '(?m)^Localization visual: PT-BR served prologue asset archive=Odin2_RE_ES\.CPK entry=GUI/REHD_Installation\.mbs',
+        '(?m)^Localization visual WARNING: PT-BR replacement missed archive=Odin2_RE_ES\.CPK entry=GUI/HD_title\.ftx',
+        '(?m)^Localization visual WARNING: untranslated localized asset archive=Odin2_RE_ES\.CPK entry=Other/HD_M00\.ftx source=ES',
+        '(?m)^Localization telemetry: visual_hits=3 unique=2 missing=1 untranslated=1')),
+    (Step 'Features' 'localization tools: control syntax and checks, English corpus and Japanese map, Portuguese corpus (0 errors), byte-identical round trip of every text container of the prepared games' -Block { Invoke-LocalizationScripts }),
+    (Step 'Features' 'title menu Exit Game art: every supported build and language, Refined and Classic, never INSTALL on an active row; Portuguese (Brazil) SAIR DO JOGO through its visual patch' 'osl-tests' -Block { Invoke-TitleArt $built }),
     (Step 'Graphics' 'GPU tile layouts and addresses' 'osl-tiling-tests'),
     (Step 'Graphics' 'renderer selection (Auto, Vulkan, OpenGL, Direct3D 11), the Vulkan probe on runtimes 1.0 to 1.4 and without a loader, the window API and the OpenGL requirements' 'osl-renderer-selection-tests'),
     (Step 'Graphics' 'Vulkan buffer arenas without sparse binding: layouts, BDA entries, migration, write after migration, sparse path unchanged (no device)' 'osl-buffer-arena-tests'),

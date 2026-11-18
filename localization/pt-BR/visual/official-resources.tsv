@@ -1,0 +1,758 @@
+archive	path	format	classification	group	uk_size	uk_crc32	es_size	es_crc32
+Odin2_BT_UK.CPK	msgsheet/CommonMsg.fms	fms	TEXT_CONTAINER	text corpus	1696	9851854d	2208	69575caf
+Odin2_RE_UK.CPK	ArchiveViewer/ArchiveList.txt	txt	LANGUAGE_INDEPENDENT	other	1702	0ff1b0b1	1702	0ff1b0b1
+Odin2_RE_UK.CPK	ArchiveViewer/ArchiveListBookShelf.txt	txt	LANGUAGE_INDEPENDENT	other	7543	31d77694	7543	31d77694
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe00.txt	txt	TEXT_CONTAINER	text corpus	3849	aa08e896	3875	718e1262
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe01.txt	txt	TEXT_CONTAINER	text corpus	3652	a7b65320	3666	1ea410dd
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe02.txt	txt	TEXT_CONTAINER	text corpus	3861	2456db10	3868	142ba40e
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe03.txt	txt	TEXT_CONTAINER	text corpus	3937	2170790f	3950	5ab42dcd
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe04.txt	txt	TEXT_CONTAINER	text corpus	2453	1347a3dc	2449	2482f738
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe05.txt	txt	TEXT_CONTAINER	text corpus	2563	4f044177	2583	62c4ec3a
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe06.txt	txt	TEXT_CONTAINER	text corpus	2444	83ac283f	2449	777af6d2
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe07.txt	txt	TEXT_CONTAINER	text corpus	2449	506d30cf	2456	a01d1909
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe08.txt	txt	TEXT_CONTAINER	text corpus	2464	a8cd1f60	2472	5b03c34c
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe09.txt	txt	TEXT_CONTAINER	text corpus	2482	961134cd	2498	2309b64e
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe10.txt	txt	TEXT_CONTAINER	text corpus	2599	95ebb6cc	2608	e4f37317
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe11.txt	txt	TEXT_CONTAINER	text corpus	2451	0a7e3536	2455	b8b28e65
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe12.txt	txt	TEXT_CONTAINER	text corpus	2479	b78305cf	2475	10f46ca7
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe13.txt	txt	TEXT_CONTAINER	text corpus	2483	27c35d83	2477	11cc6d86
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe14.txt	txt	TEXT_CONTAINER	text corpus	2468	412289d8	2477	f145d866
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe15.txt	txt	TEXT_CONTAINER	text corpus	2448	436a5cba	2453	5396172f
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe16.txt	txt	TEXT_CONTAINER	text corpus	2465	48eedb44	2475	460ba6f6
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe17.txt	txt	TEXT_CONTAINER	text corpus	2446	8a92156a	2439	58d2f30f
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe18.txt	txt	TEXT_CONTAINER	text corpus	2600	1fc8c833	2600	c8369729
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe19.txt	txt	TEXT_CONTAINER	text corpus	2475	ef57a4ae	2458	a36a00bb
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe20.txt	txt	TEXT_CONTAINER	text corpus	2580	0d1627cd	2586	183588e1
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe21.txt	txt	TEXT_CONTAINER	text corpus	2473	51ed6005	2478	4d327b20
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe22.txt	txt	TEXT_CONTAINER	text corpus	2500	39b0e270	2501	a1e61822
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe23.txt	txt	TEXT_CONTAINER	text corpus	2565	889480b8	2569	68e3952c
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe24.txt	txt	TEXT_CONTAINER	text corpus	2616	5faf3981	2576	24198541
+Odin2_RE_UK.CPK	ArchiveViewer/Cafe25.txt	txt	TEXT_CONTAINER	text corpus	2622	c168cecc	2623	3ec551c2
+Odin2_RE_UK.CPK	ArchiveViewer/Dummy.Txt	txt	LANGUAGE_INDEPENDENT	other	1633	4d161e91	1633	4d161e91
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen00.txt	txt	TEXT_CONTAINER	text corpus	2375	22ab732f	2369	f3521c15
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen01.txt	txt	TEXT_CONTAINER	text corpus	2337	63d1579d	2344	f71c57f4
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen02.txt	txt	TEXT_CONTAINER	text corpus	2474	20e9938b	2498	550f207b
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen03.txt	txt	TEXT_CONTAINER	text corpus	2485	861a2e66	2478	31857fa6
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen04.txt	txt	TEXT_CONTAINER	text corpus	2342	eaf2ee79	2344	08b178c7
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen05.txt	txt	TEXT_CONTAINER	text corpus	2426	c6476d8e	2435	21b1a781
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen06.txt	txt	TEXT_CONTAINER	text corpus	2424	45b91752	2436	4a5bbfa3
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen07.txt	txt	TEXT_CONTAINER	text corpus	2477	d6743b6f	2462	128688e6
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen08.txt	txt	TEXT_CONTAINER	text corpus	2567	68da005e	2574	f9af1399
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen09.txt	txt	TEXT_CONTAINER	text corpus	2669	1d02e379	2676	77082808
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen10.txt	txt	TEXT_CONTAINER	text corpus	2557	c70f699b	2563	eaf40f4a
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen11.txt	txt	TEXT_CONTAINER	text corpus	2487	6a59b50b	2485	10f1c964
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen12.txt	txt	TEXT_CONTAINER	text corpus	2519	a04e7c4f	2529	09e511d6
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen13.txt	txt	TEXT_CONTAINER	text corpus	2552	b2742886	2557	67073c4b
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen14.txt	txt	TEXT_CONTAINER	text corpus	2550	7c779c4a	2553	e286a878
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen15.txt	txt	TEXT_CONTAINER	text corpus	2450	496aaed8	2446	8e9c46ae
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen16.txt	txt	TEXT_CONTAINER	text corpus	2442	1aecd520	2449	7e39b0c2
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen17.txt	txt	TEXT_CONTAINER	text corpus	2516	86c14b83	2511	d0353b39
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen18.txt	txt	TEXT_CONTAINER	text corpus	2517	19ed0671	2513	37b2a16a
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen19.txt	txt	TEXT_CONTAINER	text corpus	2470	937c4cda	2450	05a3a259
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen20.txt	txt	TEXT_CONTAINER	text corpus	2425	c857739f	2429	d0cff4e8
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen21.txt	txt	TEXT_CONTAINER	text corpus	2554	485c2a59	2548	aa28af67
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen22.txt	txt	TEXT_CONTAINER	text corpus	2431	fe1daa48	2431	95cdf4af
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen23.txt	txt	TEXT_CONTAINER	text corpus	2479	2f21ce45	2452	6ed4b138
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen24.txt	txt	TEXT_CONTAINER	text corpus	2410	30eaf587	2414	858c3e1d
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen25.txt	txt	TEXT_CONTAINER	text corpus	2441	d0eec243	2446	686a2a0b
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen26.txt	txt	TEXT_CONTAINER	text corpus	2500	9ef09092	2509	c4ecda07
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen27.txt	txt	TEXT_CONTAINER	text corpus	2467	6a2086f0	2468	a2b61e0e
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen28.txt	txt	TEXT_CONTAINER	text corpus	2531	c5287fd4	2533	22e4917a
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen29.txt	txt	TEXT_CONTAINER	text corpus	2477	01aa2ba4	2474	0b7df008
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen30.txt	txt	TEXT_CONTAINER	text corpus	2435	e84d7a1f	2434	43d11caf
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen31.txt	txt	TEXT_CONTAINER	text corpus	2555	e469b7aa	2562	11ce216e
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen32.txt	txt	TEXT_CONTAINER	text corpus	2524	ead638eb	2520	8152706a
+Odin2_RE_UK.CPK	ArchiveViewer/Kitchen33.txt	txt	TEXT_CONTAINER	text corpus	2632	52bc9452	2643	ad506824
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix00.txt	txt	TEXT_CONTAINER	text corpus	4008	ea610401	4009	62f3a2aa
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix01.txt	txt	TEXT_CONTAINER	text corpus	4033	36eb6db0	4005	f89bcdb6
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix02.txt	txt	TEXT_CONTAINER	text corpus	4028	b5cdd33b	4024	8187ed16
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix03.txt	txt	TEXT_CONTAINER	text corpus	4019	b1799c25	4042	7f4dfc5c
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix04.txt	txt	TEXT_CONTAINER	text corpus	4032	8aa90481	4035	8338a616
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix05.txt	txt	TEXT_CONTAINER	text corpus	4146	32e5d159	4148	813ed2a0
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix06.txt	txt	TEXT_CONTAINER	text corpus	4047	f2f5665b	4068	e22b7d34
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix07.txt	txt	TEXT_CONTAINER	text corpus	3984	55f1b79c	3979	87021c1d
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix08.txt	txt	TEXT_CONTAINER	text corpus	4147	b7e14f51	4151	68299132
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix09.txt	txt	TEXT_CONTAINER	text corpus	3933	c40a9ce7	4027	2ec00e6b
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix10.txt	txt	TEXT_CONTAINER	text corpus	4016	fd810389	4026	e0587077
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix11.txt	txt	TEXT_CONTAINER	text corpus	3996	676f5dc2	3988	06bdad7c
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix12.txt	txt	TEXT_CONTAINER	text corpus	4073	7e052d49	4134	4d0967a3
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix13.txt	txt	TEXT_CONTAINER	text corpus	3984	07e78d92	4012	44a27969
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix14.txt	txt	TEXT_CONTAINER	text corpus	4143	aa53bf8e	4141	fac9e52e
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix15.txt	txt	TEXT_CONTAINER	text corpus	4045	5034d8d8	4050	dea25d59
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix16.txt	txt	TEXT_CONTAINER	text corpus	4088	2ac2ab26	4091	012859f8
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix17.txt	txt	TEXT_CONTAINER	text corpus	4058	f2427ea9	4059	771548a7
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix18.txt	txt	TEXT_CONTAINER	text corpus	3942	7f5c177f	3959	79e291ec
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix19.txt	txt	TEXT_CONTAINER	text corpus	4036	226a9a51	4039	d9a621ef
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix20.txt	txt	TEXT_CONTAINER	text corpus	4103	b1b0086b	4187	ca2e7340
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix21.txt	txt	TEXT_CONTAINER	text corpus	4168	01351aed	4175	069164f5
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix22.txt	txt	TEXT_CONTAINER	text corpus	4126	2dc03292	4131	e5b3ec9b
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix23.txt	txt	TEXT_CONTAINER	text corpus	3950	ed725492	3983	2a62b89b
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix24.txt	txt	TEXT_CONTAINER	text corpus	3183	e5332405	3208	017a6fd0
+Odin2_RE_UK.CPK	ArchiveViewer/MagicMix25.txt	txt	TEXT_CONTAINER	text corpus	3099	2a98ee1f	3110	d40e597b
+Odin2_RE_UK.CPK	ArchiveViewer/Note00.txt	txt	TEXT_CONTAINER	text corpus	5134	9ab53e58	5121	990cfa54
+Odin2_RE_UK.CPK	ArchiveViewer/Note01.txt	txt	TEXT_CONTAINER	text corpus	4993	92641550	4943	04cc0680
+Odin2_RE_UK.CPK	ArchiveViewer/Note01_2.txt	txt	TEXT_CONTAINER	text corpus	7312	91a086f2	7270	2fc940c3
+Odin2_RE_UK.CPK	ArchiveViewer/Note02.txt	txt	TEXT_CONTAINER	text corpus	3496	d14e8668	3477	1dd233e8
+Odin2_RE_UK.CPK	ArchiveViewer/Note02_2.txt	txt	TEXT_CONTAINER	text corpus	5044	2ca4aac5	5008	2bd69276
+Odin2_RE_UK.CPK	ArchiveViewer/Note02_3.txt	txt	TEXT_CONTAINER	text corpus	8479	b19d03b7	8400	761791de
+Odin2_RE_UK.CPK	ArchiveViewer/Note03.txt	txt	TEXT_CONTAINER	text corpus	3956	2556e313	3916	213ee22e
+Odin2_RE_UK.CPK	ArchiveViewer/Note04.txt	txt	TEXT_CONTAINER	text corpus	5368	5cdbb019	5319	73a55fad
+Odin2_RE_UK.CPK	ArchiveViewer/Note05.txt	txt	TEXT_CONTAINER	text corpus	5854	474a2a85	5816	d450b76a
+Odin2_RE_UK.CPK	ArchiveViewer/Note06.txt	txt	TEXT_CONTAINER	text corpus	5515	00bc5f96	5484	130aa45c
+Odin2_RE_UK.CPK	ArchiveViewer/Note07.txt	txt	TEXT_CONTAINER	text corpus	7963	566f88fe	7896	07e31d7b
+Odin2_RE_UK.CPK	ArchiveViewer/Note08.txt	txt	TEXT_CONTAINER	text corpus	7415	88a6802d	7389	bec67841
+Odin2_RE_UK.CPK	ArchiveViewer/Note09.txt	txt	TEXT_CONTAINER	text corpus	7435	6a9e4d2d	7398	68ea1b31
+Odin2_RE_UK.CPK	ArchiveViewer/Note10.txt	txt	TEXT_CONTAINER	text corpus	7105	ba0c6063	7093	85e1af1c
+Odin2_RE_UK.CPK	ArchiveViewer/Note11.txt	txt	TEXT_CONTAINER	text corpus	4940	d50972c1	4947	b22c63d9
+Odin2_RE_UK.CPK	ArchiveViewer/Note12.txt	txt	TEXT_CONTAINER	text corpus	6911	915b0b03	6871	86956e72
+Odin2_RE_UK.CPK	ArchiveViewer/Note13.txt	txt	TEXT_CONTAINER	text corpus	5059	5fb4bfe4	4994	cee81ee4
+Odin2_RE_UK.CPK	ArchiveViewer/Note14.txt	txt	TEXT_CONTAINER	text corpus	5788	2da63557	5786	09bbe404
+Odin2_RE_UK.CPK	ArchiveViewer/Note15.txt	txt	TEXT_CONTAINER	text corpus	7300	9f376aef	7263	2ccfbcd9
+Odin2_RE_UK.CPK	ArchiveViewer/Note16.txt	txt	TEXT_CONTAINER	text corpus	5576	233cef35	5525	d4f5c2d5
+Odin2_RE_UK.CPK	ArchiveViewer/Note17.txt	txt	TEXT_CONTAINER	text corpus	5746	fa25bd50	5712	ff6b1864
+Odin2_RE_UK.CPK	ArchiveViewer/Note18.txt	txt	TEXT_CONTAINER	text corpus	3718	94113563	3746	75d58096
+Odin2_RE_UK.CPK	ArchiveViewer/Note19.txt	txt	TEXT_CONTAINER	text corpus	6093	0d66e318	6018	9d65ddd3
+Odin2_RE_UK.CPK	ArchiveViewer/Note20.txt	txt	TEXT_CONTAINER	text corpus	9519	04054f0b	9521	0da3400c
+Odin2_RE_UK.CPK	ArchiveViewer/Note21.txt	txt	TEXT_CONTAINER	text corpus	6352	b05101b6	6325	6061b6ae
+Odin2_RE_UK.CPK	ArchiveViewer/Note22.txt	txt	TEXT_CONTAINER	text corpus	6920	dc4ae2d2	6885	77c23e1e
+Odin2_RE_UK.CPK	ArchiveViewer/Prophecy00.txt	txt	TEXT_CONTAINER	text corpus	5553	36f51a4b	5487	208fe84c
+Odin2_RE_UK.CPK	ArchiveViewer/Prophecy01.txt	txt	TEXT_CONTAINER	text corpus	4433	689619f7	4410	66b93488
+Odin2_RE_UK.CPK	ArchiveViewer/Prophecy02.txt	txt	TEXT_CONTAINER	text corpus	1903	ee575ffd	1898	d07a0fdf
+Odin2_RE_UK.CPK	ArchiveViewer/Prophecy02_2.txt	txt	TEXT_CONTAINER	text corpus	3613	b4699bc6	3566	27d986dd
+Odin2_RE_UK.CPK	ArchiveViewer/Prophecy03.txt	txt	TEXT_CONTAINER	text corpus	6429	6ea22327	6397	d2a86de6
+Odin2_RE_UK.CPK	ArchiveViewer/Prophecy03_2.txt	txt	TEXT_CONTAINER	text corpus	7651	50b99910	7629	93fedfe3
+Odin2_RE_UK.CPK	ArchiveViewer/Prophecy04.txt	txt	TEXT_CONTAINER	text corpus	6581	d719249a	6521	71939678
+Odin2_RE_UK.CPK	ArchiveViewer/Prophecy05.txt	txt	TEXT_CONTAINER	text corpus	26650	3c755ce1	26442	8ae7f399
+Odin2_RE_UK.CPK	GUI/HD_Archive_00.ftx	ftx	BOOKSHELF	Bookshelf	10486928	47fe5de3	10486928	dc8becce
+Odin2_RE_UK.CPK	GUI/HD_ArchiveFrame00.ftx	ftx	BOOKSHELF	Bookshelf	25168464	d2cfad94	27266000	8a6f2c35
+Odin2_RE_UK.CPK	GUI/HD_ArchiveFrame00a.ftx	ftx	BOOKSHELF	Bookshelf	12589648	dd53b41e	14687184	0fb5a596
+Odin2_RE_UK.CPK	GUI/HD_ArchiveFrame00b.ftx	ftx	BOOKSHELF	Bookshelf	12589648	73e9e574	14687184	21865821
+Odin2_RE_UK.CPK	GUI/HD_ArchiveFrame00c.ftx	ftx	BOOKSHELF	Bookshelf	12590672	e88ab2e7	14688208	e42ecf42
+Odin2_RE_UK.CPK	GUI/HD_ArchiveFrame00d.ftx	ftx	BOOKSHELF	Bookshelf	12590672	9afecff7	14688208	633ab6e0
+Odin2_RE_UK.CPK	GUI/HD_ArchiveFrame00e.ftx	ftx	BOOKSHELF	Bookshelf	14686800	f36320e7	16784336	e974b59c
+Odin2_RE_UK.CPK	GUI/HD_ArchiveFrame00f.ftx	ftx	BOOKSHELF	Bookshelf	14686800	0ea05503	16784336	92cc65ee
+Odin2_RE_UK.CPK	GUI/HD_ArchiveFrame00g.ftx	ftx	BOOKSHELF	Bookshelf	14686800	877b8b64	16784336	e8e84758
+Odin2_RE_UK.CPK	GUI/HD_ArchiveFrame00h.ftx	ftx	BOOKSHELF	Bookshelf	14686800	4dc41412	16784336	b08c6e85
+Odin2_RE_UK.CPK	GUI/HD_ArchiveFrame00i.ftx	ftx	BOOKSHELF	Bookshelf	14686800	bde8e1ee	16784336	256b5545
+Odin2_RE_UK.CPK	GUI/HD_ArchiveFrame00j.ftx	ftx	BOOKSHELF	Bookshelf	14686800	11a0374d	16784336	749a54bb
+Odin2_RE_UK.CPK	GUI/HD_ArchiveFrame00k.ftx	ftx	BOOKSHELF	Bookshelf	14686800	531a759b	16784336	8c11d2bb
+Odin2_RE_UK.CPK	GUI/HD_ArchiveFrame00l.ftx	ftx	BOOKSHELF	Bookshelf	14686800	40d5cb11	16784336	3fc50784
+Odin2_RE_UK.CPK	GUI/HD_ArchiveFrame00m.ftx	ftx	BOOKSHELF	Bookshelf	14686800	85f950ac	16784336	6e809194
+Odin2_RE_UK.CPK	GUI/HD_Bookshelf.ftx	ftx	BOOKSHELF	Bookshelf	524752	64724996	524752	6e820dc5
+Odin2_RE_UK.CPK	GUI/HD_ChrSelect.ftx	ftx	TITLE	other menus	25166608	90d1e669	25166608	82775711
+Odin2_RE_UK.CPK	GUI/HD_fin1.ftx	ftx	ENDING	ending	1049360	01ad76aa	1049360	a020e5f9
+Odin2_RE_UK.CPK	GUI/HD_fin2.ftx	ftx	ENDING	ending	2622224	4b293375	2622224	21a62ceb
+Odin2_RE_UK.CPK	GUI/HD_fin3.ftx	ftx	ENDING	ending	8913680	420e5eaf	8913680	304127db
+Odin2_RE_UK.CPK	GUI/HD_Installation.ftx	ftx	TITLE	other menus	262608	2d154a5b	524752	fba99ba9
+Odin2_RE_UK.CPK	GUI/HD_Interface.ftx	ftx	HUD	HUD, save/load, confirmation	5506960	fe6f717c	5506960	fd05f64f
+Odin2_RE_UK.CPK	GUI/HD_Kitchin.ftx	ftx	HUD	generic UI	2097616	a0269772	2097616	1af51bbe
+Odin2_RE_UK.CPK	GUI/HD_logo.ftx	ftx	TITLE	title	3738192	09d815d0	3738192	422a8854
+Odin2_RE_UK.CPK	GUI/HD_Mode_Select.ftx	ftx	TITLE	other menus	2097616	8a37ef3e	2097616	ef85e589
+Odin2_RE_UK.CPK	GUI/HD_SKILL_COMMON.ftx	ftx	HUD	generic UI	5243664	a2c91d76	5243664	b8b0ae4d
+Odin2_RE_UK.CPK	GUI/HD_StageName.ftx	ftx	LANGUAGE_INDEPENDENT	stage card that looks the same in English and Spanish	13632656	e6cb5a9e	13632656	ce83ce9c
+Odin2_RE_UK.CPK	GUI/HD_StageName01.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	a9baf482	13632656	1567ed1d
+Odin2_RE_UK.CPK	GUI/HD_StageName01_b.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	0e9b3f12	13632656	9c52b864
+Odin2_RE_UK.CPK	GUI/HD_StageName02.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	8aeb1c0a	13632656	3f46f586
+Odin2_RE_UK.CPK	GUI/HD_StageName03.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	f93abfbd	13632656	fea5b022
+Odin2_RE_UK.CPK	GUI/HD_StageName04.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	abbea605	13632656	76d373f3
+Odin2_RE_UK.CPK	GUI/HD_StageName04_2.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	cb1d6bba	13632656	97d04d5d
+Odin2_RE_UK.CPK	GUI/HD_StageName04_3.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	fae38f53	13632656	a0423582
+Odin2_RE_UK.CPK	GUI/HD_StageName04_4.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	2fe3242b	13632656	7a8472b7
+Odin2_RE_UK.CPK	GUI/HD_StageName05.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	4b345761	13632656	ed9facc1
+Odin2_RE_UK.CPK	GUI/HD_StageName05_2.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	d3b3021a	13632656	8b7c244f
+Odin2_RE_UK.CPK	GUI/HD_StageName06.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	2d8d09d2	13632656	4556e7ae
+Odin2_RE_UK.CPK	GUI/HD_StageName07.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	9c0f39f2	13632656	4cb57c7a
+Odin2_RE_UK.CPK	GUI/HD_StageName08.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	35c30cc8	13632656	5eec0183
+Odin2_RE_UK.CPK	GUI/HD_StageName10.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	63a63180	13632656	8bf5fdf7
+Odin2_RE_UK.CPK	GUI/HD_StageName11.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	29bfe7bb	13632656	f99f8995
+Odin2_RE_UK.CPK	GUI/HD_StageName12.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	d3ad4d1b	13632656	cdb813ad
+Odin2_RE_UK.CPK	GUI/HD_StageName13.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	bcb9aaef	13632656	8e315929
+Odin2_RE_UK.CPK	GUI/HD_StageName13_2.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	a7b79ae4	13632656	b9913c70
+Odin2_RE_UK.CPK	GUI/HD_StageName13_3.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	a1222e3c	13632656	38e21789
+Odin2_RE_UK.CPK	GUI/HD_StageName13_4.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	75d596df	13632656	bfd29404
+Odin2_RE_UK.CPK	GUI/HD_StageName14.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	71a7e54b	13632656	62366362
+Odin2_RE_UK.CPK	GUI/HD_StageName15.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	2b83ff10	13632656	3f5cd8d2
+Odin2_RE_UK.CPK	GUI/HD_StageName16.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	8111257d	13632656	d52d9dbc
+Odin2_RE_UK.CPK	GUI/HD_StageName17.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	7b5f2256	13632656	e101c550
+Odin2_RE_UK.CPK	GUI/HD_StageName18.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	7b01e2b5	13632656	78c71abe
+Odin2_RE_UK.CPK	GUI/HD_StageName19.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	75fd3e87	13632656	cda0f3fb
+Odin2_RE_UK.CPK	GUI/HD_StageName31.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	3d32019b	13632656	62be1cf3
+Odin2_RE_UK.CPK	GUI/HD_StageName33.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	6edd7571	13632656	2cb963ce
+Odin2_RE_UK.CPK	GUI/HD_StageName36.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	a1f2ae7a	13632656	6b6b2a55
+Odin2_RE_UK.CPK	GUI/HD_StageName37.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	9ebf3574	13632656	8203410c
+Odin2_RE_UK.CPK	GUI/HD_StageName40.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	08c6e97c	13632656	61ccf99e
+Odin2_RE_UK.CPK	GUI/HD_StageName40_1.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	08c6e97c	13632656	61ccf99e
+Odin2_RE_UK.CPK	GUI/HD_StageName41.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	d5374a79	13632656	42749ee2
+Odin2_RE_UK.CPK	GUI/HD_StageName42.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	c92c9d74	13632656	886641bf
+Odin2_RE_UK.CPK	GUI/HD_StageName43.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	38e3e945	13632656	ce4205ee
+Odin2_RE_UK.CPK	GUI/HD_StageName44.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	24bf9700	13632656	dffa33d9
+Odin2_RE_UK.CPK	GUI/HD_StageName45.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	4fb1a073	13632656	2e39dd60
+Odin2_RE_UK.CPK	GUI/HD_StageName50.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	339b40f1	13632656	f1c421d2
+Odin2_RE_UK.CPK	GUI/HD_StageName51.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	f089b725	13632656	6e7f9971
+Odin2_RE_UK.CPK	GUI/HD_StageName52.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	4f2bc99a	13632656	334a7a13
+Odin2_RE_UK.CPK	GUI/HD_StageName53.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	dce0c2ce	13632656	dcf0b55c
+Odin2_RE_UK.CPK	GUI/HD_StageName54.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	72abe5aa	13632656	7f8e3d5b
+Odin2_RE_UK.CPK	GUI/HD_StageName55.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	d3bc0336	13632656	0349d17b
+Odin2_RE_UK.CPK	GUI/HD_StageName56.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	d5cdaaf5	13632656	1b5da077
+Odin2_RE_UK.CPK	GUI/HD_StageName57.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	30676097	13632656	bd14390b
+Odin2_RE_UK.CPK	GUI/HD_StageName58.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	b6520ceb	13632656	cecc4e78
+Odin2_RE_UK.CPK	GUI/HD_StageName59.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	6cd72b3c	13632656	b0acdb6d
+Odin2_RE_UK.CPK	GUI/HD_StageName60.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	0c9e4d15	13632656	9e7ff085
+Odin2_RE_UK.CPK	GUI/HD_StageName61.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	3c6990de	13632656	74664d91
+Odin2_RE_UK.CPK	GUI/HD_StageName62.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	13017002	13632656	2c2973d1
+Odin2_RE_UK.CPK	GUI/HD_StageName63.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	78fb4647	13632656	0eb69959
+Odin2_RE_UK.CPK	GUI/HD_StageName64.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	75d596df	13632656	bfd29404
+Odin2_RE_UK.CPK	GUI/HD_StageName65.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	e1e2bed5	13632656	49faf600
+Odin2_RE_UK.CPK	GUI/HD_StageName66.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	c9316ac8	13632656	9aa11d6b
+Odin2_RE_UK.CPK	GUI/HD_StageName67.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	62a1f2f2	13632656	e61feae4
+Odin2_RE_UK.CPK	GUI/HD_StageName68.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	f95d1947	13632656	8e673923
+Odin2_RE_UK.CPK	GUI/HD_StageName70.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	01947236	13632656	e5d1fdb5
+Odin2_RE_UK.CPK	GUI/HD_StageName71.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	83618fef	13632656	6eb8cf7a
+Odin2_RE_UK.CPK	GUI/HD_StageName72.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	66f1b2ca	13632656	83dbf453
+Odin2_RE_UK.CPK	GUI/HD_StageName73.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	08387535	13632656	0855e5f2
+Odin2_RE_UK.CPK	GUI/HD_StageName74.ftx	ftx	STAGE_TITLE	stage/location cards	13632656	f78a8579	13632656	95088a18
+Odin2_RE_UK.CPK	GUI/HD_title.ftx	ftx	TITLE	title	24449424	18910f2d	24449424	2561b520
+Odin2_RE_UK.CPK	GUI/REHD_Archive_00.mbs	mbs	LAYOUT	Bookshelf	99104	5ae2eba2	99104	665ba42a
+Odin2_RE_UK.CPK	GUI/REHD_ArchiveFrame00.mbs	mbs	LAYOUT	Bookshelf	468464	58684fe6	469424	107b74aa
+Odin2_RE_UK.CPK	GUI/REHD_ChrSelect.mbs	mbs	LAYOUT	other menus	27392	fe5c9d1d	27504	8cd831f0
+Odin2_RE_UK.CPK	GUI/REHD_fin1.mbs	mbs	LAYOUT	ending	15200	4f808ac4	15200	45d541b0
+Odin2_RE_UK.CPK	GUI/REHD_fin2.mbs	mbs	LAYOUT	ending	15376	3c7c116d	15376	9c8d9439
+Odin2_RE_UK.CPK	GUI/REHD_fin3.mbs	mbs	LAYOUT	ending	23408	29148524	23408	1d8e1af9
+Odin2_RE_UK.CPK	GUI/REHD_Installation.mbs	mbs	LAYOUT	other menus	376624	1856e686	419600	84c3ce0c
+Odin2_RE_UK.CPK	GUI/REHD_Interface.mbs	mbs	LAYOUT	HUD, save/load, confirmation	1058576	0a1d5348	1096560	8c27cd64
+Odin2_RE_UK.CPK	GUI/REHD_Kitchin.mbs	mbs	LAYOUT	generic UI	136512	9dc9caa0	137392	013b1d33
+Odin2_RE_UK.CPK	GUI/REHD_Logo.mbs	mbs	LAYOUT	title	9984	3f355854	9984	24fca477
+Odin2_RE_UK.CPK	GUI/REHD_Mode_Select.mbs	mbs	LAYOUT	other menus	34400	641d5d4e	36096	26d521bc
+Odin2_RE_UK.CPK	GUI/REHD_SKILL_COMMON.mbs	mbs	LAYOUT	generic UI	272688	2460576d	272704	156cf8e9
+Odin2_RE_UK.CPK	GUI/REHD_StageName.mbs	mbs	LAYOUT	stage/location cards	126176	a9a18af5	129600	1dd01a6d
+Odin2_RE_UK.CPK	GUI/REHD_title.mbs	mbs	LAYOUT	title	188864	c7a913a8	188112	c6033a4a
+Odin2_RE_UK.CPK	msgsheet/Ability.fms	fms	TEXT_CONTAINER	text corpus	108416	6da2cf99	127136	c6f7263f
+Odin2_RE_UK.CPK	msgsheet/BattleScore.fms	fms	TEXT_CONTAINER	text corpus	832	29825a66	960	5afe557b
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_COMMON.fms	fms	TEXT_CONTAINER	text corpus	512	c923677d	576	e3d8a40e
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_COR1.fms	fms	TEXT_CONTAINER	text corpus	720	4341a58b	768	60fc040b
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_COR2.fms	fms	TEXT_CONTAINER	text corpus	992	7f0e5b98	1104	63bf18ee
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_COR3.fms	fms	TEXT_CONTAINER	text corpus	672	bdd47cd5	736	f591ce07
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_COR4.fms	fms	TEXT_CONTAINER	text corpus	688	73c21a3f	832	b20f0ce0
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_COR5.fms	fms	TEXT_CONTAINER	text corpus	1472	817c5899	1600	8112ae7f
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_COR6.fms	fms	TEXT_CONTAINER	text corpus	736	9af6cbf1	832	d551f0e2
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_COR7.fms	fms	TEXT_CONTAINER	text corpus	944	cd5a5c2c	976	f561f0a4
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_COR_REST1.fms	fms	TEXT_CONTAINER	text corpus	432	585a5309	480	f5455398
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_COR_REST2.fms	fms	TEXT_CONTAINER	text corpus	816	90736f32	896	95996522
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_COR_REST3.fms	fms	TEXT_CONTAINER	text corpus	304	a901f648	352	42f93002
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_COR_REST4.fms	fms	TEXT_CONTAINER	text corpus	560	7ed45cff	640	eb80c225
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_COR_REST5.fms	fms	TEXT_CONTAINER	text corpus	544	e4b69762	624	db97745d
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_COR_REST6.fms	fms	TEXT_CONTAINER	text corpus	432	3de5787a	480	9b463a5f
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_COR_REST7.fms	fms	TEXT_CONTAINER	text corpus	256	b41cce54	256	b9a54d18
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_GLOBAL.fms	fms	TEXT_CONTAINER	text corpus	672	1ea56962	768	5574e2e1
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_GWE1.fms	fms	TEXT_CONTAINER	text corpus	1856	3efa6fb3	2048	d1459901
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_GWE2.fms	fms	TEXT_CONTAINER	text corpus	1584	180e0376	1840	9b95f46a
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_GWE3.fms	fms	TEXT_CONTAINER	text corpus	960	f7862486	1072	9e8ec8c1
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_GWE4.fms	fms	TEXT_CONTAINER	text corpus	688	22005654	736	1669c94d
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_GWE5.fms	fms	TEXT_CONTAINER	text corpus	480	d0b033f5	480	acd7c7e8
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_GWE6.fms	fms	TEXT_CONTAINER	text corpus	336	8c49ccc8	352	4b1997f3
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_GWE7.fms	fms	TEXT_CONTAINER	text corpus	352	76c5afce	384	aa90edc2
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_GWE_REST1.fms	fms	TEXT_CONTAINER	text corpus	864	d6f50035	992	fd36e1e5
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_GWE_REST2.fms	fms	TEXT_CONTAINER	text corpus	336	94d15c9d	400	431753bd
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_GWE_REST3.fms	fms	TEXT_CONTAINER	text corpus	336	ed0a8c29	336	879b4646
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_GWE_REST4.fms	fms	TEXT_CONTAINER	text corpus	560	93ad67f9	592	61e1470f
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_GWE_REST5.fms	fms	TEXT_CONTAINER	text corpus	336	c2cd9d7a	400	76674da0
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_GWE_REST6.fms	fms	TEXT_CONTAINER	text corpus	272	a69653e4	320	7a03a337
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_GWE_REST7.fms	fms	TEXT_CONTAINER	text corpus	320	6df8a019	368	40322b86
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_MER1.fms	fms	TEXT_CONTAINER	text corpus	1296	00836c8a	1376	6c013f86
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_MER2.fms	fms	TEXT_CONTAINER	text corpus	912	8a6accc5	928	4ed936ef
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_MER3.fms	fms	TEXT_CONTAINER	text corpus	816	816a073b	848	ce557915
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_MER4.fms	fms	TEXT_CONTAINER	text corpus	1408	ae83c49f	1520	ed906769
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_MER5.fms	fms	TEXT_CONTAINER	text corpus	992	0f49b80d	960	5ed25a98
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_MER6.fms	fms	TEXT_CONTAINER	text corpus	736	1827f6f4	736	68fd4058
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_MER7.fms	fms	TEXT_CONTAINER	text corpus	1216	3c3c3574	1360	a337da32
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_MER_REST1.fms	fms	TEXT_CONTAINER	text corpus	320	ef2dec25	352	b42d005b
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_MER_REST2.fms	fms	TEXT_CONTAINER	text corpus	592	50fdca93	608	db193c81
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_MER_REST3.fms	fms	TEXT_CONTAINER	text corpus	288	a83a991e	304	ddf4675b
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_MER_REST4.fms	fms	TEXT_CONTAINER	text corpus	256	82c8dd5f	240	1a6951ad
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_MER_REST5.fms	fms	TEXT_CONTAINER	text corpus	320	6df8a019	352	a5ef55ff
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_MER_REST6.fms	fms	TEXT_CONTAINER	text corpus	272	9171b848	320	835a1e82
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_MER_REST7.fms	fms	TEXT_CONTAINER	text corpus	640	31260be8	736	c6fa4bcb
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_OSW1.fms	fms	TEXT_CONTAINER	text corpus	1200	0ad735ce	1408	cb6dbd5c
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_OSW2.fms	fms	TEXT_CONTAINER	text corpus	912	65fe4ab8	1024	889c15d3
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_OSW3.fms	fms	TEXT_CONTAINER	text corpus	1120	9ac81597	1280	7b3fe4da
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_OSW4.fms	fms	TEXT_CONTAINER	text corpus	784	becc1478	864	137c340f
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_OSW5.fms	fms	TEXT_CONTAINER	text corpus	608	749aa483	704	28112d73
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_OSW6.fms	fms	TEXT_CONTAINER	text corpus	432	0b1a6135	480	53b48699
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_OSW7.fms	fms	TEXT_CONTAINER	text corpus	1056	9e11fb8f	1200	42b6611e
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_OSW_REST1.fms	fms	TEXT_CONTAINER	text corpus	368	dc87b2a2	400	b7d08823
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_OSW_REST2.fms	fms	TEXT_CONTAINER	text corpus	384	095c86e5	448	7b05663e
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_OSW_REST3.fms	fms	TEXT_CONTAINER	text corpus	304	d21b5030	336	367016fd
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_OSW_REST4.fms	fms	TEXT_CONTAINER	text corpus	320	6df8a019	368	9f6db6db
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_OSW_REST5.fms	fms	TEXT_CONTAINER	text corpus	272	1d92e86b	288	6e6d20df
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_OSW_REST6.fms	fms	TEXT_CONTAINER	text corpus	272	5eb764ec	320	73a6d658
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_OSW_REST7.fms	fms	TEXT_CONTAINER	text corpus	336	c2cd9d7a	400	e6a9d25e
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_VEL1.fms	fms	TEXT_CONTAINER	text corpus	1008	f13d1909	1152	40747a27
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_VEL2.fms	fms	TEXT_CONTAINER	text corpus	1008	b55f9a00	1168	d2f77fce
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_VEL3.fms	fms	TEXT_CONTAINER	text corpus	560	2936dc14	560	a835d736
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_VEL4.fms	fms	TEXT_CONTAINER	text corpus	656	984c2848	688	48556e3d
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_VEL5.fms	fms	TEXT_CONTAINER	text corpus	1088	7769e0fb	1200	32530944
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_VEL6.fms	fms	TEXT_CONTAINER	text corpus	624	4c1d810c	672	967e97d4
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_VEL7.fms	fms	TEXT_CONTAINER	text corpus	448	edbe6ca3	480	89294152
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_VEL_REST1.fms	fms	TEXT_CONTAINER	text corpus	320	6df8a019	368	40322b86
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_VEL_REST2.fms	fms	TEXT_CONTAINER	text corpus	240	5cdd5b63	288	fb1913ae
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_VEL_REST3.fms	fms	TEXT_CONTAINER	text corpus	384	095c86e5	448	4ac7978f
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_VEL_REST4.fms	fms	TEXT_CONTAINER	text corpus	304	864dcf2b	304	964c37fc
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_VEL_REST5.fms	fms	TEXT_CONTAINER	text corpus	208	5e39697b	240	8e03aa53
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_VEL_REST6.fms	fms	TEXT_CONTAINER	text corpus	448	38dfc0a5	528	053e84e6
+Odin2_RE_UK.CPK	msgsheet/DramaMsg_VEL_REST7.fms	fms	TEXT_CONTAINER	text corpus	208	334b63b3	224	9ae3a1ec
+Odin2_RE_UK.CPK	msgsheet/InteriTips.fms	fms	TEXT_CONTAINER	text corpus	3728	481ac79b	4112	ee23c0e4
+Odin2_RE_UK.CPK	msgsheet/ItemList.fms	fms	TEXT_CONTAINER	text corpus	69728	a3a5a37a	77952	cbd53079
+Odin2_RE_UK.CPK	msgsheet/ObjName.fms	fms	TEXT_CONTAINER	text corpus	6544	47399af9	7552	48587dec
+Odin2_RE_UK.CPK	msgsheet/SystemMsg.fms	fms	TEXT_CONTAINER	text corpus	98976	28c92be1	103696	f6bfc4b9
+Odin2_RE_UK.CPK	Other/EventMsgInfo_RE.bin	bin	TEXT_CONTAINER	text corpus	8688	e03ac6f1	8688	6d3c71d8
+Odin2_RE_UK.CPK	Other/HD_M00.ftx	ftx	MANUAL	manual/help	2089424	37931513	2089424	214a9587
+Odin2_RE_UK.CPK	Other/HD_M01.ftx	ftx	MANUAL	manual/help	2089424	4a767762	2089424	b02fa454
+Odin2_RE_UK.CPK	Other/HD_M02.ftx	ftx	MANUAL	manual/help	2089424	ace53817	2089424	9341f74c
+Odin2_RE_UK.CPK	Other/HD_M03.ftx	ftx	MANUAL	manual/help	2089424	701a63aa	2089424	60478c2d
+Odin2_RE_UK.CPK	Other/HD_M04.ftx	ftx	MANUAL	manual/help	2089424	21a271a4	2089424	83d5cefb
+Odin2_RE_UK.CPK	Other/HD_M05.ftx	ftx	MANUAL	manual/help	2089424	4892f4a4	2089424	33f3a6c9
+Odin2_RE_UK.CPK	Other/HD_M06.ftx	ftx	MANUAL	manual/help	2089424	07172f0e	2089424	bae43ed7
+Odin2_RE_UK.CPK	Other/HD_M07.ftx	ftx	MANUAL	manual/help	2089424	ff3f19d8	2089424	6b4ec1db
+Odin2_RE_UK.CPK	Other/HD_M08.ftx	ftx	MANUAL	manual/help	2089424	e1ca456b	2089424	067c5f76
+Odin2_RE_UK.CPK	Other/HD_M09.ftx	ftx	MANUAL	manual/help	2089424	5a65ff02	2089424	abe7f8d5
+Odin2_RE_UK.CPK	Other/HD_M10.ftx	ftx	MANUAL	manual/help	2089424	5ab05f3f	2089424	c9b51635
+Odin2_RE_UK.CPK	Other/HD_M11.ftx	ftx	MANUAL	manual/help	2089424	b5673d17	2089424	94aa102f
+Odin2_RE_UK.CPK	Other/HD_M12.ftx	ftx	MANUAL	manual/help	2089424	db001ef6	2089424	ebd793da
+Odin2_RE_UK.CPK	Other/HD_M13.ftx	ftx	MANUAL	manual/help	2089424	1e1848f0	2089424	5d661512
+Odin2_RE_UK.CPK	Other/HD_M14.ftx	ftx	MANUAL	manual/help	2089424	73c59c92	2089424	94e6739e
+Odin2_RE_UK.CPK	Other/HD_M15.ftx	ftx	MANUAL	manual/help	2089424	69884a04	2089424	664f9dba
+Odin2_RE_UK.CPK	Other/HD_M16.ftx	ftx	MANUAL	manual/help	2089424	e65bb50e	2089424	5741527e
+Odin2_RE_UK.CPK	Other/HD_M17.ftx	ftx	MANUAL	manual/help	2089424	31b4cc23	2089424	9056eed5
+Odin2_RE_UK.CPK	Other/HD_M18.ftx	ftx	MANUAL	manual/help	2089424	83a1c88f	2089424	e1fb8d51
+Odin2_RE_UK.CPK	Other/HD_M19.ftx	ftx	MANUAL	manual/help	2089424	daa90061	2089424	5e11612c
+Odin2_RE_UK.CPK	Other/HD_M20.ftx	ftx	MANUAL	manual/help	2089424	345ed86f	2089424	c0d8f8aa
+Odin2_RE_UK.CPK	Other/HD_M21.ftx	ftx	MANUAL	manual/help	2089424	4b3b8ce3	2089424	46272bc2
+Odin2_RE_UK.CPK	Other/HD_M22.ftx	ftx	MANUAL	manual/help	2089424	6b91ab01	2089424	e38e973d
+Odin2_RE_UK.CPK	Other/HD_M23.ftx	ftx	MANUAL	manual/help	2089424	59fe5f2c	2089424	34274aac
+Odin2_RE_UK.CPK	Other/HD_M24.ftx	ftx	MANUAL	manual/help	2089424	db319a05	2089424	ea8fe3c7
+Odin2_RE_UK.CPK	Other/HD_M25.ftx	ftx	MANUAL	manual/help	2089424	800ad03c	2089424	330983d5
+Odin2_RE_UK.CPK	Other/HD_M26.ftx	ftx	MANUAL	manual/help	2089424	79bb47a7	2089424	0c7f3b1e
+Odin2_RE_UK.CPK	Other/HD_M27.ftx	ftx	MANUAL	manual/help	2089424	5cdda4b5	2089424	5659c487
+Odin2_RE_UK.CPK	Other/HD_M28.ftx	ftx	MANUAL	manual/help	2089424	0e69bafc	2089424	4ba8c548
+Odin2_RE_UK.CPK	Other/HD_M29.ftx	ftx	MANUAL	manual/help	2089424	be3933fb	2089424	06b80d00
+Odin2_RE_UK.CPK	Other/HD_M30.ftx	ftx	MANUAL	manual/help	2089424	b962019f	2089424	0ea0d22a
+Odin2_RE_UK.CPK	Other/HD_M31.ftx	ftx	MANUAL	manual/help	2089424	fbe1adbc	2089424	76a38ff1
+Odin2_RE_UK.CPK	Other/HD_M32.ftx	ftx	MANUAL	manual/help	2089424	31e92158	2089424	e0e247cc
+Odin2_RE_UK.CPK	Other/HD_M33.ftx	ftx	MANUAL	manual/help	2089424	b4ff8bd0	2089424	3f12c249
+Odin2_RE_UK.CPK	Other/HD_M34.ftx	ftx	MANUAL	manual/help	2089424	0e5e7188	2089424	c4977bc8
+Odin2_RE_UK.CPK	Other/HD_M35.ftx	ftx	MANUAL	manual/help	2089424	b1b7e78e	2089424	b5bd8cff
+Odin2_RE_UK.CPK	Other/HD_M36.ftx	ftx	MANUAL	manual/help	2089424	86177c72	2089424	caa9be19
+Odin2_RE_UK.CPK	Other/HD_M37.ftx	ftx	MANUAL	manual/help	2089424	72dd6e81	2089424	e4df3460
+Odin2_RE_UK.CPK	Other/HD_M38.ftx	ftx	MANUAL	manual/help	2089424	888d8337	2089424	b905bcf0
+Odin2_RE_UK.CPK	Other/HD_M39.ftx	ftx	MANUAL	manual/help	2089424	66ef6af3	2089424	04eb2bce
+Odin2_RE_UK.CPK	Other/HD_M40.ftx	ftx	MANUAL	manual/help	2089424	e9cb63e7	2089424	9047baab
+Odin2_RE_UK.CPK	Other/HD_M41.ftx	ftx	MANUAL	manual/help	2089424	44ab7d12	2089424	3a6e5145
+Odin2_RE_UK.CPK	Other/HD_M42.ftx	ftx	MANUAL	manual/help	2089424	e5bcf410	2089424	15edef93
+Odin2_RE_UK.CPK	Other/HD_M43.ftx	ftx	MANUAL	manual/help	2089424	417d7549	2089424	eb528022
+Odin2_OR_UK.CPK	01.ftx	ftx	STAGE_TITLE	stage/location cards	131536	a035d2bc	131536	f6567cb8
+Odin2_OR_UK.CPK	01.mbs	mbs	LAYOUT	stage/location cards	3328	6c456811	5392	55ea40b6
+Odin2_OR_UK.CPK	01_b.ftx	ftx	STAGE_TITLE	stage/location cards	131536	b5d0d693	131536	b1792c25
+Odin2_OR_UK.CPK	01_b.mbs	mbs	LAYOUT	stage/location cards	2608	c1f82e20	5008	42ba54a6
+Odin2_OR_UK.CPK	02.ftx	ftx	STAGE_TITLE	stage/location cards	131536	892851e6	131536	a1206d89
+Odin2_OR_UK.CPK	02.mbs	mbs	LAYOUT	stage/location cards	3568	699f2594	5776	34eac0dc
+Odin2_OR_UK.CPK	03.ftx	ftx	STAGE_TITLE	stage/location cards	262608	53663e03	66000	dc388ac1
+Odin2_OR_UK.CPK	03.mbs	mbs	LAYOUT	stage/location cards	3808	2fa90b34	3520	e4f83660
+Odin2_OR_UK.CPK	04.ftx	ftx	STAGE_TITLE	stage/location cards	131536	2dc6279c	131536	fef8eccd
+Odin2_OR_UK.CPK	04.mbs	mbs	LAYOUT	stage/location cards	3088	9458101e	4720	95a77701
+Odin2_OR_UK.CPK	04_2.ftx	ftx	STAGE_TITLE	stage/location cards	131536	d0a32766	131536	31fbe46c
+Odin2_OR_UK.CPK	04_2.mbs	mbs	LAYOUT	stage/location cards	3568	8b138914	5776	76283fb6
+Odin2_OR_UK.CPK	04_3.ftx	ftx	STAGE_TITLE	stage/location cards	131536	e381f532	131536	917ca8da
+Odin2_OR_UK.CPK	04_3.mbs	mbs	LAYOUT	stage/location cards	3088	2d598a8c	4336	9f98979b
+Odin2_OR_UK.CPK	04_4.ftx	ftx	STAGE_TITLE	stage/location cards	131536	5612b9a9	131536	95708256
+Odin2_OR_UK.CPK	04_4.mbs	mbs	LAYOUT	stage/location cards	3568	26465754	4528	9b88b989
+Odin2_OR_UK.CPK	05.ftx	ftx	STAGE_TITLE	stage/location cards	131536	0cc1230e	131536	da2900bb
+Odin2_OR_UK.CPK	05.mbs	mbs	LAYOUT	stage/location cards	2848	a6611678	4480	fea60c73
+Odin2_OR_UK.CPK	05_2.ftx	ftx	STAGE_TITLE	stage/location cards	131536	63e17d5c	66000	840092f7
+Odin2_OR_UK.CPK	05_2.mbs	mbs	LAYOUT	stage/location cards	2848	f47efd6c	5536	10ba89f0
+Odin2_OR_UK.CPK	06.ftx	ftx	STAGE_TITLE	stage/location cards	131536	b85115b3	131536	8b9c1767
+Odin2_OR_UK.CPK	06.mbs	mbs	LAYOUT	stage/location cards	3088	130a553d	4000	9007ff9f
+Odin2_OR_UK.CPK	07.ftx	ftx	STAGE_TITLE	stage/location cards	131536	2861b3a5	131536	62d239f9
+Odin2_OR_UK.CPK	07.mbs	mbs	LAYOUT	stage/location cards	3808	423d504f	6544	06cab9fe
+Odin2_OR_UK.CPK	08.ftx	ftx	STAGE_TITLE	stage/location cards	131536	a61e60b0	131536	44301690
+Odin2_OR_UK.CPK	08.mbs	mbs	LAYOUT	stage/location cards	3280	265d0f8b	5632	7ef93716
+Odin2_OR_UK.CPK	10.ftx	ftx	STAGE_TITLE	stage/location cards	131536	697b6599	131536	9217d192
+Odin2_OR_UK.CPK	10.mbs	mbs	LAYOUT	stage/location cards	3568	080fb404	5200	5dd76477
+Odin2_OR_UK.CPK	11.ftx	ftx	STAGE_TITLE	stage/location cards	131536	a75eec59	131536	dcac0e14
+Odin2_OR_UK.CPK	11.mbs	mbs	LAYOUT	stage/location cards	3328	2dd87f32	5968	eaa0f5a5
+Odin2_OR_UK.CPK	12.ftx	ftx	STAGE_TITLE	stage/location cards	131536	344aa62c	131536	bc23d041
+Odin2_OR_UK.CPK	12.mbs	mbs	LAYOUT	stage/location cards	3088	84472332	7216	fcd25652
+Odin2_OR_UK.CPK	13.ftx	ftx	STAGE_TITLE	stage/location cards	131536	74d4c6a9	131536	fdba19e9
+Odin2_OR_UK.CPK	13.mbs	mbs	LAYOUT	stage/location cards	3088	3a438121	6208	1758ecfc
+Odin2_OR_UK.CPK	13_2.ftx	ftx	STAGE_TITLE	stage/location cards	131536	3591e5d7	131536	8c9af798
+Odin2_OR_UK.CPK	13_2.mbs	mbs	LAYOUT	stage/location cards	3088	12a3f00a	6208	90e16cf3
+Odin2_OR_UK.CPK	13_3.ftx	ftx	STAGE_TITLE	stage/location cards	131536	df0b4820	131536	4f8240ab
+Odin2_OR_UK.CPK	13_3.mbs	mbs	LAYOUT	stage/location cards	3568	508d28a3	6496	fd71b297
+Odin2_OR_UK.CPK	13_4.ftx	ftx	STAGE_TITLE	stage/location cards	131536	46477886	66000	2c8062cf
+Odin2_OR_UK.CPK	13_4.mbs	mbs	LAYOUT	stage/location cards	2848	b57f899d	3040	db4f5f5e
+Odin2_OR_UK.CPK	14.ftx	ftx	STAGE_TITLE	stage/location cards	131536	0a2b1ca6	131536	e25d6485
+Odin2_OR_UK.CPK	14.mbs	mbs	LAYOUT	stage/location cards	2608	71996388	4576	8c9d13fa
+Odin2_OR_UK.CPK	15.ftx	ftx	STAGE_TITLE	stage/location cards	131536	cb578946	131536	d6cb36c0
+Odin2_OR_UK.CPK	15.mbs	mbs	LAYOUT	stage/location cards	2368	3b3ba93c	4384	f9b6cdfb
+Odin2_OR_UK.CPK	16.ftx	ftx	STAGE_TITLE	stage/location cards	131536	f42ffd54	131536	db5057c4
+Odin2_OR_UK.CPK	16.mbs	mbs	LAYOUT	stage/location cards	2848	b66fc0ea	4960	50d49c7b
+Odin2_OR_UK.CPK	17.ftx	ftx	STAGE_TITLE	stage/location cards	131536	5c10ce3f	131536	e3bf0ac0
+Odin2_OR_UK.CPK	17.mbs	mbs	LAYOUT	stage/location cards	3328	a9157efa	6592	175ad237
+Odin2_OR_UK.CPK	18.ftx	ftx	STAGE_TITLE	stage/location cards	131536	37853b9e	131536	75c93705
+Odin2_OR_UK.CPK	18.mbs	mbs	LAYOUT	stage/location cards	2608	541140f6	4336	896459fc
+Odin2_OR_UK.CPK	19.ftx	ftx	STAGE_TITLE	stage/location cards	131536	8c7de11e	131536	c5c908d1
+Odin2_OR_UK.CPK	19.mbs	mbs	LAYOUT	stage/location cards	3088	88739813	4336	ba694eb4
+Odin2_OR_UK.CPK	31.ftx	ftx	STAGE_TITLE	stage/location cards	131536	0e53a66d	131536	5e2caeb6
+Odin2_OR_UK.CPK	31.mbs	mbs	LAYOUT	stage/location cards	2848	74f96ab9	5968	c5ce4716
+Odin2_OR_UK.CPK	33.ftx	ftx	STAGE_TITLE	stage/location cards	131536	43ba2291	131536	bb9eb861
+Odin2_OR_UK.CPK	33.mbs	mbs	LAYOUT	stage/location cards	3760	141e031e	6128	3c3c516b
+Odin2_OR_UK.CPK	36.ftx	ftx	STAGE_TITLE	stage/location cards	131536	1abb7db0	131536	d7f8efd1
+Odin2_OR_UK.CPK	36.mbs	mbs	LAYOUT	stage/location cards	2128	c15000d9	4144	c55d7e6a
+Odin2_OR_UK.CPK	37.ftx	ftx	STAGE_TITLE	stage/location cards	131536	95e0e5f6	131536	2d27d03e
+Odin2_OR_UK.CPK	37.mbs	mbs	LAYOUT	stage/location cards	2368	10ebe0ff	3760	8e9f0126
+Odin2_OR_UK.CPK	40.ftx	ftx	STAGE_TITLE	stage/location cards	131536	78ab7b74	66000	02a9adb8
+Odin2_OR_UK.CPK	40.mbs	mbs	LAYOUT	stage/location cards	3088	497e9fbf	3424	b488898d
+Odin2_OR_UK.CPK	40_1.ftx	ftx	STAGE_TITLE	stage/location cards	131536	18841bdf	66000	a8fb417f
+Odin2_OR_UK.CPK	40_1.mbs	mbs	LAYOUT	stage/location cards	3088	403dd0e8	3424	a2647b89
+Odin2_OR_UK.CPK	41.ftx	ftx	STAGE_TITLE	stage/location cards	131536	27839376	131536	bb709635
+Odin2_OR_UK.CPK	41.mbs	mbs	LAYOUT	stage/location cards	3328	ad173f22	6544	6221339e
+Odin2_OR_UK.CPK	42.ftx	ftx	STAGE_TITLE	stage/location cards	131536	68cd1133	131536	4bd7dd49
+Odin2_OR_UK.CPK	42.mbs	mbs	LAYOUT	stage/location cards	3088	090e4dbd	6736	be685dad
+Odin2_OR_UK.CPK	43.ftx	ftx	STAGE_TITLE	stage/location cards	131536	a4b31508	131536	c88950be
+Odin2_OR_UK.CPK	43.mbs	mbs	LAYOUT	stage/location cards	3328	ef9bfd85	5008	5dd720d0
+Odin2_OR_UK.CPK	44.ftx	ftx	STAGE_TITLE	stage/location cards	131536	530f3a5a	131536	36a97871
+Odin2_OR_UK.CPK	44.mbs	mbs	LAYOUT	stage/location cards	2336	35a6e53f	4816	ba446fa4
+Odin2_OR_UK.CPK	45.ftx	ftx	STAGE_TITLE	stage/location cards	262608	3b9a0612	131536	0df2f368
+Odin2_OR_UK.CPK	45.mbs	mbs	LAYOUT	stage/location cards	3328	a2545025	6016	86adc415
+Odin2_OR_UK.CPK	50.ftx	ftx	STAGE_TITLE	stage/location cards	131536	13845e55	131536	ddf5ea3a
+Odin2_OR_UK.CPK	50.mbs	mbs	LAYOUT	stage/location cards	2608	468c5725	6064	4f2aa317
+Odin2_OR_UK.CPK	51.ftx	ftx	STAGE_TITLE	stage/location cards	131536	02517659	131536	7af8b631
+Odin2_OR_UK.CPK	51.mbs	mbs	LAYOUT	stage/location cards	2608	6360a832	6304	79cb8a32
+Odin2_OR_UK.CPK	52.ftx	ftx	STAGE_TITLE	stage/location cards	131536	63a82fdd	131536	83c34ce8
+Odin2_OR_UK.CPK	52.mbs	mbs	LAYOUT	stage/location cards	2368	02e267e1	6016	a54c75db
+Odin2_OR_UK.CPK	53.ftx	ftx	STAGE_TITLE	stage/location cards	131536	eda97d3f	131536	074af7f2
+Odin2_OR_UK.CPK	53.mbs	mbs	LAYOUT	stage/location cards	2608	a7408761	6976	86faf135
+Odin2_OR_UK.CPK	54.ftx	ftx	STAGE_TITLE	stage/location cards	131536	1d52bfeb	131536	9294df5f
+Odin2_OR_UK.CPK	54.mbs	mbs	LAYOUT	stage/location cards	2368	d54025d1	4288	d36c5df1
+Odin2_OR_UK.CPK	55.ftx	ftx	STAGE_TITLE	stage/location cards	131536	23775731	131536	2cadd000
+Odin2_OR_UK.CPK	55.mbs	mbs	LAYOUT	stage/location cards	3328	3f0c2b42	6160	42edbe0d
+Odin2_OR_UK.CPK	56.ftx	ftx	STAGE_TITLE	stage/location cards	131536	ca24d13a	131536	a393eede
+Odin2_OR_UK.CPK	56.mbs	mbs	LAYOUT	stage/location cards	3328	5de103fa	6736	3a4486bd
+Odin2_OR_UK.CPK	57.ftx	ftx	STAGE_TITLE	stage/location cards	131536	a4bef28b	131536	58e6c6e3
+Odin2_OR_UK.CPK	57.mbs	mbs	LAYOUT	stage/location cards	2848	deeaef8f	6256	972395fd
+Odin2_OR_UK.CPK	58.ftx	ftx	STAGE_TITLE	stage/location cards	131536	9e4101bc	131536	a83f59f3
+Odin2_OR_UK.CPK	58.mbs	mbs	LAYOUT	stage/location cards	2848	ebc4699c	6880	acb3cb96
+Odin2_OR_UK.CPK	59.ftx	ftx	STAGE_TITLE	stage/location cards	131536	f1437edc	33232	4a672b25
+Odin2_OR_UK.CPK	59.mbs	mbs	LAYOUT	stage/location cards	2128	30c11b5a	2080	7db8ff04
+Odin2_OR_UK.CPK	60.ftx	ftx	STAGE_TITLE	stage/location cards	131536	e65ff758	66000	860dd955
+Odin2_OR_UK.CPK	60.mbs	mbs	LAYOUT	stage/location cards	2848	ea5c3e04	4912	2d90d809
+Odin2_OR_UK.CPK	61.ftx	ftx	STAGE_TITLE	stage/location cards	131536	3d133517	131536	4ffc150e
+Odin2_OR_UK.CPK	61.mbs	mbs	LAYOUT	stage/location cards	2848	ef47fffe	4816	b11053a1
+Odin2_OR_UK.CPK	62.ftx	ftx	STAGE_TITLE	stage/location cards	131536	2a68f763	131536	26d8dce5
+Odin2_OR_UK.CPK	62.mbs	mbs	LAYOUT	stage/location cards	2608	215ef3f4	6064	a21589ec
+Odin2_OR_UK.CPK	63.ftx	ftx	STAGE_TITLE	stage/location cards	131536	8d4a937b	131536	6bb249f2
+Odin2_OR_UK.CPK	63.mbs	mbs	LAYOUT	stage/location cards	2608	60309cc4	5248	de4fed37
+Odin2_OR_UK.CPK	64.ftx	ftx	STAGE_TITLE	stage/location cards	131536	d55a0eef	66000	65504c27
+Odin2_OR_UK.CPK	64.mbs	mbs	LAYOUT	stage/location cards	2848	1130e51f	3040	878393cd
+Odin2_OR_UK.CPK	65.ftx	ftx	STAGE_TITLE	stage/location cards	131536	3c199a3a	131536	eb21dace
+Odin2_OR_UK.CPK	65.mbs	mbs	LAYOUT	stage/location cards	3280	a406d813	6352	fe8be7f9
+Odin2_OR_UK.CPK	66.ftx	ftx	STAGE_TITLE	stage/location cards	131536	0187292f	131536	51acf5a4
+Odin2_OR_UK.CPK	66.mbs	mbs	LAYOUT	stage/location cards	3088	57db485c	4192	77715fd3
+Odin2_OR_UK.CPK	67.ftx	ftx	STAGE_TITLE	stage/location cards	131536	951f71c4	66000	711b4695
+Odin2_OR_UK.CPK	67.mbs	mbs	LAYOUT	stage/location cards	2992	8bda015b	3856	6b43f7f3
+Odin2_OR_UK.CPK	68.ftx	ftx	STAGE_TITLE	stage/location cards	131536	002133fb	131536	2eb21ba7
+Odin2_OR_UK.CPK	68.mbs	mbs	LAYOUT	stage/location cards	2560	3ec751c0	5008	44e32ab0
+Odin2_OR_UK.CPK	70.ftx	ftx	STAGE_TITLE	stage/location cards	131536	6cab0f0e	131536	326da693
+Odin2_OR_UK.CPK	70.mbs	mbs	LAYOUT	stage/location cards	2560	fb4ba9a1	4288	d3dd2b75
+Odin2_OR_UK.CPK	71.ftx	ftx	STAGE_TITLE	stage/location cards	131536	69010618	66000	74e55615
+Odin2_OR_UK.CPK	71.mbs	mbs	LAYOUT	stage/location cards	2128	bcde91a2	2368	e5256464
+Odin2_OR_UK.CPK	72.ftx	ftx	STAGE_TITLE	stage/location cards	131536	9bcf5ced	66000	318ecdb4
+Odin2_OR_UK.CPK	72.mbs	mbs	LAYOUT	stage/location cards	2848	3c2a4042	3664	95c6cda3
+Odin2_OR_UK.CPK	73.ftx	ftx	STAGE_TITLE	stage/location cards	131536	0f7d023c	131536	f0a9ad66
+Odin2_OR_UK.CPK	73.mbs	mbs	LAYOUT	stage/location cards	2128	d1ba3ac5	5776	ae64f248
+Odin2_OR_UK.CPK	74.ftx	ftx	STAGE_TITLE	stage/location cards	131536	8de43881	131536	e7658144
+Odin2_OR_UK.CPK	74.mbs	mbs	LAYOUT	stage/location cards	2848	962ad168	4480	b4dedff5
+Odin2_OR_UK.CPK	A0_2_1.txt	txt	TEXT_CONTAINER	chapter prologue cards	312	ed142677	342	68b98690
+Odin2_OR_UK.CPK	A0_2_2.txt	txt	TEXT_CONTAINER	text corpus	741	acf4721c	815	a57164c1
+Odin2_OR_UK.CPK	A0_2_3.txt	txt	LANGUAGE_INDEPENDENT	other	68	6c9598d8	68	6c9598d8
+Odin2_OR_UK.CPK	A0_2_4.txt	txt	TEXT_CONTAINER	text corpus	679	d0f83409	789	0b227a47
+Odin2_OR_UK.CPK	A0_6_1.txt	txt	TEXT_CONTAINER	text corpus	1035	52056be7	1128	4af8cddd
+Odin2_OR_UK.CPK	A1_1.txt	txt	TEXT_CONTAINER	text corpus	1593	c5436d8b	1785	39ec98f7
+Odin2_OR_UK.CPK	A1_2.txt	txt	TEXT_CONTAINER	text corpus	780	f8395d17	818	c37f7ed0
+Odin2_OR_UK.CPK	A1_3.txt	txt	TEXT_CONTAINER	text corpus	756	620a8911	887	f8585bcc
+Odin2_OR_UK.CPK	A1_4.txt	txt	TEXT_CONTAINER	text corpus	1046	a4a04f27	1079	20dca6d0
+Odin2_OR_UK.CPK	A1_6.txt	txt	TEXT_CONTAINER	text corpus	1083	c1c39ea1	1121	d3a9bf4e
+Odin2_OR_UK.CPK	A2_1.txt	txt	TEXT_CONTAINER	text corpus	1384	b8f649b7	1643	86a2e213
+Odin2_OR_UK.CPK	A2_2.txt	txt	TEXT_CONTAINER	text corpus	870	f97fd311	995	b377a94c
+Odin2_OR_UK.CPK	A2_3.txt	txt	TEXT_CONTAINER	text corpus	298	75f80a97	353	774540b8
+Odin2_OR_UK.CPK	A2_4.txt	txt	TEXT_CONTAINER	text corpus	1501	92a5e21a	1631	be4b97ef
+Odin2_OR_UK.CPK	A2_6.txt	txt	TEXT_CONTAINER	text corpus	2725	c148162b	3006	e15c3f01
+Odin2_OR_UK.CPK	A3_1.txt	txt	TEXT_CONTAINER	text corpus	839	627b842a	945	ace0615c
+Odin2_OR_UK.CPK	A3_2.txt	txt	TEXT_CONTAINER	text corpus	932	76faf530	926	cd520305
+Odin2_OR_UK.CPK	A3_3.txt	txt	TEXT_CONTAINER	text corpus	312	7133d312	315	6231dfa1
+Odin2_OR_UK.CPK	A3_4.txt	txt	TEXT_CONTAINER	text corpus	1233	78b73eca	1333	af7be0a0
+Odin2_OR_UK.CPK	A3_6.txt	txt	TEXT_CONTAINER	text corpus	967	9b4c33d0	1030	976570bb
+Odin2_OR_UK.CPK	A4_1.txt	txt	TEXT_CONTAINER	text corpus	572	33d4a0b0	631	c4b3b04a
+Odin2_OR_UK.CPK	A4_2.txt	txt	TEXT_CONTAINER	text corpus	1997	b9924414	2061	0bfe2927
+Odin2_OR_UK.CPK	A4_3.txt	txt	TEXT_CONTAINER	text corpus	496	c5bf4eed	524	ecbed95f
+Odin2_OR_UK.CPK	A4_4.txt	txt	TEXT_CONTAINER	text corpus	612	50897e47	683	aed0ba45
+Odin2_OR_UK.CPK	A4_6.txt	txt	TEXT_CONTAINER	text corpus	781	4cd49bdd	818	b744ce4d
+Odin2_OR_UK.CPK	A5_1.txt	txt	TEXT_CONTAINER	text corpus	420	9db6563d	418	055f5139
+Odin2_OR_UK.CPK	A5_2.txt	txt	TEXT_CONTAINER	text corpus	2004	a7b086dd	2278	9486cfe8
+Odin2_OR_UK.CPK	A5_3.txt	txt	TEXT_CONTAINER	text corpus	304	38b851ee	369	adcb324a
+Odin2_OR_UK.CPK	A5_4.txt	txt	TEXT_CONTAINER	text corpus	362	5ef62ce3	399	be6231a0
+Odin2_OR_UK.CPK	A5_6.txt	txt	TEXT_CONTAINER	text corpus	1002	da42c84b	1095	f4f3fa76
+Odin2_OR_UK.CPK	A6_1.txt	txt	TEXT_CONTAINER	text corpus	290	d1b9d87a	319	5f8a84fa
+Odin2_OR_UK.CPK	A6_2.txt	txt	TEXT_CONTAINER	text corpus	2345	f96a629a	2588	4f4e0722
+Odin2_OR_UK.CPK	A6_3.txt	txt	TEXT_CONTAINER	text corpus	241	b1241661	304	2ecc9bfc
+Odin2_OR_UK.CPK	A6_4.txt	txt	TEXT_CONTAINER	text corpus	816	79099b37	889	ab780880
+Odin2_OR_UK.CPK	A6_6.txt	txt	TEXT_CONTAINER	text corpus	850	8f19c7e2	952	c8b1aeb0
+Odin2_OR_UK.CPK	A7_1.txt	txt	TEXT_CONTAINER	text corpus	320	9b0e4f38	341	706756f8
+Odin2_OR_UK.CPK	A7_2.txt	txt	TEXT_CONTAINER	text corpus	1347	050e15a6	1372	5337a41f
+Odin2_OR_UK.CPK	A7_3.txt	txt	TEXT_CONTAINER	text corpus	293	ef239bdc	330	686dd9b6
+Odin2_OR_UK.CPK	A7_4.txt	txt	TEXT_CONTAINER	text corpus	1139	7f0627e4	1217	4199c9c7
+Odin2_OR_UK.CPK	A7_6.txt	txt	TEXT_CONTAINER	text corpus	2521	3a7413c5	2689	cabc4cd8
+Odin2_OR_UK.CPK	B0_2_1.txt	txt	TEXT_CONTAINER	chapter prologue cards	364	b253a5c2	383	80afe246
+Odin2_OR_UK.CPK	B0_2_2.txt	txt	TEXT_CONTAINER	text corpus	1524	d7fcaea3	1628	5a895266
+Odin2_OR_UK.CPK	B0_2_3.txt	txt	TEXT_CONTAINER	text corpus	348	5ee5d6ec	348	b25eec87
+Odin2_OR_UK.CPK	B0_2_4.txt	txt	TEXT_CONTAINER	text corpus	538	bec612e0	601	5d4aeb90
+Odin2_OR_UK.CPK	B0_6_1.txt	txt	TEXT_CONTAINER	text corpus	1165	b65767d3	1257	1ea3fef6
+Odin2_OR_UK.CPK	B1_1.txt	txt	TEXT_CONTAINER	text corpus	548	9398088e	585	3d46872a
+Odin2_OR_UK.CPK	B1_2.txt	txt	TEXT_CONTAINER	text corpus	974	2a096d1d	1089	f02f58cf
+Odin2_OR_UK.CPK	B1_3.txt	txt	TEXT_CONTAINER	text corpus	389	8cef608e	426	94a29132
+Odin2_OR_UK.CPK	B1_4.txt	txt	TEXT_CONTAINER	text corpus	822	167dd84f	881	93f6db80
+Odin2_OR_UK.CPK	B1_6.txt	txt	TEXT_CONTAINER	text corpus	993	e62e8b87	1085	806bce2b
+Odin2_OR_UK.CPK	B2_1.txt	txt	TEXT_CONTAINER	text corpus	856	8b532bd6	978	00f4cbb6
+Odin2_OR_UK.CPK	B2_2.txt	txt	TEXT_CONTAINER	text corpus	1280	b42f4191	1318	074c6e0b
+Odin2_OR_UK.CPK	B2_3.txt	txt	TEXT_CONTAINER	text corpus	708	d8d27025	785	e852295d
+Odin2_OR_UK.CPK	B2_4.txt	txt	TEXT_CONTAINER	text corpus	591	984eaf4f	687	8aead958
+Odin2_OR_UK.CPK	B2_6.txt	txt	TEXT_CONTAINER	text corpus	908	11877a8c	1013	53a86ffb
+Odin2_OR_UK.CPK	B3_1.txt	txt	TEXT_CONTAINER	text corpus	600	be8ffe41	664	2698d9d1
+Odin2_OR_UK.CPK	B3_2.txt	txt	TEXT_CONTAINER	text corpus	2361	91f81cbb	2648	f11f56b4
+Odin2_OR_UK.CPK	B3_3.txt	txt	TEXT_CONTAINER	text corpus	262	23f6c71d	308	fea9e2b0
+Odin2_OR_UK.CPK	B3_4.txt	txt	TEXT_CONTAINER	text corpus	941	6525f332	992	013e32d7
+Odin2_OR_UK.CPK	B3_6.txt	txt	TEXT_CONTAINER	text corpus	1437	c41d400a	1577	7aa42e77
+Odin2_OR_UK.CPK	B4_1.txt	txt	TEXT_CONTAINER	text corpus	602	ca2d4930	747	6fac832e
+Odin2_OR_UK.CPK	B4_2.txt	txt	TEXT_CONTAINER	text corpus	1144	cfb90671	1249	87dd7be5
+Odin2_OR_UK.CPK	B4_3.txt	txt	TEXT_CONTAINER	text corpus	493	dab69ae6	564	93f4668e
+Odin2_OR_UK.CPK	B4_4.txt	txt	TEXT_CONTAINER	text corpus	1243	01419cee	1394	aa27e18e
+Odin2_OR_UK.CPK	B4_6.txt	txt	TEXT_CONTAINER	text corpus	2614	1c1cf4d8	2915	f8cfc3e3
+Odin2_OR_UK.CPK	B5_1.txt	txt	TEXT_CONTAINER	text corpus	667	f12f086c	735	7af4b1a1
+Odin2_OR_UK.CPK	B5_2.txt	txt	TEXT_CONTAINER	text corpus	1301	07f63774	1430	8c828406
+Odin2_OR_UK.CPK	B5_3.txt	txt	TEXT_CONTAINER	text corpus	486	66ae75f9	566	5f7e9439
+Odin2_OR_UK.CPK	B5_4.txt	txt	TEXT_CONTAINER	text corpus	919	b5115e5b	1009	13fc9a95
+Odin2_OR_UK.CPK	B5_6.txt	txt	TEXT_CONTAINER	text corpus	1787	c612bf8a	2010	69b63919
+Odin2_OR_UK.CPK	B6_1.txt	txt	TEXT_CONTAINER	text corpus	637	227fb022	731	3b640c40
+Odin2_OR_UK.CPK	B6_2.txt	txt	TEXT_CONTAINER	text corpus	1232	59d493d0	1420	5dc4a08e
+Odin2_OR_UK.CPK	B6_3.txt	txt	TEXT_CONTAINER	text corpus	370	bb7bb45c	418	daf80ad5
+Odin2_OR_UK.CPK	B6_4.txt	txt	TEXT_CONTAINER	text corpus	1391	5f7bdf0d	1537	0ed432e7
+Odin2_OR_UK.CPK	B6_6.txt	txt	TEXT_CONTAINER	text corpus	2410	bdbd0498	2635	e70b66ad
+Odin2_OR_UK.CPK	B7_1.txt	txt	TEXT_CONTAINER	text corpus	848	1245dd57	880	7827e752
+Odin2_OR_UK.CPK	B7_2.txt	txt	TEXT_CONTAINER	text corpus	1723	59c9dbae	1887	228eefd4
+Odin2_OR_UK.CPK	B7_3.txt	txt	TEXT_CONTAINER	text corpus	225	48bef200	225	46af41a2
+Odin2_OR_UK.CPK	B7_4.txt	txt	TEXT_CONTAINER	text corpus	1755	679cca10	1859	ad864350
+Odin2_OR_UK.CPK	B7_6.txt	txt	TEXT_CONTAINER	text corpus	2216	69ca53ad	2411	a815a5ce
+Odin2_OR_UK.CPK	Bookshelf.ftx	ftx	DUPLICATE	same English bytes as Odin2_RE_UK.CPK:GUI/HD_Bookshelf.ftx	524752	64724996	524752	6e820dc5
+Odin2_OR_UK.CPK	Butterfly.ftx	ftx	TITLE	other menus	262608	284316d8	262608	19a7494c
+Odin2_OR_UK.CPK	Butterfly.mbs	mbs	LAYOUT	other menus	108400	9abdded3	114096	05dd0241
+Odin2_OR_UK.CPK	C0_2_1.txt	txt	TEXT_CONTAINER	chapter prologue cards	316	86668729	340	c3b533c0
+Odin2_OR_UK.CPK	C0_2_2.txt	txt	TEXT_CONTAINER	text corpus	1671	45df40a0	1804	8b87ba6f
+Odin2_OR_UK.CPK	C0_2_3.txt	txt	LANGUAGE_INDEPENDENT	other	70	f5a77967	70	f5a77967
+Odin2_OR_UK.CPK	C0_2_4.txt	txt	LANGUAGE_INDEPENDENT	other	70	f5a77967	70	f5a77967
+Odin2_OR_UK.CPK	C0_6_1.txt	txt	TEXT_CONTAINER	text corpus	2060	de6bb437	2241	893fcacc
+Odin2_OR_UK.CPK	C1_1.txt	txt	TEXT_CONTAINER	text corpus	1119	1261635d	1206	f3b9014f
+Odin2_OR_UK.CPK	C1_2.txt	txt	TEXT_CONTAINER	text corpus	1294	bebbb57f	1310	c298825e
+Odin2_OR_UK.CPK	C1_3.txt	txt	TEXT_CONTAINER	text corpus	279	ee8eb34e	310	076ccf54
+Odin2_OR_UK.CPK	C1_4.txt	txt	TEXT_CONTAINER	text corpus	1184	6f6daf38	1265	b2a30a14
+Odin2_OR_UK.CPK	C1_6.txt	txt	TEXT_CONTAINER	text corpus	825	c856c3a3	883	0fc01b99
+Odin2_OR_UK.CPK	C2_1.txt	txt	TEXT_CONTAINER	text corpus	793	b1d92343	816	d592787f
+Odin2_OR_UK.CPK	C2_2.txt	txt	TEXT_CONTAINER	text corpus	755	7061e141	818	98cb817c
+Odin2_OR_UK.CPK	C2_3.txt	txt	TEXT_CONTAINER	text corpus	527	071cad22	542	2985e9d6
+Odin2_OR_UK.CPK	C2_4.txt	txt	TEXT_CONTAINER	text corpus	829	5636b04a	849	191da7ac
+Odin2_OR_UK.CPK	C2_6.txt	txt	TEXT_CONTAINER	text corpus	1079	30703752	1237	09fd0e61
+Odin2_OR_UK.CPK	C3_1.txt	txt	TEXT_CONTAINER	text corpus	696	e574901e	732	fa6fc3fc
+Odin2_OR_UK.CPK	C3_2.txt	txt	TEXT_CONTAINER	text corpus	1725	fbe19181	1908	cc7f7be4
+Odin2_OR_UK.CPK	C3_3.txt	txt	TEXT_CONTAINER	text corpus	261	3a5ea65a	277	ebf861c0
+Odin2_OR_UK.CPK	C3_4.txt	txt	TEXT_CONTAINER	text corpus	589	a7ce6155	647	cacf87c6
+Odin2_OR_UK.CPK	C3_6.txt	txt	TEXT_CONTAINER	text corpus	2287	954b3777	2608	bf5674ba
+Odin2_OR_UK.CPK	C4_1.txt	txt	TEXT_CONTAINER	text corpus	1234	a06c1da3	1347	260327e8
+Odin2_OR_UK.CPK	C4_2.txt	txt	TEXT_CONTAINER	text corpus	909	83af68a0	1015	bb6c7291
+Odin2_OR_UK.CPK	C4_3.txt	txt	TEXT_CONTAINER	text corpus	230	d8a16342	214	0be1eb87
+Odin2_OR_UK.CPK	C4_4.txt	txt	TEXT_CONTAINER	text corpus	1557	f1ba9bda	1764	da31a350
+Odin2_OR_UK.CPK	C4_6.txt	txt	TEXT_CONTAINER	text corpus	1164	5f73aad4	1315	ac3e3509
+Odin2_OR_UK.CPK	C5_1.txt	txt	TEXT_CONTAINER	text corpus	809	4547f159	782	97829a95
+Odin2_OR_UK.CPK	C5_2.txt	txt	TEXT_CONTAINER	text corpus	982	8287c99a	1101	8d4d9b57
+Odin2_OR_UK.CPK	C5_3.txt	txt	TEXT_CONTAINER	text corpus	293	ef239bdc	327	3fc14da3
+Odin2_OR_UK.CPK	C5_4.txt	txt	TEXT_CONTAINER	text corpus	936	94bb065b	981	0c7310d5
+Odin2_OR_UK.CPK	C5_6.txt	txt	TEXT_CONTAINER	text corpus	924	951b688f	981	0c1dd4b9
+Odin2_OR_UK.CPK	C6_1.txt	txt	TEXT_CONTAINER	text corpus	656	c849aefe	663	530771c6
+Odin2_OR_UK.CPK	C6_2.txt	txt	TEXT_CONTAINER	text corpus	1094	86bc2cd5	1234	b116e255
+Odin2_OR_UK.CPK	C6_3.txt	txt	TEXT_CONTAINER	text corpus	240	fab4c818	280	a872aa16
+Odin2_OR_UK.CPK	C6_4.txt	txt	TEXT_CONTAINER	text corpus	1477	4e4eca26	1612	39a28cbb
+Odin2_OR_UK.CPK	C6_6.txt	txt	TEXT_CONTAINER	text corpus	1294	7a1ca33f	1290	f3919c70
+Odin2_OR_UK.CPK	C7_1.txt	txt	TEXT_CONTAINER	text corpus	1078	20d5e9e3	1219	38e7a9d6
+Odin2_OR_UK.CPK	C7_2.txt	txt	TEXT_CONTAINER	text corpus	1383	4983e332	1623	74de0331
+Odin2_OR_UK.CPK	C7_3.txt	txt	TEXT_CONTAINER	text corpus	538	81e47d97	633	6e0aeb67
+Odin2_OR_UK.CPK	C7_4.txt	txt	TEXT_CONTAINER	text corpus	1162	f29175da	1288	9094434d
+Odin2_OR_UK.CPK	C7_6.txt	txt	TEXT_CONTAINER	text corpus	1828	314d6cc1	2104	f1542b2a
+Odin2_OR_UK.CPK	D0_2_1.txt	txt	TEXT_CONTAINER	chapter prologue cards	398	5f147086	395	79acfdcf
+Odin2_OR_UK.CPK	D0_2_2.txt	txt	TEXT_CONTAINER	text corpus	1146	1db314c3	1243	aaa2d491
+Odin2_OR_UK.CPK	D0_2_3.txt	txt	LANGUAGE_INDEPENDENT	other	69	24be90b2	69	24be90b2
+Odin2_OR_UK.CPK	D0_2_4.txt	txt	LANGUAGE_INDEPENDENT	other	70	f5a77967	70	f5a77967
+Odin2_OR_UK.CPK	D0_6_1.txt	txt	TEXT_CONTAINER	text corpus	1307	22d5ddbd	1452	fea2f6e0
+Odin2_OR_UK.CPK	D1_1.txt	txt	TEXT_CONTAINER	text corpus	1034	65f2a3d4	1241	4b5639d4
+Odin2_OR_UK.CPK	D1_2.txt	txt	TEXT_CONTAINER	text corpus	1190	454425e1	1314	09701160
+Odin2_OR_UK.CPK	D1_3.txt	txt	TEXT_CONTAINER	text corpus	331	35787191	355	954d1a26
+Odin2_OR_UK.CPK	D1_4.txt	txt	TEXT_CONTAINER	text corpus	844	4221269e	1018	c88a3e96
+Odin2_OR_UK.CPK	D1_6.txt	txt	TEXT_CONTAINER	text corpus	934	a712090b	998	fa29c132
+Odin2_OR_UK.CPK	D2_1.txt	txt	TEXT_CONTAINER	text corpus	811	da1cd4b9	925	aaf8a18e
+Odin2_OR_UK.CPK	D2_2.txt	txt	TEXT_CONTAINER	text corpus	1592	eb31d20b	1798	3797b46e
+Odin2_OR_UK.CPK	D2_3.txt	txt	TEXT_CONTAINER	text corpus	350	3d025fb8	405	54fcfac2
+Odin2_OR_UK.CPK	D2_4.txt	txt	TEXT_CONTAINER	text corpus	708	da128c2c	749	0ea776dd
+Odin2_OR_UK.CPK	D2_6.txt	txt	TEXT_CONTAINER	text corpus	1412	f9ef2bf3	1529	7d93a7a6
+Odin2_OR_UK.CPK	D3_1.txt	txt	TEXT_CONTAINER	text corpus	965	c2de787b	1127	7e590637
+Odin2_OR_UK.CPK	D3_2.txt	txt	TEXT_CONTAINER	text corpus	1285	08d706bf	1469	501b630a
+Odin2_OR_UK.CPK	D3_3.txt	txt	TEXT_CONTAINER	text corpus	264	57fb502c	300	49951c89
+Odin2_OR_UK.CPK	D3_4.txt	txt	TEXT_CONTAINER	text corpus	782	0c33084f	910	4c988041
+Odin2_OR_UK.CPK	D3_6.txt	txt	TEXT_CONTAINER	text corpus	1589	91b08206	1664	a9fc5b06
+Odin2_OR_UK.CPK	D4_1.txt	txt	TEXT_CONTAINER	text corpus	505	12abf2c3	560	31dbded6
+Odin2_OR_UK.CPK	D4_2.txt	txt	TEXT_CONTAINER	text corpus	1423	bf1cdfd6	1483	8a1064bc
+Odin2_OR_UK.CPK	D4_3.txt	txt	TEXT_CONTAINER	text corpus	293	ef239bdc	329	4dcbc9e1
+Odin2_OR_UK.CPK	D4_4.txt	txt	TEXT_CONTAINER	text corpus	1315	9e812772	1490	74f71b1e
+Odin2_OR_UK.CPK	D4_6.txt	txt	TEXT_CONTAINER	text corpus	773	93455efa	831	a948c4fe
+Odin2_OR_UK.CPK	D5_1.txt	txt	TEXT_CONTAINER	text corpus	489	7b445553	575	f0017157
+Odin2_OR_UK.CPK	D5_2.txt	txt	TEXT_CONTAINER	text corpus	1148	0784cbd2	1251	7eba3187
+Odin2_OR_UK.CPK	D5_3.txt	txt	TEXT_CONTAINER	text corpus	253	9ee89db4	267	9f642b18
+Odin2_OR_UK.CPK	D5_4.txt	txt	TEXT_CONTAINER	text corpus	1004	e3a3616d	1109	8603ae31
+Odin2_OR_UK.CPK	D5_6.txt	txt	TEXT_CONTAINER	text corpus	1097	38f0ed00	1113	a6d9c6bc
+Odin2_OR_UK.CPK	D6_1.txt	txt	TEXT_CONTAINER	text corpus	400	db92cc81	440	4cabcc7e
+Odin2_OR_UK.CPK	D6_2.txt	txt	TEXT_CONTAINER	text corpus	919	b4c26d94	1090	7e14bf81
+Odin2_OR_UK.CPK	D6_3.txt	txt	TEXT_CONTAINER	text corpus	255	d75fdd1e	289	268b8ffc
+Odin2_OR_UK.CPK	D6_4.txt	txt	TEXT_CONTAINER	text corpus	1667	841b30a9	1972	155d379f
+Odin2_OR_UK.CPK	D6_6.txt	txt	TEXT_CONTAINER	text corpus	840	2e8198bc	960	df734417
+Odin2_OR_UK.CPK	D7_1.txt	txt	TEXT_CONTAINER	text corpus	937	334e307c	1094	48597626
+Odin2_OR_UK.CPK	D7_2.txt	txt	TEXT_CONTAINER	text corpus	1561	67dfaefe	1824	c73f1188
+Odin2_OR_UK.CPK	D7_3.txt	txt	TEXT_CONTAINER	text corpus	304	38b851ee	368	50d8fd2c
+Odin2_OR_UK.CPK	D7_4.txt	txt	TEXT_CONTAINER	text corpus	1056	a90a95c5	1192	64c81fb9
+Odin2_OR_UK.CPK	D7_6.txt	txt	TEXT_CONTAINER	text corpus	1844	3796496c	2043	6d518f6b
+Odin2_OR_UK.CPK	E0_2_1.txt	txt	TEXT_CONTAINER	chapter prologue cards	345	7f309d33	375	863a2ee5
+Odin2_OR_UK.CPK	E0_2_2.txt	txt	TEXT_CONTAINER	text corpus	1855	f5cb05bb	2100	5e72d907
+Odin2_OR_UK.CPK	E0_2_3.txt	txt	LANGUAGE_INDEPENDENT	other	70	f5a77967	70	f5a77967
+Odin2_OR_UK.CPK	E0_2_4.txt	txt	LANGUAGE_INDEPENDENT	other	70	f5a77967	70	f5a77967
+Odin2_OR_UK.CPK	E0_6_1.txt	txt	TEXT_CONTAINER	text corpus	1647	3b3624ba	1998	d66ec010
+Odin2_OR_UK.CPK	E1_1.txt	txt	TEXT_CONTAINER	text corpus	879	14b1d8fd	1025	d7c27336
+Odin2_OR_UK.CPK	E1_2.txt	txt	TEXT_CONTAINER	text corpus	2437	39374a46	2616	c7013905
+Odin2_OR_UK.CPK	E1_3.txt	txt	TEXT_CONTAINER	text corpus	293	ef239bdc	330	686dd9b6
+Odin2_OR_UK.CPK	E1_4.txt	txt	TEXT_CONTAINER	text corpus	1679	a636572e	1772	9b8a1403
+Odin2_OR_UK.CPK	E1_6.txt	txt	TEXT_CONTAINER	text corpus	1269	23185f97	1440	c8914164
+Odin2_OR_UK.CPK	E2_1.txt	txt	TEXT_CONTAINER	text corpus	899	9faea3b0	1046	ea7048ad
+Odin2_OR_UK.CPK	E2_2.txt	txt	TEXT_CONTAINER	text corpus	1514	20e1f970	1569	d8d725f4
+Odin2_OR_UK.CPK	E2_3.txt	txt	TEXT_CONTAINER	text corpus	217	9553476c	262	316dfad5
+Odin2_OR_UK.CPK	E2_4.txt	txt	TEXT_CONTAINER	text corpus	1003	87ae2ccb	1172	c9f6140c
+Odin2_OR_UK.CPK	E2_6.txt	txt	TEXT_CONTAINER	text corpus	1373	f60af17d	1431	b8e05cb0
+Odin2_OR_UK.CPK	E3_1.txt	txt	TEXT_CONTAINER	text corpus	517	5dd065f4	509	467dcfb1
+Odin2_OR_UK.CPK	E3_2.txt	txt	TEXT_CONTAINER	text corpus	1490	ebacf72e	1646	3338c991
+Odin2_OR_UK.CPK	E3_3.txt	txt	TEXT_CONTAINER	text corpus	350	3d025fb8	413	c6dc2172
+Odin2_OR_UK.CPK	E3_4.txt	txt	TEXT_CONTAINER	text corpus	1097	2d3ea1c8	1311	a818731e
+Odin2_OR_UK.CPK	E3_6.txt	txt	TEXT_CONTAINER	text corpus	1037	d37be8d7	1125	db0d5d0a
+Odin2_OR_UK.CPK	E4_1.txt	txt	TEXT_CONTAINER	text corpus	563	65f7748a	594	48f06ca6
+Odin2_OR_UK.CPK	E4_2.txt	txt	TEXT_CONTAINER	text corpus	982	bb33cbbd	1030	7a22c1cb
+Odin2_OR_UK.CPK	E4_3.txt	txt	TEXT_CONTAINER	text corpus	281	0542cfe4	283	83940fce
+Odin2_OR_UK.CPK	E4_4.txt	txt	TEXT_CONTAINER	text corpus	1056	d216f978	1179	438d638b
+Odin2_OR_UK.CPK	E4_6.txt	txt	TEXT_CONTAINER	text corpus	1822	28f01cb5	2018	3cc3cc16
+Odin2_OR_UK.CPK	E5_1.txt	txt	TEXT_CONTAINER	text corpus	912	dfec7e7d	1030	be0c099d
+Odin2_OR_UK.CPK	E5_2.txt	txt	TEXT_CONTAINER	text corpus	2026	6ab92e7b	2283	b0d93852
+Odin2_OR_UK.CPK	E5_3.txt	txt	TEXT_CONTAINER	text corpus	183	5d6bea3b	212	4d640e29
+Odin2_OR_UK.CPK	E5_4.txt	txt	TEXT_CONTAINER	text corpus	1767	a366b396	1995	6cc4d736
+Odin2_OR_UK.CPK	E5_6.txt	txt	TEXT_CONTAINER	text corpus	1914	f6b99900	2028	ecf0b7ed
+Odin2_OR_UK.CPK	E6_1.txt	txt	TEXT_CONTAINER	text corpus	544	7cac5b29	590	f6117b22
+Odin2_OR_UK.CPK	E6_2.txt	txt	TEXT_CONTAINER	text corpus	955	acb5494a	1054	c7389d2f
+Odin2_OR_UK.CPK	E6_3.txt	txt	TEXT_CONTAINER	text corpus	391	4612b3a7	463	24e8a3b3
+Odin2_OR_UK.CPK	E6_4.txt	txt	TEXT_CONTAINER	text corpus	1468	497b8b9d	1575	82fe51b8
+Odin2_OR_UK.CPK	E6_6.txt	txt	TEXT_CONTAINER	text corpus	1788	d683d8a7	2029	32ba9ae5
+Odin2_OR_UK.CPK	E7_1.txt	txt	TEXT_CONTAINER	text corpus	407	25395c0c	442	b1e399c5
+Odin2_OR_UK.CPK	E7_2.txt	txt	TEXT_CONTAINER	text corpus	2093	edf3fb9c	2540	5bcf6e31
+Odin2_OR_UK.CPK	E7_3.txt	txt	TEXT_CONTAINER	text corpus	187	3a420791	201	e4bf9e2d
+Odin2_OR_UK.CPK	E7_4.txt	txt	TEXT_CONTAINER	text corpus	1894	7c356aaa	2146	1e3426c6
+Odin2_OR_UK.CPK	E7_6.txt	txt	TEXT_CONTAINER	text corpus	2100	fd005d01	2427	92d66cd9
+Odin2_OR_UK.CPK	EventMsgInfo.bin	bin	TEXT_CONTAINER	text corpus	53840	1e92e4d9	53840	4c3436ae
+Odin2_OR_UK.CPK	F0_1_0.txt	txt	TEXT_CONTAINER	chapter prologue cards	369	18371ad5	391	fec50042
+Odin2_OR_UK.CPK	F0_1_1.txt	txt	TEXT_CONTAINER	text corpus	1306	af851b6c	1521	3700583d
+Odin2_OR_UK.CPK	F0_1_2.txt	txt	TEXT_CONTAINER	text corpus	1165	9c514f1c	1318	ed00345d
+Odin2_OR_UK.CPK	F0_1_3.txt	txt	TEXT_CONTAINER	text corpus	629	386e3e5c	727	f8455d54
+Odin2_OR_UK.CPK	F0_1_4.txt	txt	TEXT_CONTAINER	text corpus	799	c8532772	939	6b02827d
+Odin2_OR_UK.CPK	F0_1_5.txt	txt	TEXT_CONTAINER	text corpus	848	da53c466	1001	feabbe66
+Odin2_OR_UK.CPK	F1_1_0.txt	txt	TEXT_CONTAINER	text corpus	984	4d701144	1102	76059be3
+Odin2_OR_UK.CPK	F1_1_2.txt	txt	TEXT_CONTAINER	text corpus	1036	a49ff5a0	1100	db4fc998
+Odin2_OR_UK.CPK	F1_1_3.txt	txt	TEXT_CONTAINER	text corpus	880	97f0131e	1032	75159de6
+Odin2_OR_UK.CPK	F1_1_5.txt	txt	TEXT_CONTAINER	text corpus	745	3635eb28	853	dc8dd82e
+Odin2_OR_UK.CPK	F1_2_0.txt	txt	TEXT_CONTAINER	text corpus	566	4374deae	702	0abd9dde
+Odin2_OR_UK.CPK	F1_2_2.txt	txt	TEXT_CONTAINER	text corpus	1197	bbf09b6c	1398	9ac7ce4b
+Odin2_OR_UK.CPK	F1_2_3.txt	txt	TEXT_CONTAINER	text corpus	936	7b213576	1064	c552cc83
+Odin2_OR_UK.CPK	F1_2_5.txt	txt	TEXT_CONTAINER	text corpus	732	81e5c30b	803	7c64ea5a
+Odin2_OR_UK.CPK	F2_1_0.txt	txt	TEXT_CONTAINER	text corpus	807	43c4b29a	886	9e4f838c
+Odin2_OR_UK.CPK	F2_1_2.txt	txt	TEXT_CONTAINER	text corpus	744	2a15a80c	820	b1e80110
+Odin2_OR_UK.CPK	F2_1_4.txt	txt	TEXT_CONTAINER	text corpus	926	e96ad263	1142	75d0f476
+Odin2_OR_UK.CPK	F2_2_0.txt	txt	TEXT_CONTAINER	text corpus	578	a198aaea	617	f21915a2
+Odin2_OR_UK.CPK	F2_2_2.txt	txt	TEXT_CONTAINER	text corpus	1009	a85fd71a	1124	8345ae99
+Odin2_OR_UK.CPK	F2_2_4.txt	txt	TEXT_CONTAINER	text corpus	968	6de5297e	1151	f30640fc
+Odin2_OR_UK.CPK	F3_1_0.txt	txt	TEXT_CONTAINER	text corpus	470	6b76f496	576	c326b75d
+Odin2_OR_UK.CPK	F3_1_1.txt	txt	TEXT_CONTAINER	text corpus	956	4d1e1e01	1135	7b757e3c
+Odin2_OR_UK.CPK	F3_1_3.txt	txt	TEXT_CONTAINER	text corpus	891	08f53af8	1030	2042832d
+Odin2_OR_UK.CPK	F3_1_4.txt	txt	TEXT_CONTAINER	text corpus	803	9e85ea97	957	95f18ad5
+Odin2_OR_UK.CPK	F3_2_0.txt	txt	TEXT_CONTAINER	text corpus	725	a71c2d1b	888	7c5be258
+Odin2_OR_UK.CPK	F3_2_1.txt	txt	TEXT_CONTAINER	text corpus	587	65aa82ac	665	399c8c02
+Odin2_OR_UK.CPK	F3_2_3.txt	txt	TEXT_CONTAINER	text corpus	763	c4e2a500	905	fa72725e
+Odin2_OR_UK.CPK	F3_2_4.txt	txt	TEXT_CONTAINER	text corpus	652	a309ef26	703	c7d890d3
+Odin2_OR_UK.CPK	F4_1_0.txt	txt	TEXT_CONTAINER	text corpus	356	ab938568	403	496055d9
+Odin2_OR_UK.CPK	F4_1_5.txt	txt	TEXT_CONTAINER	text corpus	822	ac171880	916	276713ea
+Odin2_OR_UK.CPK	F4_2_0.txt	txt	TEXT_CONTAINER	text corpus	327	004d3ad5	345	17a93e89
+Odin2_OR_UK.CPK	F4_2_5.txt	txt	TEXT_CONTAINER	text corpus	671	d04ff0b8	782	c75a8444
+Odin2_OR_UK.CPK	F5_1_0.txt	txt	TEXT_CONTAINER	text corpus	398	8aa05cfb	461	674d085e
+Odin2_OR_UK.CPK	F5_1_1.txt	txt	TEXT_CONTAINER	text corpus	704	ea77aa74	763	ad88a475
+Odin2_OR_UK.CPK	F5_2_0.txt	txt	TEXT_CONTAINER	text corpus	411	80cfe766	426	845e2b6e
+Odin2_OR_UK.CPK	F5_2_1.txt	txt	TEXT_CONTAINER	text corpus	664	04f18773	756	e361c292
+Odin2_OR_UK.CPK	F6_1.txt	txt	TEXT_CONTAINER	text corpus	413	f78532aa	469	c8027348
+Odin2_OR_UK.CPK	F6_2.txt	txt	TEXT_CONTAINER	text corpus	833	df660c52	925	59976fe3
+Odin2_OR_UK.CPK	F7_1_1.txt	txt	TEXT_CONTAINER	text corpus	1554	9fb3300d	1650	ccc965af
+Odin2_OR_UK.CPK	F7_1_2.txt	txt	TEXT_CONTAINER	text corpus	620	cd286ebd	701	83af0352
+Odin2_OR_UK.CPK	F7_2.txt	txt	TEXT_CONTAINER	text corpus	2333	7c42f90a	2648	97f68c9b
+Odin2_OR_UK.CPK	F7_3.txt	txt	TEXT_CONTAINER	text corpus	1443	2a675840	1676	ff3293ce
+Odin2_OR_UK.CPK	fin1.ftx	ftx	DUPLICATE	same English bytes as Odin2_RE_UK.CPK:GUI/HD_fin1.ftx	1049360	01ad76aa	1049360	a020e5f9
+Odin2_OR_UK.CPK	fin1.mbs	mbs	LAYOUT	ending	15200	785d421b	15200	7208896f
+Odin2_OR_UK.CPK	fin2.ftx	ftx	DUPLICATE	same English bytes as Odin2_RE_UK.CPK:GUI/HD_fin2.ftx	2622224	4b293375	2622224	21a62ceb
+Odin2_OR_UK.CPK	fin2.mbs	mbs	LAYOUT	ending	18416	4b33c011	18416	de8ab679
+Odin2_OR_UK.CPK	fin3.ftx	ftx	DUPLICATE	same English bytes as Odin2_RE_UK.CPK:GUI/HD_fin3.ftx	8913680	420e5eaf	8913680	304127db
+Odin2_OR_UK.CPK	G0_2_1.txt	txt	TEXT_CONTAINER	text corpus	191	82edd626	220	32cf08f4
+Odin2_OR_UK.CPK	G0_3_1.txt	txt	TEXT_CONTAINER	text corpus	158	e5b6e967	160	a454715b
+Odin2_OR_UK.CPK	G0_4_1.txt	txt	TEXT_CONTAINER	text corpus	271	9547eb47	276	f39734f9
+Odin2_OR_UK.CPK	G0_5_1.txt	txt	TEXT_CONTAINER	text corpus	189	3e4c3446	213	f09ab118
+Odin2_OR_UK.CPK	G6_1.txt	txt	TEXT_CONTAINER	text corpus	457	5b8df645	528	f0ed80c2
+Odin2_OR_UK.CPK	Installation.ftx	ftx	DUPLICATE	same English bytes as Odin2_RE_UK.CPK:GUI/HD_Installation.ftx	262608	2d154a5b	524752	fba99ba9
+Odin2_OR_UK.CPK	Installation.mbs	mbs	LAYOUT	other menus	396912	272990e1	441440	796d71ef
+Odin2_OR_UK.CPK	Interface.ftx	ftx	DUPLICATE	same English bytes as Odin2_RE_UK.CPK:GUI/HD_Interface.ftx	5506960	fe6f717c	5506960	fd05f64f
+Odin2_OR_UK.CPK	Interface.mbs	mbs	LAYOUT	HUD, save/load, confirmation	657696	6c959507	665344	6ba5b123
+Odin2_OR_UK.CPK	Kitchin.ftx	ftx	DUPLICATE	same English bytes as Odin2_RE_UK.CPK:GUI/HD_Kitchin.ftx	2097616	a0269772	2097616	1af51bbe
+Odin2_OR_UK.CPK	Kitchin.mbs	mbs	LAYOUT	generic UI	86064	133e3444	86064	0642ee1b
+Odin2_OR_UK.CPK	logo.ftx	ftx	DUPLICATE	same English bytes as Odin2_RE_UK.CPK:GUI/HD_logo.ftx	3738192	09d815d0	3738192	422a8854
+Odin2_OR_UK.CPK	Logo.mbs	mbs	LAYOUT	title	73648	f2368597	74064	6e6431b2
+Odin2_OR_UK.CPK	Mode_Select.ftx	ftx	DUPLICATE	same English bytes as Odin2_RE_UK.CPK:GUI/HD_Mode_Select.ftx	2097616	8a37ef3e	2097616	ef85e589
+Odin2_OR_UK.CPK	op_press_start.ftx	ftx	TITLE	title	524752	49f47524	524752	401b4d8c
+Odin2_OR_UK.CPK	op_press_start.mbs	mbs	LAYOUT	title	1088	95c59e08	1136	cb89f8a8
+Odin2_OR_UK.CPK	Sysmsg.txt	txt	TEXT_CONTAINER	text corpus	115017	8422e998	122015	9dc3ca2d
+Odin2_OR_UK.CPK	title.ftx	ftx	DUPLICATE	same English bytes as Odin2_RE_UK.CPK:GUI/HD_title.ftx	24449424	18910f2d	24449424	2561b520
+Odin2_OR_UK.CPK	title.mbs	mbs	LAYOUT	title	124064	43fc53d1	124944	f4751b22
+Odin2_EU_PATCH1_RE_UK.CPK	GUI/HD_Bookshelf.ftx	ftx	BOOKSHELF	Bookshelf	524752	79677109	524752	e794fb89
+Odin2_EU_PATCH1_RE_UK.CPK	GUI/HD_ChrSelect.ftx	ftx	TITLE	other menus	25166608	cc591393	25166608	8dcd4d4b
+Odin2_EU_PATCH1_RE_UK.CPK	GUI/HD_Interface.ftx	ftx	HUD	HUD, save/load, confirmation	4982672	3aa386c2	4982672	daa34f6f
+Odin2_EU_PATCH1_RE_UK.CPK	GUI/HD_title.ftx	ftx	TITLE	title	24449424	1d02d31d	24449424	820e9537
+Odin2_EU_PATCH1_RE_UK.CPK	GUI/REHD_ChrSelect.mbs	mbs	LAYOUT	other menus	27456	b62226db	27504	19c252cc
+Odin2_EU_PATCH1_RE_UK.CPK	GUI/REHD_Interface.mbs	mbs	LAYOUT	HUD, save/load, confirmation	1058576	b8d8d2bb	1096560	560f0092
+Odin2_EU_PATCH1_RE_UK.CPK	GUI/REHD_StageName.mbs	mbs	LAYOUT	stage/location cards	126288	b6f0993b	129712	33bbaff8
+Odin2_EU_PATCH1_RE_UK.CPK	GUI/REHD_title.mbs	mbs	LAYOUT	title	189184	2eae2a12	188432	b26d744a
+Odin2_EU_PATCH1_OR_UK.CPK	Bookshelf.ftx	ftx	DUPLICATE	same English bytes as Odin2_EU_PATCH1_RE_UK.CPK:GUI/HD_Bookshelf.ftx	524752	79677109	524752	e794fb89
+Odin2_EU_PATCH1_OR_UK.CPK	Interface.ftx	ftx	DUPLICATE	same English bytes as Odin2_EU_PATCH1_RE_UK.CPK:GUI/HD_Interface.ftx	4982672	3aa386c2	4982672	daa34f6f
+Odin2_EU_PATCH1_OR_UK.CPK	Interface.mbs	mbs	LAYOUT	HUD, save/load, confirmation	657696	64e13757	665344	18da3dd3
+Odin2_EU_PATCH1_OR_UK.CPK	op_press_start.ftx	ftx	TITLE	title	524752	72af8bc6	524752	1a6aac26
+Odin2_EU_PATCH1_OR_UK.CPK	op_press_start.mbs	mbs	LAYOUT	title	1328	62ba28bf	1376	159ebd02
+Odin2_EU_PATCH1_OR_UK.CPK	title.ftx	ftx	DUPLICATE	same English bytes as Odin2_EU_PATCH1_RE_UK.CPK:GUI/HD_title.ftx	24449424	1d02d31d	24449424	820e9537
+Odin2_EU_PATCH1_OR_UK.CPK	title.mbs	mbs	LAYOUT	title	124064	3243888c	124944	8249c495

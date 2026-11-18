@@ -466,7 +466,66 @@ struct PatchWriter {
         if (t.encrypted) CryptUtf(out);
         return out;
     }
+
+    static std::optional<ArchiveOverlay> Overlay(const CpkArchive& archive, uint64_t length,
+                                                 std::span<const std::pair<std::string, ChunkedBytes>> entries,
+                                                 std::string* error) {
+        CpkArchive a = archive;
+        ArchiveOverlay overlay;
+        uint64_t pos = length;
+        for (const auto& [path, data] : entries) {
+            const CpkEntry* entry = a.Find(path);
+            if (!entry) {
+                if (error) *error = "no " + path + " in the archive";
+                return std::nullopt;
+            }
+            pos = (pos + a.align() - 1) / a.align() * a.align();
+            Set(a.toc_, entry->row, "FileOffset", pos - a.toc_base());
+            Set(a.toc_, entry->row, "FileSize", data.size);
+            Set(a.toc_, entry->row, "ExtractSize", data.size);
+            for (size_t i = 0; i < data.chunks.size(); ++i) overlay.patches.emplace_back(pos + i * ChunkPool::kChunkSize, data.chunks[i]);
+            overlay.placed.push_back({entry->path, pos, data.size});
+            pos += data.size;
+        }
+        if (a.enable_toc_crc()) {
+            Set(a.header_, 0, "EnableTocCrc", 0);
+            Set(a.header_, 0, "EnableFileCrc", 0);
+        }
+        overlay.patches.emplace_back(a.toc_.file_pos, std::make_shared<const std::vector<uint8_t>>(Stored(a.toc_)));
+        overlay.patches.emplace_back(a.header_.file_pos, std::make_shared<const std::vector<uint8_t>>(Stored(a.header_)));
+        overlay.length = pos;
+        return overlay;
+    }
 };
+
+std::optional<ArchiveOverlay> OverlayEntries(const CpkArchive& archive, uint64_t length,
+                                             std::span<const std::pair<std::string, ChunkedBytes>> entries,
+                                             std::string* error) {
+    return PatchWriter::Overlay(archive, length, entries, error);
+}
+
+ChunkedBytes ChunkPool::Add(std::vector<uint8_t>&& bytes) {
+    ChunkedBytes out;
+    out.size = bytes.size();
+    for (size_t at = 0; at < bytes.size(); at += kChunkSize) {
+        const size_t n = std::min(kChunkSize, bytes.size() - at);
+        const uint32_t crc = Crc32(std::span<const uint8_t>(bytes.data() + at, n));
+        std::vector<SharedBytes>& same = by_crc_[crc];
+        SharedBytes found;
+        for (const SharedBytes& c : same) {
+            if (c->size() == n && std::memcmp(c->data(), bytes.data() + at, n) == 0) {
+                found = c;
+                break;
+            }
+        }
+        if (!found) {
+            found = std::make_shared<const std::vector<uint8_t>>(bytes.begin() + at, bytes.begin() + at + n);
+            same.push_back(found);
+        }
+        out.chunks.push_back(std::move(found));
+    }
+    return out;
+}
 
 bool CpkArchive::Open(const std::filesystem::path& file, std::string* error) {
     UtfTable header, toc;

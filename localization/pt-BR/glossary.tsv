@@ -1,0 +1,153 @@
+category	source	pt_br	status	notes
+character	Gwendolyn	Gwendolyn	approved	Proper names stay as the English spells them.
+character	Cornelius	Cornelius	approved
+character	Mercedes	Mercedes	approved
+character	Oswald	Oswald	approved
+character	Velvet	Velvet	approved
+character	Odin	Odin	approved
+character	Ingway	Ingway	approved
+character	Onyx	Onyx	approved
+character	Melvin	Melvin	approved
+character	Brigan	Brigan	approved
+character	Griselda	Griselda	approved
+character	Edgar	Edgar	approved
+character	Elfaria	Elfaria	approved
+character	Beldor	Beldor	approved
+character	Onionne	Onionne	approved
+character	Brom	Brom	approved
+character	Odette	Odette	approved
+character	Belial	Belial	approved
+character	Leventhan	Leventhan	approved
+character	Wagner	Wagner	approved
+character	Gallon	Gallon	approved
+character	Alice	Alice	approved
+place	Ringford	Ringford	approved
+place	Ragnanival	Ragnanival	approved
+place	Titania	Titania	approved	No accent: it is a proper name.
+place	Valentine	Valentine	approved	Kingdom and king.
+place	Volkenon	Volkenon	approved
+place	Elrit	Elrit	approved
+place	Nebulapolis	Nebulapolis	approved
+place	Winterhorn Ridge	Cordilheira de Winterhorn	approved
+place	Volkenon Lava Pit	Fosso de Lava de Volkenon	approved
+place	Titania Capital	Capital de Titania	approved
+place	Netherworld	Submundo	approved
+place	The Cauldron	o Caldeirão	approved	Capital C when it names the place: o Caldeirão.
+place	Cauldron	Caldeirão	approved
+place	The Deep Forest	a Floresta Profunda	approved
+place	Fairyland	Terra das Fadas	approved
+place	Fairy Kingdom	Reino das Fadas	approved
+place	Fire Kingdom	Reino do Fogo	approved
+place	World Tree	Árvore do Mundo	approved
+place	Pooka Village	Vila Pooka	approved
+place	Pooka Kitchen	Cozinha Pooka	approved
+place	Rabbit Cafe	Café do Coelho	approved
+place	Touring Restaurant	Restaurante Itinerante	approved
+title	Demon Lord	Lorde Demônio	approved	The Demon Lord = o Lorde Demônio.
+title	King Odin	Rei Odin	approved
+title	Your Majesty	Vossa Majestade	approved
+title	Princess	Princesa	approved
+title	Prince	Príncipe	approved
+title	Queen	Rainha	approved
+title	King	Rei	approved
+title	Lord	Lorde	approved	Lord Brigan = Lorde Brigan.
+title	Pooka Prince	Príncipe Pooka	approved
+title	Shadow Knight	Cavaleiro das Sombras	approved
+title	Three Wise Men	Três Sábios	approved
+title	Inferno King	Rei do Inferno	approved
+title	Valkyrie	Valquíria	approved
+title	Fairy Queen	Rainha das Fadas	approved
+title	Witch	Bruxa	approved
+people	Pooka	Pooka	approved	Plural: Pookas.
+people	Aesir	Aesir	approved
+people	Vanir	Vanir	approved
+people	Dwarves	anões	approved
+people	Fairies	fadas	approved
+system	Psypher	Psypher	approved	Plural: Psyphers. Psypher skill = habilidade de Psypher.
+system	Phozon	Phozon	approved	Plural: Phozons.
+system	Prism	Prisma	approved
+system	Crystal	Cristal	approved
+system	POW	POW	approved
+system	PP	PP	approved
+system	HP	HP	approved
+system	EXP	EXP	approved	EXP points = pontos de EXP.
+system	Max	Máx.	approved
+system	Level	Nível	approved
+system	Level Up	Subir de nível	approved
+system	Skill	Habilidade	approved
+system	Ability	Aptidão	approved	Passive abilities; keeps them apart from skills.
+system	Berserk	Fúria	approved
+system	Guard	Defesa	approved	As a verb: defender.
+system	Guard Break	Quebra de Defesa	approved
+system	Exact Evasion	Esquiva Perfeita	approved
+system	Glide	Planar	approved
+system	Slide	Deslizar	approved
+system	Overkill	Golpe Excessivo	approved
+system	Chain	Combo	approved	20-Chain = Combo de 20.
+system	Item Ring	Anel de Itens	approved
+system	Item Box	Baú de Itens	approved
+system	Magic Potion	Poção Mágica	approved
+system	Alchemy	Alquimia	approved
+system	Mix	Mistura	approved	Alchemy mix.
+system	Example Mix	Exemplo de Mistura	approved
+system	Material	Material	approved
+system	Recipe	Receita	approved
+system	Ingredients	Ingredientes	approved
+system	Text Archive	Arquivo de Textos	approved
+system	Bookshelf	Estante	approved
+system	Notes	Notas	approved
+system	Prophecies	Profecias	approved
+system	Special	Especial	approved
+system	Cafe	Café	approved
+system	Kitchen	Cozinha	approved
+system	Tutorial	Tutorial	approved
+system	Area Completion Reward	Recompensa por concluir a área	approved
+system	Armageddon	Armagedom	approved
+system	Prelude	Prelúdio	approved
+system	Epilogue	Epílogo	approved
+system	Chapter	Capítulo	approved
+system	Act	Ato	approved
+system	Verse	Verso	approved
+system	Refined	Refinado	approved	Game mode.
+system	Classic	Clássico	approved	Game mode.
+system	New Game	Novo Jogo	approved
+system	Save	Salvar	approved	Save data = dados salvos.
+system	Load	Carregar	approved
+system	Options	Opções	approved
+system	Exit Game	Sair do Jogo	approved	Title menu row added by the port.
+currency	Ariel Coin	Moeda Ariel	approved
+currency	Valentinian Coin	Moeda Valentiniana	approved
+currency	Gold	Ouro	approved
+item	Mulberry	Amora	approved	Mulberry Seed = Semente de Amora.
+item	Healing Tonic	Tônico Curativo	approved
+item	Antidote	Antídoto	approved
+item	Napple	Napple	approved	Invented plant names stay as they are.
+item	Muggle	Muggle	approved
+item	Baromett	Baromett	approved
+item	Rosemile	Rosemile	approved
+item	Ruewort	Ruewort	approved
+item	Turny	Turny	approved
+item	Mandragora	Mandrágora	approved
+item	Black Sword	Espada Negra	approved
+##(KEY)	##(ATTACK)	##(ATTACK)	approved	Button tags and @#(N) glyphs are copied exactly.
+creature	Demon Beast	Besta Demoníaca	approved
+creature	Beast of Armageddon	Besta do Armagedom	approved
+people	Goblin	goblin	approved	Plural: goblins.
+people	Halja	Halja	approved	Feminine: a Halja, as Halja.
+weapon	Belderiver	Belderiver	approved	Masculine, like Psypher: o Belderiver. Also o Riblam, o Balor.
+place	Fairy Forest	Floresta das Fadas	approved
+place	Horn Mountain	Monte Horn	approved
+system	Status Effect	Efeito de status	approved
+weapon	Chain (Velvet's, Gallon's weapon)	corrente	approved	The weapon chain is corrente; only a hit chain is Combo.
+system	Ability Up	Aprimorada	approved	Knockdown Ability Up = Derrubada Aprimorada; other ... Up upgrades = ... Ampliado/Ampliada.
+item	Krois's Memo	Nota de Krois	approved	Archive notes: Mother's Note = Bilhete da Mãe.
+item	French Onion Soup	Sopa de Cebola	approved	Short dish names for the item lists.
+item	Herb-Roasted Shrimp	Camarão às Ervas	approved
+item	Yogurt Fruit Mousse	Musse de Iogurte e Frutas	approved
+item	Chips Salad	Salada com Chips	approved	Same name on the Kitchen page.
+place	Old Castle	Velho Castelo	approved	Not Castelo Antigo.
+place	Attic	Sótão	approved
+place	Barren Wasteland	Terra Devastada	approved	Stage card.
+place	Secluded Caverns	Cavernas Isoladas	approved	Stage card.
+title	Sorcerer	Feiticeiro	approved	Feiticeiro Beldor, Feiticeiro Skuldi.
+title	Forward Headquarters	Quartel Avançado	approved	Stage card.

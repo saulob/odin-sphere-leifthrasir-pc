@@ -1,0 +1,1081 @@
+{
+ "kind": "archive",
+ "source": "CUSA05083-1.00",
+ "resources": [
+  {
+   "resource": "ArchiveViewer/ArchiveList.txt",
+   "units": []
+  },
+  {
+   "resource": "ArchiveViewer/ArchiveListBookShelf.txt",
+   "units": []
+  },
+  {
+   "resource": "ArchiveViewer/Cafe00.txt",
+   "units": [
+    "\r\n@c( 174, 57, 32 )@y( 3 )      Enjoy the rich aroma\r\n                   of fine chocolate!@/c@/y\r\n@s( 0, 0.3 )\r\n@s( 1.2 )@i@b               Praline@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 115 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 0.9 )　　 　 Rosemile       Pure Cacao\r\n@/s\r\n",
+    "\r\n@y(4)　　　The Perfect Gift!\r\n\r\n　As a takeout gift,\r\n　       please take a free\r\n　@b           　\"Ginger Cookie\"@/b\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe01.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )     Crispity! Crunchity! Munchity!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　 　@i@b　　Nut Cookie　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 0.9 )　    　 　Rosemile           Egg　\r\n@/s\r\n",
+    "\r\n@y(4)　　　The Perfect Gift!\r\n\r\n　As a takeout gift,\r\n　       please take a free\r\n　@b           　\"Ginger Cookie\"@/b\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe02.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )    A delicate and light fruit pastry@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 ) 　　@i@b　 Mulberry Tart 　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 0.9 )　　　 　Mulberry         Egg\r\n@/s\r\n",
+    "\r\n@y(4)　　　The Perfect Gift!\r\n\r\n　As a takeout gift,\r\n　       please take a free\r\n　@b           　\"Ginger Cookie\"@/b\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe03.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )          Moist and chocolatey!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )   　@i@b　　　Brownie　　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@/y\r\n@s( 0.9 )　Ruewort Seed       Pure Cacao\r\n@s( 0.9 )　　　　  Bad Grapes               Egg\r\n@/s\r\n",
+    "\r\n@y(4)　　　The Perfect Gift!\r\n\r\n　As a takeout gift,\r\n　       please take a free\r\n　@b           　\"Ginger Cookie\"@/b\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe04.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )　        Enjoy it while it's hot!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　          　@i@bCrêpe@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 0.9 )　　　　　   　　Milk　　　　　　\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe05.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )　　   Sweets made to perfection@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )   @i@b Marmalade Crêpe, 3 Ways @/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@/y\r\n@s( 0.9 )　　　Napple           Mulberry\r\n@s( 0.9 )　　　　　   Grape                Milk\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe06.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )　　 　　Always fried fresh!　@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　　@i@b　　　 Churro 　　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 0.9 )　　　     　  　　Egg　　　　　　\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe07.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )              A crispy delight\r\n@/c@s( 0, 0.733 )\r\n@s( 1.2 )　　@i@b　Chocolate Churro　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 0.9 )　　　 Pure Cacao           Egg\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe08.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )     Made with the plumpest napples@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 ) 　　@i@b　   Napple Pie 　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 0.9 )　　     Napple             Ruewort\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe09.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )　  Sweet berries and crispy crust!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )  　 @i@bMulberry Mille-feuille@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 0.9 )　　　Mulberry     Milk           Egg\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe10.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )        　Rolled and baked crisp@/c@y( 14 )\r\n@s( 0, 0 )\r\n@s( 1.2 )　  　@i@bFruit & Nut Strudel@/i@/b@y( 150 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c\r\n@s( 0.9 )　Ruewort Seed        Grapes\r\n@s( 0.9 )　　　　Withered Napple         Egg\r\n@/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe11.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )　　        Pastry with cheese@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　 　@i@b　　 Cheesecake 　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 0.9 )　　     　Cheese            Egg\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe12.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )       An elegant and creamy taste@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )   　　@i@bYogurt Cheesecake@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 0.9 )　　　Cheese     Yogurt        Egg\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe13.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1 )@y(0)@c( 174, 57, 32 )　  The classic snack made the\r\n                    old-fashioned way@/c@s( 0, 0.733 )\r\n\r\n@s( 1.2 )    　@i@b　　 Pancakes 　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 0.9 )　    　  　Milk             Egg\r\n@/s\r\n\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe14.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )         Creamy chocolate delight!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　 　@i@b　Chocolate Fondant　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 0.9 )　　Pure Cacao     Milk         Egg\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe15.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 0.9 )@c( 174, 57, 32 )     Semi-sweet and delightfully citrusy@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　  　@i@b　 Muggle Confit 　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 0.9 )　　　　    　　Muggle\r\n@/s\r\n\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe16.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )    　Pleasantly chilled and tangy!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )        　@i@bNapple Sorbet@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 12 )\r\n\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 6 )\r\n@s( 0.9 )　  　Napple       Turny       Milk\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe17.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 0.9 )@c( 174, 57, 32 ) 　A wonderfully soft and smooth treat@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )  　　@i@b　 Turny Mousse 　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 10 )\r\n\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c\r\n@s( 0.9 )　　　　 Turny                Milk\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe18.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 0.9 )@c( 174, 57, 32 )     One spoonful and you'll be hooked!@/c@y( 14 )\r\n@s( 0, 0 )\r\n@s( 1.2 )　  　@i@bIce Cream & Coulis@/i@/b\r\n\r\n\r\n\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@/y\r\n@s( 0.9 )　　Muggle              Turny\r\n@s( 0.9 )　　　　 　Mulberry                Egg\r\n@/s\r\n\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe19.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 0.86 )@c( 174, 57, 32 )   A fluffy dessert made with light cream@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　  @i@bMuggle Crémet d'Anjou@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@/y\r\n@s( 0.9 )　　　Muggle     Cheese       Egg\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe20.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )　      　A mouthful of bliss!@/c@y( 14 )\r\n@s( 0, 0 )\r\n@s( 1.2 )　　@i@bYogurt Cremet d'Anjou@/i@/b\r\n\r\n\r\n\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@/y\r\n@s( 0.9 )　　Muggle              Yogurt\r\n@s( 0.9 )　　　　　    Cheese             Egg\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe21.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 0.95 )@c( 174, 57, 32 )      Lightly sweetened \r\n                  and gracefully smooth@/c\r\n@s( 0, 0.1 )\r\n@s( 1.2 )  　　@i@b　Yogurt Mousse@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c\r\n@s( 0.9 )　　　   Yogurt               Egg\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe22.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )             Lots of mulberries! 　@/c@y( 14 )\r\n@s( 0, 0 )\r\n@s( 1.2 )　 　@i@bYogurt Fruit Mousse@/i@/b@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n\r\n\r\n\r\n\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c\r\n@s( 0.9 )　　Mulberry       Yogurt        Egg\r\n@/s\r\n\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe23.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )         Happy, fluffy meringue@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　     　@i@bFloating Island@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y(12)\r\n@/y@s( 0.9 )　Ruewort Seed       Mulberry\r\n@s( 0.9 )　　　         Napple              Egg\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe24.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 0.95 )@c( 174, 57, 32 )    A popular dessert that melts\r\n                           in your mouth@/c\r\n@s( 0, 0.1 )\r\n@s( 1.2 )　 　@i@b　　Blancmange　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 12 )\r\n@/y@s( 0.9 )　Rosemile              Mulberry\r\n@s( 0.9 )　　　　　  Napple                Milk\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Cafe25.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 0.95 )@c( 174, 57, 32 )        What's our secret?\r\n                 Well... It's a secret!@/c\r\n@s( 0, 0.1 )\r\n@s( 1.2 )　      　@i@bYogurt Gelato@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 12 )\r\n@/y@s( 0.9 )　Napple          Ruewort             Milk\r\n@s( 0.9 )　         Turny             Yogurt\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Dummy.txt",
+   "units": [
+    "\r\nDummy"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen00.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )      Crispy on the outside,\r\n                  tender on the inside!@/c@y( 10 )\r\n@s( 1.2 )　　@i@b 　　Grilled Lamb　　 @/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 12 )\r\n@s( 0.95 )　　　Habaneristo      Lamb Chop\r\n@/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen01.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )              Grab a bite to go!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 ) 　@i@b　　 Egg on Toast 　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 0.95 )　　　Hot Cross Bun    Egg\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen02.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 0.9 )@c( 81, 130, 72 )     Fresh shrimp and healthy veggies!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　 @i@b　　Seafood Salad　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 12 )\r\n@s( 0.875, 0.867 )　　Cubsbane            Onionne@/y\r\n@s( 0.875, 0.867 )　　　　       Turny                 Shrimp\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen03.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 0.95 )@c( 81, 130, 72 ) 　 Topped with our mulberry sauce@/c@y( 16 )\r\n@s( 0, 0 )\r\n@s( 1.2 )　　@i@bMulberry Seafood Salad@y( 5 )\r\n@s( 1.17, 1 )　　　@/i@/b@y( 120 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 12 )\r\n@s( 0.875, 0.867 )　Mulberry        Turny              Shrimp@/y\r\n@s( 0.875, 0.867 )　　　  Cubsbane          Onionne\r\n@/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen04.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )              A house specialty!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　    　@i@bSalmon Carpaccio@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 0.95 )　　Onionne    Fish Fillet      Cheese\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen05.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 0.90 )@c( 81, 130, 72 )     Recommended for a balanced diet!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　  　@i@b　　　Salad　　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@/y\r\n@s( 0.9  )　　Turny                 Onionne\r\n@s( 0.9  )　　    　　Carroteer                Egg\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen06.txt",
+   "units": [
+    "\r\n@s( 0,0.3 )\r\n@s( 1.0 )@c( 81, 130, 72 )            Mandragora deluxe!@/c\r\n@s( 0, 0.3 )\r\n@s( 1.2 )           @i@bMandra Salad　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 130 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c\r\n@s( 0.85 ) Cubsbane         Turny            Onionne\r\n@s( 0.85 )       Habaneristo         Carroteer       Egg\r\n@/s\r\n\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen07.txt",
+   "units": [
+    "\r\n@s( 0.95 )@c(  81, 130, 72 )        A new salad @y( 0 )\r\n              with a sensational crunch!　@/c@y( 4 )\r\n@s( 1.2 )　         @i@bChips Salad@y( 5 )\r\n@s( 1.17, 1.14 )　　　　　　@/i@/b@y( 105 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )　[Ingredients]@/c\r\n@s( 0.9 )　Ruewort Seed         Carroteer\r\n@s( 0.9 )　　　  　 Cubsbane              Shrimp\r\n@/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen08.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )　　    　Spice up your life!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　      @i@bSalmon Escabeche@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )　[Ingredients]@/c\r\n@s( 0.9 )　Habaneristo            Onionne\r\n@s( 0.9 )　　　　　  Carroteer         Fish Fillet\r\n@/s\r\n\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen09.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )            　Fried with care!@/c@y( 16 )\r\n@s( 0, 0 )\r\n@s( 1.2 )     　@i@bMuggle Escabeche@y( 5 )\r\n@s( 1.17, 1.14 )　　　　　　@/i@/b@y( 100 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c\r\n@s( 0.9 )　Muggle         Carroteer       Fish Fillet\r\n@s( 0.9 )　　　　Habaneristo       Onionne\r\n@/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen10.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )            Healthy steamed fish@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　   　@i@b Steamed Salmon @/i@/b\r\n@s( 1.17, 0.4 )　　@y( 130 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c\r\n@s( 0.9 )　Mulberry            Fish Fillet\r\n@s( 0.9 )　　　      Onionne                Milk\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen11.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )              Stewed and savory!@/c\r\n@s( 0, 0.4 )\r\n@s( 1.2 )　      @i@bFrench Onion Soup@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@y( 30)@s( 0, 0 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 10 )\r\n@s( 0.9 )　    Onionne     Cheese    Hot Cross Bun\r\n@/s\r\n\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen12.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )　　　      Chilled soup@/c@y( 14 )\r\n@s( 0, 0 )\r\n@s( 1.2 )　  　@i@bCold Cheese Soup@y( 2 )\r\n@s( 1.17, 1.0 )　　　　　　　　@/i@/b@y( 120 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 10 )\r\n@s( 0.95 )　　 Turny      Cheese     Yogurt\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen13.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )            Perfect for a hot day!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　   @i@b　　Vichyssoise　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c\r\n@s( 0.9 )　　 Turny               Ruewort\r\n@s( 0.9 )　　　          Onionne              Milk\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen14.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )　           The king of soup!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )    　@i@b　　Consommé　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c\r\n@s( 0.9 )　　Carroteer            Ruewort\r\n@s( 0.9 )　　　　　    Onionne             Chicken\r\n@/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen15.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 0.9 )@c( 81, 130, 72 )      Slowly stewed for your enjoyment!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )   @i@b　　 　Pot-au-feu　　　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 0.95  )　 　Turny      Carroteer    Chicken\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen16.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )              A family favorite!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　　@i@b　   Cream Stew 　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 0.95 )　　  　Fish Fillet         Milk\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen17.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )        Creamy and full of flavor!@/c@y( 14 )\r\n@s( 0, 0 )\r\n@s( 1.2 )　  　@i@bTurny Cream Stew@y( 4 )\r\n@s( 1.17, 1.14 )　　　　　@/i@/b@y( 120 )\r\n@/y@s( 0, 0 )@y( 2 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 5 )\r\n@s( 0.95 )　　 Turny      Fish Fillet    Milk\r\n@/s\r\n\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen18.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 0.87 )@c( 81, 130, 72 )    A stew with a touch of mild yogurt!@/c@y( 14 )\r\n@s( 0, 0 )\r\n@s( 1.2 )　　      @i@bYogurt Stew@y( 4 )\r\n@s( 1.17, 1.14 )　　　　@/i@/b@y( 120 )\r\n@/y@s( 0, 0 )@y( 2 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 8 )\r\n@s( 0.9 )　　Carroteer    Yogurt     Chicken\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen19.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 0.9 )@c( 81, 130, 72 )        Plump shrimp\r\n                 that's simply irresistible! @/c\r\n@s( 0, 0 )\r\n@s( 1.2 ) 　　@i@b Shrimp Peperoncino @/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 1.0 )　　 Habaneristo         Shrimp\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen20.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )　　      Enjoy it while it's hot! @/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　　@i@b　　　Gnocchi 　　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 1.0 )　         Milk             Egg\r\n@/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen21.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 0.9 )@c( 81, 130, 72 )    It's as fun to look at as it is to eat!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 ) 　@i@b　　Tricolor Gnocchi　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c\r\n@s( 0.85 )　Habaneristo              Milk\r\n@s( 0.85 )　　　　　Carroteer                 Egg\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen22.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )　            Baked just right!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )   @i@b　　　Shrimp Doria　　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 0.95 )　　　　Shrimp             Cheese\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen23.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 0.95 )@c( 81, 130, 72 )      So good and light,\r\n              you can eat it as a snack!@/c@y( 18 )\r\n@s( 1.2 )　 　@i@b　 Quiche Lorraine 　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 100 )\r\n@/y@s( 0, 0 )@y( 6 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 12 )\r\n@s( 0.95 )　 　Onionne     Cheese     Egg\r\n@/s\r\n\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen24.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )      So light, fluffy and delicious!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　 @i@b　　　 Omelette 　　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 1.0 )　　     　　　 Egg\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen25.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 0.9 )@c( 81, 130, 72 )    A tasty omelette with melted cheese@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 ) 　@i@b　　Cheese Omelette　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 1.0 )　　　   Cheese          Egg\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen26.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 0.95 )@c( 81, 130, 72 )　      The aroma of shrimp\r\n                     and zesty herbs! @/c\r\n@s( 0, 0.2 )\r\n@s( 1.2 ) 　　@i@bHerb-Roasted Shrimp @/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 1.0 )　　　 Ruewort           Shrimp\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen27.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 0.95 )@c( 81, 130, 72 )        Who can resist the smell\r\n                      of baked cheese? @/c\r\n@s( 0, 0.2 )\r\n@s( 1.2 )　　@i@b　Chicken au Gratin　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 1.0 )　　　 Cheese         Chicken\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen28.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )　        Baked hot and creamy@/c@y( 16 )\r\n@s( 0, 0 )\r\n@s( 1.2 )　　  @i@bSmothered Chicken@y( 5 )\r\n@s( 1.17, 1.14 )　　　　　　　　　@/i@/b@y( 120 )\r\n@/y@s( 0, 0 )@y( 2 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 6 )\r\n@s( 1.0 )　　  Onionne   Cheese    Chicken\r\n@/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen29.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 0.95 )@c( 81, 130, 72 )     Crispy skin and juicy meat\r\n              are a winning combination!@/c@s( 0, 1.2 )\r\n@s( 1.2 )　  　@i@b　Spicy Chicken 　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 6 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 12 )\r\n@s( 1.0 )　　  Habaneristo       Chicken\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen30.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )　A dish that'll perk up your ears!　　@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　        @i@bSteak Tartare@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 19 )\r\n@s( 1.0 )　　 　Lamb Chop        Egg\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen31.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )　             Healthy meat!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )          @i@b  Roasted Lamb　 @/i@/b\r\n@s( 1.17, 0.4 )　　@y( 140 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c\r\n@s( 0.9 )　　Napple             Onionne\r\n@s( 0.9 )　　     　 Mulberry            Lamb Chop\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen32.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )            Baked and then chilled@/c@s( 0, 1.4 )\r\n@s( 1.2 )　   　@i@b Stuffed Chicken @/i@/b\r\n@y( 55 )\r\n@s( 1.17, 0.4 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c\r\n@s( 0.95 )　　　Turny             Milk\r\n@s( 0.95 )　　　　　　Onionne          Chicken\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Kitchen33.txt",
+   "units": [
+    "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )　　     Grilled with onions@/c@y( 16 )\r\n@s( 0, 0 )\r\n@s( 1.2 )　       @i@bLamb Steak@y( 5 )\r\n@s( 1.17, 1.14 )　　　@/i@/b@y( 110 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredients]@/c@y( 8 )\r\n@s( 0.9 )　Habaneristo    Onionne        Lamb Chop\r\n@s( 0.9 )　　　Carroteer          Ruewort\r\n@/s\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix00.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  A@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Antidote@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y( -10 )\r\n=Explanation=\r\n\r\n@s( 1.0 , 1.0 )@y( 4 )Removes poison from the body and also heals\r\nwounds. It also prevents from being poisoned\r\nfor a limited time.\r\n@y( 5 )@/s\r\n\r\n\r\n\r\n@y( 10 )\r\n(Example Mix)\r\nMaterial            Cubsbane\r\n\r\n@s( 1.2 )　　　　　+　　　　　@/s\r\n @/y\r\n \r\n \r\n  \r\n",
+    "\r\n (More Example Mixes)\r\n\r\n ◆ Killer Cloud + Cubsbane\r\n \r\n ◆ Toxin + Cubsbane@s(0.7,0.7) x@s(0.9,1)2\r\n \r\n @/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix01.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  B@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Blaze@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nCreates a pillar of fire. The pillar\r\n\r\nburns for an extended period of time.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Example Mix)\r\n Material　　　  Habaneristo\r\n \r\n @s( 1.2 )　　　　　+　　　　　@/s\r\n @/y\r\n \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n @s(0.9,1)◆ Volcano + Habaneristo@y( -3 )\r\n\r\n ◆ Fire Spirits + Habaneristo@s(0.7,0.7) x@s(0.9,1)2\r\n\r\n ◆ Cyclone + Warmer\r\n \r\n @/s\r\n "
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix02.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  C@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Cyclone@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nCreates a frigid tornado.\r\n \r\nIt can freeze those who touch it.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Example Mix)\r\n 　Material　　　  　Turny 　\r\n \r\n @s( 1.2 )　　　　　+　　　　　@/s\r\n @/y\r\n \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n@s(0.95,1)◆ Whirlwind + Turny@y( -3 )\r\n \r\n ◆ Ice Spirits + Turny@s(0.7,0.7) x@s(0.9,1)2\r\n \r\n ◆ Blaze + Cooler\r\n @/s\r\n "
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix03.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  D@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Drain@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nDrains Phozons from all living things\r\n\r\nin the surrounding area.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Example Mix)\r\n  Material　　　　　　Seed　　\r\n \r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x2@/b@/c\r\n @/y\r\n\r\n\r\n\r\n",
+    "\r\n(More Example Mixes)\r\n\r\n@s(0.95,1)◆ Naturalize + Seed\r\n \r\n ◆ Xtra Phozons + Seed@s(0.7,0.7) x@s(0.9,1)2\r\n @/s\r\n \r\n "
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix04.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  E@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Elixir@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nHeals wounds on the body. Also\r\n\r\nadds protection from outside harm.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Example Mix)\r\n  　Material　　　　Carroteer　 \r\n \r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x3@/b@/c\r\n @/y\r\n \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n@s(0.9,1)◆ Restore + Carroteer\r\n \r\n ◆ Healing Tonic + Carroteer@s(0.7,0.7) x@s(0.9,1)2\r\n @/s\r\n "
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix05.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  F@/s\r\n@/y　@y( 5 )\r\n @s(1.8,1.5)Fire Spirits@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nSummon fire spirits. Enemies who\r\n \r\ndraw near will be covered in flames.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Example Mix)\r\n  　　 Material　　　　Habaneristo 　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x2@/b@/c\r\n @/y \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n ◆ Blaze + Habaneristo@y( -3 )\r\n \r\n ◆ Volcano + Habaneristo@s(0.7,0.7) x@s(0.9,1)2\r\n \r\n ◆ Ice Spirits + Warmer\r\n @/s\r\n "
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix06.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  G@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Gold@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nCreates money from the wounds of injured\r\n\r\nopponents. Developed to fund wars.\r\n@y( 12 )\r\n \r\n \r\n \r\n \r\n(Example Mix)\r\n  　　Material　　　　Onionne 　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x3@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n ◆ Lucky Mix + Onionne\r\n \r\n ◆ Shine + Onionne@s(0.7,0.7) x@s(0.9,1)2\r\n @/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix07.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  H@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Healing Tonic@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nHeals physical wounds. Said to\r\n \r\nbe the staple of long journeys.\r\n@y( 12 )\r\n \r\n \r\n \r\n \r\n(Example Mix)\r\n Material　　　Carroteer\r\n \r\n 　　　　　+　　　　　\r\n @/y\r\n \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n ◆ Elixir + Carroteer@y( -3 )\r\n \r\n ◆ Restore + Carroteer@s(0.7,0.7) x@s(0.9,1)2\r\n \r\n ◆ Material + Spoiled Fruit\r\n @/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix08.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  I@/s\r\n@/y　@y( 5 )\r\n @s(1.7,1.5)Ice Spirits@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nSummons ice spirits as shields.\r\n \r\nThey release a powerful chill when struck.\r\n@y( 12 )\r\n \r\n \r\n \r\n \r\n(Example Mix)\r\n  　　Material　　　　Turny 　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x2@/b@/c\r\n @/y  \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n ◆ Cyclone + Turny@y( -3 )\r\n \r\n ◆ Whirlwind + Turny@s(0.7,0.7) x@s(0.9,1)2\r\n \r\n ◆ Fire Spirits + Cooler\r\n @/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix09.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  J@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Juggler@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nChanges items on the ground into\r\n\r\nother items.\r\n@y( 12 )\r\n \r\n \r\n \r\n \r\n(Example Mix)\r\n  　  Material　　　Bone/Core/Stem　　\r\n \r\n 　　　　　+　　　　　\r\n @/y\r\n \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n@s(0.9,1)◆ Unseeable + Bone/Core/Stem\r\n \r\n ◆ Metamorphosis + Bone/Core/Stem@s(0.7,0.7) x@s(0.9,1)2\r\n @/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix10.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  K@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Killer Cloud@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nConjures a toxic cloud that poisons\r\n\r\nanyone who touches it.\r\n@y( 12 )\r\n \r\n \r\n \r\n \r\n(Example Mix)\r\n  　　Material　　　　Cubsbane 　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x3@/b@/c\r\n @/y  \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n ◆ Toxin + Cubsbane\r\n \r\n ◆ Antidote + Cubsbane@s(0.7,0.7) x@s(0.9,1)2\r\n @/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix11.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  L@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Lucky Mix@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nBrings good luck. You might\r\n\r\npick up something unexpected.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Example Mix)\r\n  　Material　　　 Onionne 　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x2@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n ◆ Shine + Onionne\r\n \r\n ◆ Gold + Onionne@s(0.7,0.7) x@s(0.9,1)2\r\n @/s\r\n "
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix12.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  M@/s\r\n@/y　@y( 5 )\r\n @s(1.8,1.5)Metamorphosis@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nTransforms beings nearby into frogs.\r\n\r\nIt can also lift frog curses.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Example Mix)\r\n  　     Material　　　　Bone/Core/Stem　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x2@/b@/c\r\n @/y \r\n \r\n \r\n \r\n  \r\n",
+    "\r\n (More Example Mixes)\r\n\r\n@s(0.9,1)◆ Juggler + Bone/Core/Stem\r\n \r\n ◆ Unseeable + Bone/Core/Stem@s(0.7,0.7) x@s(0.9,1)2\r\n @/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix13.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  N@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Naturalize@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nBreaks down stray organic matter\r\n\r\nand converts it into Phozons.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Example Mix)\r\n   Material　　　　　Seed　　　\r\n \r\n@s( 1.2 )　　　　　+　　　　　@/s\r\n @/y\r\n \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n@s(0.95,1)◆ Xtra Phozons + Seed\r\n \r\n ◆ Drain + Seed@s(0.7,0.7) x@s(0.9,1)2\r\n @/s\r\n "
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix14.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  O@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Overload@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nA warrior's potion that turns will into power.\r\n \r\nAll attacks will deal more damage.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Example Mix)\r\n  　Material　　　　 Equipment 　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x2@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n ◆ Painkiller + Equipment@y( -3 )\r\n \r\n ◆ Quick Charge + Equipment@s(0.7,0.7) x@s(0.9,1)2\r\n \r\n ◆ Volcano + Warmer\r\n @/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix15.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  P@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Painkiller@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nCuts off pain temporarily. Reduces\r\n\r\ndamage taken and prevents knockback.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Example Mix)\r\n 　Material　　　　Equipment　　\r\n \r\n@s( 1.2 )　　　　　+　　　　　@/s\r\n @/y\r\n \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n◆ Quick Charge + Equipment@y( -3 )\r\n \r\n ◆ Overload + Equipment@s(0.7,0.7) x@s(0.9,1)2\r\n \r\n ◆ Whirlwind + Cooler\r\n @/s\r\n "
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix16.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  Q@/s\r\n@/y　@y( 3 )\r\n @s(1.9,1.5)Quick Charge@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nAccelerated fatigue recovery.\r\n\r\nAlso reduces power consumption.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Example Mix)\r\n  　Material　　　　 Equipment　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x3@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n@s(0.95,1)◆ Overload + Equipment\r\n \r\n ◆ Painkiller + Equipment@s(0.7,0.7) x@s(0.9,1)2\r\n @/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix17.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  R@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Restore@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nDirectly charges magic power. An essential\r\n\r\nfor those who use powerful magic.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n (Example Mix)\r\n  　　　Material　　　　Carroteer 　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x2@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n@s(0.9,1)◆ Healing Tonic + Carroteer\r\n \r\n ◆ Elixir + Carroteer@s(0.7,0.7) x@s(0.9,1)2\r\n @/s\r\n "
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix18.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  S@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Shine@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nLights the area with a bright light.\r\n\r\nDispels the darkness and reveals ghosts.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Example Mix)\r\n  　Material　　  　Onionne　　 \r\n \r\n 　　　　　+　　　　　\r\n @/y\r\n \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n@s(0.95,1)◆ Gold + Onionne\r\n \r\n ◆ Lucky Mix + Onionne@s(0.7,0.7) x@s(0.9,1)2\r\n @/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix19.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  T@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Toxin@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nCreates a mist that crawls forward.\r\n\r\nThose who touch it will be poisoned.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Example Mix)\r\n  　　Material　　　　Cubsbane 　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x2@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n@s(0.9,1)◆ Antidote + Cubsbane\r\n \r\n ◆ Killer Cloud + Cubsbane@s(0.7,0.7) x@s(0.9,1)2\r\n @/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix20.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  U@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Unseeable@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nMakes the user invisible and unable to\r\n\r\ninteract with the world. Used for safe travel.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Example Mix)\r\n  　    Material　　   Bone/Core/Stem 　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x3@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n@s(0.85,0.97)◆ Metamorphosis + Bone/Core/Stem\r\n \r\n ◆ Juggler + Bone/Core/Stem@s(0.7,0.7) x@s(0.9,1)2\r\n @/s\r\n "
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix21.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  V@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Volcano@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nCreates a chain of explosions. Anything\r\n\r\nahead will be destroyed, consumed in flames.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Example Mix)\r\n  　　 Material　　　　Habaneristo　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x3@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n@s(0.9,1)◆ Fire Spirits + Habaneristo@y( -3 )\r\n \r\n ◆ Blaze + Habaneristo@s(0.7,0.7) x@s(0.9,1)2\r\n \r\n ◆ Whirlwind + Warmer\r\n @/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix22.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  W@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Whirlwind@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nCreates a giant, freezing whirlwind.\r\n\r\nIt pulls in and sucks up anything near it.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Example Mix)\r\nMaterial      　　 Turny\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x3@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n ◆ Ice Spirits + Turny@y( -3 )\r\n \r\n ◆ Cyclone + Turny@s(0.7,0.7) x@s(0.9,1)2\r\n \r\n ◆ Volcano + Cooler\r\n @/s\r\n "
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix23.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  X@/s\r\n@/y　@y( 5 )\r\n @s(1.5,1.5)Xtra Phozons@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n\r\nInstantly creates lots of Phozons.\r\n@y( 10 )\r\n\r\n\r\n\r\n\r\n\r\n(Example Mix)\r\n  Material　　　　　　Seed　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x3@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n",
+    "\r\n(More Example Mixes)\r\n\r\n ◆ Drain + Seed\r\n \r\n ◆ Naturalize + Seed@s(0.7,0.7) x@s(0.9,1)2\r\n @/s\r\n "
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix24.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  Y@/s\r\n@/y　@y( 2 )\r\n @s(1.9,1.5)Yogurt@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nMade by fermenting milk. Increases\r\n\r\nnutrition of food and heals wounds.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Example Mix)\r\n  Material　　　     Milk　　\r\n  \r\n 　　　　　+　　　　　\r\n @/y\r\n\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/MagicMix25.txt",
+   "units": [
+    "\r\n@y( 5 )\r\n@s(1.2,1.2)  Z@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Zero Timer@/s\r\n@/y\r\n\r\n\r\n",
+    "\r\n@y(-5)\r\n=Explanation=\r\n @y( -10 )\r\nA legendary potion that temporarily\r\n\r\ngrants the user infinite magic.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Example Mix)\r\n Material　　　  Troll Molar\r\n \r\n 　　　　+　　　　\r\n @/y\r\n \r\n \r\n  \r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note00.txt",
+   "units": [
+    "What are Phozons?",
+    "\r\n\r\nHave you seen motes of\r\nlight that appear from the\r\nbodies of the fallen?\r\n\r\nThose motes are known as\r\n@b@c(158,78,43)Phozons@/c@/b, lights that hold\r\nthe power of life.\r\n\r\n",
+    "\r\n\r\n\r\nPhozons arise from the\r\ndeaths of living beings, and\r\nreturn to the earth to\r\nfoster new life.\r\n\r\nMan and beast are given\r\nlife from this earth, and\r\nplants bud and grow fruit.\r\n\r\n",
+    "\r\n\r\nPhozons are also called\r\n@b@c(158,78,43)magic elements@/c@/b, and are an\r\nindispensable source of\r\nmagic for sorcerers.\r\n\r\nHowever, in order to collect\r\nPhozons, one must steal\r\nthe life force of the dead,\r\noriginally meant to return\r\nto the earth.\r\n",
+    "\r\n\r\nYou must never forget the\r\nweight of this act.\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note01.txt",
+   "units": [
+    "Alchemy",
+    "\r\n\r\n\r\n\r\n\r\n\r\n",
+    "\r\n\r\nIn Erion, there is a method\r\npassed down through the\r\nages known as @b@c(158,78,43)alchemy@/c@/b,\r\na means by which magic may\r\nbe created within a bottle.\r\n\r\nSimply dissolve various\r\nitems into special liquids\r\ncalled @b@c(158,78,43)materials@/c@/b in\r\norder to create these\r\nmagical concoctions.\r\n\r\n",
+    "\r\n\r\nMany different potions can\r\nbe brewed through careful\r\napplication of alchemy.\r\n\r\nHealing potions, antidotes,\r\ntornado magic, or even\r\nexplosives...\r\n\r\nYour choice of ingredients\r\nto mix with the material\r\nwill determine the outcome.\r\n",
+    "\r\n\r\nThe quickest way to learn\r\nthe relationship between\r\ningredients and magic is to\r\ntry mixing for yourself.\r\n\r\nHowever, if you seek a\r\ncertain formula, you should\r\ncollect magic @b@c(158,78,43)recipes@/c@/b.\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note01_2.txt",
+   "units": [
+    "Alchemy",
+    "\r\n\r\n\r\n\r\n\r\n\r\n",
+    "\r\n\r\nIn Erion, there is a method\r\npassed down through the\r\nages known as @b@c(158,78,43)alchemy@/c@/b,\r\na means by which magic may\r\nbe created within a bottle.\r\n\r\nSimply dissolve various\r\nitems into special liquids\r\ncalled @b@c(158,78,43)materials@/c@/b in\r\norder to create these\r\nmagical concoctions.\r\n\r\n",
+    "\r\n\r\nMany different potions can\r\nbe brewed through careful\r\napplication of alchemy.\r\n\r\nHealing potions, antidotes,\r\ntornado magic, or even\r\nexplosives...\r\n\r\nYour choice of ingredients\r\nto mix with the material\r\nwill determine the outcome.\r\n",
+    "\r\n\r\nThe quickest way to learn\r\nthe relationship between\r\ningredients and magic is to\r\ntry mixing for yourself.\r\n\r\nHowever, if you seek a\r\ncertain formula, you should\r\ncollect magic @b@c(158,78,43)recipes@/c@/b.\r\n",
+    "\r\n\r\nThe study of alchemy goes\r\non to this day. Recently, \r\nscholars have discovered\r\na way to amplify the\r\neffects of potions.\r\n\r\nMixing fruit and other foods\r\nwith materials, or even\r\nblending potions together\r\nwill increase the magic\r\npowers contained within.\r\n\r\n",
+    "\r\n\r\nThe higher-quality the\r\ningredients used, the more\r\npotent the draught's arcane\r\nenergy.\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note02.txt",
+   "units": [
+    "Excavation Guide",
+    "\r\nBy order of King Odin, we\r\nDwarves have formed exploration\r\nteams to find and unearth hidden\r\ntreasures around the world.\r\n\r\nCurrently, we are tasked with\r\nfinding @b@c(158,78,43)Phozon Prisms@/c@/b, rare ores\r\nrich in magic.\r\n\r\nFor the sake of the teams that\r\nmay follow in our footsteps, I\r\nleave this guide. Our monarch\r\nexpects much of us... We\r\ncannot fail him.",
+    "\r\n1. Search Everything\r\n\r\n  Many treasures are hidden in\r\n  places you cannot see. You won't\r\n  find them just walking aimlessly.\r\n\r\n  Be ever vigilant, and explore\r\n  everywhere within your sight.\r\n\r\n  Follow back roads, and find @b@c(158,78,43)keys@/c@/b\r\n  to unlock doors. No matter where\r\n  you go, keep a careful watch.\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note02_2.txt",
+   "units": [
+    "Excavation Guide",
+    "\r\nBy order of King Odin, we\r\nDwarves have formed exploration\r\nteams to find and unearth hidden\r\ntreasures around the world.\r\n\r\nCurrently, we are tasked with\r\nfinding @b@c(158,78,43)Phozon Prisms@/c@/b, rare ores\r\nrich in magic.\r\n\r\nFor the sake of the teams that\r\nmay follow in our footsteps, I\r\nleave this guide. Our monarch\r\nexpects much of us... We\r\ncannot fail him.\r\n",
+    "\r\n1. Search Everything\r\n\r\n  Many treasures are hidden in\r\n  places you cannot see. You won't\r\n  find them just walking aimlessly.\r\n\r\n  Be ever vigilant, and explore\r\n  everywhere within your sight.\r\n\r\n  Follow back roads, and find @b@c(158,78,43)keys@/c@/b\r\n  to unlock doors. No matter where\r\n  you go, keep a careful watch.\r\n\r\n",
+    "\r\n2. Be Resourceful\r\n\r\n  Fear not the spores of magic\r\n  @b@c(158,78,43)mushrooms@/c@/b, and the shrinking\r\n  effects they cause. Instead,\r\n  use it to your advantage, and\r\n  slip past gaps that would\r\n  normally be too narrow.\r\n\r\n  In some areas, you might find\r\n  yourself hindered by strong\r\n  winds. Use Dwarven @b@c(158,78,43)Stone\r\n  Boots@/c@/b to withstand them.\r\n  "
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note02_3.txt",
+   "units": [
+    "Excavation Guide",
+    "\r\nBy order of King Odin, we\r\nDwarves have formed exploration\r\nteams to find and unearth hidden\r\ntreasures around the world.\r\n\r\nCurrently, we are tasked with\r\nfinding @b@c(158,78,43)Phozon Prisms@/c@/b, rare ores\r\nrich in magic.\r\n\r\nFor the sake of the teams that\r\nmay follow in our footsteps, I\r\nleave this guide. Our monarch\r\nexpects much of us... We\r\ncannot fail him.",
+    "\r\n1. Search Everything\r\n\r\n  Many treasures are hidden in\r\n  places you cannot see. You won't\r\n  find them just walking aimlessly.\r\n\r\n  Be ever vigilant, and explore\r\n  everywhere within your sight.\r\n\r\n  Follow back roads, and find @b@c(158,78,43)keys@/c@/b\r\n  to unlock doors. No matter where\r\n  you go, keep a careful watch.\r\n",
+    "\r\n2. Be Resourceful\r\n\r\n  Fear not the spores of magic\r\n  @b@c(158,78,43)mushrooms@/c@/b, and the shrinking\r\n  effects they cause. Instead,\r\n  use it to your advantage, and\r\n  slip past gaps that would\r\n  normally be too narrow.\r\n\r\n  In some areas, you might find\r\n  yourself hindered by strong\r\n  winds. Use Dwarven @b@c(158,78,43)Stone\r\n  Boots@/c@/b to withstand them.\r\n  ",
+    "\r\n3. Use Magic Potions\r\n\r\n  @b@c(158,78,43)Blaze@/c@/b may be too hot for a\r\n  campfire even in colder regions,\r\n  but it is perfect for melting\r\n  ice walls.\r\n\r\n  @b@c(158,78,43)Cyclone@/c@/b can cool down molten\r\n  lava, and clear away debris in\r\n  your path.\r\n\r\n  @b@c(158,78,43)Volcano@/c@/b can open holes in cracked\r\n  walls, in place of using bombs.\r\n",
+    "\r\nAn excerpt from the logs of\r\na Dwarven exploration team.\r\nRecords indicate that they\r\nuncovered the remains of a\r\nValentinian aerial battleship,\r\nand restored it—refitting it\r\nfor the Aesir's use."
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note03.txt",
+   "units": [
+    "Cultivating Fruit",
+    "\r\n\r\nThe Phozon-absorbing plants of\r\nErion can sprout in even in the most\r\ndesolate of lands.\r\n\r\nTheirs is the fruit of life, giving\r\nvitality to those who partake.\r\nIt is the secret to longevity.\r\n\r\nIf you wish to reap\r\nthe benefits of the\r\nfruit, you need only\r\nfind seeds and grow\r\nthem for yourself.\r\n\r\n",
+    "\r\n\r\nThe more nutritious the fruit, the\r\nmore Phozons it will require.\r\n\r\nRecommended for beginners:\r\nThe @b@c(158,78,43)mulberry@/c@/b bears two fruits\r\nusing minimal Phozons, while the\r\n@b@c(158,78,43)muggle@/c@/b bears fruit and a seed.\r\n\r\nOnce you are used to the process,\r\nyou can try @b@c(158,78,43)grapes@/c@/b, which increase\r\nhealth, and @b@c(158,78,43)napples@/c@/b, which are\r\nquite a popular ingredient for\r\nsnacks.\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note04.txt",
+   "units": [
+    "The Origin of Sheep",
+    "\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n@b@c(158,78,43)Baromett@/c@/b is a plant from foreign lands,\r\nfamously noted in the \"Hverfell Book\r\nof Botany\" for its most peculiar quality.\r\n\r\nInstead of flowers or fruit,\r\nit bears live sheep.\r\n",
+    "\r\n\r\nThese arboreal sheep tend to run\r\naway as soon as they are born.\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\nHunt them before they escape,\r\nhowever, and you'll get some fresh\r\n@b@c(158,78,43)lamb chops@/c@/b for your trouble.     \r\n",
+    "\r\n\r\nThe lamb chops that come from\r\nBaromett are much more nutritious\r\nthan chicken, and are considered\r\nto be high-class cuisine.\r\n\r\nA single taste of cooked @b@c(158,78,43)lamb@/c@/b,\r\nand you will instantly see that\r\nthe effort required in its\r\npreparation is well worth it.\r\n\r\nIf you manage to obtain a\r\nBaromett seed, raise it with care.\r\n\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note05.txt",
+   "units": [
+    "Mandragoras",
+    "\r\n@b@c(158,78,43)Mandragoras@/c@/b grow all around the land.\r\nThese \"walking plants\" make fine\r\nadditions to many recipes, whether\r\nculinary or alchemical.\r\n\r\nThe five most well-known Mandragoras\r\neach have their own unique\r\ncharacteristics.\r\n\r\n\r\n\r\n             @b@c(158,78,43)Carroteer@/c@/b: Full of\r\n             nutrients, these are the\r\n             base of healing potions.\r\n",
+    "\r\n\r\n              @b@c(158,78,43)Onionne@/c@/b: Brings luck and\r\n              wards off evil. They are\r\n              used in charms.\r\n\r\n@b@c(158,78,43)Cubsbane@/c@/b: Its venomous\r\nskin is used for making\r\nboth poisons and\r\nantidotes.\r\n\r\n\r\n               @b@c(158,78,43)Turny@/c@/b: Resistant to the\r\n               cold. Their natural\r\n               cooling effect is used\r\n               in making cold soups.\r\n",
+    "\r\n\r\n\r\n\r\n@b@c(158,78,43)Habaneristo@/c@/b: They grow at\r\nvolcanoes, and are used\r\nin incredibly spicy foods.\r\n\r\n\r\n\r\nAll Mandragoras have their uses.\r\nWhen you find one, remember\r\ntheir effects and ensure you make\r\ngood use of them.\r\n\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note06.txt",
+   "units": [
+    "The Chicken and the Egg",
+    "\r\nWhile you can certainly cook a fresh\r\n@b@c(158,78,43)chicken@/c@/b @b@c(158,78,43)egg@/c@/b on its own, there's a\r\nsmarter use for them.\r\n\r\nYou can incubate an egg and raise the\r\n@b@c(158,78,43)chick@/c@/b to have it lay even more eggs.\r\n\r\n\r\n\r\n\r\n\r\n",
+    "\r\nFirst, place the egg on the ground.\r\nChicken eggs need no warmth to\r\nhatch into a chick.\r\n\r\nNext, drop @b@c(158,78,43)seeds@/c@/b in front of them.\r\nThe chick will eat them, and after\r\nenough food, it will mature into a\r\nchicken.\r\n\r\n\r\n\r\n\r\n\r\n\r\n@b@c(158,78,43)Well-fed@/c@/b chickens @b@c(158,78,43)lay more@/c@/b eggs.\r\n\r\n\r\n\r\n",
+    "\r\nIf you have no further need for eggs,\r\nyou can slay the chicken for its @b@c(158,78,43)meat@/c@/b\r\ninstead.\r\nThis method yields large amounts\r\nof food with minimal investment.\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\nKeep an eye on the chickens and\r\nchicks, though. They devour\r\nany seeds left on the ground.\r\n\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note07.txt",
+   "units": [
+    "Currency of Erion",
+    "\r\n@s(0.95,0.96)\r\nThere are five types of currency\r\non the continent of Erion.\r\n\r\nThe two currencies globally\r\naccepted by merchants are\r\nRagnan Silver and Titanian\r\nGold.\r\n@/s\r\n",
+    "\r\n@b@c(158,78,43)Ragnan Silver@/c@/b is a\r\ncommon favorite\r\nof the populace.\r\nThe iconic raven\r\nis immediately recognizable.\r\n\r\n               @b@c(158,78,43)Titanian Gold@/c@/b,\r\n               embossed with the\r\n               profile of the\r\n               previous king, is\r\n               worth 10 Silvers.\r\n\r\n",
+    "\r\nThe remaining three coins were\r\nminted by the fallen nation of\r\nValentine. They are no longer\r\naccepted as tender.\r\n\r\n",
+    "\r\nThe @b@c(158,78,43)Ariel Coin@/c@/b bears a\r\nrelief in the likeness of\r\nValentine's beloved princess.\r\n\r\nThe @b@c(158,78,43)Valentinian Gold@/c@/b is\r\nbranded with the royal crest.\r\n\r\nThe @b@c(158,78,43)Commemorative Coin@/c@/b\r\nhas a striking heart motif\r\nto its design.\r\n",
+    "\r\nCollectors now prize the\r\ncoins of Valentine as works\r\nof art from a now-defunct\r\nmagic civilization.\r\n\r\nConsequently, they are not\r\nused for common purchases\r\nand transactions.",
+    "\r\n@s(0.93,0.96)However, there is a rumor that\r\nPookas, who have recently become\r\nmore active in trade, favor\r\nValentinian coins.\r\n\r\nIf you manage to obtain some,\r\nit might be a valuable asset\r\nwhen bartering with them.\r\n@/s\r\n\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note08.txt",
+   "units": [
+    "Griselda's Spear",
+    "\r\n\r\n\r\n",
+    "\r\n\r\nThe peerless @b@c(158,78,43)spear@/c@/b tipped\r\nwith a blue Psypher, with\r\nrunes inscribed into the\r\ngrip...\r\n\r\nIt has but one rightful\r\nwielder... Ragnanival's\r\nfirst princess, and our\r\nchampion of the @b@c(158,78,43)Valkyries@/c@/b:\r\nPrincess @b@c(158,78,43)Griselda@/c@/b!",
+    "\r\n\r\nWith her display of the\r\nspear's might for the king,\r\nPrincess Griselda boldly\r\nwon the right to lead the\r\ncharge of the Valkyries.\r\n\r\nFor we who have spent so\r\nlong in the shadows of the\r\nmen, she is the lodestar that\r\nguides us through the night.",
+    "\r\n\r\nHer young mother is already\r\namong the stars, but I am\r\nsure she must be rejoicing\r\nin the heavens.\r\n\r\nSoon, Princess @b@c(158,78,43)Gwendolyn@/c@/b\r\nwill be called upon to\r\nsupport her sister. I hope\r\nshe is worthy of the task...",
+    "\r\nMemorandum of a Valkyrie\r\nof the Ragnanival army.\r\nThis illustrates their\r\nadoration of Griselda.\r\nAfter her death, her\r\nsister bore the weight\r\nof their expectations."
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note09.txt",
+   "units": [
+    "Odin and the Three Wise Men",
+    "\r\n@c(50,35,20)\r\n    The insolent king @b@c(138,58,23)Odin@/c@/b@c(50,35,20) is the\r\n    sworn enemy of we @b@c(138,58,23)Three Wise \r\n    Men@/c@/b@c(50,35,20)...Once Erion's greatest magi,\r\n    we had countless disciples, until\r\n    one man infiltrated our library\r\n    posing as a servant.\r\n    \r\n    It was none other than Odin\r\n    himself, in mortal guise...\r\n    \r\n    He whispered to us that he\r\n    knew a path to the Netherworld.",
+    "\r\n@c(50,35,20)\r\n    In return, he asked for the secret\r\n    of the Psyphers! We were\r\n    outraged by his brazen arrogance,\r\n    and lost our tempers.\r\n    \r\n    We bound him and cast a charm to\r\n    make him speak, but he reflected\r\n    the magic back upon us...\r\n\r\n    As he left, Odin cursed us,\r\n    changing us into foul and ugly\r\n    frogs. Such insult can never be\r\n    forgiven!",
+    "\r\n@c(50,35,20)\r\n    By the time we regained our true\r\n    forms, word of our blunder had\r\n    spread. Our reputation was\r\n    tarnished.\r\n    \r\n    When we lost all else, it was\r\n    @b@c(138,58,23)Gallon@/c@/b@c(50,35,20), the great king of Titania,\r\n    that saved us from poverty.\r\n\r\n    We have inherited his legacy\r\n    and his prophecy... and it is\r\n    for him that we shall end\r\n    King Odin.",
+    "\r\nAn account by @b@c(138,58,23)Skuldi@/c@/b, one of\r\nthe Three Wise Men. They have\r\na past with Odin, and their\r\nhatred of him fuels their\r\nmany schemes for his defeat."
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note10.txt",
+   "units": [
+    "The Start of the Cauldron War",
+    "\r\n\r\nThe source of the conflict\r\nbetween our grand kingdom\r\nof Ragnanival and Ringford\r\nlies in the past.\r\n\r\nOur victory over the mighty\r\nnation of @b@c(158,78,43)Valentine@/c@/b was\r\nassured, but costly. Low on\r\nmen and supplies, we had\r\nno choice but to withdraw.\r\n\r\n",
+    "\r\n\r\nThose vile @b@c(158,78,43)Fairies@/c@/b seized\r\ntheir chance to invade\r\nValentine and steal our\r\nprize: the @b@c(158,78,43)Cauldron@/c@/b.\r\n\r\nThe Cauldron is an artifact\r\nthat can create infinite\r\nPhozons. After all we've\r\nsacrificed, such a relic\r\nis rightfully ours!\r\n",
+    "\r\nAnger at the Fairies'\r\ntreacherous deed echoed\r\nthroughout the country.\r\n\r\nFor the sake of our fallen\r\nbrethren, we vowed to rise\r\nagain and punish the Fairies.\r\n\r\nLed by King @b@c(158,78,43)Odin@/c@/b, we have\r\nlong awaited our revenge,\r\nsharpening our fangs...\r\n\r\n",
+    "\r\n\r\nPrincesses @b@c(158,78,43)Griselda@/c@/b and\r\n@b@c(158,78,43)Gwendolyn@/c@/b, the daughters of\r\nthe late queen, are now\r\nskilled Valkyries.\r\n\r\nThe time has come for war.\r\nWe will wreak our\r\nvengeance on the Fairies,\r\nand reclaim our Cauldron!\r\n",
+    "\r\nThis memoir shows the\r\nmindset of an Aesir soldier.\r\nIn the battle that occurred\r\nafter this note, the Aesir\r\nsuffered a crushing defeat\r\nthat ended with the death of\r\nthe first princess.\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note11.txt",
+   "units": [
+    "Tribute to the Queen of the Dead",
+    "\r\n@c(50,35,20)\r\n\r\n",
+    "\r\n@c(50,35,20)\r\nWe, the dead, are cursed by the\r\nalmighty power of the queen;\r\nfated to have our rotting flesh\r\ntorn away by dark specters.\r\n\r\n\r\nWe cannot resist. We may only scour\r\nthe realm in search of blue gems...\r\ncrystallized souls... to appease\r\nthe queen, and quell her ire.\r\n",
+    "\r\n@c(50,35,20)\r\nBut the queen's greatest desire is\r\nsomething beyond our grasp...\r\nA living being, with healthy body\r\nand soul.\r\n\r\n\r\nSome sell their soul to her as a\r\nliving sacrifice, in search of power...\r\nbut they, too, rot away in her hands.\r\nHer thirst for souls may never be\r\nquenched...\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note12.txt",
+   "units": [
+    "Two Princes and the Treasured Sword",
+    "\r\n\r\n",
+    "\r\nWhen @b@c(158,78,43)Gallon@/c@/b, the previous\r\nking of @b@c(158,78,43)Titania@/c@/b yet lived,\r\nRagnanival gifted them a\r\n@b@c(158,78,43)treasured sword@/c@/b as proof of\r\ntheir alliance.\r\n\r\nIt was set with a magical\r\nblade known as a Psypher,\r\nbut in Titania, it is now\r\nknown as a cursed blade.\r\nSo goes the story...",
+    "\r\nOf the royal sons, the @b@c(158,78,43)elder@/c@/b\r\ntook a liking to the mystic\r\nsword, and the king gave\r\nit to him graciously.\r\nAs he brandished the blade,\r\nhowever, he accidentally\r\ninjured his father.\r\nThough a minor, shallow cut,\r\nthe king was enraged. The\r\nnormally gentle monarch's\r\nfuror shocked his vassals.",
+    "\r\nThough even the @b@c(158,78,43)younger son@/c@/b\r\npleaded his father's\r\nforgiveness, the king grew\r\ncold and distant from the\r\nelder. Eventually, the elder\r\nson renounced his royal blood,\r\nand fled with his lover.\r\nSince that day, the treasured\r\nsword has been thought\r\ncursed, and was buried in\r\nthe darkness of history.",
+    "\r\nAn account of the royal\r\nfamily's incident with the\r\ncursed sword. The source of\r\nKing Gallon's rage was never\r\ntruly clarified, and mystery\r\nsurrounds the tale."
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note13.txt",
+   "units": [
+    "The Law of Titania",
+    "\r\n\r\n\r\nThose who do business on \"King's\r\nMainstreet\" shall be fined.\r\n\r\n\r\nThose who do business without\r\nexpress permission from the king\r\nshall also be fined.\r\n\r\n\r\nThose who do not pay the tax shall\r\nbe executed by hanging.\r\n",
+    "\r\n\r\n\r\nThose who complain of high taxes\r\nshall be subject to flogging and\r\nthe stocks.\r\n\r\n\r\nThose who discriminate against magi\r\nshall be subject to the stocks.\r\n\r\n\r\nThose who cause bloodshed shall be\r\nexecuted on the spot, or by hanging.\r\n",
+    "\r\nKing @b@c(158,78,43)Edmund@/c@/b was initially\r\nwelcomed by the people as the\r\nheir to the legacy of the wise\r\nprevious ruler. When he began\r\nimposing harsh laws and\r\ntaxation policies, however,\r\npublic favor turned foul."
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note14.txt",
+   "units": [
+    "Royal Survivors of Valentine",
+    "\r\nNorth of @b@c(158,78,43)Titania@/c@/b, in the woods\r\nclose to the border of the @b@c(158,78,43)Demon\r\nLord's kingdom@/c@/b, there is an old\r\nand decrepit castle. However,\r\nyou must not draw near it.\r\n\r\nIt was once a villa for the sickly\r\nwife of the Demon Lord, but the\r\nprince and princess of @b@c(158,78,43)Valentine@/c@/b\r\nhave been recently sighted there.\r\nThey say the young survivors\r\nwere spared by the @b@c(158,78,43)Aesir@/c@/b.",
+    "\r\n\r\nBut everyone knows @b@c(158,78,43)Valentinians@/c@/b\r\nare blackguards who used their\r\nfearsome magic to invade our land.\r\n\r\nVicious magi like them only know\r\nto bite the hand that feeds them.\r\n\r\nI hear @b@c(158,78,43)Prince Cornelius@/c@/b is seen\r\nthere often. He is a gentle young\r\nman; I hope he does not fall prey\r\nto their wiles...",
+    "\r\nThis note contains rumors\r\ncirculating in Titania.\r\nValentine is still considered\r\ndangerous by many, and even\r\nthe survivors are not spared\r\npublic suspicion.\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note15.txt",
+   "units": [
+    "The Fate of Princess Ariel",
+    "\r\n\r\n\r\n",
+    "\r\nWhen the king learned that\r\nPrincess @b@c(158,78,43)Ariel@/c@/b gave birth to\r\nfatherless @b@c(158,78,43)twins@/c@/b, she and\r\nthey were locked away at the\r\n@b@c(158,78,43)Valentine@/c@/b villa, along with\r\nme, her maid.\r\n\r\nYet life away from the gilt\r\nand politic of the castle\r\nwas peaceful. Despite the\r\nguards, it was the perfect\r\nplace to raise a family.",
+    "\r\nThe peace did not last.\r\n\r\nEnraged over learning the\r\nidentity of the twins' father,\r\nthe king sent an envoy to\r\nbring the @b@c(158,78,43)princess@/c@/b back.\r\n\r\nHer return could only mean\r\nher execution... Even then,\r\nthe princess stood firm.",
+    "\r\n@s(0.95,0.96)She said she had @b@c(158,78,43)prophesied@/c@/b this\r\nfuture.\r\n\r\nHowever, she did not despair,\r\nbut accepted her fate, and\r\ncherished the time she had\r\nremaining.\r\n\r\nShe entrusted her children to\r\nme, and after her last words\r\nof comfort, she stepped into\r\nthe awaiting carriage.@/s",
+    "\r\nPart of a memo by the maid\r\nof Princess Ariel of Valentine.\r\nShe was said to see the future,\r\nand was well-loved by her\r\npeople, but was executed as\r\na rebel."
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note16.txt",
+   "units": [
+    "Maury, the Wandering Chef",
+    "\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\nMy name is @b@c(158,78,43)Maury@/c@/b. I am a Pooka\r\nchef, traveling the world to hone\r\nand perfect my cooking skills.\r\nI also run a touring restaurant,\r\nserving the finest fare wherever\r\nthere are hungry travelers in need.",
+    "\r\n\r\nThe problem is... my menu is what\r\nyou might call somewhat lacking\r\nin variety.\r\n\r\nSo, gentle reader of this flyer:\r\nI would humbly ask a favor!\r\n\r\nI have heard that there are many\r\n@b@c(158,78,43)recipes@/c@/b scattered across Erion.\r\n\r\nIf you run across any recipes of\r\nculinary import, please... allow me\r\nto take them!",
+    "\r\n\r\nNot without reward, of course!\r\n\r\nIf you obtain a recipe and the\r\n@b@c(158,78,43)ingredients@/c@/b listed on it, please \r\nsummon me immediately.\r\n\r\nYou only need ring one of the\r\n@b@c(158,78,43)magic bells@/c@/b I've set up across the\r\nland, and I shall be there in a\r\ntrice with my Pooka magic.\r\n\r\nI will do my utmost to make you a\r\ndelicious meal with whatever you\r\nmay bring!\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note17.txt",
+   "units": [
+    "Pookas, Stand Your Tails High!",
+    "\r\n\r\nWe citizens of @b@c(158,78,43)Valentine@/c@/b have\r\nlost both our land and our true\r\nforms... but we cannot live out\r\nour lives hiding belowground.\r\n\r\n\"Collect all the @b@c(158,78,43)magic coins@/c@/b and\r\nlift the curse.\"\r\n\r\nTo fulfill our wish, we have all\r\nbanded together, and set out\r\nacross the world to work, trade,\r\nbarter and bargain...\r\n",
+    "\r\n\r\nSome serve ale to the barbarians\r\nof the @b@c(158,78,43)Demon Lord@/c@/b, some compete\r\nwith greedy merchants plying their\r\ntrade in @b@c(158,78,43)Titania@/c@/b, some sweat and\r\ntoil for narrow-minded @b@c(158,78,43)Fairies@/c@/b...\r\nOur beastly looks may win us no\r\nfavors, but we don't have the\r\nluxury of complaining. One day, we\r\nshall gather the coins to break\r\nthis curse and revive our land\r\nwith the royal heirs!\r\nThis must be kept a @b@c(158,78,43)Pooka@/c@/b secret.",
+    "\r\nA manifesto written to boost\r\nthe morale of the Pookas.\r\nThe people of Valentine are\r\ncommonly believed to have\r\nperished with their nation,\r\nbut they survived as Pookas,\r\nand are working to revive it.\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note18.txt",
+   "units": [
+    "Pooka Kitchen & Cafe Flyer",
+    "\r\nTo anyone with\r\nValentinian coins.\r\n\r\nWe Welcome You!\r\nGourmand Heaven\r\nPooka Village",
+    "\r\nAt the \"@b@c(158,78,43)Rabbit Cafe@/c@/b\" and \"@b@c(158,78,43)Pooka\r\nKitchen@/c@/b\", we serve delicious food\r\nand lovely sweets.\r\n\r\n\r\n\r\n\r\nWe accept any of these coins!\r\n\r\nAll you need to do is pay the bill!\r\nWe provide all our own fresh\r\n@b@c(158,78,43)ingredients@/c@/b. When you come to@b@c(158,78,43) the\r\nPooka village@/c@/b, please drop by!"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note19.txt",
+   "units": [
+    "Valentine's Rise & Fall",
+    "\r\n@s(0.93,0.95)Records indicate that the original\r\n@b@c(158,78,43)Valentinians@/c@/b came on a flying\r\nship, having left a land far from\r\n@b@c(158,78,43)Erion@/c@/b.\r\n\r\nThey founded a country on the\r\nwestern side of the continent, and\r\nwith their superior magic\r\ntechnology, they solidified their\r\nnation's position as a significant\r\nworld power.@/s",
+    "\r\n@s(0.92,0.95)The @b@c(158,78,43)Crystallization Cauldron@/c@/b,\r\nengineered from the most potent\r\nof Valentine's magic, was the crux\r\nof the king's glorious nation.\r\n\r\nBy way of crystallizing raw\r\n@b@c(158,78,43)Phozons@/c@/b, it produced dense magic.\r\nIt was the source of the nation's\r\nwealth, and iconic of Valentine\r\nat the height of their power.@/s",
+    "\r\n@s(0.96,0.96)At the peak of the kingdom's\r\nprosperity, the end came.\r\n@b@c(158,78,43)Ragnanival@/c@/b, the country with\r\nwhom Valentine was at war,\r\nlaunched a desperate attack on\r\nthe capital. A bright light\r\nsuddenly engulfed the city, and\r\na terrible storm swept across\r\nthe land.\r\n\r\nOnly rubble remained.@/s",
+    "\r\n\r\n\r\n@s(0.92,0.95)To this day, none know the true\r\ncause of Valentine's fall. The\r\ntruth may lie somewhere within\r\nthe last remaining artifact of\r\ntheir genius—the roiling\r\nCauldron.\r\n\r\nHistorians from far and wide have\r\nlong sought the answers behind\r\nthis mystery.@/s"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note20.txt",
+   "units": [
+    "The Fairy Queen's Triumph",
+    "\r\n\r\n",
+    "\r\n@s(0.94,0.95)The @b@c(158,78,43)Forest of Fairies@/c@/b was once a\r\npeaceful place where many races\r\nlived in tranquility. Queen\r\n@b@c(158,78,43)Elfaria@/c@/b's greatest achievement\r\nwas to unite everyone as a\r\nnation. Her legend will be passed\r\ndown for eons to come.\r\n\r\nBut that great deed did not\r\ncome easily.@/s",
+    "\r\n@s(0.94,0.95)The queen's greatest obstacle\r\nwas the tension between the\r\n@b@c(158,78,43)Fairies@/c@/b and the @b@c(158,78,43)Dwarves@/c@/b.\r\n\r\nBelieving the Dwarves' smithing\r\nskills invaluable, the queen tried\r\ncompromise, but the Fairies\r\nbristled at their diplomacy,\r\nslowing talks. And when they\r\nacquired the magic @b@c(158,78,43)Cauldron@/c@/b,\r\nopinions clashed further...@/s",
+    "\r\n@s(0.93,0.95)The Dwarves wanted to use the\r\nCauldron's supreme power to its\r\nfullest, making it a foundation of\r\nthe nation's might... And the\r\nFairies opposed overusing the\r\ndangerous Cauldron, remembering\r\nits role in the destruction of\r\n@b@c(158,78,43)Valentine@/c@/b.\r\n\r\nTensions soon flared into war.@/s\r\n",
+    "\r\n@s(0.94,0.95)In the heat of battle, the losing\r\nDwarves tried to control the\r\nCauldron, and caused a magical\r\nflood that swept through the\r\nforest. The @b@c(158,78,43)queen@/c@/b ordered all\r\nsoldiers to rescue everyone,\r\nfriend or foe, and stood against\r\nthe Cauldron herself, stifling its\r\nonslaught and preventing\r\nfurther damage to the land.@/s\r\n",
+    "\r\n@s(0.94,0.95)The war was over. The Dwarves\r\nawaited their punishment. But\r\nthe queen spoke instead of\r\nforgiveness. She gave them\r\ncitizenship, and encouraged them\r\nto make peace with the Fairies.\r\nTouched by her clemency, the\r\nDwarves pledged allegiance to\r\nthe queen.\r\n\r\nAnd thus did the races of\r\nDwarf and Fairy reconcile.@/s",
+    "\r\nPart of a historical record\r\nof Queen Elfaria by\r\n@b@c(158,78,43)Matthew@/c@/b, her advisor. The\r\nmagic @b@c(158,78,43)arbalest@/c@/b that the\r\n@b@c(158,78,43)blacksmith Brom@/c@/b presented\r\nto the queen became a\r\nsymbol of her protection."
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note21.txt",
+   "units": [
+    "The Dwarves Who Forged Balor",
+    "\r\nAmong all @b@c(158,78,43)Psyphers@/c@/b, the largest\r\nand most fearsome is the one that\r\nstruck down the previous @b@c(158,78,43)Queen@/c@/b:\r\nthe flail @b@c(158,78,43)Balor@/c@/b, loathsome weapon\r\nof the @b@c(158,78,43)Demon Lord@/c@/b.\r\n\r\nThe greater the Psypher, the more\r\ndifficult the process of refining\r\nand forging its arcane jewel.\r\n\r\nEven @b@c(158,78,43)Brom@/c@/b, our first and finest\r\nLilliput Psypher blacksmith, would\r\nfalter at forging a weapon so large.\r\n\r\n",
+    "\r\nTo @b@c(158,78,43)Aesir@/c@/b, the development of Balor\r\nwas a national undertaking, and no\r\nresource or manpower was spared.\r\n\r\nAnd at the heart of the project,\r\nof all people, were the @b@c(158,78,43)Dwarves@/c@/b;\r\nour ex-comrades of @b@c(158,78,43)Ragnanival@/c@/b.\r\n\r\nWhile at war with the @b@c(158,78,43)Fairies@/c@/b,\r\nthey were swayed by the @b@c(158,78,43)Demon\r\nLord@/c@/b's honeyed words.\r\n\r\n\r\n\r\n\r\n",
+    "\r\nWith their smithing expertise, the\r\nDwarves created a Psypher\r\nunparalleled in its power.\r\n\r\nInversely, after vowing loyalty to\r\nthe @b@c(158,78,43)Fairy Queen@/c@/b and changing our\r\npeople's name to @b@c(158,78,43)Lilliput@/c@/b, we were\r\nforbidden from smithing anything,\r\nand our furnaces were quenched.\r\n\r\nWill we ever be able to defeat\r\nthe Aesir and their mighty Balor\r\nin such a state?\r\n\r\n\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Note22.txt",
+   "units": [
+    "Contract of Darkness",
+    "\r\n@c(50,35,20)\r\n\r\n",
+    "\r\n@c(50,35,20)\r\nI seek a contract with the\r\nbeautiful Queen Odette.\r\n\r\nI ask for the power of darkness\r\nfor our crystal sword. The\r\nblade shall drink the blood of\r\nthe soldiers of your hated foe,\r\nthe Demon Lord, and raise a\r\nmountain of corpses.\r\n\r\n\r\nI offer in return the flesh and\r\nsoul of the swordsman Oswald.\r\n",
+    "\r\n@c(50,35,20)\r\nEach use of his power shall\r\nentitle you to one organ\r\nand one bone.\r\nOswald's body and soul are\r\nfar superior to all humans I\r\nhave offered you thus far.\r\nI trust you will find him to\r\nyour liking.\r\n\r\n\r\nOn my true name, I pledge.\r\n Nephew to the queen of Ringford\r\n　　　　　　　　　Duke Melvin",
+    "\r\nPart of the contract that the\r\nchief vassal of Ringford,\r\n@b@c(158,78,43)Melvin@/c@/b, sent to the @b@c(158,78,43)queen of\r\nthe Netherworld@/c@/b.\r\nThe fearsome power of the\r\n@b@c(158,78,43)Belderiver@/c@/b came at the\r\ncost of the wielder's life."
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Prophecy00.txt",
+   "units": [
+    "Odin's Interpretation",
+    "\r\n  In this land, there exist many records\r\n  that @b@c(158,78,43)foretell Armageddon@/c@/b, all of which\r\n  have been subject to much scrutiny.\r\n  I have seen the truths of the world\r\n  through my one eye, and obtained great\r\n  wisdom... This is what I have learned.\r\n\r\n  In the world's twilight, five calamities\r\n  will fall upon the land:@y(25)@c(158,78,43)@/y@b@i the beast, the\r\n  lord of the dead, the flame, the\r\n  cauldron, and the dragon@/c@/b.@/i@y(25)@/y\r\n  The war for the fate of the world will\r\n  begin.\r\n",
+    "\r\n\r\n  He who survives this battle will become\r\n  the new king.\r\n\r\n  All armies of Ragnanival must prepare,\r\n  that we may claim victory in the true\r\n  final battle.\r\n\r\n  Securing the @b@c(158,78,43)Cauldron@/c@/b will lay the\r\n  foundation for our triumph. If we\r\n  are to succeed, we must harness the\r\n  almighty power of infinite Phozons.\r\n\r\n\r\n",
+    "\r\nThe @b@c(158,78,43)Demon Lord@/c@/b's words to\r\nthe public about the truth\r\nof the @b@c(158,78,43)prophecy@/c@/b. He outlines\r\na unique interpretation,\r\nusing it as justification to\r\nstrengthen his military. Is\r\nhe simply scheming further?"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Prophecy01.txt",
+   "units": [
+    "Ancient Manuscript",
+    "\r\n@c( 90,100,110 )@s( 1.2, 1.2 )@b@i@y( 40 )\r\nThe  Beast  of  Despair  feeds\r\non  man  and  destroys  hope.\r\n\r\nThe  unleashed  frenzy  of death\r\nyearns  for  the  light  of life.",
+    "\r\n@c( 90,100,110 )@s( 1.2, 1.2 )@b@i@y( 40 )\r\nThe  advancing  inferno\r\nscorches  the  throne's\r\nsurroundings.\r\nIn  the  Cauldron  that\r\nbreathes despair,  the  blood\r\nof  the ancients  boils.",
+    "\r\n@c( 90,100,110 )@s( 1.2, 1.2 )@b@i@y( 40 )\r\nWhen  Leventhan,  last  of\r\nthe  dragons,  devours  the\r\nstone  of blood,  the  path\r\nshall  be closed,  and  void\r\nwill  cover the  world.\r\n@/s@/i@/y   - \"Prophecy  of  the  End\""
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Prophecy02.txt",
+   "units": [
+    "Mother's Note",
+    "\r\n\r\nMy dear children,\r\n\r\nEventually, an inevitable curse and\r\ndeath shall be thrown upon the two\r\nof you.\r\n\r\nThe Cauldron guides the way to\r\nArmageddon with its final stone."
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Prophecy02_2.txt",
+   "units": [
+    "Mother's Note",
+    "\r\n\r\nMy dear children,\r\n\r\nEventually, an inevitable curse and\r\ndeath shall be thrown upon the two\r\nof you.\r\n\r\nThe Cauldron guides the way to\r\nArmageddon with its final stone.\r\n",
+    "\r\n    My dearest son, more precious\r\n    than life: you have your mother's\r\n    forgiveness.\r\n\r\n    My daughter, go without hesitation\r\n    and let your mother's love grant\r\n    you courage.\r\n\r\n    My father, your daughter's love\r\n    remains unchanged, always by your\r\n    side. To the one who will cause the\r\n    world harm, I pray that your\r\n     soul will heal."
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Prophecy03.txt",
+   "units": [
+    "The Erion Saga",
+    "\r\n@c( 160,160,120 )@s( 1.2, 1.2 )@i@y( 20 )\r\nTHE  land  sinks  into\r\nthe  cauldron's  fire\r\n\r\nTHOUGH  blades  and  arrows\r\nare  unleashed,  the  flooding\r\nfire cannot  be  stopped\r\n\r\nIT  can  only  be  chained",
+    "\r\n@c( 160,160,120 )@s( 1.2, 1.2 )@i@y( 20 )\r\n\r\nA  FIERY  six-eyed  beast  speeds\r\nthe  guiding  hand  of  salvation\r\n\r\n\r\nTHE  one  who  removes  the\r\ntorment  is  mine  own  son",
+    "\r\n@c( 160,160,120 )@s( 1.2, 1.2 )@i@y( 20 )\r\nTHE  Lord  of  the  Netherworld\r\nemerges  in  a  triumphant\r\nmarch  of  death\r\n\r\nONE  that  threatens the\r\ndarkness  is  the  shadow\r\nof  the  lost  master",
+    "\r\n@c( 160,160,120 )@s( 1.2, 1.2 )@i@y( 20 )\r\nTHE  looming  blaze  cometh,\r\nburning  down  the  forests\r\n\r\nTHE  flood  of  fire  that  man\r\ncannot  withstand  is  halted\r\nby  the  World  Tree\r\nand  vanishes",
+    "\r\n@c( 160,160,120 )@s( 1.2, 1.2 )@i@y( 20 )\r\n\r\nTHE  Lord  of  Snakes  consumes\r\nall  left  behind\r\nBORN  in  chaos  and  fire\r\nSLEEP  in  mother's  arms\r\nLIFE  disappears  from  the  land\r\nALL  comes  to  an  end"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Prophecy03_2.txt",
+   "units": [
+    "The Erion Saga",
+    "\r\n@c( 160,160,120 )@s( 1.2, 1.2 )@i@y( 20 )\r\nTHE  land  sinks  into  the\r\ncauldron's  fire\r\n\r\nTHOUGH  blades  and  arrows  are\r\nunleashed,  the  flooding  fire\r\ncannot  be  stopped\r\n\r\nIT  can  only  be  chained",
+    "\r\n@c( 160,160,120 )@s( 1.2, 1.2 )@i@y( 20 )\r\n\r\nA  FIERY  six-eyed  beast  speeds\r\nthe  guiding  hand  of  salvation\r\n\r\n\r\nTHE  one  who  removes\r\nthe  torment  is  mine  own  son",
+    "\r\n@c( 160,160,120 )@s( 1.2, 1.2 )@i@y( 20 )\r\nTHE  Lord  of  the  Netherworld\r\nemerges  in  a  triumphant\r\nmarch  of  death\r\n\r\nONE  that  threatens\r\nthe  darkness  is  the  shadow\r\nof  the  lost  master",
+    "\r\n@c( 160,160,120 )@s( 1.2, 1.2 )@i@y( 20 )\r\nTHE  looming  blaze  cometh,\r\nburning  down  the  forests\r\n\r\nTHE  flood  of  fire  that  man\r\ncannot  withstand  is  halted\r\nby  the  World  Tree\r\nand  vanishes",
+    "\r\n@c( 160,160,120 )@s( 1.2, 1.2 )@i@y( 20 )\r\n\r\nTHE  Lord  of  Snakes  consumes\r\nall  left  behind\r\nBORN  in  chaos  and  fire\r\nSLEEP  in  mother's  arms\r\nLIFE  disappears  from  the  land\r\nALL  comes  to  an  end",
+    "\r\n@c( 160,160,120 )@s( 1.15, 1.2 )@i@y( 15 )\r\nTHE  ring  shall  be  lost\r\n\r\nTHE  birthing  cry  of  newborn  souls\r\n\r\nWELCOMING\r\ntwo  crownless  lords\r\nthat  shall  survive  the  Armageddon\r\nand  lead  the  revival"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Prophecy04.txt",
+   "units": [
+    "Wise Men's Analysis",
+    "\r\n@c(50,35,20)\r\n To drive back the invading\r\n Valentinian forces, King Gallon used\r\n the mystic power of Titania to turn\r\n into the three-headed Demon Beast;\r\n in other words, the @b@c(138,58,23)six-eyed beast@/b@c(50,35,20)\r\n of the prophecy.\r\n\r\n Just as we thought: King Gallon\r\n is the guiding hand of salvation!",
+    "\r\n@c(50,35,20)\r\n\r\n The 'Lord of the Netherworld' in\r\n the Saga is Queen Odette.\r\n\r\n The 'looming blaze' is the\r\n Inferno King Onyx.\r\n\r\n If the king of Titania releases his\r\n mystic power, overpowers the other\r\n nations, and seizes the Cauldron...\r\n",
+    "\r\n@c(50,35,20)\r\n ...the Netherworld and the\r\n Fire Kingdom will join the war,\r\n and the three dragons will\r\n eradicate all, bringing the End\r\n to us.\r\n\r\n But fear not. The world will be\r\n saved in the end.\r\n\r\n By the arrival of a @b@c(138,58,23)new king@/b@c(50,35,20),\r\n and his promised guidance...",
+    "\r\n  The original manuscript\r\n  written by the Three Wise\r\n  Men has been lost to time.\r\n  It bears mentioning that\r\n  their theory is merely\r\n  conjecture, based on the\r\n  prophecy."
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Prophecy05.txt",
+   "units": [
+    "Krois's Memo",
+    "\r\n\r\n@c( 110, 80, 50 )Saga Psalm 2@/c\r\n@c( 130, 38, 92 )@i\"A FIERY six-eyed beast speeds\r\nthe guiding hand of salvation\r\n\r\nTHE one who removes the\r\ntorment is mine own son\"@/c@/i\r\n\r\nThe \"six-eyed beast\" must be\r\nDarkova, the three-headed\r\nDemon Beast. This section is\r\nbased on a prophecy by a\r\ngreat king of Titania.",
+    "\r\nTherefore, @c( 130, 38, 92 )@i\"The one who removes\r\nthe torment is mine own son\"@/c@/i is\r\nthought to refer to the bloodline\r\nof the @b@c(158,78,43)Titanian royal family@/c@/b.\r\nAnd if the beast @c( 130, 38, 92 )@i\"feeds on man,\"@/c@/i\r\nthen most likely @b@c(158,78,43)no human can\r\ndefeat it@/c@/b. But it's unthinkable\r\nthat a non-human would be king\r\nof Titania...\r\n\r\nUnless, of course, he is @b@c(158,78,43)cursed@/c@/b\r\nas we are, and is @b@c(158,78,43)no longer\r\nhuman@/c@/b.",
+    "\r\n\r\n@c( 110, 80, 50 )Saga Psalm 3@/c\r\n　　@c( 130, 38, 92 )@i\"ONE that threatens the\r\ndarkness is the shadow of the\r\nlost master\"@/c@/i\r\n\r\n@c( 110, 80, 50 )Prophecy Verse 1 Phrase 2@/c\r\n @c( 130, 38, 92 )@i\"The unleashed frenzy of death\"@/c@/i\r\n\r\nSomething seems odd about these\r\nphrases. Odette, Queen of the\r\nDead, has no master to \"unleash\"\r\nher.",
+    "\r\n\r\nIf the \"Lord of the Netherworld\"\r\nis not Odette, then what being can\r\nemerge from the Netherworld?\r\n\r\nOnly King Gallon, who is chained\r\nin the Netherworld, comes to\r\nmind. Will he lead the army of\r\nthe dead to his own country...?\r\n",
+    "\r\n\r\nHaving read the psalms based on\r\nthis theory, the \"late master\"\r\nis Odette, and the shadow that\r\nthreatens King Gallon is... @b@c(158,78,43)the\r\nshadow of Odette@/c@/b?\r\n\r\nI've heard that there is a\r\n@b@c(158,78,43)swordsman who bears the shadow\r\nof death@/c@/b in the Fairy Kingdom,\r\nbut could that be...?\r\n",
+    "\r\n\r\n@c( 110, 80, 50 )Saga Psalm 4@/c\r\n@c( 130, 38, 92 )@i\"THE looming blaze cometh,\r\nburning down the forests\r\nTHE flood of fire that man\r\ncannot withstand is halted by\r\nthe World Tree and vanishes\"@/c@/i\r\n\r\nEvidently, King Onyx's army from\r\nthe Fire Kingdom will sweep the\r\nland at Armageddon.",
+    "\r\n\r\nThe Saga states that @b@c(158,78,43)mankind\r\ncannot resist@/c@/b, but the @b@c(158,78,43)World\r\nTree@/c@/b destroys the army.\r\n\r\nYet, this World Tree exists\r\nonly in myth. There is no such\r\ntree in this world.\r\n",
+    "\r\n\r\nThe second clue:\r\n\r\n@c( 110, 80, 50 )Prophecy Verse 1 Phrase 2@/c\r\n@c( 130, 38, 92 )@i\"Scorches the throne's\r\nsurroundings...\"@/c@/i\r\n\r\nDoes that mean that the throne\r\nitself does NOT get scorched? If\r\nso, it could be suggesting that\r\nthe @b@c(158,78,43)one on the throne@/c@/b is able\r\nto face the flames...",
+    "\r\n\r\n\"The cauldron\" is, of course,\r\nTHE Cauldron. When the\r\nprincess's efforts are in vain, the\r\nnightmare repeats and the\r\nArmageddon will begin. Our king\r\nmust be the one to trigger it.\r\n\r\n@c( 110, 80, 50 )Saga Psalm 1@/c\r\n@c( 130, 38, 92 )@i\"THOUGH blades and arrows are\r\nunleashed, the flooding fire\r\ncannot be stopped\r\nIT can only be chained\"@/c@/i",
+    "\r\nIf any weapon can match the raw\r\npower of the Cauldron, it would\r\nbe some manner of Psypher.\r\nAnd not a blade, but something\r\nthat can chain it...\r\n\r\n\r\n@c( 110, 80, 50 )Prophecy Verse 2@/c\r\n@c( 130, 38, 92 )@i\"In the Cauldron that breathes\r\ndespair, the blood of the ancients\r\nboils.\"@/c@/i\r\n\r\n",
+    "\r\n\r\nWe are newcomers to this land, so\r\nwe are not of the \"ancient blood.\"\r\n\r\nThe one who controls the\r\nCauldron must be @b@c(158,78,43)Valentinian@/c@/b,\r\nand must hold a @b@c(158,78,43)Psypher made of\r\nchains@/c@/b.\r\n\r\nIn other words, this must be\r\nPrincess @b@c(158,78,43)Velvet@/c@/b.",
+    "\r\n\r\n\r\nIf the baby dragon Master\r\nCornelius saw is Leventhan, as the\r\nking said, then it will be an\r\neternity before it matures and\r\ndevours the world.\r\n\r\n\r\nIt is written that the dragon's\r\ngrowth is slow, yet inevitable.\r\n",
+    "\r\n\r\n@c( 110, 80, 50 )Saga Psalm 5@/c\r\n@c( 130, 38, 92 )@i\"BORN in chaos and fire\r\nSLEEP in mother's arms\"@/c@/i\r\n\r\n\r\nWhat is the \"mother\" that puts\r\nthe Lord of Snakes to sleep?\r\nWith the dragons Hindel, Wagner,\r\nand Belial gone, it seems unlikely\r\nthat the mother is a dragon. Then\r\nwhat is the mother in the Psalms?",
+    "\r\n@c( 110, 80, 50 )Prophecy Verse 3@/c\r\n@c( 130, 38, 92 )@i\"devours the stone of blood\"@/c@/i \r\n\r\nThe stone of blood can be taken\r\nto mean the red magic stones\r\ncreated in the Cauldron.\r\n\r\n@b@c(158,78,43)Even if Leventhan is stopped\r\nby a red stone, the Armageddon\r\nwill not stop@/c@/b.\r\nThe Demon Lord must have made\r\nBalor in anticipation of this.",
+    "\r\n\r\n@c( 110, 80, 50 )Saga Psalm 6@/c\r\n@c( 130, 38, 92 )@i\"and lead the revival\"@/c@/i\r\n\r\n\r\nThe last psalm explicitly states\r\nthat the world will be @brevived@/b.\r\n\r\nThe Demon Lord and the Magi\r\nhave taken this to mean that\r\nwhoever survives Armageddon\r\nwill become the new kings of\r\nthe world.\r\n",
+    "\r\n\r\nThe Demon Lord sought victory\r\nthrough wars, and the mages tried\r\nto control the Armageddon\r\ndirectly. \r\n\r\nYet, they were all mistaken.\r\n\r\nThe two lords that survive will\r\nbe chosen from the five\r\nchallengers of the disasters.",
+    "\r\n\r\n\r\nThe two lords are said to be\r\ncrownless. I suspect that \"lord\" is\r\nnot meant to suggest royalty, but\r\nsomething else.\r\n\r\nFinally, here is the conclusion and\r\nmy findings.\r\n\r\n",
+    "\r\n\r\nThis is conjecture, but from\r\n\r\n\r\n@c( 110, 80, 50 )Psalm 5@/c\r\n@c( 130, 38, 92 )@i\"LIFE disappears from the land\r\nALL comes to an end\"@/c@/i\r\n\r\n\r\nOne can only imagine a barren\r\nworld, with a tiny population.\r\n\r\n",
+    "\r\n\r\nBy @b\"crownless lords,\"@/b could this\r\nmean the primogenitors of\r\nmankind in the New World?\r\n\r\nIf so, it will by necessity have\r\nto be two humans: a man and a\r\nwoman.\r\n\r\nThen we can presume that the\r\nmother in Psalm 5 can be\r\nunderstood as:\r\n",
+    "\r\n\r\nThe one who defeats Leventhan\r\nbecomes the mother of the New\r\nWorld...\r\n\r\nEveryone other than the two\r\nhumans will perish.\r\n\r\nHow can this be in any way\r\nconsidered salvation? I hope\r\nthat I have misunderstood\r\nthe prophecies..."
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Sample.txt",
+   "units": [
+    "\r\nっっっ@c(255,0,0)っっっ@/cっ@x(30)っっっっっっっっｑ@/x\r\n　　１２３４５６７８９０@s(1.5)１２３@/s４５６７８\r\n　　１２３４@b５６@/b７@b(2)８９０１@/b２３@b(3)４５@/b６７８\r\n１２３@i(30)４５６７８９０@/i１２３４５６７８@y(20)\r\n１２３４５６７８９　　　　４５６７８@/y\r\n１２３４５６７８９　　　　４５６７８\r\n　　　　　　　　　　　　　４５６７８\r\n\r\nセンター揃え\r\nの文章のテストです\r\nこのように\r\n中央から均等に左右に伸びて\r\n表示されます",
+    "\r\n　　　　　　　　あいうえおかきくけこ\r\n　　　　　　　　　　　　　あいうえお\r\n　　　　　　　　　　　　　　　うえお\r\n　　　　　　　　　　　　　　　　　　\r\n　　　　　　　　　　　　　　　　　　\r\n　　　　　　　　　　　　　　　　　　\r\n１２３４５６７８９０１２３４５６７８\r\n１２３４５６７８９０１２３４５６７８\r\n１２３４５６７８９０１２３４５６７８\r\n１２３４５６７８９０１２３４５６７８\r\n１２３４５６７８９０１２３４５６７８\r\n１２３４５６７８９０１２３４５６７８\r\n１２３４５６７８９０１２３４５６７８\r\n右ページ\r\n  右ページ\r\n    右ページ\r\n      右ページ\r\n右ページ",
+    "\r\n注釈文テスト注釈文テスト注釈文テスト\r\n注釈文テスト注釈文テスト注釈文テスト\r\n注釈文テスト注釈文テスト注釈文テスト\r\n注釈文テスト注釈文テスト注釈文テスト\r\n注釈文テスト注釈文テスト注釈文テスト\r\n注釈文テスト注釈文テスト注釈文テスト",
+    "\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー",
+    "\r\n３ページ目の文章ですよーーーーーーーーー"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Test2_kobayasahi.txt",
+   "units": [
+    "\r\n\r\n\r\n\r\n道を歩けば、地面に種が落ちている、\r\nエリオン大陸ではよくある風景ですね\r\n\r\n一粒一粒拾っていたら、あっという間に\r\n道具袋がいっぱいに…\r\nもう拾えないほど種を余らせているのな\r\nら、それは宝の持ち腐れというものです\r\n\r\n\r\n",
+    "\r\n\r\n\r\n種は地面に植えれば、フォゾンを吸って\r\n育ちます\r\n\r\n慌てず急がず見守れば、みるみるうちに\r\n芽が伸び、葉を生やし、やがて新鮮な実\r\nが生ることでしょう\r\n\r\n実の重さに枝葉が頭を垂れたら、収穫の\r\n時間です\r\n果実をもぎり、その味を確かめましょう\r\n\r\n",
+    "\r\n\r\n\r\n甘酸っぱいマルベリー、歯ざわりのよい\r\nマグル、瑞々しいグレイプ、そして皆の\r\n好物ナップル！\r\n\r\nどの果実も美味であるばかりでなく、そ\r\nの栄養は、あなたの体をたくましく育て\r\nる力の源になるでしょう\r\n\r\nなんといっても、人の体は食べた物で\r\nできているのですからね！\r\n\r\n\r\n\r\n\r\n\r\n",
+    "\r\n\r\nそうそう、生った果実は枝に長く放置す\r\nると腐ってしまいます\r\n食べ頃を逃さず、すばやく刈り取るのを\r\nお忘れなく\r\n\r\nフォゾンを吸っても実が生らないことが\r\nあるですって？\r\n\r\nそれは吸わせるフォゾンが足りないので\r\nしょうね\r\n植える種によって、成長に必要なフォゾ\r\nンの量は違います\r\n",
+    "\r\n\r\n\r\nフォゾンをたくさん吸って育つ果実は\r\nよりおいしく、よりあなたの糧になること\r\nでしょう\r\n\r\n種を植え、生った果実を食べて生きる\r\n緑豊かなエリオンの地で、これほど自然\r\nにかなった生き方は他にはありません\r\n\r\nあなたもエリオンの菜園主になってみま\r\nせんか？\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Test_About_Phozon.txt",
+   "units": [
+    "\r\n\r\n\r\n生命を紡ぐ光の粒、ここエリオン\r\nの地ではそれをフォゾンと呼ぶ\r\n\r\n我らがこの大地に生を受けるため\r\nに、あるいは草木が芽吹き、実を\r\n成すために必要となるものだ\r\n",
+    "\r\n\r\n\r\nフォゾンは別名魔素とも呼ばれ、\r\n強力な魔力の源として、\r\n\r\n魔道を歩む者や、妖精の様な魔的\r\n存在にとって欠かすことのできな\r\nいものでもある\r\n\r\n　　　　\r\n",
+    "\r\n\r\n　　　しかし、その美しい輝きは生命の\r\n　　　輝きそのものであり、\r\n　　　命有る者の死から生まれた事を忘\r\nれてはならない\r\n\r\n生命が散るとき、フォゾンは大地\r\nに還る\r\n\r\nこの世の生命はフォゾンによって\r\n循環しているのだ\r\n",
+    "\r\n\r\n\r\n生と死が氾濫する場所…\r\n戦場などでは、戦いによって失わ\r\nれた兵士たちの生命が、\r\n\r\n多くのフォゾンとなって宙を舞う\r\n光景が見られる\r\n\r\n\r\n　　　　\r\n",
+    "\r\n３ページ目の文章ですよーーーーーーーーー"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Test_Gwendolyn_Diary.txt",
+   "units": [
+    "\r\nっっっっっっっっっっっっっっっｑ\r\n　　１２３４５６７８９０１２３４５６７８\r\n　　１２３４５６７８９０１２３４５６７８\r\n１２３４５６７８９０１２３４５６７８\r\n１２３４５６７８９　　　　４５６７８\r\n１２３４５６７８９　　　　４５６７８\r\n　　　　　　　　　　　　　４５６７８\r\n　　　　　　　　　　　　　４５６７８\r\n　　　　　　　　　　　　　４５６７８\r\n　　　　　　　　　　　　　４５６７８\r\n　　　　　　　　　　　　　４５６７８\r\n　　　　　　　　　０１２３４５６７８\r\n　　　　　　　　　０１２３４５６７８\r\n１２３４５６７８９０１２３４５６７８\r\n１２３４５６７８９０１２３４５６７８\r\n１２３４５６７８９０１２３４５６７８\r\n１２３４５６７８９０１２３４５６７８\r\n１２３４５６７８９０１２３４５６７８\r\n１２３４５６７８９０１２３４５６７８",
+    "\r\n　　　　　　　　あいうえおかきくけこ\r\n　　　　　　　　　　　　　あいうえお\r\n　　　　　　　　　　　　　　　うえお\r\n　　　　　　　　　　　　　　　　　　\r\n　　　　　　　　　　　　　　　　　　\r\n　　　　　　　　　　　　　　　　　　\r\n１２３４５６７８９０１２３４５６７８\r\n１２３４５６７８９０１２３４５６７８\r\n１２３４５６７８９０１２３４５６７８\r\n１２３４５６７８９０１２３４５６７８\r\n１２３４５６７８９０１２３４５６７８\r\n１２３４５６７８９０１２３４５６７８\r\n１２３４５６７８９０１２３４５６７８\r\n右ページ\r\n  右ページ\r\n    右ページ\r\n      右ページ\r\n右ページ",
+    "\r\n注釈文テスト注釈文テスト注釈文テスト\r\n注釈文テスト注釈文テスト注釈文テスト\r\n注釈文テスト注釈文テスト注釈文テスト\r\n注釈文テスト注釈文テスト注釈文テスト\r\n注釈文テスト注釈文テスト注釈文テスト\r\n注釈文テスト注釈文テスト注釈文テスト",
+    "\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー\r\n２ページ目の文章ですよーーーーーーーーー",
+    "\r\n３ページ目の文章ですよーーーーーーーーー"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Test_fujiwara.txt",
+   "units": [
+    "\r\n一つ、「王のための表通り」で\r\n　　　　　　　　　　　商いせし者は罰金\r\n\r\n一つ、王の許可なく商いを始める者も罰金\r\n\r\n一つ、税を払わぬ者は打ち首\r\n\r\n一つ、税が高いと唱える者、\r\n　　　　　　　鞭打ち・晒し台の刑に処す\r\n\r\n一つ、魔法使いを疎んじた者、\r\n　　　　　　　　　　　晒し台の刑に処す\r\n\r\n一つ、刃傷事件の加害者は、\r\n　　　　　　　その場で切り捨てか打ち首",
+    "\r\n\r\n現王エドマンドが王位についた当時、\r\nエドマンドは、○王と呼ばれた先代の名\r\nを継ぐ名実共に優れた王として、見事に\r\nタイタニアを統治していた\r\n\r\n職人が年月をかけ磨石を敷き詰めて\r\n「王のための表通り」が作られたのも、\r\n当時の人気のほどを表している\r\n\r\nそれが今ではどうだ！\r\n救国の英雄も落ちぶれて、うさんくさい\r\n宮廷魔術師の言いなりともっぱらの噂だ\r\n",
+    "\r\n\r\n厳しく無慈悲な法の光から生まれた影は\r\n色濃い…\r\n\r\n表通りから一歩脇道にそれれば、\r\nあの悪臭ただよう裏通りに行き着くのと\r\n同じく、この国も一皮むけば貧困、犯罪\r\nの巣窟だ\r\n\r\nこんな手記でも、街を巡回する警吏の兵た\r\nちに見つかりでもすれば、\r\n\r\nたちまち私は晒し台に上らされ、市民の\r\n嘲笑の的になることだろう\r\n",
+    "\r\n\r\n\r\nしかしそれを恐れて\r\nこの現状を放っておけようか\r\n\r\nタイタニア市民は立ち上がらなければな\r\nらない\r\n\r\n\r\n\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Test_fujiwara2.txt",
+   "units": [
+    "\r\n\r\n\r\n　これはあの七日間の再来だ\r\n\r\n\r\n思い出すのも苦々しい、タイタニ\r\nア史に刻まれた悲劇の記憶。\r\n\r\nかつて、勢いづくバレンタインの\r\n軍勢が王都まで押し寄せたとき、\r\n突如閃光とともに魔獣は現れた。\r\n",
+    "\r\nその牙は敵軍だけでなく、我々タ\r\nイタニアの民にも向けられた。\r\n\r\nバレンタイン軍は○○されて敗走\r\nし、我が王軍の抵抗むなしく\r\n魔獣の手により逃げ惑う民達も襲\r\nわれたのだ。\r\n\r\n\r\n今日、再びその悲劇が繰り返され\r\nようとしている。\r\n",
+    "\r\n\r\n突如、王都にドラゴンが現れ、\r\n暴れまわり、○○で城下は大混乱\r\nとなっている。\r\n\r\nこれはタイタニア存亡の危機だ。\r\n\r\n魔獣を退治し国を救った英雄\r\nエドマンド王は、今では見る影も\r\nなく衰え、頼ることもできない。\r\n",
+    "\r\nそればかりか大義を掲た王家が町\r\n娘や反発する貴族たちを、生贄と\r\nして命を捧げているというのだ。\r\n\r\n\r\n　紅い血の中よりいずる英雄が\r\n青き稲妻を携え　新たな王となる\r\n\r\n\r\n今は、伝説にある新たな英雄が\r\n現れるのを祈るしかない。\r\n\r\n",
+    "\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Test_fujiwara3.txt",
+   "units": [
+    "\r\n我らは呪われた国の人間、死しても正気\r\nを保ったまま、冥府の女王に仕事を強要\r\nされる身……\r\n\r\n身体はとうの昔に腐り落ち、骨皮だけに\r\nなったとしても\r\n蝋燭の灯りで死の国を照らして歩き続け\r\nることが、課せられた我らの仕事\r\n\r\n灯りに照らされ、この陰気でありながら\r\n静謐な空気、腐った水にむらがる禍々し\r\nい死霊たちがよく見える\r\n",
+    "\r\n冥界エンデルフィアで、贖罪のた\r\nめに暗闇を照らし歩く骸骨たち、\r\n彼らはレブナントと呼ばれる\r\n\r\n死の国に縛られる死霊たちの罪に\r\nついて語ったものがまとめられて\r\nいる",
+    "\r\n我らは呪われた国の人間、死しても正気\r\nを保ったまま、冥府の女王に仕事を強要\r\nされる身……\r\n\r\n身体はとうの昔に腐り落ち、骨皮だけに\r\nなったとしても\r\n蝋燭の灯りで死の国を照らして歩き続け\r\nることが、課せられた我らの仕事\r\n\r\n灯りに照らされ、この陰気でありながら\r\n静謐な空気、腐った水にむらがる禍々し\r\nい死霊たちがよく見える\r\n",
+    "\r\n彼らの腐った肉体は屍肉を食する虫たち\r\nによって暴かれるが、女王オデットの呪\r\nいにより、肉体は再び元の惨めな姿に戻\r\nる\r\n永遠に苦痛に苛まれることになるわけだ\r\n\r\n女王はこの地に落とされる者達には、\r\n生前何らかの罪があると言った\r\n盗み、殺し、強欲、嫉妬、恨み、呪い…\r\nそういった輩の魂が集まってくる\r\n\r\nしかし、生まれ死ぬまでに、ただの一つ\r\nも罪も犯さぬ者がいようか？\r\n\r\n",
+    "\r\n一度死の国に落ちながら　地上に上がる\r\n者の噂を、この骸骨の頭で聞いた覚えが\r\nある\r\n\r\n地の底から這い上がる者は、地上に舞い\r\n戻ったあとに何を為すか？\r\n復讐か、王道か\r\n\r\nこの地に縛られた我々には知る由もない\r\n\r\n\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Test_kobayasahi.txt",
+   "units": [
+    "\r\n\r\n\r\n\r\n\r\n",
+    "\r\n\r\n\r\n\r\n\r\n\r\n\r\n",
+    "\r\n\r\n\r\nしかし、その美しい輝きは生命の\r\n輝きそのものであり、\r\n命有る者の死から生まれた事を忘\r\nれてはならない\r\n\r\n生命が散るとき、フォゾンは大地\r\nに還る\r\n\r\n\r\n\r\n\r\n",
+    "\r\n\r\n\r\nこの世の生命はフォゾンによって\r\n循環しているのだ\r\n\r\n生と死が氾濫する場所…\r\n戦場などでは、戦いによって失わ\r\nれた兵士たちの生命が、\r\n多くのフォゾンとなって宙を舞う\r\n光景が見られる\r\n\r\n\r\n\r\n\r\n",
+    "\r\n\r\n\r\nそういった場所では\r\n魔素を溜め込んで咲く花や、\r\nフォゾンの淀みに集まる光の蝶を\r\n目にすることもあるだろう\r\n\r\nそれらは多くのフォゾンが集まる\r\n中でのみ、ひとときの輝きを見せ\r\nる徒花のようなものだ\r\n\r\n"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Test_maenou.txt",
+   "units": [
+    "\r\n\r\n死の女王陛下との契約の締結を望む\r\n\r\n第一条\r\n　所有するサイファーの剣に、○をも\r\n　両断する闇の力を宿らせることを求める\r\n　対価として、剣の使い手オズワルドの\r\n　肉体と魂を捧げる\r\n\r\n第二条\r\n　利息は使い手の肚を裂き、骨で支払われる\r\n　闇の衣をまとうごとに、肋骨の骨一本ずつ\r\n　を女王の物とする\r\n\r\n\r\n",
+    "\r\n\r\n第三条\r\n　対価となる肉体が刃向かう事のない、\r\n　その力に枷■をはめることを許す\r\n\r\n第四条\r\n　以前までに対価として払ってきた者と\r\n　今回の魂や肉体は今までと比べ極めて\r\n　優良な魂であることを保証する\r\n\r\n　真名にかけて契約に準じることを誓う\r\n　　　リングフォールド女王の甥にして\r\n　　　　　　　　　　○○公メルヴィン\r\n",
+    "\r\n妖精国の参謀メルヴィンが、死の\r\n国の女王に宛てた契約書の一部だ\r\n\r\n魔王軍すら怖れる、黒い剣士の\r\n持つ魔剣の力は、使い手の命を\r\n死の女王オデットに捧げることで\r\n得られたものであった\r\n",
+    "\r\n\r\n　■■■■■■■■■■■■■\r\n　■　　　　　　　　　　　■\r\n　■　　　　　　　　　　　■\r\n　■　　　　　　　　　　　■\r\n　■　　　　　　　　　　　■\r\n　■　　　　　　　　　　　■\r\n　■　　　　　　　　　　　■\r\n　■　　　　　　　　　　　■\r\n　■　　　　　　　　　　　■\r\n　■■■■■■■■■■■■■\r\n",
+    "\r\n\r\n我が弟子よ、\r\nもっと簡単に直接的に魔法を扱う\r\nことはできんかと言っておったな\r\n\r\nそんなお主に勧めるのは\r\nマジックミックスの術じゃ\r\n\r\n修練を積まずとも魔法を扱うこと\r\nができる魔法薬…\r\nこれを精製する錬金術のことじゃ\r\n",
+    "\r\n\r\n手順は驚くほど単純じゃ\r\nマテリアルと呼ばれる特殊な液体\r\nを入れた小瓶を用意し、\r\nそこに触媒となるマンドラゴラを\r\n溶かし込む\r\n\r\nたったそれだけで強力な魔法薬が\r\nお主のものとなる\r\nどうじゃ、ホウキを操るよりも\r\n容易いじゃろう",
+    "\r\nこの簡易な術は、魔法大国\r\nバレンタインから伝わったもの\r\n\r\nエリオンの古き賢人たちはこれを\r\n似非魔術と断じ、疎んじたが\r\n\r\n現実として、多くの民に浸透し\r\n研究が進んだ今となっては、\r\n無視するわけにはいかなくなった\r\nというわけじゃ",
+    "\r\n\r\n　■　■　■　■　■　■\r\n\r\nさて、マジックミックスは\r\nマテリアルに調合する素材次第で\r\n様々な魔法を瓶の中に生み出す\r\nことができる\r\n\r\n傷を癒やすヒールや毒消し、\r\n朝食のヨーグルトや、はたまた\r\n何でも粉みじんにしてしまう爆薬\r\nなんてものも…\r\n",
+    "\r\n\r\n\r\n一つの瓶の中で\r\nいかなる魔法を生みだすか？\r\n\r\nそれは術者…つまりお主の知恵と\r\nひらめきにかかっておる\r\n\r\n興が乗ってきたか？\r\nでは続けよう\r\n",
+    "\r\n触媒となる素材はマンドラゴラ\r\nだけではない\r\n\r\n植物の種や動物の骨、メッキの\r\nはげた指輪に、一口■囓った\r\nナップルまであらゆる物に感応し、\r\nその性質を変化させるが、\r\n\r\n望みの魔法薬を作りだすのに\r\n必要な素材はこれと決まっておる\r\n",
+    "\r\n\r\nお主の事じゃ、\r\n素材の組み合わせを覚えられない\r\nと言い出すじゃろうと思うてな、\r\n\r\n■儂が記した調合レシピを\r\nまとめておいた\r\n\r\nこれを参考に己の手で実践し、\r\nマジックミックスの術を身に\r\nつけるのじゃ",
+    "",
+    "\r\nマンドラゴラとは、エリオンの各地で\r\n見られる地中に育つ植物の総称です\r\n\r\nカロッチオ、オニオンヌ、トリカブに\r\nターニー、そしてハバニール…\r\n\r\nどれも野菜に足を生やしたような姿が\r\n可愛いらしいですね",
+    "\r\nマンドラゴラの活用法は、\r\nまさに人それぞれ！\r\n\r\nコックには料理にひと味加える食材や\r\n調味料として重宝されていますし、\r\n魔法使いにとっては錬金術の触媒として\r\n欠かせないものと聞きます\r\n\r\n多方面で引っ張りだこの人気者ですが、\r\n彼らは普段地面の下でひっそり暮らして\r\nいますから、実物を見た事がないという\r\n方もおられるでしょうね\r\n",
+    "\r\nマンドラゴラは地中に巣穴を作るため、\r\n土を掘ってもぐった跡を残します\r\nもし見つけたら、試しに鎌の刃先で\r\nちょいとつついてみましょう\r\n\r\n狙いが当たれば、彼らは驚いて飛び出し、\r\n自慢の足を使って逃げだしますよ\r\n\r\nこちらも、うかうかしていられません\r\nあとを追いかけ、暴れん坊の可愛いお尻\r\nを叩いてあげましょう\r\n\r\nそうすれば大人しくなって、落ち着いて\r\n収穫ができます",
+    "\r\nあとは野菜袋などに入れ、きちんと\r\n保管しましょう\r\n\r\nなに、採りすぎても困る事はありません\r\n彼らは万能ですから、いつか必ず使い道\r\nが見つかるでしょう\r\n\r\n恥ずかしながら、私は空腹しのぎに\r\nそのままかじってみた事もありましたが\r\n今となっては少し品のない使い方ですね\r\n",
+    "",
+    "\r\n\r\n異国から伝来したという、不思議な植物\r\nバロメッツのことはご存じかしら？\r\n\r\n風変わりな生き物を記した博物誌にも\r\nその名が残るバロメッツは、\r\n育つと花や実の代わりに変わったモノを\r\n生む植物です\r\n\r\n太い茎にぶら下がる大きな■蕾…そこから\r\n生まれるモノのは何かと申しますと、\r\n驚くべき事に、生きた羊なのです！\r\nそれも２匹ですよ\r\n\r\n\r\n",
+    "\r\n\r\nこの植物羊、生まれるとすぐに\r\n巣を飛び出し、あてどなく走り回る習性\r\nがあるため、放っておくといずれ弱って\r\n死んでしまいます\r\n\r\n可哀想ですが、なるべく苦しまないよう\r\n素早く仕留め、ローストなんかにして\r\n美味しく頂くのがいいでしょう\r\n\r\nきっとそのほうが羊の魂も浮かばれます\r\n\r\n",
+    "\r\n\r\nバロメッツから取れるラム肉は、\r\n鶏肉以上に栄養豊富なんですよ\r\n\r\nラム肉を使った料理などは、とっても\r\n美味しいうえに食べ過ぎても太りにくい\r\nと、ご婦人方にめっぽう評判です\r\n\r\n体型を気になさらずに、\r\nどんどんお召し上がり頂けますね\r\n",
+    "\r\n\r\n\r\n\r\n",
+    "\r\n\r\nエリオン大陸には各国がつくった\r\n５種類の貨幣が存在するが、\r\n\r\n主に流通しているのは\r\nラグナネイブル製のラグナ銀貨と\r\nタイタニア製のタイタン金貨の\r\n２種類である\r\n\r\n",
+    "\r\n\r\n純度が低いラグナ銀貨は、\r\n最も価値が低い代わりに流通量が\r\n多く、国を象徴するワタリガラス\r\nの絵柄を見ない日はない\r\n\r\n一方、希代の名君と名高い先王の\r\n肖像が刻まれたタイタン金貨は\r\n高い純度を誇り、ラグナ銀貨の\r\n１０倍の価値となっている",
+    "\r\n\r\n残る３種の貨幣は、国が一夜に\r\nして滅びたことでも知られる、\r\n今は亡き大国バレンタインで\r\n発行されたものだ\r\n\r\n多くの民に愛されたと伝え聞く姫\r\nの姿が刻印されたアリエル硬貨、\r\n\r\n歴史ある国の紋章を精巧な技術で\r\n再現したバレンタイン金貨、\r\n\r\n\r\n",
+    "\r\n\r\nそして、心臓のモチーフが一際\r\n目を引くバレンタイン記念硬貨、\r\nこの３種類だ\r\n\r\n\r\n",
+    "\r\nバレンタインの滅亡には謎が多く\r\n神秘的なイメージがつきまとう\r\n\r\n３種類の貨幣も、その出自から\r\n魔力が込められていると噂される\r\nため、いわゆる希少硬貨として\r\n一般的な取引では扱われない\r\n\r\nただ、獣人のプーカ族は\r\nバレンタイン硬貨を好むと聞く\r\n彼らとの取引には有力な手と\r\nなることだろう",
+    "\r\n\r\n\r\n\r\n",
+    "\r\n\r\n\r\n−−−−−−−−−−−−−−−\r\n",
+    "\r\n\r\n\r\n\r\n",
+    "\r\n\r\n\r\n\r\n生命を紡ぐ光の粒、ここエリオン\r\nの地ではそれをフォゾンと呼ぶ\r\n\r\n我らがこの大地に生を受けるため\r\nに、あるいは草木が芽吹き、実を\r\n成すために必要となるものだ\r\n\r\n\r\n",
+    "\r\n\r\nフォゾンは別名魔素とも呼ばれ、\r\n強力な魔力の源として、\r\n魔道を歩む者や、妖精の様な魔的\r\n存在にとって欠かすことのできな\r\nいものでもある\r\n\r\nしかし、その美しい輝きは生命の\r\n輝きそのものであり、\r\n命有る者の死から生まれた事を忘\r\nれてはならない\r\n",
+    "\r\n\r\n生命を紡ぐ光の粒――\r\nここエリオンの地では、それを\r\nフォゾンと呼ぶ。\r\n\r\n我らがこの大地に生を受けるため\r\nあるいは草木が芽吹き、実を成す\r\nために必要となるものだ。\r\n\r\nフォゾンは別名魔素とも呼ばれ、\r\n強力な魔力の源として、",
+    "\r\n\r\n魔道を歩む者や、妖精の様な魔的\r\n存在にとって、欠かすことのでき\r\nないものでもある。\r\n\r\nしかし、その美しい輝きは生命の\r\n輝きそのものであり、\r\n命有る者の死から生まれた事を忘\r\nれてはならない。\r\n\r\n＋◇＋◇＋◇＋◇＋◇＋◇＋◇＋",
+    "\r\n\r\n生命が散るとき、フォゾンは大地\r\nに還る\r\nこの世の生命はフォゾンによって\r\n循環しているのだ\r\n\r\n生と死が氾濫する場所…\r\n戦場などでは、戦いによって失わ\r\nれた兵士たちの生命が、\r\n多くのフォゾンとなって宙を舞う\r\n光景が見られる\r\n\r\n",
+    "\r\n\r\n\r\nそういった場所では\r\n魔素を溜め込んで咲く花や、\r\nフォゾンの淀みに集まる光の蝶を\r\n目にすることもあるだろう\r\n\r\nそれらは多くのフォゾンが集まる\r\n中でのみ、ひとときの輝きを見せ\r\nる徒花のようなものだ\r\n\r\n",
+    "\r\n\r\n生命が散るとき、\r\nフォゾンは大地に還る。\r\nこの世の生命はフォゾンによって\r\n循環しているのだ。\r\n　　　。　　\r\n　○　　　　　。Ｏ　　　　。\r\n　　　　Ｏ　　　。　　　　　　　　\r\n\r\n戦場などでは、散りゆく兵士たち\r\nの生命が、無数のフォゾンとなり\r\n宙を舞う光景が見られる。",
+    "\r\n\r\n□□□□□　そういった場所では、\r\n□　　　□　魔素を溜め込んで咲\r\n□　　　□　く花や、フォゾンの\r\n□　　　□　淀みに集まる光の蝶\r\n□　　　□　を目にすることも\r\n□□□□□　あるだろう。　　\r\n\r\nそれらは、多くのフォゾンが\r\n集まる中でのみひとときの輝き\r\nを見せる、徒花のようなものだ。",
+    "\r\n−−−−−−−−−−−−−−−",
+    "\r\n\r\nとある町に身寄りのない少年兵が\r\nいました\r\n\r\n少年は生まれつき体が弱いため、\r\n雇い主に無駄飯食らいとして\r\n追い出されやしないかと将来を\r\n危ぶんでいました\r\n\r\n少年は早く一人前の兵士にならね\r\nばと錆び付いた剣を振る毎日を\r\n",
+    "\r\n\r\n\r\n稽古を続ける少年に空から聞こえ\r\nる声がありました\r\n\r\n「救われぬ魂を持つ可哀想な\r\n　お前、私が願いを叶え、\r\n　丈夫な体を授けてあげよう\r\n　その代わり、お前の清らかな\r\n　魂を私にさしだすのだ」\r\n",
+    "\r\n\r\n見上げると、凍り付くような○○\r\nをした美しい女性が空に現れ、\r\n少年に手招きをしています\r\n\r\n少年はこんな噂を聞いたことが\r\nありました\r\n\r\n１人ぼっちの子供には、\r\n死の国の女王が声をかける\r\nしかし、けして甘い誘いに乗って\r\nはいけない\r\nそうしないと死の国へと\r\nさらわれちまうよと",
+    "\r\n\r\nしかし目の前の女性は恐ろしいと\r\nは思えないばかりか、\r\n母を知らぬ少年の目には、なんと\r\nも優しい姿に映りました\r\n\r\n",
+    "\r\n\r\n少年は悩んだ末に、女王の申し出\r\nを受けました\r\n\r\n少年の答えに満足すると、女王は\r\n少年の額と錆び付いた剣に\r\nそっとつめたい接吻をしました\r\n\r\nするとどうでしょう\r\n少年の心臓は健やかに鼓動し、\r\n剣も鉄鎧を軽く切り裂くほどの\r\n魔剣へと成り代わったのです\r\n",
+    "\r\n\r\n\r\nその日から、少年は魔剣の使い\r\n手として戦場でめざましい働き\r\nをするようになりました\r\n\r\nそして、願い通り兵士として名を\r\n挙げ、雇い主から重用されること\r\nになったのです\r\n\r\n",
+    "\r\n\r\nしかし、それもつかの間の出来事\r\nでした\r\n\r\nあれほど軽かった少年の体は次第\r\nに重くなり、ついには鉛のように\r\nなって臥せってしまったのです\r\n\r\nその夜、死の使いが少年の枕元に\r\n現れ、力の有効期限が終わった\r\nことを告げました\r\n",
+    "\r\n\r\n死神に引き抜かれた少年の魂を\r\n死の国の玉座で女王が迎えました\r\n\r\n「次はお前が約束を守る番だ\r\n　私のものとなれ」\r\n\r\nそういって地獄の底から響くよう\r\nな恐ろしい声をあげる女王の姿は、\r\n以前見たあの美しい女王とは\r\n大違い、醜い化け物でした\r\n\r\n",
+    "\r\n\r\n女王の本性を見た少年は絶望し、\r\nそれもまた、女王を喜ばせました\r\n\r\n少年の魂は、その後女王の慰みもの\r\nとして弄ばれ、ほどなくして輝き\r\nを失い、飽きて捨てられてしまった\r\nといいます",
+    "\r\n−−−−−−−−−−−−−−−\r\n−−−−−−−−−−−−−−−"
+   ]
+  },
+  {
+   "resource": "ArchiveViewer/Test_taitania_00.txt",
+   "units": [
+    "\r\nこれは怖ろしいあの七日間の再来だ\r\n思い出すのも苦々しい、\r\nタイタニア史に刻まれた悲劇の記憶\r\n\r\n\r\nかつて、勢いづくバレンタインの\r\n軍勢が王都まで押し寄せたとき、\r\n突如閃光とともに魔獣は現れた\r\n\r\nその牙は敵軍だけでなく、\r\n我々タイタニアの民にも向けられた\r\n",
+    "\r\nバレンタイン軍は敗走し、\r\n我が王軍の抵抗むなしく魔獣の手に\r\nより逃げ惑う民達も襲われたのだ\r\n\r\n今日、再びその悲劇が\r\n繰り返されようとしている…\r\n突如、王都に現れたドラゴンが\r\n暴れまわり、\r\n城下は大混乱となっている\r\n\r\nこれはタイタニア存亡の危機だ\r\n",
+    "\r\nこれは、怖ろしいあの七日間の再来だ。\r\n思い出すのも苦々しい、\r\nタイタニア史に刻まれた悲劇の記憶…\r\n\r\n\r\nかつて、勢いづくバレンタインの軍勢が\r\nついに王都まで押し寄せたとき、\r\n突如閃光とともに魔獣は現れた。\r\n\r\n魔獣の灼熱の息吹はバレンタイン軍を\r\n塵のように吹き飛ばし、我らに奇跡の\r\n勝利をもたらしたのだ。",
+    "\r\nだが…魔獣は止まらなかった。その牙は\r\n敵軍だけでなく、我々タイタニアの民に\r\nも向けられたのだ。\r\n\r\n我が軍の抵抗など無に等しかった。\r\n魔獣はその後、思うままに国を荒らし、\r\n霞のように掻き消えた。\r\n\r\n逃げ惑う民の悲鳴も、一矢報いんとする\r\n兵の怒声も、もはやなかった。\r\n\r\nそして今日、再びその悲劇が繰り返され\r\nようとしている。\r\n\r\n突如王都に現れた巨竜が暴れまわり、\r\n城下は大混乱だ。\r\n\r\nこれはタイタニア存亡の危機だ。\r\n",
+    "\r\n魔獣を退治し国を救った英雄\r\nエドマンド王は、今では見る影も\r\nなく衰え、頼ることもできない\r\n\r\nそればかりか王家が　竜の暴走を\r\n鎮めるためと大義を掲げ\r\n町娘や反発する貴族たちを、生贄と\r\nして命を捧げているというのだ\r\n\r\n\"紅い血の中よりいずる英雄が\r\n 青き稲妻を携え　新たな王となる\"\r\n",
+    "\r\n今はタイタニアの伝説にある新たな\r\n英雄が現れるのを祈るしかない\r\n\r\n\r\n\r\n\r\n\r\n\r\n"
+   ]
+  }
+ ]
+}

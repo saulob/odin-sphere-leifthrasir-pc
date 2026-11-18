@@ -9,7 +9,13 @@ language's own NEW GAME, LOAD and MODE labels in that title variant, or to the l
 The label's atlas rectangles are cleared and the text is placed in them, widened into free atlas space when needed; only the touched 4x4 BC3 blocks are re-encoded and the label's part and geometry
 rectangles follow. Each changed file becomes one DCPX2 target.
 
+With --ptbr the Portuguese (Brazil) patch is written instead (localization/pt-BR/visual/title-exit-ptbr.dcpx): on every
+English title atlas the Exit label reads SAIR DO JOGO and the other rows NOVO JOGO, CARREGAR, MODO CLÁSSICO and MODO
+REFINADO (title_rows.py), and its targets are the title files as the given English layer leaves
+them, so the read overlay changes nothing where that layer is not installed.
+
     make_title_exit.py game/prepared out.dcpx [--preview dir]
+    make_title_exit.py game/prepared localization/pt-BR/visual/title-exit-ptbr.dcpx --ptbr launcher/title/title-exit.dcpx
 """
 import argparse
 import re
@@ -24,10 +30,14 @@ from PIL import Image
 from scipy import ndimage
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'prompts'))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 import cpk
 import ftex
 import make_dcpx
 import patch_ftx
+import title_rows
+import title_credits
+import title_secondary
 
 TEXT = 'EXIT GAME'
 KINDS = {
@@ -59,6 +69,10 @@ LANGUAGES = {
     'it': dict(counts=(6, 8, 17), texts={'NEWGAME': 'NUOVA PARTITA', 'LOAD': 'CARICA', 'INSTALL': 'INSTALLA'},
                phrases=('ESCI DAL GIOCO', 'ESCI', 'EXIT GAME')),
 }
+# Portuguese (Brazil) runs in the English slot: its label is set on the English title art from that atlas's own letters,
+# R cut out of XTRA and J built from the I stem and the lower bowl of O (the face has no J).
+PTBR_PHRASES = ('SAIR DO JOGO', 'SAIR')
+J_JOIN, J_HOOK = 20, 27
 ALPHA_FLOOR = 8
 NATIVE_ROLES = ('NEWGAME', 'LOAD', 'MODE')
 SCALE_DEADBAND = 0.03
@@ -487,6 +501,50 @@ def native_letters(art, phrase, pool):
     return letters, sources
 
 
+def compose_j(o, i):
+    """J from the face's own strokes: the I stem down to the middle of O's right side, then O's lower bowl, its left
+    side kept only below the hook line."""
+    h, w = o.shape[:2]
+    out = np.zeros((h, w + i.shape[1], 4), np.uint8)
+    out[..., :3] = 255
+    ys, xs = np.mgrid[0:h, 0:w]
+    keep = (ys >= J_JOIN) & ((xs >= w // 2) | (ys >= J_HOOK))
+    out[:, :w][keep] = o[keep]
+    right = np.nonzero(o[J_JOIN, :, 3] > 128)[0]
+    right = right[right >= w // 2]
+    if not len(right):
+        raise Unsupported('O has no right side to join the J stem to')
+    x0 = int(right.max()) + 2 - i.shape[1]
+    if x0 < 0:
+        raise Unsupported('the I stem is wider than O')
+    stem = i[:J_JOIN + 2]
+    region = out[:J_JOIN + 2, x0:x0 + i.shape[1]]
+    take = stem[..., 3] > region[..., 3]
+    region[take] = stem[take]
+    cols = np.nonzero((out[..., 3] > ALPHA_FLOOR).any(axis=0))[0]
+    return out[:, cols[0]:cols[-1] + 1].copy()
+
+
+def ptbr_letters(art, phrase):
+    """Every letter of a Portuguese phrase from this English group's own title art: (letters, sources)."""
+    if language_of(art) != 'en':
+        raise Unsupported('Portuguese (Brazil) is set on English title art only')
+    reference = reference_glyphs(art)
+    if not reference:
+        raise Unsupported('the English title sprites NEW GAME, INSTALL and XTRA are not all there')
+    found = {letter: (glyph, 'own') for letter, glyph in {**reference, **labelled_glyphs(art)}.items()}
+    extra = components(art.crop('refined', art.role_parts('refined', 'NEWGAME2')[0]))
+    found['R'] = (cut_left(extra[1][4]), 'cut from XTRA')
+    if 'O' in found and 'I' in found:
+        found['J'] = (compose_j(found['O'][0], found['I'][0]), 'composed from I and O')
+    letters, sources = {}, {}
+    for letter in {c for c in phrase if c != ' '}:
+        if letter not in found:
+            raise Unsupported(f'no native {letter} for {phrase}')
+        letters[letter], sources[letter] = found[letter]
+    return letters, sources
+
+
 def compose(letters, phrase):
     """A phrase set from native letters: an RGBA canvas 38 rows tall, and its ink's centre row."""
     placed, gap, previous = [], 0, None
@@ -850,8 +908,9 @@ def label_metrics(kind, language, phrase, label, fit):
                 width_limited=fit.width_limited)
 
 
-def process_group(art, pool, notes, metrics=None):
-    """The patched atlas and MBS files of one build/language; every kind that is not done says why."""
+def process_group(art, pool, notes, metrics=None, ptbr=False):
+    """The patched atlas and MBS files of one build/language; every kind that is not done says why. ptbr: the
+    Portuguese (Brazil) label on English art instead of the language's own."""
     mbs = {kind: Mbs(bytes(art.mbs[kind].data)) for kind in KINDS}
     labels, status = {}, {}
     for kind in KINDS:
@@ -876,9 +935,11 @@ def process_group(art, pool, notes, metrics=None):
             language = language_of(art) or 'en'
             native = native_text_height(art, kind)
             tried = []
-            for phrase in LANGUAGES[language]['phrases']:
+            if ptbr:
+                language = 'ptbr'
+            for phrase in PTBR_PHRASES if ptbr else LANGUAGES[language]['phrases']:
                 try:
-                    letters, sources = native_letters(art, phrase, pool)
+                    letters, sources = ptbr_letters(art, phrase) if ptbr else native_letters(art, phrase, pool)
                     canvas, _ = compose(letters, phrase)
                     fit = fit_label(label, art, kind, canvas, native, others_here)
                     plans[kind] = fit.plan
@@ -890,8 +951,10 @@ def process_group(art, pool, notes, metrics=None):
             else:
                 raise Unsupported('; '.join(tried))
             own = ''.join(sorted(k for k, v in sources.items() if v == 'own')) or 'none'
-            notes.append(f'{kind}: "{phrase}" ({language}), letters of its own atlas: {own}, the rest from the title art of '
-                         f'other languages' + (f'; skipped {tried}' if tried else ''))
+            rest = ', '.join(f'{k} {v}' for k, v in sorted(sources.items()) if v != 'own') if ptbr else \
+                'the rest from the title art of other languages'
+            notes.append(f'{kind}: "{phrase}" ({language}), letters of its own atlas: {own}, {rest}' +
+                         (f'; skipped {tried}' if tried else ''))
         except Unsupported as e:
             status[kind] = f'skipped: {e}'
     share_art(labels, plans, fits, status)
@@ -957,11 +1020,155 @@ def find_reference(arts):
     raise SystemExit('no group holds the English title sprites NEW GAME, INSTALL and XTRA')
 
 
+def apply_dcpx(targets, name, data):
+    """data with the exact-CRC target of a parsed DCPX applied; None when the patch has no target for it."""
+    found = targets.get((name.lower(), len(data), zlib.crc32(data)))
+    if not found:
+        return None
+    out = bytearray(data)
+    for offset, _, after in found[1]:
+        out[offset:offset + 16] = after
+    if zlib.crc32(out) != found[0]:
+        raise SystemExit(f'{name}: the patch does not produce its own CRC32')
+    return bytes(out)
+
+
+def dcpx_targets(blob):
+    return {(n.lower(), s, b): (a, runs) for n, s, b, a, runs in make_dcpx.parse(blob)}
+
+
+def ptbr_files(art, base, files, glyphs, donors):
+    """{entry: (file after the English layer, file in Portuguese)} of one English group, with its notes and status: SAIR
+    DO JOGO on the Exit row, then every other row from the multi-language title glyphs."""
+    notes, metrics = [], []
+    blob, mbs, status = process_group(art, {}, notes, metrics, ptbr=True)
+    exited = NativeArt(blob, mbs['refined'], mbs['classic'])
+    blob, mbs, rows = title_rows.paint_rows(exited, mbs, glyphs)
+    notes += rows
+    try:
+        blob, mbs = title_secondary.apply(blob, mbs, donors)
+        notes.append('PRESS ANY BUTTON and the legal lines in Portuguese')
+    except (title_secondary.SecondaryError, KeyError, StopIteration) as e:
+        notes.append(f'PRESS ANY BUTTON and the legal lines left in English: {type(e).__name__} {e}')
+    if donors['refined']['ES'] == files['refined']:
+        notes.append('credit captions left in English: this build has no Spanish title layout')
+    else:
+        try:
+            blob, credits = title_credits.apply(blob, mbs, donors)
+            notes.append('credit captions in Portuguese: Apresentado por, Produtor, Diretor '
+                         f'({credits["texels_written"]} source texels, {credits["blocks_reencoded"]} blocks)')
+        except (title_credits.CreditError, KeyError, StopIteration) as e:
+            notes.append(f'credit captions left in English: {type(e).__name__} {e}')
+    out = {}
+    for kind, spec in KINDS.items():
+        for name, original, patched in ((spec['atlas'], art.blob, blob), (spec['mbs'], files[kind], mbs[kind])):
+            layered = apply_dcpx(base, name, original)
+            if layered is None:
+                raise Unsupported(f'{name} {zlib.crc32(original):08x}: the English title layer has no target for it')
+            if patched != layered:
+                out[name] = (layered, patched)
+    return out, notes, metrics, status
+
+
+def donor_layouts(prepared, where, files):
+    """{kind: {'ES': bytes, 'FR': bytes}}: the Spanish and French layouts of the archives holding the English `files`."""
+    out = {}
+    for kind, spec in KINDS.items():
+        for place in where:
+            pack = cpk.Cpk(Path(prepared) / place, original=True)
+            try:
+                same = zlib.crc32(pack.read(pack.find(spec['mbs']))) == zlib.crc32(files[kind])
+            except KeyError:
+                same = False
+            finally:
+                pack.f.close()
+            if not same:
+                continue
+            found = {}
+            for language in ('ES', 'FR'):
+                other = cpk.Cpk(Path(prepared) / place.replace('_UK', f'_{language}'), original=True)
+                try:
+                    found[language] = other.read(other.find(spec['mbs']))
+                finally:
+                    other.f.close()
+            out[kind] = found
+            break
+        else:
+            raise Unsupported(f'no archive holds the {kind} layout')
+    return out
+
+
+def current_crcs(prepared, where):
+    """{entry: {CRC32}} of the title files as the archives hold them now (after any in-place layer)."""
+    found = {}
+    for place in where:
+        pack = cpk.Cpk(Path(prepared) / place)
+        try:
+            for spec in KINDS.values():
+                for name in (spec['atlas'], spec['mbs']):
+                    try:
+                        found.setdefault(name, set()).add(zlib.crc32(pack.read(pack.find(name))))
+                    except KeyError:
+                        pass
+        finally:
+            pack.f.close()
+    return found
+
+
+def main_ptbr(args, groups, arts, sources):
+    base = dcpx_targets(Path(args.ptbr).read_bytes())
+    by_language = {}
+    for crc in sorted(arts):
+        by_language.setdefault(language_of(arts[crc]), arts[crc])
+    glyphs = title_rows.pool(by_language)
+    for letter in sorted(glyphs):
+        print(f'title glyph {letter}: {glyphs[letter].source}')
+    targets = []
+    for crc in sorted(groups):
+        if language_of(arts[crc]) != 'en':
+            continue
+        where = groups[crc]['where']
+        try:
+            pairs, notes, metrics, status = ptbr_files(arts[crc], base, sources[crc], glyphs, donor_layouts(args.prepared, where, sources[crc]))
+        except Unsupported as e:
+            raise SystemExit(f'atlas {crc:08x} ({where[0]}): {e}')
+        print(f'atlas {crc:08x} ({where[0]} +{len(where) - 1}): {status}')
+        for line in notes:
+            print('   ', line)
+        for mt in metrics:
+            print('    size {kind} "{phrase}": scale {scale:.3f} (wanted {wanted_scale:.3f}), shown {height:.1f} high, '
+                  '{visible_width:.1f} wide, rect {rect}, limited {width_limited}'.format(**mt))
+        if any(v != 'ok' for v in status.values()) or any(mt['phrase'] != PTBR_PHRASES[0] for mt in metrics):
+            raise SystemExit(f'atlas {crc:08x}: {status}')
+        now = current_crcs(args.prepared, where)
+        for name, (layered, _) in pairs.items():
+            state = 'matches' if zlib.crc32(layered) in now.get(name, set()) else 'differs from'
+            print(f'    {name}: English layer {zlib.crc32(layered):08x} {state} the archives now ({sorted(f"{c:08x}" for c in now.get(name, ()))})')
+            targets.append((name, layered, pairs[name][1]))
+        if args.preview:
+            shown = {}
+            for kind in KINDS:
+                label = find_label(Mbs(pairs.get(KINDS[kind]['mbs'], (None, sources[crc][kind]))[1]), kind)
+                shown[kind] = (label.parts[0].texture, label.parts[0].rect)
+            previews(Path(args.preview), f'ptbr-{crc:08x}', pairs[KINDS['refined']['atlas']][1], shown)
+    unique = {}
+    for name, orig, new in targets:
+        if unique.setdefault((name.lower(), len(orig), zlib.crc32(orig)), (name, orig, new))[2] != new:
+            raise SystemExit(f'{name} {zlib.crc32(orig):08x}: two groups patch the same file differently')
+    ordered = sorted(unique.values(), key=lambda t: (t[0], zlib.crc32(t[1]), len(t[1])))
+    blob = make_dcpx.dcpx_bytes(ordered)
+    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+    Path(args.out).write_bytes(blob)
+    print(f'{len(ordered)} targets -> {args.out} ({len(blob)} bytes)')
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('prepared')
     ap.add_argument('out')
     ap.add_argument('--preview', help='folder for 3x crops of every painted label')
+    ap.add_argument('--ptbr', metavar='TITLE_EXIT_DCPX',
+                    help='write the Portuguese (Brazil) SAIR DO JOGO patch instead, over the English layer of this patch')
     args = ap.parse_args()
     groups = collect(args.prepared)
     arts, sources = {}, {}
@@ -970,6 +1177,8 @@ def main():
             raise SystemExit(f'{group["where"]}: ambiguous title files for atlas {crc:08x}')
         sources[crc] = {kind: next(iter(files)) for kind, files in group['files'].items()}
         arts[crc] = NativeArt(group['atlas'], sources[crc]['refined'], sources[crc]['classic'])
+    if args.ptbr:
+        return main_ptbr(args, groups, arts, sources)
     ref_crc, reference = find_reference(arts)
     pool = build_pool(arts, reference)
     print(f'English letters from atlas {ref_crc:08x} ({groups[ref_crc]["where"][0]})')

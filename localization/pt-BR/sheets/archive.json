@@ -1,0 +1,1336 @@
+{
+ "kind": "archive",
+ "language": "pt-BR",
+ "entries": [
+  {
+   "source_sha256": "920c650236c50c5288fa792d6fecf4cf823c684c6c19cd9c33049bca2b805ff1",
+   "at": "ArchiveViewer/Cafe00.txt#0",
+   "pt_br": "\r\n@c( 174, 57, 32 )@y( 3 )      Sinta o rico aroma\r\n                   do chocolate fino!@/c@/y\r\n@s( 0, 0.3 )\r\n@s( 1.2 )@i@b               Pralinê@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 115 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 0.9 )　　 　 Rosemile       Cacau Puro\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "ff36259b94411e7d8bf183747885865536ed1cc2014ded47be6f1ebc2a9ae572",
+   "at": "ArchiveViewer/Cafe00.txt#1",
+   "pt_br": "\r\n@y(4)　　　O Presente Perfeito!\r\n\r\n　Para viagem, leve\r\n　       de brinde um\r\n　@b　\"Biscoito de Gengibre\"@/b\r\n"
+  },
+  {
+   "source_sha256": "3ef1c1c1cbf7c49f69e2d6a484b459c456ae037ec1ab8100d1c1b4228e91bf66",
+   "at": "ArchiveViewer/Cafe01.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )    Crocante! Croc-croc! Nhac-nhac!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　 　@i@bBiscoito de Nozes@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 0.9 )　    　 　Rosemile           Ovo　\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "6629623aeab9d573c9335cfa7b3fb1cb362852d739b67cdede69fbcf34275cd9",
+   "at": "ArchiveViewer/Cafe02.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )    Um doce de frutas leve e delicado@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 ) 　　@i@b Torta de Amora @/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 0.9 )　　　 　Amora         Ovo\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "73481e90cf8b1677b55cfd4e8146e07331f46e221a44a026f9f4ffddaff7fbdd",
+   "at": "ArchiveViewer/Cafe03.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )         Úmido e achocolatado!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )   　@i@b　　　Brownie　　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@/y\r\n@s( 0.9 )　Semente de Ruewort Cacau Puro\r\n@s( 0.9 )　　　　  Uvas Estragadas          Ovo\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "82c6605a3a519c552df94d01cfa789c0426989fdaf12473f3634f1a7c18b9a87",
+   "at": "ArchiveViewer/Cafe04.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )　 Aproveite enquanto está quente!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　          　@i@bCrepe@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 0.9 )　　　　　   　　Leite　　　　　　\r\n"
+  },
+  {
+   "source_sha256": "d1fc9e882fdc9820467a4feff5d6c077feb5cc8f827f85a25ef58e8906b7f635",
+   "at": "ArchiveViewer/Cafe05.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )　　 Doces feitos com perfeição@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )   @i@bCrepe de Geleia, 3 Versões@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@/y\r\n@s( 0.9 )　　　Napple           Amora\r\n@s( 0.9 )　　　　　   Uva                Leite\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "fbeacc3f38eb5c1ab8f5ce4ccb97b68651535faf7c6179edd23d92342843d75e",
+   "at": "ArchiveViewer/Cafe06.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )　　 　　Sempre fritinho na hora!　@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　　@i@b　　　 Churro 　　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 0.9 )　　　     　  　　Ovo　　　　　　\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "d11c195ac5d5ca41aa3bb926b4e301cd9e93034fc2888a7b7767e8d2e461d638",
+   "at": "ArchiveViewer/Cafe07.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )              Uma delícia crocante\r\n@/c@s( 0, 0.733 )\r\n@s( 1.2 )　　@i@bChurro de Chocolate　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 0.9 )　　　 Cacau Puro           Ovo\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "962878ed9b50f34d07e673ba586294aa7a68a04c5cada948c215abd5e0be7aa4",
+   "at": "ArchiveViewer/Cafe08.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )     Feita com os napples mais suculentos@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 ) 　　@i@b　Torta de Napple　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 0.9 )　　     Napple             Ruewort\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "4f1dfb1f35dc052e3ede68db7d26ad675f33a44a660027bfb097b60038528d8c",
+   "at": "ArchiveViewer/Cafe09.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )　Frutas doces e massa crocante!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )  　 @i@bMil-folhas de Amora@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 0.9 )　　　Amora     Leite          Ovo\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "03b94cea1c89fb5b4b0a66c3fd39415570e983339af9acd259c92f803579804c",
+   "at": "ArchiveViewer/Cafe10.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )　Enrolado e assado bem crocante@/c@y( 14 )\r\n@s( 0, 0 )\r\n@s( 1.2 )@i@bStrudel de Frutas e Nozes@/i@/b@y( 150 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c\r\n@s( 0.9 )　Semente de Ruewort  Uvas\r\n@s( 0.9 )　　　　Napple Murcho         Ovo\r\n@/s"
+  },
+  {
+   "source_sha256": "b8d6d980d1377e058c14818723bfe07441e9b532532ac4cf98f3410dc0d8a633",
+   "at": "ArchiveViewer/Cafe11.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )　　       Torta com queijo@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　 　@i@b　　 Cheesecake 　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 0.9 )　　     　Queijo            Ovo\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "fb86a0a251b022337932c6cc239d9aa0c578f8ea0e1ead6c9c7e15481e069194",
+   "at": "ArchiveViewer/Cafe12.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )       Um sabor elegante e cremoso@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　@i@bCheesecake de Iogurte@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 0.9 )　　　Queijo     Iogurte       Ovo\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "f56aabbaa5367dd003daec221e95eec5128a4fd251a389d6af347b6b8424ef14",
+   "at": "ArchiveViewer/Cafe13.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1 )@y(0)@c( 174, 57, 32 )　O lanche clássico feito\r\n                    à moda antiga@/c@s( 0, 0.733 )\r\n\r\n@s( 1.2 )    　@i@b　　 Panquecas 　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 0.9 )　    　  　Leite            Ovo\r\n@/s\r\n\r\n"
+  },
+  {
+   "source_sha256": "a16b0a53e5a825bc43bf878824bca8245356f7827bf09dd7db5c485437201078",
+   "at": "ArchiveViewer/Cafe14.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )      Uma delícia cremosa de chocolate!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　 　@i@bFondant de Chocolate@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 0.9 )　　Cacau Puro     Leite        Ovo\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "005fabda9e77018970f4316eb1ec58a1a10c7394950e3efedcfd32bd68ec48fe",
+   "at": "ArchiveViewer/Cafe15.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 0.9 )@c( 174, 57, 32 )     Meio doce e deliciosamente cítrico@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　  　@i@bConfit de Muggle@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 0.9 )　　　　    　　Muggle\r\n@/s\r\n\r\n"
+  },
+  {
+   "source_sha256": "5acc2f0c7fc4e3a1b80f47e61941f70569d6684163f790159446518ac3c120ed",
+   "at": "ArchiveViewer/Cafe16.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )　Agradavelmente gelado e azedinho!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )      　@i@bSorbet de Napple@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 12 )\r\n\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 6 )\r\n@s( 0.9 )　  　Napple       Turny       Leite\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "849c3af22ad332ece00e3e2bfef860097e493e7e1e8e59084cdc5944495b345a",
+   "at": "ArchiveViewer/Cafe17.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 0.9 )@c( 174, 57, 32 ) 　Uma delícia maravilhosamente macia@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )  　　@i@bMusse de Turny@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 10 )\r\n\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c\r\n@s( 0.9 )　　　　 Turny                Leite\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "bd46db40fb08e1c752c6f96f5a5b0a18679a1dee1c6a046702be7387c1a085aa",
+   "at": "ArchiveViewer/Cafe18.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 0.9 )@c( 174, 57, 32 )   Uma colherada e você vai se viciar!@/c@y( 14 )\r\n@s( 0, 0 )\r\n@s( 1.2 )　  　@i@bSorvete com Coulis@/i@/b\r\n\r\n\r\n\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@/y\r\n@s( 0.9 )　　Muggle              Turny\r\n@s( 0.9 )　　　　 　Amora                Ovo\r\n@/s\r\n\r\n"
+  },
+  {
+   "source_sha256": "1cbab667a41a4b2ad6db333634ad742dcac76c10b18d9b774e8fa6d244b7e346",
+   "at": "ArchiveViewer/Cafe19.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 0.86 )@c( 174, 57, 32 )   Sobremesa fofinha feita com creme leve@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　  @i@bCrémet d'Anjou de Muggle@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@/y\r\n@s( 0.9 )　　　Muggle     Queijo       Ovo\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "25061bfb1b90a6ed7476cda4cd8fa1f7b4092b4b69987e8b88b9845d192920a8",
+   "at": "ArchiveViewer/Cafe20.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )　　Uma bocada de felicidade!@/c@y( 14 )\r\n@s( 0, 0 )\r\n@s( 1.2 )@i@bCremet d'Anjou de Iogurte@/i@/b\r\n\r\n\r\n\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@/y\r\n@s( 0.9 )　　Muggle              Iogurte\r\n@s( 0.9 )　　　　　    Queijo             Ovo\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "4ced51d6f6f377640aae3925b2cdd273654c33786c3d7fd63273f4dcb651543a",
+   "at": "ArchiveViewer/Cafe21.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 0.95 )@c( 174, 57, 32 )      Levemente adoçado \r\n                  e suavemente macio@/c\r\n@s( 0, 0.1 )\r\n@s( 1.2 )  　　@i@bMusse de Iogurte@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c\r\n@s( 0.9 )　　　   Iogurte              Ovo\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "4a9a702eb1d6389539bd179d048073cf144a1b99fa4d8761fa9784fd1f65e2cc",
+   "at": "ArchiveViewer/Cafe22.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )             Muitas amoras! 　@/c@y( 14 )\r\n@s( 0, 0 )\r\n@s( 1.2 )  @i@bMusse de Iogurte e Frutas@/i@/b@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n\r\n\r\n\r\n\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c\r\n@s( 0.9 )　　Amora       Iogurte       Ovo\r\n@/s\r\n\r\n"
+  },
+  {
+   "source_sha256": "fd794f53e610434bad2ce144413a9de36f1b2a7aa7ba7cd6a6b86cc20b94615b",
+   "at": "ArchiveViewer/Cafe23.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1 )@c( 174, 57, 32 )         Merengue alegre e fofinho@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　    　@i@bIlha Flutuante@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y(12)\r\n@/y@s( 0.9 )　Semente de Ruewort Amora\r\n@s( 0.9 )　　　         Napple              Ovo\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "dff7ec1e3b60d676d7f20ba77aff89b252364512c270fd4b85a3db3dc1fa1409",
+   "at": "ArchiveViewer/Cafe24.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 0.95 )@c( 174, 57, 32 )    Uma sobremesa popular que\r\n                    derrete na boca@/c\r\n@s( 0, 0.1 )\r\n@s( 1.2 )　 　@i@bManjar Branco@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 12 )\r\n@/y@s( 0.9 )　Rosemile              Amora\r\n@s( 0.9 )　　　　　  Napple                Leite\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "6c2b5bae7a934736ea0c82981a2761287fd125c6b8271b54da3975820c133c69",
+   "at": "ArchiveViewer/Cafe25.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 0.95 )@c( 174, 57, 32 )        Qual é o nosso segredo?\r\n                 Bem... É segredo!@/c\r\n@s( 0, 0.1 )\r\n@s( 1.2 )　   　@i@bGelato de Iogurte@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 12 )\r\n@/y@s( 0.9 )　Napple          Ruewort             Leite\r\n@s( 0.9 )　         Turny             Iogurte\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "a4be171b339c569eb47dc76c544211e709deb525280170d57c7d011562c69243",
+   "at": "ArchiveViewer/Dummy.txt#0",
+   "pt_br": "\r\nDummy"
+  },
+  {
+   "source_sha256": "5336ac705a941fb947248b2652e48e0b46beeda1ef55848ac6c9e786a2f3a36c",
+   "at": "ArchiveViewer/Kitchen00.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )      Crocante por fora,\r\n                  macio por dentro!@/c@y( 10 )\r\n@s( 1.2 )　　@i@b　Cordeiro Grelhado　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 12 )\r\n@s( 0.95 )　　　Habaneristo      Costeleta de Cordeiro\r\n@/s"
+  },
+  {
+   "source_sha256": "6ec927127f1f4d5d2e533d600025d0e4fae7e3bb41b4218650476c5c46567f5c",
+   "at": "ArchiveViewer/Kitchen01.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )           Pegue e leve para comer!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 ) 　@i@bTorrada com Ovo@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 0.95 )　　　Pão Doce de Cruz Ovo\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "02001273857ccdb7b340552420b5aa98718678cc43623106a6b898f225557f3c",
+   "at": "ArchiveViewer/Kitchen02.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 0.9 )@c( 81, 130, 72 )  Camarão fresco e legumes saudáveis!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　 @i@bSalada de Frutos do Mar@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 12 )\r\n@s( 0.875, 0.867 )　　Cubsbane            Onionne@/y\r\n@s( 0.875, 0.867 )　　　　       Turny                 Camarão\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "0efc483a5b26fea328ed660538b5380775f5b7aba1a6d24cdce9bc5784769d74",
+   "at": "ArchiveViewer/Kitchen03.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 0.95 )@c( 81, 130, 72 ) 　 Com nosso molho de amora@/c@y( 16 )\r\n@s( 0, 0 )\r\n@s( 1.2 )@i@bSalada de Frutos do Mar@y( 5 )\r\n@s( 1.17, 1 )　　　com Amora@/i@/b@y( 120 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 12 )\r\n@s( 0.875, 0.867 )　Amora        Turny              Camarão@/y\r\n@s( 0.875, 0.867 )　　　  Cubsbane          Onionne\r\n@/s"
+  },
+  {
+   "source_sha256": "ddc3c2ad34fef911edfe79e2e599fd259c8b8325ccbb02f43da609ba438056fe",
+   "at": "ArchiveViewer/Kitchen04.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )         Uma especialidade da casa!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　 　@i@bCarpaccio de Salmão@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 0.95 )　　Onionne    Filé de Peixe    Queijo\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "77689ee519151fb965ea4013f43c8e37196dee2d7f6f2a393b24ad34e3ba90e0",
+   "at": "ArchiveViewer/Kitchen05.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 0.90 )@c( 81, 130, 72 )  Recomendada para uma dieta equilibrada!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　  　@i@b　　Salada　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@/y\r\n@s( 0.9  )　　Turny                 Onionne\r\n@s( 0.9  )　　    　　Carroteer                Ovo\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "371c11e170439dbf160e60145e12bb8a211b1e963047281c930b9a3478068d00",
+   "at": "ArchiveViewer/Kitchen06.txt#0",
+   "pt_br": "\r\n@s( 0,0.3 )\r\n@s( 1.0 )@c( 81, 130, 72 )            Mandrágora de luxo!@/c\r\n@s( 0, 0.3 )\r\n@s( 1.2 )       @i@bSalada Mandrágora　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 130 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c\r\n@s( 0.85 ) Cubsbane         Turny            Onionne\r\n@s( 0.85 )       Habaneristo         Carroteer       Ovo\r\n@/s\r\n\r\n"
+  },
+  {
+   "source_sha256": "0311bbaf42853af2a3a125b1ba80fb5f4a986f2e10b87c2c06900370ea7d2cdf",
+   "at": "ArchiveViewer/Kitchen07.txt#0",
+   "pt_br": "\r\n@s( 0.95 )@c(  81, 130, 72 )        Uma nova salada @y( 0 )\r\n              com uma crocância incrível!　@/c@y( 4 )\r\n@s( 1.2 )　     @i@bSalada com Chips@y( 5 )\r\n@s( 1.17, 1.14 )　　　　　　@/i@/b@y( 105 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )　[Ingredientes]@/c\r\n@s( 0.9 )　Semente de Ruewort   Carroteer\r\n@s( 0.9 )　　　  　 Cubsbane              Camarão\r\n@/s"
+  },
+  {
+   "source_sha256": "4a84a15c39b3281376e8307bffd6656e17ae52a538ac677a84596fa3ca20a006",
+   "at": "ArchiveViewer/Kitchen08.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )　　    　Apimente sua vida!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　   @i@bEscabeche de Salmão@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )　[Ingredientes]@/c\r\n@s( 0.9 )　Habaneristo            Onionne\r\n@s( 0.9 )　　　　　  Carroteer         Filé de Peixe\r\n@/s\r\n\r\n"
+  },
+  {
+   "source_sha256": "b28ac6cbcb7fc3fa7a0a3af92d376dde1b275acd5c1b07ce39260cc25215f4bf",
+   "at": "ArchiveViewer/Kitchen09.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )            　Frito com carinho!@/c@y( 16 )\r\n@s( 0, 0 )\r\n@s( 1.2 )  　@i@bEscabeche de Muggle@y( 5 )\r\n@s( 1.17, 1.14 )　　　　　　@/i@/b@y( 100 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c\r\n@s( 0.9 )　Muggle         Carroteer       Filé de Peixe\r\n@s( 0.9 )　　　　Habaneristo       Onionne\r\n@/s"
+  },
+  {
+   "source_sha256": "4154f8764d1c64ba69c8fb483518c8d2268437dfad95b89a90b7fcebabd9e71b",
+   "at": "ArchiveViewer/Kitchen10.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )        Peixe no vapor saudável@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　   　@i@bSalmão no Vapor@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 130 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c\r\n@s( 0.9 )　Amora            Filé de Peixe\r\n@s( 0.9 )　　　      Onionne                Leite\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "d65565d93c9cac19f8872aa82c0b2e2960edbd76ed8d24f96158acf3a90c42c5",
+   "at": "ArchiveViewer/Kitchen11.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )           Cozida e saborosa!@/c\r\n@s( 0, 0.4 )\r\n@s( 1.2 )　        @i@bSopa de Cebola@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@y( 30)@s( 0, 0 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 10 )\r\n@s( 0.9 )　    Onionne     Queijo    Pão Doce de Cruz\r\n@/s\r\n\r\n"
+  },
+  {
+   "source_sha256": "f3588c6c217f3ec32d3fc336f4e966b58fa3282013c5d1a55364ac5a5bd49eb9",
+   "at": "ArchiveViewer/Kitchen12.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )　　　      Sopa gelada@/c@y( 14 )\r\n@s( 0, 0 )\r\n@s( 1.2 )　 @i@bSopa Fria de Queijo@y( 2 )\r\n@s( 1.17, 1.0 )　　　　　　　　@/i@/b@y( 120 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 10 )\r\n@s( 0.95 )　　 Turny      Queijo     Iogurte\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "d5bd2ae0725339d4f9b02026512c70416e256671d0653374200e56ae463fa065",
+   "at": "ArchiveViewer/Kitchen13.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )          Perfeita para um dia quente!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　   @i@b　　Vichyssoise　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c\r\n@s( 0.9 )　　 Turny               Ruewort\r\n@s( 0.9 )　　　          Onionne              Leite\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "be4879cfc3c7f65499ac5e8db65756ee0d5608057e684a381a5c9f6226626b3a",
+   "at": "ArchiveViewer/Kitchen14.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )　           O rei das sopas!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )    　@i@b　　Consomê　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c\r\n@s( 0.9 )　　Carroteer            Ruewort\r\n@s( 0.9 )　　　　　    Onionne             Galinha\r\n@/s"
+  },
+  {
+   "source_sha256": "1448439646782715a660f2dd8a3da05f812488af3abb52b4db26db056fa72946",
+   "at": "ArchiveViewer/Kitchen15.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 0.9 )@c( 81, 130, 72 )      Cozido lentamente para seu deleite!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )   @i@b　　 　Pot-au-feu　　　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 0.95  )　 　Turny      Carroteer    Galinha\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "f407d7fd548edf2c9abe6bd28922c84889afa8df4dafea44f815f0efb1a7515b",
+   "at": "ArchiveViewer/Kitchen16.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )          O favorito da família!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　　@i@bEnsopado Cremoso@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 0.95 )　　  　Filé de Peixe       Leite\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "1004c9d94360cdaa2bfe76dc589a9c2073a16eb61306ad4dbb4bd8cc1e9509e4",
+   "at": "ArchiveViewer/Kitchen17.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )        Cremoso e cheio de sabor!@/c@y( 14 )\r\n@s( 0, 0 )\r\n@s( 1.2 )@i@bEnsopado Cremoso de Turny@y( 4 )\r\n@s( 1.17, 1.14 )　　　　　@/i@/b@y( 120 )\r\n@/y@s( 0, 0 )@y( 2 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 5 )\r\n@s( 0.95 )　　 Turny      Filé de Peixe  Leite\r\n@/s\r\n\r\n"
+  },
+  {
+   "source_sha256": "23ce41da0292f5c16f089108e12473b2bc7775eab8ad1483f99e475a585e8029",
+   "at": "ArchiveViewer/Kitchen18.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 0.87 )@c( 81, 130, 72 )  Um ensopado com um toque de iogurte!@/c@y( 14 )\r\n@s( 0, 0 )\r\n@s( 1.2 )　　@i@bEnsopado de Iogurte@y( 4 )\r\n@s( 1.17, 1.14 )　　　　@/i@/b@y( 120 )\r\n@/y@s( 0, 0 )@y( 2 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 8 )\r\n@s( 0.9 )　　Carroteer    Iogurte    Galinha\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "42b7e3d9de2c849be0787f35ca60b5bd311e0e945778b0e3c2ccbc9085d9317f",
+   "at": "ArchiveViewer/Kitchen19.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 0.9 )@c( 81, 130, 72 )        Camarões graúdos\r\n                 simplesmente irresistíveis! @/c\r\n@s( 0, 0 )\r\n@s( 1.2 ) 　　@i@bCamarão ao Peperoncino@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 1.0 )　　 Habaneristo         Camarão\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "1d6c71848b9f1b25be33a0ff51e7b750727b44907f475472b7b2ec303d641b9d",
+   "at": "ArchiveViewer/Kitchen20.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )　　   Aproveite enquanto está quente! @/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　　@i@b　　　Nhoque 　　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 1.0 )　         Leite            Ovo\r\n@/s"
+  },
+  {
+   "source_sha256": "b9dc7a4720257e79c47e5c3918a2114998d261861d69fe1d215f0e572bb2c989",
+   "at": "ArchiveViewer/Kitchen21.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 0.9 )@c( 81, 130, 72 )    Tão divertido de ver quanto de comer!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 ) 　@i@b　　Nhoque Tricolor　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c\r\n@s( 0.85 )　Habaneristo              Leite\r\n@s( 0.85 )　　　　　Carroteer                 Ovo\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "b5013082588541a95013c9338bb6b022972adce2c60a341d67b3d4b5d8f9030c",
+   "at": "ArchiveViewer/Kitchen22.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )　         Assado no ponto certo!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )   @i@b　Doria de Camarão　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 0.95 )　　　　Camarão            Queijo\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "8d23a75bcc3026ae7c1750a2e7a8259857da3355e6a85a663535b03c4c1bbda3",
+   "at": "ArchiveViewer/Kitchen23.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 0.95 )@c( 81, 130, 72 )      Tão bom e leve,\r\n              que dá para comer como lanche!@/c@y( 18 )\r\n@s( 1.2 )　 　@i@b　 Quiche Lorraine 　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 100 )\r\n@/y@s( 0, 0 )@y( 6 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 12 )\r\n@s( 0.95 )　 　Onionne     Queijo     Ovo\r\n@/s\r\n\r\n"
+  },
+  {
+   "source_sha256": "04a67839bdd4c4c118fd3104b5db31b54fb7001693c7e930f7303729d63a9da1",
+   "at": "ArchiveViewer/Kitchen24.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )      Tão leve, fofinha e deliciosa!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　 @i@b　　　 Omelete 　　　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 1.0 )　　     　　　 Ovo\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "cc17c1268a66160abbb2261d6e4c5663456d5209b4f3dd75aad3af4a68ab83ed",
+   "at": "ArchiveViewer/Kitchen25.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 0.9 )@c( 81, 130, 72 )  Uma omelete saborosa com queijo derretido@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 ) 　@i@b　Omelete de Queijo　@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 1.0 )　　　   Queijo          Ovo\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "ac92aa661100c7fa8958dcf95130bf825fcce9103f7f6e88ddfe580bb3b7467b",
+   "at": "ArchiveViewer/Kitchen26.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 0.95 )@c( 81, 130, 72 )　      O aroma do camarão\r\n                     e de ervas frescas! @/c\r\n@s( 0, 0.2 )\r\n@s( 1.2 ) 　　  @i@bCamarão às Ervas @/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 1.0 )　　　 Ruewort           Camarão\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "a08faf6e6010c80bba5f7a25e64b8fcf7f3d62ad2606b360dff9122230d88db5",
+   "at": "ArchiveViewer/Kitchen27.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 0.95 )@c( 81, 130, 72 )        Quem resiste ao cheiro\r\n                      de queijo assado? @/c\r\n@s( 0, 0.2 )\r\n@s( 1.2 )　　@i@bFrango Gratinado@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 1.0 )　　　 Queijo         Galinha\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "29a7ebb2972e9b0af58050525090fa0e80d6d7a1881eb3b3b8132530b8474085",
+   "at": "ArchiveViewer/Kitchen28.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )　       Assado, quente e cremoso@/c@y( 16 )\r\n@s( 0, 0 )\r\n@s( 1.2 )　　  @i@bFrango ao Molho@y( 5 )\r\n@s( 1.17, 1.14 )　　　　　　　　　@/i@/b@y( 120 )\r\n@/y@s( 0, 0 )@y( 2 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 6 )\r\n@s( 1.0 )　　  Onionne   Queijo    Galinha\r\n@/s"
+  },
+  {
+   "source_sha256": "0e7029ab1c6b6c73400f05e79b4166ca6181ad1fb969f42981ddd89411d9a7ed",
+   "at": "ArchiveViewer/Kitchen29.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 0.95 )@c( 81, 130, 72 )     Pele crocante e carne suculenta\r\n              são uma combinação vencedora!@/c@s( 0, 1.2 )\r\n@s( 1.2 )　  　@i@bFrango Picante@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 6 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 12 )\r\n@s( 1.0 )　　  Habaneristo       Galinha\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "95975b9a7551a58b211e112fba438e71bc441fab5d57e9e6e8c70df776d0ac9d",
+   "at": "ArchiveViewer/Kitchen30.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )　Um prato de deixar as orelhas em pé!　　@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )　       @i@bBife Tártaro@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 120 )\r\n@/y@s( 0, 0 )@y( 9 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 19 )\r\n@s( 1.0 )　　 　Costeleta de Cordeiro Ovo\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "1cb7c96ebeff668febebe7110eb35f26d12807d49f201e70dfff57d7cda4a8d3",
+   "at": "ArchiveViewer/Kitchen31.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )　             Carne saudável!@/c\r\n@s( 0, 0.733 )\r\n@s( 1.2 )          @i@bCordeiro Assado@/i@/b\r\n@s( 1.17, 0.4 )　　@y( 140 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c\r\n@s( 0.9 )　　Napple             Onionne\r\n@s( 0.9 )　　     　 Amora            Costeleta de Cordeiro\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "532749e71a1e42553b17afdd679b6f2f08c23fb6ea05b38508eb2acccf5b420a",
+   "at": "ArchiveViewer/Kitchen32.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )            Assado e depois gelado@/c@s( 0, 1.4 )\r\n@s( 1.2 )　   　@i@bFrango Recheado@/i@/b\r\n@y( 55 )\r\n@s( 1.17, 0.4 )\r\n@/y@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c\r\n@s( 0.95 )　　　Turny             Leite\r\n@s( 0.95 )　　　　　　Onionne          Galinha\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "e1dd6e76e6b6bc449c1ac60954e32088df9e47215db260544fb239079c17a941",
+   "at": "ArchiveViewer/Kitchen33.txt#0",
+   "pt_br": "\r\n@s( 0, 0 )\r\n@s( 1.0 )@c( 81, 130, 72 )　　   Grelhado com cebolas@/c@y( 16 )\r\n@s( 0, 0 )\r\n@s( 1.2 )　   @i@bBife de Cordeiro@y( 5 )\r\n@s( 1.17, 1.14 )　　　@/i@/b@y( 110 )\r\n@s( 0.85 )@c( 112, 82, 35 )[Ingredientes]@/c@y( 8 )\r\n@s( 0.9 )　Habaneristo    Onionne        Costeleta de Cordeiro\r\n@s( 0.9 )　　　Carroteer          Ruewort\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "56f2a54b342df009f15db5c13be7ba2c539a2644a59120e4d3fae40ab9fac098",
+   "at": "ArchiveViewer/MagicMix00.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  A@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Antídoto@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "49d89c4bae014d4c0e0652229b9469bbbbb169bcf84c12dd39e046452ef992e7",
+   "at": "ArchiveViewer/MagicMix00.txt#1",
+   "pt_br": "\r\n@y( -10 )\r\n=Explicação=\r\n\r\n@s( 1.0 , 1.0 )@y( 4 )Remove o veneno do corpo e também cura\r\nferimentos. Além disso, evita envenenamento\r\npor tempo limitado.\r\n@y( 5 )@/s\r\n\r\n\r\n\r\n@y( 10 )\r\n(Exemplo de Mistura)\r\nMaterial            Cubsbane\r\n\r\n@s( 1.2 )　　　　　+　　　　　@/s\r\n @/y\r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "92d7fd55881a1016bc733d10d5d829900946aa40ee480ac578dbb7b14e807cbc",
+   "at": "ArchiveViewer/MagicMix00.txt#2",
+   "pt_br": "\r\n (Mais Exemplos de Mistura)\r\n\r\n ◆ Nuvem Assassina + Cubsbane\r\n \r\n ◆ Toxina + Cubsbane@s(0.7,0.7) x@s(0.9,1)2\r\n \r\n @/s"
+  },
+  {
+   "source_sha256": "7a8cbf1f7325b9a92b27af20b79b5b78b63f1e353bc3e33172ea8992e8236e35",
+   "at": "ArchiveViewer/MagicMix01.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  B@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Labareda@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "9d3b5ca0218bb1d32ff41c4d39521718de4b3297a40c62092a7e0fbbf0213071",
+   "at": "ArchiveViewer/MagicMix01.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nCria um pilar de fogo. O pilar\r\n\r\nqueima por um longo período.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Exemplo de Mistura)\r\n Material　　　  Habaneristo\r\n \r\n @s( 1.2 )　　　　　+　　　　　@/s\r\n @/y\r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "564a38af30b572bc51400df8910ef66c117fbbe7b52eb3bf0b0cf1db8b719624",
+   "at": "ArchiveViewer/MagicMix01.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n @s(0.9,1)◆ Vulcão + Habaneristo@y( -3 )\r\n\r\n ◆ Espíritos de Fogo + Habaneristo@s(0.7,0.7) x@s(0.9,1)2\r\n\r\n ◆ Ciclone + Aquecedor\r\n \r\n @/s\r\n "
+  },
+  {
+   "source_sha256": "2e417edcd0bd73c15ab601ca7e113e1cd03e5850f461d188b7145624bf1613b2",
+   "at": "ArchiveViewer/MagicMix02.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  C@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Ciclone@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "bf903d1dad451999787cab5727b94389add064b0dd2dc81dc2add3c70c50f7d0",
+   "at": "ArchiveViewer/MagicMix02.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nCria um tornado gélido.\r\n \r\nPode congelar quem o tocar.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Exemplo de Mistura)\r\n 　Material　　　  　Turny 　\r\n \r\n @s( 1.2 )　　　　　+　　　　　@/s\r\n @/y\r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "884d391987b16c160f8978ba1d56ac30e939c5acac3779f28490647db68ad307",
+   "at": "ArchiveViewer/MagicMix02.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n@s(0.95,1)◆ Redemoinho + Turny@y( -3 )\r\n \r\n ◆ Espíritos de Gelo + Turny@s(0.7,0.7) x@s(0.9,1)2\r\n \r\n ◆ Labareda + Resfriador\r\n @/s\r\n "
+  },
+  {
+   "source_sha256": "cf6df876d2c8c5c5248774a2578474264ce8cfe7b6c6e7da0115295d6df72515",
+   "at": "ArchiveViewer/MagicMix03.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  D@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Dreno@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "20ed547bd5e090bc0c7badd41ade62edb49038bd60c3166ee5400a1fb0be55d5",
+   "at": "ArchiveViewer/MagicMix03.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nDrena os Phozons de todos os seres\r\n\r\nvivos ao redor.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Exemplo de Mistura)\r\n  Material　　　　　　Semente　　\r\n \r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x2@/b@/c\r\n @/y\r\n\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "5ee60fde728fa3f939574cd2a9be8a64cdc6e6c4a0a86c10f477e7597070824c",
+   "at": "ArchiveViewer/MagicMix03.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n@s(0.95,1)◆ Naturalização + Semente\r\n \r\n ◆ Phozons Extras + Semente@s(0.7,0.7) x@s(0.9,1)2\r\n @/s\r\n \r\n "
+  },
+  {
+   "source_sha256": "4e0a3c925f00b5ea1a10087244b7e6317b9f1911a7ea01215e5b42b6e4cad8a8",
+   "at": "ArchiveViewer/MagicMix04.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  E@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Elixir@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "9f684d406285daede7c7131cb44f23ca75111e2d945c7d50b1149d33497fc9ad",
+   "at": "ArchiveViewer/MagicMix04.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nCura ferimentos do corpo. Também\r\n\r\nprotege contra danos externos.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Exemplo de Mistura)\r\n  　Material　　　　Carroteer　 \r\n \r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x3@/b@/c\r\n @/y\r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "8ef43b161e798bcc9fb58199ccdf2fbe338eae0ceb3fc2b706a304da7b1b5c79",
+   "at": "ArchiveViewer/MagicMix04.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n@s(0.9,1)◆ Restauração + Carroteer\r\n \r\n ◆ Tônico Curativo + Carroteer@s(0.7,0.7) x@s(0.9,1)2\r\n @/s\r\n "
+  },
+  {
+   "source_sha256": "9be396f577ba43ced94451f7daf6ecea229a3debc5e21c1a4365c9c3bb8571e9",
+   "at": "ArchiveViewer/MagicMix05.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  F@/s\r\n@/y　@y( 5 )\r\n @s(1.8,1.5)Espíritos de Fogo@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "313068a6c0079b097c06bbf60674149839ade521191e99a476950b2e495f9839",
+   "at": "ArchiveViewer/MagicMix05.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nInvoca espíritos de fogo. Inimigos que\r\n \r\nse aproximarem serão envoltos em chamas.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Exemplo de Mistura)\r\n  　　 Material　　　　Habaneristo 　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x2@/b@/c\r\n @/y \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "52246ae65d8c04e2d8726da85f33ec6338fda30d9b878add04f2ce917574b6e2",
+   "at": "ArchiveViewer/MagicMix05.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n ◆ Labareda + Habaneristo@y( -3 )\r\n \r\n ◆ Vulcão + Habaneristo@s(0.7,0.7) x@s(0.9,1)2\r\n \r\n ◆ Espíritos de Gelo + Aquecedor\r\n @/s\r\n "
+  },
+  {
+   "source_sha256": "21d041ac26bd370363b4c4c04f1c97ae593e612f5f24c34e6d00cdbede6c024d",
+   "at": "ArchiveViewer/MagicMix06.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  G@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Ouro@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "17cfab0d91c036c5a14eccac0218eeb5731b34b61f32bb2ad852c1665bfcbcd0",
+   "at": "ArchiveViewer/MagicMix06.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nGera dinheiro a partir dos ferimentos\r\n\r\ndos inimigos. Criada para financiar guerras.\r\n@y( 12 )\r\n \r\n \r\n \r\n \r\n(Exemplo de Mistura)\r\n  　　Material　　　　Onionne 　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x3@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "2bda370124739c12c2a3ebdac1f51b76c2331bec017657c20964a977e2c67fbe",
+   "at": "ArchiveViewer/MagicMix06.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n ◆ Mistura da Sorte + Onionne\r\n \r\n ◆ Brilho + Onionne@s(0.7,0.7) x@s(0.9,1)2\r\n @/s"
+  },
+  {
+   "source_sha256": "5ae4a2b86a6b62f49dd083f894fa80759993ac63f35dc6d7300a7b72d3121b53",
+   "at": "ArchiveViewer/MagicMix07.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  H@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Tônico Curativo@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "9e9cf1d436fb4a73694a76c6744191a403897b8eb1fa8554ecff5095a1a235fb",
+   "at": "ArchiveViewer/MagicMix07.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nCura ferimentos físicos. Dizem ser\r\n \r\nindispensável em longas jornadas.\r\n@y( 12 )\r\n \r\n \r\n \r\n \r\n(Exemplo de Mistura)\r\n Material　　　Carroteer\r\n \r\n 　　　　　+　　　　　\r\n @/y\r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "41fccc93bd1f11c3c89daedd10fac65c369a69c52cc3c4da6693ebbf5d23ec16",
+   "at": "ArchiveViewer/MagicMix07.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n ◆ Elixir + Carroteer@y( -3 )\r\n \r\n ◆ Restauração + Carroteer@s(0.7,0.7) x@s(0.9,1)2\r\n \r\n ◆ Material + Fruta Estragada\r\n @/s"
+  },
+  {
+   "source_sha256": "50cd8ddbb293449d795c4145fc1dc51b470425e06a23fbef16bcb135eb3fd065",
+   "at": "ArchiveViewer/MagicMix08.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  I@/s\r\n@/y　@y( 5 )\r\n @s(1.7,1.5)Espíritos de Gelo@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "31d6afd5fd41a4d69dc0847fc3aa7be75fe2f501e3df34425b7cd1aaf1a66ed8",
+   "at": "ArchiveViewer/MagicMix08.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nInvoca espíritos de gelo como escudos.\r\n \r\nAo serem atingidos, liberam um frio intenso.\r\n@y( 12 )\r\n \r\n \r\n \r\n \r\n(Exemplo de Mistura)\r\n  　　Material　　　　Turny 　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x2@/b@/c\r\n @/y  \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "c9da55055136554f550531e0deb97ed7d71465ca652ca851a9e8d3c3c668886d",
+   "at": "ArchiveViewer/MagicMix08.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n ◆ Ciclone + Turny@y( -3 )\r\n \r\n ◆ Redemoinho + Turny@s(0.7,0.7) x@s(0.9,1)2\r\n \r\n ◆ Espíritos de Fogo + Resfriador\r\n @/s"
+  },
+  {
+   "source_sha256": "a622ae2f6d04f488b79c7b2d6b8a83300d22dd17f81b34853291d2e25bee8941",
+   "at": "ArchiveViewer/MagicMix09.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  J@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Malabarista@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "1b5ef7ac218e85d0f0d29bd9fff655abfc55637dc5537024f2997e0820d3b4da",
+   "at": "ArchiveViewer/MagicMix09.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nTransforma itens no chão em\r\n\r\noutros itens.\r\n@y( 12 )\r\n \r\n \r\n \r\n \r\n(Exemplo de Mistura)\r\n  　  Material　　　Osso/Miolo/Talo　　\r\n \r\n 　　　　　+　　　　　\r\n @/y\r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "746676f1ec6c348d63f5bc63178174bd1c13beada7e175fd6bf30825899f7a03",
+   "at": "ArchiveViewer/MagicMix09.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n@s(0.9,1)◆ Invisível + Osso/Miolo/Talo\r\n \r\n ◆ Metamorfose + Osso/Miolo/Talo@s(0.7,0.7) x@s(0.9,1)2\r\n @/s"
+  },
+  {
+   "source_sha256": "fc13c1ffd792a4cd0e4853b795cb40ca73ef585a331a4dfb60bf6720c7ee2926",
+   "at": "ArchiveViewer/MagicMix10.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  K@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Nuvem Assassina@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "8a1fe4f9bd7cb43ee4d2b7041e1342624fbde15323f5b2ccc3e81724b04c8e04",
+   "at": "ArchiveViewer/MagicMix10.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nConjura uma nuvem tóxica que envenena\r\n\r\nquem a tocar.\r\n@y( 12 )\r\n \r\n \r\n \r\n \r\n(Exemplo de Mistura)\r\n  　　Material　　　　Cubsbane 　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x3@/b@/c\r\n @/y  \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "b41a93afff119cbfb48f2098b13b19f98df319d75dc136e5c2f0f501b3dda3ec",
+   "at": "ArchiveViewer/MagicMix10.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n ◆ Toxina + Cubsbane\r\n \r\n ◆ Antídoto + Cubsbane@s(0.7,0.7) x@s(0.9,1)2\r\n @/s"
+  },
+  {
+   "source_sha256": "6d197d6036ab4ed41a546b2ab9f7804b236f0727a0b9a744e278737b9675f03d",
+   "at": "ArchiveViewer/MagicMix11.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  L@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Mistura da Sorte@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "cdde90968423154f30f3d153fec92b7855230ccccede8d0e105af0cd1c9238e9",
+   "at": "ArchiveViewer/MagicMix11.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nTraz boa sorte. Você pode\r\n\r\nencontrar algo inesperado.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Exemplo de Mistura)\r\n  　Material　　　 Onionne 　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x2@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "024b1d583b65b8c58795bb5cf32e793a7caa41c71a1f6459aba52a24b5e8ec48",
+   "at": "ArchiveViewer/MagicMix11.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n ◆ Brilho + Onionne\r\n \r\n ◆ Ouro + Onionne@s(0.7,0.7) x@s(0.9,1)2\r\n @/s\r\n "
+  },
+  {
+   "source_sha256": "87c076fb080798be9693e150e4b957f5757f2dc89db31340e2e74c5b803d7fda",
+   "at": "ArchiveViewer/MagicMix12.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  M@/s\r\n@/y　@y( 5 )\r\n @s(1.8,1.5)Metamorfose@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "64dbc4c71ae997d53a1b43dd0062e2f138418bf757da11399c10c62dc69901bc",
+   "at": "ArchiveViewer/MagicMix12.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nTransforma os seres próximos em sapos.\r\n\r\nTambém desfaz a maldição do sapo.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Exemplo de Mistura)\r\n  　     Material　　　　Osso/Miolo/Talo　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x2@/b@/c\r\n @/y \r\n \r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "67efdddb82c2f7217fba2cbb3cf91bbb48ff53a365b0abac51f023240095da47",
+   "at": "ArchiveViewer/MagicMix12.txt#2",
+   "pt_br": "\r\n (Mais Exemplos de Mistura)\r\n\r\n@s(0.9,1)◆ Malabarista + Osso/Miolo/Talo\r\n \r\n ◆ Invisível + Osso/Miolo/Talo@s(0.7,0.7) x@s(0.9,1)2\r\n @/s"
+  },
+  {
+   "source_sha256": "d86ab1333dab5f143d0778a26529dffb8289a00651209317ac6d481feb81372e",
+   "at": "ArchiveViewer/MagicMix13.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  N@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Naturalização@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "abe7dec2705c777f8a6f8b20d1c3be7786b3a904d1b497d5897d9413572a2b34",
+   "at": "ArchiveViewer/MagicMix13.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nDecompõe matéria orgânica solta\r\n\r\ne a converte em Phozons.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Exemplo de Mistura)\r\n   Material　　　　　Semente　　　\r\n \r\n@s( 1.2 )　　　　　+　　　　　@/s\r\n @/y\r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "1524bb097e1832fa8b30e39458e18e21460f5ad67fd2d6cffd7a82832625952d",
+   "at": "ArchiveViewer/MagicMix13.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n@s(0.95,1)◆ Phozons Extras + Semente\r\n \r\n ◆ Dreno + Semente@s(0.7,0.7) x@s(0.9,1)2\r\n @/s\r\n "
+  },
+  {
+   "source_sha256": "2bc420e3966b611833e888730f45aceb8c1daa3353b15ad1c0d9c5f34e982ba9",
+   "at": "ArchiveViewer/MagicMix14.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  O@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Sobrecarga@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "10ef715e5886981ed12d3de6e735eb8ff6bf9684d1d649a86a1160444502b426",
+   "at": "ArchiveViewer/MagicMix14.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nPoção de guerreiro que transforma vontade em força.\r\n \r\nTodos os ataques causam mais dano.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Exemplo de Mistura)\r\n  　Material　　　　 Equipamento 　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x2@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "2411b1e13176efa7a1924bd1f1e7ec86c806def563a2874c8b36bf8cecf182a6",
+   "at": "ArchiveViewer/MagicMix14.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n ◆ Analgésico + Equipamento@y( -3 )\r\n \r\n ◆ Carga Rápida + Equipamento@s(0.7,0.7) x@s(0.9,1)2\r\n \r\n ◆ Vulcão + Aquecedor\r\n @/s"
+  },
+  {
+   "source_sha256": "592ed1e92b6f7246dd37f0cf496a5f8358847725e6c8805d53e0b61697b94ab9",
+   "at": "ArchiveViewer/MagicMix15.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  P@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Analgésico@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "b8f4ff983b36e714d7e05aaffab1a6772671c76ca4d8ff8e9ff2e77eb4a969cd",
+   "at": "ArchiveViewer/MagicMix15.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nBloqueia a dor temporariamente. Reduz\r\n\r\no dano sofrido e evita ser repelido.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Exemplo de Mistura)\r\n 　Material　　　　Equipamento　　\r\n \r\n@s( 1.2 )　　　　　+　　　　　@/s\r\n @/y\r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "1919673cdbfdbf3ffe38a988629e04bb90ac9015dbd466592e1c4557b75d3003",
+   "at": "ArchiveViewer/MagicMix15.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n◆ Carga Rápida + Equipamento@y( -3 )\r\n \r\n ◆ Sobrecarga + Equipamento@s(0.7,0.7) x@s(0.9,1)2\r\n \r\n ◆ Redemoinho + Resfriador\r\n @/s\r\n "
+  },
+  {
+   "source_sha256": "60ff9867bf55bab76226fe9c692a77f6302b65350b23e8df4bc165c503f8c1ef",
+   "at": "ArchiveViewer/MagicMix16.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  Q@/s\r\n@/y　@y( 3 )\r\n @s(1.9,1.5)Carga Rápida@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "71acc1c95b6ea909442c3d8987b16c24cf6238cc125e20b7aa501abe463ca48f",
+   "at": "ArchiveViewer/MagicMix16.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nAcelera a recuperação do cansaço.\r\n\r\nTambém reduz o consumo de energia.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Exemplo de Mistura)\r\n  　Material　　　　 Equipamento　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x3@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "1f2583ef467670c523a7b781b1acf607350bc95bdb5a0b0be8d8d4c0fd37e9b5",
+   "at": "ArchiveViewer/MagicMix16.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n@s(0.95,1)◆ Sobrecarga + Equipamento\r\n \r\n ◆ Analgésico + Equipamento@s(0.7,0.7) x@s(0.9,1)2\r\n @/s"
+  },
+  {
+   "source_sha256": "0550e69e2318315b36a9845d6d7b1b2e0fd77ac3d739f402098c64d1d8ea59af",
+   "at": "ArchiveViewer/MagicMix17.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  R@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Restauração@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "5690b7f6ed2dfc70edac5150e641f2712e56e9c61d07f917cd181c7d2e61c7ed",
+   "at": "ArchiveViewer/MagicMix17.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nRecarrega diretamente o poder mágico. Essencial\r\n\r\npara quem usa magias poderosas.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n (Exemplo de Mistura)\r\n  　　　Material　　　　Carroteer 　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x2@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "92a3f7495d7c9a3fc435ec9a70eed0503f3cb3452cdfd5f336469c5ade99601f",
+   "at": "ArchiveViewer/MagicMix17.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n@s(0.9,1)◆ Tônico Curativo + Carroteer\r\n \r\n ◆ Elixir + Carroteer@s(0.7,0.7) x@s(0.9,1)2\r\n @/s\r\n "
+  },
+  {
+   "source_sha256": "608da4c94cec2fd5adc0d4c8dafd9160b8c760e464fda1736d22b6fb4e526047",
+   "at": "ArchiveViewer/MagicMix18.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  S@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Brilho@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "9aa084a53cff63ca366b06e7cda0621c9d46900384168e3c9547a981fc3020a8",
+   "at": "ArchiveViewer/MagicMix18.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nIlumina a área com uma luz intensa.\r\n\r\nDissipa a escuridão e revela fantasmas.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Exemplo de Mistura)\r\n  　Material　　  　Onionne　　 \r\n \r\n 　　　　　+　　　　　\r\n @/y\r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "7d8ca11a9a5410e3909ff57b703230bc8b7b6c2d3e39019cde9f73b16c86284f",
+   "at": "ArchiveViewer/MagicMix18.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n@s(0.95,1)◆ Ouro + Onionne\r\n \r\n ◆ Mistura da Sorte + Onionne@s(0.7,0.7) x@s(0.9,1)2\r\n @/s"
+  },
+  {
+   "source_sha256": "255557d36637b194a4b7c711cad551a73a490514720131a7b9e6aa3392499bce",
+   "at": "ArchiveViewer/MagicMix19.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  T@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Toxina@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "f4a29c6a34d72c6853a8c69f14f9d13e4ad38aa673daa3611764fb58f1adbae8",
+   "at": "ArchiveViewer/MagicMix19.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nCria uma névoa que rasteja adiante.\r\n\r\nQuem a tocar será envenenado.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Exemplo de Mistura)\r\n  　　Material　　　　Cubsbane 　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x2@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "5e241167e8c64f5dd2798a4351b84f9b182b00e1d219ba09c25c1838373828d7",
+   "at": "ArchiveViewer/MagicMix19.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n@s(0.9,1)◆ Antídoto + Cubsbane\r\n \r\n ◆ Nuvem Assassina + Cubsbane@s(0.7,0.7) x@s(0.9,1)2\r\n @/s"
+  },
+  {
+   "source_sha256": "05daf153004dacd241a65ed8c7cb99a31ee19a5effa8f567a4373979b661e5e5",
+   "at": "ArchiveViewer/MagicMix20.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  U@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Invisível@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "45606351da6013370c99960f1f5b39f23093e541d7bb8426a23e436a6966f3b0",
+   "at": "ArchiveViewer/MagicMix20.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nDeixa o usuário invisível e incapaz de\r\n\r\ninteragir com o mundo. Usado em viagens seguras.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Exemplo de Mistura)\r\n  　    Material　　   Osso/Miolo/Talo 　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x3@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "fe4652b92afd199e25ab1bbb3a5d2479c5a751f057a6c3d8635fac7699380e05",
+   "at": "ArchiveViewer/MagicMix20.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n@s(0.85,0.97)◆ Metamorfose + Osso/Miolo/Talo\r\n \r\n ◆ Malabarista + Osso/Miolo/Talo@s(0.7,0.7) x@s(0.9,1)2\r\n @/s\r\n "
+  },
+  {
+   "source_sha256": "9b27479ddbc5aad69fe69a29842fc24011a11148edca07331d5d20b8a5a6d591",
+   "at": "ArchiveViewer/MagicMix21.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  V@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Vulcão@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "4e24e4ae0b200e0ac0979bc4ac485716eb3949dee096731a023abf26e64bc0b9",
+   "at": "ArchiveViewer/MagicMix21.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nCria uma série de explosões. Tudo o que\r\n\r\nestiver à frente será destruído pelas chamas.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Exemplo de Mistura)\r\n  　　 Material　　　　Habaneristo　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x3@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "a87d6ce17ce44bee2e5e2ef0ea7252c731a639a91e559e96731b5abc1bbea1ee",
+   "at": "ArchiveViewer/MagicMix21.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n@s(0.9,1)◆ Espíritos de Fogo + Habaneristo@y( -3 )\r\n \r\n ◆ Labareda + Habaneristo@s(0.7,0.7) x@s(0.9,1)2\r\n \r\n ◆ Redemoinho + Aquecedor\r\n @/s"
+  },
+  {
+   "source_sha256": "de4ed0c9ccffe0d2e79acc1e67944d6a9839b433f62ba321e8ca733e85c3382b",
+   "at": "ArchiveViewer/MagicMix22.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  W@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Redemoinho@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "6e34bf08d8c8421bb0f91269978d10fd9dace670f0f1b8da5703b2d04492a1fe",
+   "at": "ArchiveViewer/MagicMix22.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nCria um redemoinho gigante e congelante.\r\n\r\nPuxa e suga tudo o que estiver por perto.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Exemplo de Mistura)\r\nMaterial      　　 Turny\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x3@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "4bf8c300d5d7d386ddc96352a7d0eab61969065f41f274b85d8b7727745576da",
+   "at": "ArchiveViewer/MagicMix22.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n ◆ Espíritos de Gelo + Turny@y( -3 )\r\n \r\n ◆ Ciclone + Turny@s(0.7,0.7) x@s(0.9,1)2\r\n \r\n ◆ Vulcão + Resfriador\r\n @/s\r\n "
+  },
+  {
+   "source_sha256": "01951deb4030dfc3f14cdbf52cc8a4bfaa1447b767b27d74c67d16e59bb31e41",
+   "at": "ArchiveViewer/MagicMix23.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  X@/s\r\n@/y　@y( 5 )\r\n @s(1.5,1.5)Phozons Extras@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "6ff54159358bb551946ddb44c77d826542be1be7cbed55e7c7e632ced4095414",
+   "at": "ArchiveViewer/MagicMix23.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n\r\nCria muitos Phozons instantaneamente.\r\n@y( 10 )\r\n\r\n\r\n\r\n\r\n\r\n(Exemplo de Mistura)\r\n  Material　　　　　　Semente　　\r\n\r\n@s( 1.2 )+@y( -36 )\r\n@s( 1 )@c(158,78,43)@b                                    x3@/b@/c\r\n @/y \r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "9f91c284734a74116017adaf79ba735796928e59f49c07b94c55d10014cdf985",
+   "at": "ArchiveViewer/MagicMix23.txt#2",
+   "pt_br": "\r\n(Mais Exemplos de Mistura)\r\n\r\n ◆ Dreno + Semente\r\n \r\n ◆ Naturalização + Semente@s(0.7,0.7) x@s(0.9,1)2\r\n @/s\r\n "
+  },
+  {
+   "source_sha256": "c368bc24c74169ef4bfd6fc672e28008914f6f87d65e97479d2d753a1ef45fc9",
+   "at": "ArchiveViewer/MagicMix24.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  Y@/s\r\n@/y　@y( 2 )\r\n @s(1.9,1.5)Iogurte@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "fd7108c0fd6662e261adf50d0e17a235e210b87d25a2b0e5d92f86e5ec7e01f5",
+   "at": "ArchiveViewer/MagicMix24.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nFeito com leite fermentado. Aumenta\r\n\r\no valor nutritivo e cura ferimentos.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Exemplo de Mistura)\r\n  Material　　　     Leite　　\r\n  \r\n 　　　　　+　　　　　\r\n @/y\r\n\r\n"
+  },
+  {
+   "source_sha256": "c26847c22907dc80b5f491551dc0976839388ed523ab47eedcc0dc0638ae6aa6",
+   "at": "ArchiveViewer/MagicMix25.txt#0",
+   "pt_br": "\r\n@y( 5 )\r\n@s(1.2,1.2)  Z@/s\r\n@/y　@y( 5 )\r\n @s(1.9,1.5)Tempo Zero@/s\r\n@/y\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "59eccb66d076f61a6cbf3fda613d15931d5c8449faf3026787447b412abc6e51",
+   "at": "ArchiveViewer/MagicMix25.txt#1",
+   "pt_br": "\r\n@y(-5)\r\n=Explicação=\r\n @y( -10 )\r\nUma poção lendária que concede\r\n\r\nmagia infinita temporariamente.\r\n@y( 12 )\r\n\r\n\r\n\r\n\r\n(Exemplo de Mistura)\r\n Material　　　  Molar de Troll\r\n \r\n 　　　　+　　　　\r\n @/y\r\n \r\n \r\n  \r\n"
+  },
+  {
+   "source_sha256": "69a53ee2ca24f2294062b408e13c11c368529d35ccfa95676b690f1b30fff08a",
+   "at": "ArchiveViewer/Note00.txt#1",
+   "pt_br": "\r\n\r\nVocê já viu as partículas\r\nde luz que surgem dos\r\ncorpos dos que tombaram?\r\n\r\nEssas partículas se chamam\r\n@b@c(158,78,43)Phozons@/c@/b, luzes que contêm\r\no poder da vida.\r\n\r\n"
+  },
+  {
+   "source_sha256": "3cd40913676ee0411be41d2247da96b9ca2acde4f4183bba840b739db93238cc",
+   "at": "ArchiveViewer/Note00.txt#2",
+   "pt_br": "\r\n\r\n\r\nOs Phozons surgem da\r\nmorte dos seres vivos e\r\nvoltam à terra para\r\nnutrir uma nova vida.\r\n\r\nHomens e feras recebem\r\nvida desta terra, e as\r\nplantas brotam e dão frutos.\r\n\r\n"
+  },
+  {
+   "source_sha256": "8f5189187beb3774751a843d7bef183ba4d1d1221a46748548961fa0c360696b",
+   "at": "ArchiveViewer/Note00.txt#3",
+   "pt_br": "\r\n\r\nOs Phozons também são\r\nchamados de @b@c(158,78,43)elementos mágicos@/c@/b\r\ne são uma fonte de magia\r\nindispensável aos feiticeiros.\r\n\r\nPorém, para coletar\r\nPhozons, é preciso roubar\r\na força vital dos mortos,\r\nque deveria retornar\r\nà terra.\r\n"
+  },
+  {
+   "source_sha256": "648f3114e56ac6a84191689076a43ffdbab1974c7e07ae012155c6981b8dd518",
+   "at": "ArchiveViewer/Note00.txt#4",
+   "pt_br": "\r\n\r\nVocê jamais deve esquecer o\r\npeso desse ato.\r\n"
+  },
+  {
+   "source_sha256": "5abdbb4927be6f77233e2ec02fb1218484c3c96a4dfa263858149deb81e52954",
+   "at": "ArchiveViewer/Note01.txt#2",
+   "pt_br": "\r\n\r\nEm Erion, existe um método\r\ntransmitido ao longo das\r\neras conhecido como @b@c(158,78,43)alquimia@/c@/b,\r\num meio de criar magia\r\ndentro de uma garrafa.\r\n\r\nBasta dissolver vários\r\nitens em líquidos especiais\r\nchamados @b@c(158,78,43)materiais@/c@/b para\r\ncriar essas\r\nmisturas mágicas.\r\n\r\n"
+  },
+  {
+   "source_sha256": "8fb38316dc18d5f01d6dfb0c491436eb8f03369a8c8d69e16e70b64f45a0ae5e",
+   "at": "ArchiveViewer/Note01.txt#3",
+   "pt_br": "\r\n\r\nMuitas poções diferentes\r\npodem ser preparadas com a\r\naplicação cuidadosa da alquimia.\r\n\r\nPoções de cura, antídotos,\r\nmagia de tornado ou até\r\nexplosivos...\r\n\r\nA escolha dos ingredientes\r\nmisturados ao material\r\ndeterminará o resultado.\r\n"
+  },
+  {
+   "source_sha256": "4c7efcdc866c4254f95ac39fca81bd90b9c3b2ce84e4fcf558aa4d34a918faa6",
+   "at": "ArchiveViewer/Note01.txt#4",
+   "pt_br": "\r\n\r\nA maneira mais rápida de\r\naprender a relação entre\r\ningredientes e magia é\r\nexperimentar misturar.\r\n\r\nPorém, se busca uma\r\nfórmula específica, você deve\r\ncoletar @b@c(158,78,43)receitas@/c@/b mágicas.\r\n"
+  },
+  {
+   "source_sha256": "463fbf3ef17408917ffa8053a1b41a9d188db99aa28cdabc134f8004125062bc",
+   "at": "ArchiveViewer/Note01_2.txt#5",
+   "pt_br": "\r\n\r\nO estudo da alquimia continua\r\naté hoje. Recentemente, \r\nestudiosos descobriram\r\numa forma de ampliar os\r\nefeitos das poções.\r\n\r\nMisturar frutas e outros\r\nalimentos aos materiais, ou\r\naté combinar poções,\r\naumenta o poder mágico\r\nnelas contido.\r\n\r\n"
+  },
+  {
+   "source_sha256": "64751d02e70df71915e1e8e2fef8661bafcdad6d5e9235af687b543bcddea03c",
+   "at": "ArchiveViewer/Note01_2.txt#6",
+   "pt_br": "\r\n\r\nQuanto melhor a qualidade\r\ndos ingredientes, mais\r\npotente será a energia\r\narcana da poção.\r\n"
+  },
+  {
+   "source_sha256": "916ad58edf5d4f9d41ac8b17b4898ff646997fb610f7a47332ccfb5737fc0fb4",
+   "at": "ArchiveViewer/Note02.txt#1",
+   "pt_br": "\r\nPor ordem do Rei Odin, nós,\r\nos anões, formamos equipes de\r\nexploração para encontrar e desenterrar\r\ntesouros ocultos pelo mundo.\r\n\r\nNo momento, nossa missão é\r\nencontrar @b@c(158,78,43)Prismas de Phozon@/c@/b, minérios\r\nraros e ricos em magia.\r\n\r\nPelo bem das equipes que\r\npossam seguir nossos passos,\r\ndeixo este guia. Nosso monarca\r\nespera muito de nós... Não\r\npodemos falhar com ele."
+  },
+  {
+   "source_sha256": "39416fdecd7e88d670777013c72cdf36f3bb79c4db1f0d74c40c1332c8cd97e9",
+   "at": "ArchiveViewer/Note02.txt#2",
+   "pt_br": "\r\n1. Vasculhe tudo\r\n\r\n  Muitos tesouros estão escondidos\r\n  em lugares que você não vê. Você\r\n  não os achará andando a esmo.\r\n\r\n  Fique sempre atento e explore\r\n  tudo o que estiver à vista.\r\n\r\n  Siga trilhas escondidas e ache @b@c(158,78,43)chaves@/c@/b\r\n  para abrir portas. Aonde quer\r\n  que vá, observe com atenção.\r\n"
+  },
+  {
+   "source_sha256": "fc47da535d496506dd8c741b4b70044e24b8d3e9d62cab082f4829d7774becbc",
+   "at": "ArchiveViewer/Note02_2.txt#1",
+   "pt_br": "\r\nPor ordem do Rei Odin, nós,\r\nos anões, formamos equipes de\r\nexploração para encontrar e desenterrar\r\ntesouros ocultos pelo mundo.\r\n\r\nNo momento, nossa missão é\r\nencontrar @b@c(158,78,43)Prismas de Phozon@/c@/b, minérios\r\nraros e ricos em magia.\r\n\r\nPelo bem das equipes que\r\npossam seguir nossos passos,\r\ndeixo este guia. Nosso monarca\r\nespera muito de nós... Não\r\npodemos falhar com ele.\r\n"
+  },
+  {
+   "source_sha256": "ad81e298ed0864973cf53231d9f183adc7632873af643b8a3bfae812ff4b10aa",
+   "at": "ArchiveViewer/Note02_2.txt#2",
+   "pt_br": "\r\n1. Vasculhe tudo\r\n\r\n  Muitos tesouros estão escondidos\r\n  em lugares que você não vê. Você\r\n  não os achará andando a esmo.\r\n\r\n  Fique sempre atento e explore\r\n  tudo o que estiver à vista.\r\n\r\n  Siga trilhas escondidas e ache @b@c(158,78,43)chaves@/c@/b\r\n  para abrir portas. Aonde quer\r\n  que vá, observe com atenção.\r\n\r\n"
+  },
+  {
+   "source_sha256": "b82cc0c21180141fb280a15401b865cd2188fce72309a00a5b6643fe3604be6c",
+   "at": "ArchiveViewer/Note02_2.txt#3",
+   "pt_br": "\r\n2. Seja engenhoso\r\n\r\n  Não tema os esporos dos\r\n  @b@c(158,78,43)cogumelos@/c@/b mágicos e o efeito\r\n  encolhedor que causam. Em vez\r\n  disso, use-o a seu favor e\r\n  passe por frestas que seriam\r\n  estreitas demais.\r\n\r\n  Em algumas áreas, ventos fortes\r\n  podem atrapalhar você. Use as\r\n  @b@c(158,78,43)Botas de Pedra@/c@/b dos anões\r\n  para resistir a eles.\r\n  "
+  },
+  {
+   "source_sha256": "9701dfd72a43ea47134eae12f99a7c790f731a8c8e5a271e488aa2e0d93eb766",
+   "at": "ArchiveViewer/Note02_3.txt#4",
+   "pt_br": "\r\n3. Use Poções Mágicas\r\n\r\n  @b@c(158,78,43)Labareda@/c@/b pode ser quente demais\r\n  para uma fogueira, mesmo em regiões\r\n  frias, mas é perfeita para derreter\r\n  paredes de gelo.\r\n\r\n  @b@c(158,78,43)Ciclone@/c@/b pode resfriar a lava\r\n  derretida e remover entulhos do\r\n  seu caminho.\r\n\r\n  @b@c(158,78,43)Vulcão@/c@/b pode abrir buracos em paredes\r\n  rachadas, no lugar de bombas.\r\n"
+  },
+  {
+   "source_sha256": "d60c3e706164f292114820467fb43c53e7edc2697f8c50768bc3ba878ff2b94c",
+   "at": "ArchiveViewer/Note02_3.txt#5",
+   "pt_br": "\r\nTrecho do diário de uma\r\nequipe de exploração anã.\r\nOs registros indicam que eles\r\ndescobriram os restos de um\r\nencouraçado aéreo valentiniano\r\ne o restauraram—adaptando-o\r\npara uso dos Aesir."
+  },
+  {
+   "source_sha256": "6a4e6745e8790e58771e2d683f2be987ada26092b46382c3958cc891c12d34b5",
+   "at": "ArchiveViewer/Note03.txt#1",
+   "pt_br": "\r\n\r\nAs plantas de Erion que absorvem\r\nPhozons brotam até nas terras\r\nmais desoladas.\r\n\r\nSeu fruto é o fruto da vida, que dá\r\nvitalidade a quem o prova.\r\nÉ o segredo da longevidade.\r\n\r\nSe deseja colher\r\nos benefícios do\r\nfruto, basta\r\nencontrar sementes e\r\ncultivá-las você mesmo.\r\n\r\n"
+  },
+  {
+   "source_sha256": "5ebc8d965eaceab4b9ba3076957ce94b201d68d3d7cfedf204688be7b4989d0d",
+   "at": "ArchiveViewer/Note03.txt#2",
+   "pt_br": "\r\n\r\nQuanto mais nutritivo o fruto,\r\nmais Phozons ele exigirá.\r\n\r\nRecomendado para iniciantes:\r\na @b@c(158,78,43)amora@/c@/b dá dois frutos\r\nusando poucos Phozons, e o\r\n@b@c(158,78,43)muggle@/c@/b dá um fruto e uma semente.\r\n\r\nQuando se acostumar ao processo,\r\nexperimente as @b@c(158,78,43)uvas@/c@/b, que aumentam\r\na vida, e os @b@c(158,78,43)napples@/c@/b, ingrediente\r\nmuito popular em\r\nlanches.\r\n"
+  },
+  {
+   "source_sha256": "bf18972692809310fa7caa1f3cd7ef5a51feaedc66038912a2104119b23137c0",
+   "at": "ArchiveViewer/Note04.txt#1",
+   "pt_br": "\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n@b@c(158,78,43)Baromett@/c@/b é uma planta de terras distantes,\r\nfamosa no \"Livro de Botânica de\r\nHverfell\" por sua qualidade peculiar.\r\n\r\nEm vez de flores ou frutos,\r\nela dá ovelhas vivas.\r\n"
+  },
+  {
+   "source_sha256": "02189e3deaaeedf7fb240f4fcaa9f309fa7b854a0ca2e4b4d45e83b8e0d275cf",
+   "at": "ArchiveViewer/Note04.txt#2",
+   "pt_br": "\r\n\r\nEssas ovelhas arbóreas costumam fugir\r\nassim que nascem.\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\nMas cace-as antes que escapem\r\ne ganhará @b@c(158,78,43)costeletas de cordeiro@/c@/b\r\nfrescas pelo seu esforço.     \r\n"
+  },
+  {
+   "source_sha256": "1f1d3b11af409b18e9f29dfb1c8712d0ab1da6efe7ad77b4c824549e45c2b4b1",
+   "at": "ArchiveViewer/Note04.txt#3",
+   "pt_br": "\r\n\r\nAs costeletas de cordeiro do\r\nBaromett são muito mais nutritivas\r\nque frango e consideradas\r\nalta gastronomia.\r\n\r\nBasta provar o @b@c(158,78,43)cordeiro@/c@/b cozido\r\npara perceber na hora que\r\no esforço do preparo vale\r\nmuito a pena.\r\n\r\nSe conseguir uma semente de\r\nBaromett, cultive-a com carinho.\r\n\r\n"
+  },
+  {
+   "source_sha256": "2ee30c32284abb998fde1b289bb5cc6cf43ce84625391ae4fb4af43eae512887",
+   "at": "ArchiveViewer/Note05.txt#1",
+   "pt_br": "\r\nAs @b@c(158,78,43)Mandrágoras@/c@/b crescem por toda a terra.\r\nEssas \"plantas que andam\" são ótimos\r\nacréscimos a muitas receitas, sejam\r\nculinárias ou alquímicas.\r\n\r\nAs cinco Mandrágoras mais conhecidas\r\ntêm, cada uma, características\r\núnicas.\r\n\r\n\r\n\r\n             @b@c(158,78,43)Carroteer@/c@/b: Cheias de\r\n             nutrientes, são a\r\n             base das poções de cura.\r\n"
+  },
+  {
+   "source_sha256": "d514b9a16190fd207e787e737080a58317f5d986f17b68f20e169071afe394c7",
+   "at": "ArchiveViewer/Note05.txt#2",
+   "pt_br": "\r\n\r\n              @b@c(158,78,43)Onionne@/c@/b: Traz sorte e\r\n              afasta o mal. São\r\n              usadas em amuletos.\r\n\r\n@b@c(158,78,43)Cubsbane@/c@/b: Sua pele\r\nvenenosa é usada para fazer\r\ntanto venenos quanto\r\nantídotos.\r\n\r\n\r\n               @b@c(158,78,43)Turny@/c@/b: Resistente ao\r\n               frio. Seu efeito\r\n               refrescante natural é\r\n               usado em sopas frias.\r\n"
+  },
+  {
+   "source_sha256": "b17395ce6307ae385a39d844663eda352bad58ac78cfa60e7bc0ade7d41ebeca",
+   "at": "ArchiveViewer/Note05.txt#3",
+   "pt_br": "\r\n\r\n\r\n\r\n@b@c(158,78,43)Habaneristo@/c@/b: Cresce em\r\nvulcões e é usada em\r\ncomidas extremamente picantes.\r\n\r\n\r\n\r\nTodas as Mandrágoras têm utilidade.\r\nAo encontrar uma, lembre-se\r\nde seus efeitos e aproveite-as\r\nbem.\r\n\r\n"
+  },
+  {
+   "source_sha256": "73baad195b39a51198949d5482beee1e25dda813f4be0c998940b6bdffddcf76",
+   "at": "ArchiveViewer/Note06.txt#1",
+   "pt_br": "\r\nVocê pode muito bem cozinhar um\r\n@b@c(158,78,43)ovo@/c@/b de @b@c(158,78,43)galinha@/c@/b fresco, mas há um\r\nuso mais esperto para ele.\r\n\r\nVocê pode chocar o ovo e criar o\r\n@b@c(158,78,43)pintinho@/c@/b para que ponha ainda mais ovos.\r\n\r\n\r\n\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "3cd2532712fad3cbbf6450c9baca252dc82d5feb98f1688deeae0ca108b64a09",
+   "at": "ArchiveViewer/Note06.txt#2",
+   "pt_br": "\r\nPrimeiro, coloque o ovo no chão.\r\nOvos de galinha não precisam de calor\r\npara chocar um pintinho.\r\n\r\nDepois, largue @b@c(158,78,43)sementes@/c@/b na frente dele.\r\nO pintinho vai comê-las e, depois de\r\ncomer o bastante, virará uma\r\ngalinha.\r\n\r\n\r\n\r\n\r\n\r\n\r\nGalinhas @b@c(158,78,43)bem alimentadas@/c@/b @b@c(158,78,43)põem mais@/c@/b ovos.\r\n\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "4b62c733f12eac5bba04fda7c1f6d3c786b5b6e7717dda978ea08fd83d94e77f",
+   "at": "ArchiveViewer/Note06.txt#3",
+   "pt_br": "\r\nSe não precisar mais de ovos, você\r\npode abater a galinha pela @b@c(158,78,43)carne@/c@/b\r\nem vez disso.\r\nEste método rende muita comida\r\ncom investimento mínimo.\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\nMas fique de olho nas galinhas\r\ne pintinhos. Eles devoram\r\nqualquer semente deixada no chão.\r\n\r\n"
+  },
+  {
+   "source_sha256": "218ad2f82d645474b0564c8591d727bcae2177a13394072ae7746d1f6f827260",
+   "at": "ArchiveViewer/Note07.txt#1",
+   "pt_br": "\r\n@s(0.95,0.96)\r\nHá cinco tipos de moeda\r\nno continente de Erion.\r\n\r\nAs duas moedas aceitas por\r\ncomerciantes em toda parte são\r\na Prata de Ragnan e o Ouro\r\nTitaniano.\r\n@/s\r\n"
+  },
+  {
+   "source_sha256": "91d6217e51bb92d07c0ab159d720e4505c93263bc1c8a57d73654663d44438d1",
+   "at": "ArchiveViewer/Note07.txt#2",
+   "pt_br": "\r\nA @b@c(158,78,43)Prata de Ragnan@/c@/b é a\r\nfavorita comum\r\ndo povo.\r\nO icônico corvo\r\né reconhecido de imediato.\r\n\r\n               O @b@c(158,78,43)Ouro Titaniano@/c@/b,\r\n               gravado com o\r\n               perfil do\r\n               rei anterior, vale\r\n               10 Pratas.\r\n\r\n"
+  },
+  {
+   "source_sha256": "b146f3f3ece1afb23047669054df57dbda03ffe21257a3e9fe0eed6ad942fe9d",
+   "at": "ArchiveViewer/Note07.txt#3",
+   "pt_br": "\r\nAs outras três moedas foram\r\ncunhadas pela nação caída de\r\nValentine. Elas não são mais\r\naceitas como dinheiro.\r\n\r\n"
+  },
+  {
+   "source_sha256": "1b52bcccc94f617222bf0ee85e0d289ec041fa26d3a007f2ec45219b4cf67945",
+   "at": "ArchiveViewer/Note07.txt#4",
+   "pt_br": "\r\nA @b@c(158,78,43)Moeda Ariel@/c@/b traz um\r\nrelevo à semelhança da amada\r\nprincesa de Valentine.\r\n\r\nO @b@c(158,78,43)Ouro Valentiniano@/c@/b é\r\nmarcado com o brasão real.\r\n\r\nA @b@c(158,78,43)Moeda Comemorativa@/c@/b\r\ntem um marcante motivo de\r\ncoração em seu desenho.\r\n"
+  },
+  {
+   "source_sha256": "a2f9d7cb28df07fe7b860d221e8b5e832a5a4ed845256075650c91ce25447fe1",
+   "at": "ArchiveViewer/Note07.txt#5",
+   "pt_br": "\r\nHoje, colecionadores estimam as\r\nmoedas de Valentine como obras\r\nde arte de uma extinta\r\ncivilização mágica.\r\n\r\nPor isso, elas não são\r\nusadas em compras e\r\ntransações comuns."
+  },
+  {
+   "source_sha256": "5396ce9da7bffe402d9080e7da03d4e182a9fdb272d318a048ed14561fad90cf",
+   "at": "ArchiveViewer/Note07.txt#6",
+   "pt_br": "\r\n@s(0.93,0.96)Porém, há um boato de que os\r\nPookas, que recentemente se tornaram\r\nmais ativos no comércio, preferem\r\nmoedas valentinianas.\r\n\r\nSe conseguir algumas, elas\r\npodem ser valiosas na hora\r\nde negociar com eles.\r\n@/s\r\n\r\n"
+  },
+  {
+   "source_sha256": "67b508d1bf475a3c1c8ad4cc6831be6b63c5709b21a9710b75eda5d786d4fdbd",
+   "at": "ArchiveViewer/Note08.txt#2",
+   "pt_br": "\r\n\r\nA incomparável @b@c(158,78,43)lança@/c@/b com\r\nponta de Psypher azul e\r\nrunas gravadas no\r\ncabo...\r\n\r\nEla tem uma única portadora\r\nlegítima... A primeira princesa\r\nde Ragnanival, nossa campeã\r\ndas @b@c(158,78,43)Valquírias@/c@/b:\r\na Princesa @b@c(158,78,43)Griselda@/c@/b!"
+  },
+  {
+   "source_sha256": "788e67fce70426d9d2bf4a2a3e0e8f38f5abf85703e8a572d137e7d8903ccf52",
+   "at": "ArchiveViewer/Note08.txt#3",
+   "pt_br": "\r\n\r\nAo demonstrar o poder da\r\nlança diante do rei, a\r\nPrincesa Griselda conquistou\r\ncom ousadia o direito de\r\nliderar a carga das Valquírias.\r\n\r\nPara nós, que passamos tanto\r\ntempo à sombra dos homens,\r\nela é a estrela-guia que\r\nnos conduz pela noite."
+  },
+  {
+   "source_sha256": "712ad46dab3a1c36114c706399992eb9474e1f244cc6b60771492e7ecad29974",
+   "at": "ArchiveViewer/Note08.txt#4",
+   "pt_br": "\r\n\r\nSua jovem mãe já está\r\nentre as estrelas, mas tenho\r\ncerteza de que se alegra\r\nnos céus.\r\n\r\nEm breve, a Princesa @b@c(158,78,43)Gwendolyn@/c@/b\r\nserá chamada para apoiar\r\na irmã. Espero que esteja\r\nà altura da tarefa..."
+  },
+  {
+   "source_sha256": "8c8e31efa15ad19d802e13f1a3054391b765686b5d3705281280ab982aee2615",
+   "at": "ArchiveViewer/Note08.txt#5",
+   "pt_br": "\r\nMemorando de uma Valquíria\r\ndo exército de Ragnanival.\r\nMostra a adoração delas\r\npor Griselda. Após sua\r\nmorte, a irmã carregou o\r\npeso dessas expectativas."
+  },
+  {
+   "source_sha256": "5a8e053859621f0d7a32acc50b914bf86633ed59805c3c53df3f9d261af56ea3",
+   "at": "ArchiveViewer/Note09.txt#1",
+   "pt_br": "\r\n@c(50,35,20)\r\n    O insolente rei @b@c(138,58,23)Odin@/c@/b@c(50,35,20) é o\r\n    inimigo jurado de nós, os @b@c(138,58,23)Três \r\n    Sábios@/c@/b@c(50,35,20)... Outrora os maiores magos de\r\n    Erion, tínhamos incontáveis discípulos,\r\n    até que um homem se infiltrou em nossa\r\n    biblioteca disfarçado de servo.\r\n    \r\n    Era ninguém menos que o próprio\r\n    Odin, em forma mortal...\r\n    \r\n    Ele nos sussurrou que conhecia\r\n    um caminho para o Submundo."
+  },
+  {
+   "source_sha256": "f40a36e2e6cd06c695f79da84f2771072e9bebaf4cf32a16ce7d339ed8af074b",
+   "at": "ArchiveViewer/Note09.txt#2",
+   "pt_br": "\r\n@c(50,35,20)\r\n    Em troca, pediu o segredo dos\r\n    Psyphers! Ficamos indignados com\r\n    sua arrogância descarada\r\n    e perdemos a paciência.\r\n    \r\n    Nós o amarramos e lançamos um\r\n    feitiço para fazê-lo falar, mas ele\r\n    refletiu a magia de volta para nós...\r\n\r\n    Ao partir, Odin nos amaldiçoou,\r\n    transformando-nos em sapos feios\r\n    e repugnantes. Tal insulto jamais\r\n    será perdoado!"
+  },
+  {
+   "source_sha256": "e3f927b73c596c3e7e8aaff541034a5d29e2213a35251586ed66a95a49fbea04",
+   "at": "ArchiveViewer/Note09.txt#3",
+   "pt_br": "\r\n@c(50,35,20)\r\n    Quando recuperamos nossas\r\n    verdadeiras formas, nosso vexame\r\n    já era notório. Nossa reputação\r\n    estava manchada.\r\n    \r\n    Quando perdemos todo o resto, foi\r\n    @b@c(138,58,23)Gallon@/c@/b@c(50,35,20), o grande rei de Titania,\r\n    quem nos salvou da miséria.\r\n\r\n    Herdamos seu legado\r\n    e sua profecia... e é por\r\n    ele que daremos fim ao\r\n    Rei Odin."
+  },
+  {
+   "source_sha256": "2d1e6cf6873a949e43b269d3d54a70bccb14e6a4e79069306667d4d3966e8679",
+   "at": "ArchiveViewer/Note09.txt#4",
+   "pt_br": "\r\nUm relato de @b@c(138,58,23)Skuldi@/c@/b, um dos\r\nTrês Sábios. Eles têm um\r\npassado com Odin, e o ódio\r\npor ele alimenta suas muitas\r\ntramas para derrotá-lo."
+  },
+  {
+   "source_sha256": "b3e8c77828bd14c93f6397840b413de4c4ba2fc9dc77199e96c5289dace01753",
+   "at": "ArchiveViewer/Note10.txt#1",
+   "pt_br": "\r\n\r\nA origem do conflito entre\r\nnosso grandioso reino de\r\nRagnanival e Ringford\r\nestá no passado.\r\n\r\nNossa vitória sobre a poderosa\r\nnação de @b@c(158,78,43)Valentine@/c@/b era\r\ncerta, mas custosa. Sem\r\nhomens nem suprimentos,\r\nnão tivemos escolha a não\r\nser recuar.\r\n\r\n"
+  },
+  {
+   "source_sha256": "a5a1b76866625c72e1d622ac957efd708c4c98dda15e89c231b4c034866a8f56",
+   "at": "ArchiveViewer/Note10.txt#2",
+   "pt_br": "\r\n\r\nAquelas @b@c(158,78,43)fadas@/c@/b vis aproveitaram\r\na chance de invadir\r\nValentine e roubar nosso\r\nprêmio: o @b@c(158,78,43)Caldeirão@/c@/b.\r\n\r\nO Caldeirão é um artefato\r\ncapaz de criar Phozons\r\ninfinitos. Depois de tudo que\r\nsacrificamos, tal relíquia\r\nnos pertence por direito!\r\n"
+  },
+  {
+   "source_sha256": "b980500019681815f3227300c8a4aeb07be4a4d2b57382977a5c49968991af72",
+   "at": "ArchiveViewer/Note10.txt#3",
+   "pt_br": "\r\nA fúria pela traição\r\ndas fadas ecoou por\r\ntodo o país.\r\n\r\nPor nossos irmãos caídos,\r\njuramos nos reerguer\r\ne punir as fadas.\r\n\r\nLiderados pelo Rei @b@c(158,78,43)Odin@/c@/b,\r\nhá muito esperamos a vingança,\r\nafiando nossas presas...\r\n\r\n"
+  },
+  {
+   "source_sha256": "785e61986a8ece1082abe78f563d6478edb1493675855bd58a46b45fe2269d03",
+   "at": "ArchiveViewer/Note10.txt#4",
+   "pt_br": "\r\n\r\nAs princesas @b@c(158,78,43)Griselda@/c@/b e\r\n@b@c(158,78,43)Gwendolyn@/c@/b, filhas da\r\nfalecida rainha, agora são\r\nValquírias habilidosas.\r\n\r\nChegou a hora da guerra.\r\nVamos nos vingar\r\ndas fadas e recuperar\r\nnosso Caldeirão!\r\n"
+  },
+  {
+   "source_sha256": "9b87b36772db7cee72a265a1ab3319074e957a30fc7c0f4347ba637f85e6a683",
+   "at": "ArchiveViewer/Note10.txt#5",
+   "pt_br": "\r\nEste diário mostra a\r\nmentalidade de um soldado\r\nAesir. Na batalha ocorrida\r\napós este registro, os Aesir\r\nsofreram uma derrota esmagadora\r\nque terminou com a morte\r\nda primeira princesa.\r\n"
+  },
+  {
+   "source_sha256": "681ee3771d2cce627759f3cfd8b4cf0e03868622e97cebb3c48e57819a6842be",
+   "at": "ArchiveViewer/Note11.txt#2",
+   "pt_br": "\r\n@c(50,35,20)\r\nNós, os mortos, fomos amaldiçoados\r\npelo poder supremo da rainha,\r\nfadados a ter nossa carne podre\r\narrancada por espectros sombrios.\r\n\r\n\r\nNão podemos resistir. Só nos resta\r\nvasculhar o reino atrás de gemas\r\nazuis... almas cristalizadas... para\r\naplacar a rainha e conter sua ira.\r\n"
+  },
+  {
+   "source_sha256": "0486cf1efcf9138b9a037713a0b6328884ce855fd398c12524c1a86fbf0b5ecf",
+   "at": "ArchiveViewer/Note11.txt#3",
+   "pt_br": "\r\n@c(50,35,20)\r\nMas o maior desejo da rainha é\r\nalgo fora do nosso alcance...\r\nUm ser vivo, de corpo e alma\r\nsaudáveis.\r\n\r\n\r\nAlguns vendem a alma a ela como\r\nsacrifício vivo, em busca de poder...\r\nmas também apodrecem em suas mãos.\r\nSua sede por almas talvez jamais\r\nseja saciada...\r\n"
+  },
+  {
+   "source_sha256": "c66be656cf3d689ef30732bad839c342f1c2afdaf27612a5483dc4bec944ca06",
+   "at": "ArchiveViewer/Note12.txt#2",
+   "pt_br": "\r\nQuando @b@c(158,78,43)Gallon@/c@/b, o rei anterior\r\nde @b@c(158,78,43)Titania@/c@/b, ainda vivia,\r\nRagnanival lhe presenteou uma\r\n@b@c(158,78,43)espada preciosa@/c@/b como prova\r\nda aliança.\r\n\r\nEla tinha uma lâmina mágica\r\nconhecida como Psypher,\r\nmas em Titania hoje é\r\nconhecida como lâmina maldita.\r\nAssim diz a história..."
+  },
+  {
+   "source_sha256": "34130feab5a4c99e92f0390124272906c4296fbbbc675050afcc21ab7c5cbeb6",
+   "at": "ArchiveViewer/Note12.txt#3",
+   "pt_br": "\r\nDos filhos do rei, o @b@c(158,78,43)mais velho@/c@/b\r\nse encantou pela espada\r\nmística, e o rei a deu\r\na ele de bom grado.\r\nPorém, ao brandir a lâmina,\r\nele acabou ferindo o pai\r\nsem querer.\r\nEmbora fosse um corte leve,\r\no rei ficou furioso. A ira do\r\nmonarca, normalmente gentil,\r\nchocou seus vassalos."
+  },
+  {
+   "source_sha256": "00091cfa99d92713ac3a52824a56363960b56f3a7590dd7df81921519324dd79",
+   "at": "ArchiveViewer/Note12.txt#4",
+   "pt_br": "\r\nMesmo com o @b@c(158,78,43)filho mais novo@/c@/b\r\nimplorando o perdão do pai,\r\no rei se tornou frio e\r\ndistante do mais velho. Por\r\nfim, o primogênito renunciou\r\nao sangue real e fugiu com\r\nsua amada.\r\nDesde então, a espada preciosa\r\né tida como amaldiçoada e foi\r\nsepultada nas trevas\r\nda história."
+  },
+  {
+   "source_sha256": "ef5b058901cdfb26133af2afd2d3ab5e8b08dd1b8b8c784b5ea60403d4505ec5",
+   "at": "ArchiveViewer/Note12.txt#5",
+   "pt_br": "\r\nUm relato do incidente da\r\nfamília real com a espada\r\namaldiçoada. A origem da ira\r\ndo Rei Gallon nunca foi de\r\nfato esclarecida, e o mistério\r\nenvolve a história."
+  },
+  {
+   "source_sha256": "248a1cbd6824f0fd3d4ce03a44411e6943dec07a2f8c25cf4f2ff037c4b3d7f9",
+   "at": "ArchiveViewer/Note13.txt#1",
+   "pt_br": "\r\n\r\n\r\nQuem fizer comércio na \"Rua\r\nPrincipal do Rei\" será multado.\r\n\r\n\r\nQuem fizer comércio sem\r\npermissão expressa do rei\r\ntambém será multado.\r\n\r\n\r\nQuem não pagar o imposto será\r\nexecutado na forca.\r\n"
+  },
+  {
+   "source_sha256": "0d271310472ed989fab6dd4656e0140eb02741510ccee3f60054cc3dd5f3e1f6",
+   "at": "ArchiveViewer/Note13.txt#2",
+   "pt_br": "\r\n\r\n\r\nQuem reclamar dos impostos altos\r\nserá submetido ao açoite e\r\nao tronco.\r\n\r\n\r\nQuem discriminar os magos\r\nserá submetido ao tronco.\r\n\r\n\r\nQuem causar derramamento de sangue\r\nserá executado na hora, ou na forca.\r\n"
+  },
+  {
+   "source_sha256": "2657a0437b18a39ca1e4ca850eea4481b503755275009d132f75501bbbe1aa6f",
+   "at": "ArchiveViewer/Note13.txt#3",
+   "pt_br": "\r\nO Rei @b@c(158,78,43)Edmund@/c@/b foi de início\r\nacolhido pelo povo como o\r\nherdeiro do legado do sábio\r\nsoberano anterior. Mas, quando\r\ncomeçou a impor leis duras\r\ne políticas de impostos,\r\no apoio do povo azedou."
+  },
+  {
+   "source_sha256": "3bbb523c0ecaaddfb212890e823926287cbe41c10475923ce309f6eefba313d3",
+   "at": "ArchiveViewer/Note14.txt#1",
+   "pt_br": "\r\nAo norte de @b@c(158,78,43)Titania@/c@/b, na floresta\r\npróxima à fronteira do @b@c(158,78,43)reino do\r\nLorde Demônio@/c@/b, há um velho\r\ncastelo decadente. Porém,\r\nvocê não deve se aproximar dele.\r\n\r\nJá foi a casa de campo da esposa\r\nenferma do Lorde Demônio, mas o\r\npríncipe e a princesa de @b@c(158,78,43)Valentine@/c@/b\r\nforam vistos lá recentemente.\r\nDizem que os jovens sobreviventes\r\nforam poupados pelos @b@c(158,78,43)Aesir@/c@/b."
+  },
+  {
+   "source_sha256": "3ac8ae1c266bf0dad394481f79c41c1c5622f8cc7fc5997db36ba75b860dfb25",
+   "at": "ArchiveViewer/Note14.txt#2",
+   "pt_br": "\r\n\r\nMas todos sabem que os @b@c(158,78,43)valentinianos@/c@/b\r\nsão canalhas que usaram sua\r\nmagia temível para invadir nossa terra.\r\n\r\nMagos cruéis como eles só sabem\r\nmorder a mão que os alimenta.\r\n\r\nOuvi dizer que o @b@c(158,78,43)Príncipe Cornelius@/c@/b\r\nvai lá com frequência. É um rapaz\r\ngentil; espero que não caia\r\nnas artimanhas deles..."
+  },
+  {
+   "source_sha256": "d16f26d61e78cd8e38cf0312b69ea8819203bab58befb17425c4d689ae95a90b",
+   "at": "ArchiveViewer/Note14.txt#3",
+   "pt_br": "\r\nEste bilhete contém boatos\r\nque circulam em Titania.\r\nMuitos ainda consideram\r\nValentine perigosa, e nem\r\nos sobreviventes escapam\r\nda desconfiança do povo.\r\n"
+  },
+  {
+   "source_sha256": "2308b9ffe139d65c9445f1648958757319fbc546bb1b56ebfb0aca9915c37f49",
+   "at": "ArchiveViewer/Note15.txt#2",
+   "pt_br": "\r\nQuando o rei soube que a\r\nPrincesa @b@c(158,78,43)Ariel@/c@/b dera à luz\r\n@b@c(158,78,43)gêmeos@/c@/b sem pai, ela e\r\nos filhos foram trancados na\r\ncasa de campo de @b@c(158,78,43)Valentine@/c@/b,\r\ncomigo, sua criada.\r\n\r\nMas a vida longe do luxo\r\ne da política do castelo\r\nera tranquila. Apesar dos\r\nguardas, era o lugar perfeito\r\npara criar uma família."
+  },
+  {
+   "source_sha256": "1ab80f6f60277a5581530a26ef9134abe04e0d454aaf917abd51b5d4cd15e534",
+   "at": "ArchiveViewer/Note15.txt#3",
+   "pt_br": "\r\nA paz não durou.\r\n\r\nFurioso ao descobrir a\r\nidentidade do pai dos gêmeos,\r\no rei enviou um emissário\r\npara trazer a @b@c(158,78,43)princesa@/c@/b de volta.\r\n\r\nSeu retorno só podia significar\r\nsua execução... Mesmo assim,\r\na princesa se manteve firme."
+  },
+  {
+   "source_sha256": "e9bf966f95f80d657d53840459ee09caf10754c5e32950b0842b68bce93e4827",
+   "at": "ArchiveViewer/Note15.txt#4",
+   "pt_br": "\r\n@s(0.95,0.96)Ela disse que havia @b@c(158,78,43)profetizado@/c@/b\r\nesse futuro.\r\n\r\nPorém, ela não se desesperou;\r\naceitou seu destino e\r\naproveitou o tempo que\r\nlhe restava.\r\n\r\nConfiou os filhos a mim\r\ne, após suas últimas palavras\r\nde consolo, subiu na\r\ncarruagem que a aguardava.@/s"
+  },
+  {
+   "source_sha256": "aa91fe62d2e1f61f0d6b00e5d824240013efe8918f90e61863b941bc8ba6daf1",
+   "at": "ArchiveViewer/Note15.txt#5",
+   "pt_br": "\r\nParte de um bilhete da criada\r\nda Princesa Ariel de Valentine.\r\nDiziam que ela via o futuro,\r\ne era muito amada por seu\r\npovo, mas foi executada como\r\nrebelde."
+  },
+  {
+   "source_sha256": "09d30860f59324e205607a2c8ceb4677bd8b3e209f20a6088f87d1ac54dd175d",
+   "at": "ArchiveViewer/Note16.txt#1",
+   "pt_br": "\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\nMeu nome é @b@c(158,78,43)Maury@/c@/b. Sou um chef Pooka\r\nque viaja pelo mundo para aprimorar\r\ne aperfeiçoar minhas habilidades.\r\nTambém tenho um restaurante itinerante,\r\nque serve os melhores pratos onde quer\r\nque haja viajantes famintos."
+  },
+  {
+   "source_sha256": "9c54b82f122c99c1367f2757d60951c4b5e2444fa369e0e7e1f9a2da41c48285",
+   "at": "ArchiveViewer/Note16.txt#2",
+   "pt_br": "\r\n\r\nO problema é que... meu cardápio é,\r\ndigamos, um tanto carente\r\nde variedade.\r\n\r\nEntão, caro leitor deste panfleto,\r\nvenho humildemente pedir um favor!\r\n\r\nOuvi dizer que há muitas\r\n@b@c(158,78,43)receitas@/c@/b espalhadas por Erion.\r\n\r\nSe encontrar alguma receita de\r\nvalor culinário, por favor... deixe-me\r\nficar com ela!"
+  },
+  {
+   "source_sha256": "576ddabf563a131a4ea6ea8e89a4c8a3d1ad9b27587f2203faa0f409b64ad4e9",
+   "at": "ArchiveViewer/Note16.txt#3",
+   "pt_br": "\r\n\r\nNão sem recompensa, é claro!\r\n\r\nSe obtiver uma receita e os\r\n@b@c(158,78,43)ingredientes@/c@/b listados nela, por favor, \r\nchame-me imediatamente.\r\n\r\nBasta tocar um dos @b@c(158,78,43)sinos\r\nmágicos@/c@/b que instalei por toda a\r\nterra, e chegarei num piscar\r\nde olhos com minha magia Pooka.\r\n\r\nFarei o possível para preparar uma\r\nrefeição deliciosa com o que\r\nvocê trouxer!\r\n"
+  },
+  {
+   "source_sha256": "7c8d0f1a3e7dafad00f2a3f1d695e75dbc11b52a9aab9638317cf6f1618ce0f9",
+   "at": "ArchiveViewer/Note17.txt#1",
+   "pt_br": "\r\n\r\nNós, cidadãos de @b@c(158,78,43)Valentine@/c@/b,\r\nperdemos nossa terra e nossa\r\nverdadeira forma... mas não podemos\r\nviver escondidos debaixo da terra.\r\n\r\n\"Reúnam todas as @b@c(158,78,43)moedas mágicas@/c@/b e\r\nquebrem a maldição.\"\r\n\r\nPara realizar nosso desejo, todos\r\nnos unimos e partimos pelo\r\nmundo para trabalhar, comerciar,\r\npermutar e negociar...\r\n"
+  },
+  {
+   "source_sha256": "98247c979f52afb35549b4fdd3498a2e3951aefc8baa9f774653d63034308bd5",
+   "at": "ArchiveViewer/Note17.txt#2",
+   "pt_br": "\r\n\r\nAlguns servem cerveja aos bárbaros\r\ndo @b@c(158,78,43)Lorde Demônio@/c@/b, outros competem\r\ncom mercadores gananciosos que\r\nnegociam em @b@c(158,78,43)Titania@/c@/b, outros suam e\r\nlabutam para @b@c(158,78,43)fadas@/c@/b de mente estreita...\r\nNossa aparência de bicho não nos\r\nrende favores, mas não temos o\r\nluxo de reclamar. Um dia, vamos\r\njuntar as moedas para quebrar\r\nesta maldição e reerguer nossa terra\r\ncom os herdeiros reais!\r\nIsto deve ser um segredo @b@c(158,78,43)Pooka@/c@/b."
+  },
+  {
+   "source_sha256": "f5641b57335ccf0b3f79d6049ced4b2e71b8aaa20edf644ff927ddabd016048a",
+   "at": "ArchiveViewer/Note17.txt#3",
+   "pt_br": "\r\nUm manifesto escrito para\r\nanimar o moral dos Pookas.\r\nAcredita-se que o povo de\r\nValentine pereceu junto\r\ncom sua nação, mas ele\r\nsobreviveu na forma de Pookas\r\ne trabalha para reerguê-la.\r\n"
+  },
+  {
+   "source_sha256": "00fdd2401ae25440ccac618ca61ad5fa1870936175f76a9cc95b5c9e988a155f",
+   "at": "ArchiveViewer/Note18.txt#1",
+   "pt_br": "\r\nA todos que tiverem\r\nmoedas valentinianas:\r\n\r\nSejam Bem-Vindos!\r\nParaíso dos Gulosos\r\nVila Pooka"
+  },
+  {
+   "source_sha256": "a038dcd519708a8de69ce16e1335168ab354d48ec7d524c9e51d05e05744e837",
+   "at": "ArchiveViewer/Note18.txt#2",
+   "pt_br": "\r\nNo \"@b@c(158,78,43)Café do Coelho@/c@/b\" e na \"@b@c(158,78,43)Cozinha\r\nPooka@/c@/b\", servimos comida deliciosa\r\ne doces encantadores.\r\n\r\n\r\n\r\n\r\nAceitamos qualquer uma destas moedas!\r\n\r\nBasta pagar a conta!\r\nNós mesmos fornecemos todos os\r\n@b@c(158,78,43)ingredientes@/c@/b frescos. Quando vier à@b@c(158,78,43) Vila\r\nPooka@/c@/b, passe para nos visitar!"
+  },
+  {
+   "source_sha256": "192dc20dd146d27faeb328f752dad15c43e96b364be5ff695259e278ea6eba20",
+   "at": "ArchiveViewer/Note19.txt#1",
+   "pt_br": "\r\n@s(0.93,0.95)Os registros indicam que os primeiros\r\n@b@c(158,78,43)valentinianos@/c@/b chegaram num navio\r\nvoador, vindos de uma terra distante\r\nde @b@c(158,78,43)Erion@/c@/b.\r\n\r\nFundaram um país no lado\r\noeste do continente e, com sua\r\nsuperior tecnologia mágica,\r\nconsolidaram a posição de sua\r\nnação como uma grande\r\npotência mundial.@/s"
+  },
+  {
+   "source_sha256": "9993983d0ed48e8a50a88de98e99b79c959e1124f886fba236c3fabb49b3c532",
+   "at": "ArchiveViewer/Note19.txt#2",
+   "pt_br": "\r\n@s(0.92,0.95)O @b@c(158,78,43)Caldeirão de Cristalização@/c@/b,\r\nconstruído com a mais potente\r\nmagia de Valentine, era o cerne\r\nda gloriosa nação do rei.\r\n\r\nAo cristalizar @b@c(158,78,43)Phozons@/c@/b\r\nbrutos, produzia magia densa.\r\nEra a fonte da riqueza da nação\r\ne símbolo de Valentine no\r\nauge de seu poder.@/s"
+  },
+  {
+   "source_sha256": "2f1f4f594db0ac68de30d27bb6baecea02ab17c4670807cc66c7d64f4d7541c7",
+   "at": "ArchiveViewer/Note19.txt#3",
+   "pt_br": "\r\n@s(0.96,0.96)No auge da prosperidade do\r\nreino, veio o fim.\r\n@b@c(158,78,43)Ragnanival@/c@/b, o país com\r\nquem Valentine estava em guerra,\r\nlançou um ataque desesperado à\r\ncapital. Uma luz intensa\r\nengoliu de repente a cidade, e\r\numa terrível tempestade varreu\r\na terra.\r\n\r\nRestaram apenas escombros.@/s"
+  },
+  {
+   "source_sha256": "714a1763db441a9bc061621c1d452dc1aa2a83a3ab6a1fcc7ca24f8afac999a2",
+   "at": "ArchiveViewer/Note19.txt#4",
+   "pt_br": "\r\n\r\n\r\n@s(0.92,0.95)Até hoje, ninguém sabe a verdadeira\r\ncausa da queda de Valentine. A\r\nverdade talvez esteja no último\r\nartefato que restou de sua\r\ngenialidade—o efervescente\r\nCaldeirão.\r\n\r\nHistoriadores de toda parte há\r\nmuito buscam as respostas por\r\ntrás desse mistério.@/s"
+  },
+  {
+   "source_sha256": "6e109021407b5d3947f47fb1e646e20aa3ec59f7780a2aadb616376e3697794a",
+   "at": "ArchiveViewer/Note20.txt#2",
+   "pt_br": "\r\n@s(0.94,0.95)A @b@c(158,78,43)Floresta das Fadas@/c@/b já foi um\r\nlugar pacífico onde muitas raças\r\nviviam em harmonia. A maior\r\nconquista da Rainha @b@c(158,78,43)Elfaria@/c@/b\r\nfoi unir a todos como uma\r\nnação. Sua lenda será contada\r\npor eras e eras.\r\n\r\nMas esse grande feito não\r\nveio com facilidade.@/s"
+  },
+  {
+   "source_sha256": "e0d9e9286d621ba5a83291e8b1435e44b4b686aa6e02df8a656db74d8bb33221",
+   "at": "ArchiveViewer/Note20.txt#3",
+   "pt_br": "\r\n@s(0.94,0.95)O maior obstáculo da rainha\r\nera a tensão entre as\r\n@b@c(158,78,43)fadas@/c@/b e os @b@c(158,78,43)anões@/c@/b.\r\n\r\nConsiderando valiosíssima a forja\r\ndos anões, a rainha buscou um\r\nacordo, mas as fadas se irritaram\r\ncom a diplomacia, atrasando as\r\nconversas. E quando obtiveram o\r\n@b@c(158,78,43)Caldeirão@/c@/b mágico, as opiniões\r\nse chocaram ainda mais...@/s"
+  },
+  {
+   "source_sha256": "7881102f44934f6e47d415b18bb478f3aa373c77afc66ab3fe4b0a001dc88e9f",
+   "at": "ArchiveViewer/Note20.txt#4",
+   "pt_br": "\r\n@s(0.93,0.95)Os anões queriam usar ao máximo\r\no poder supremo do Caldeirão,\r\ntornando-o a base da força\r\nda nação... E as fadas se\r\nopunham ao uso excessivo do\r\nperigoso Caldeirão, lembrando\r\nseu papel na destruição de\r\n@b@c(158,78,43)Valentine@/c@/b.\r\n\r\nA tensão logo virou guerra.@/s\r\n"
+  },
+  {
+   "source_sha256": "d67220c4fae54dc52ecf99f0352cd6fec214e683d6cef471935a818b1c43a580",
+   "at": "ArchiveViewer/Note20.txt#5",
+   "pt_br": "\r\n@s(0.94,0.95)No calor da batalha, os anões,\r\nperdendo, tentaram controlar o\r\nCaldeirão e causaram uma\r\ninundação mágica que varreu a\r\nfloresta. A @b@c(158,78,43)rainha@/c@/b ordenou que\r\ntodos os soldados resgatassem\r\ntodos, amigos ou inimigos, e\r\nenfrentou ela mesma o Caldeirão,\r\ncontendo sua fúria e evitando\r\nmais danos à terra.@/s\r\n"
+  },
+  {
+   "source_sha256": "13b3f90f2142bea7ea3895dc7e0de75a65dfb87f03cdd888b3b5b38bbd48ec9c",
+   "at": "ArchiveViewer/Note20.txt#6",
+   "pt_br": "\r\n@s(0.94,0.95)A guerra acabou. Os anões\r\naguardavam sua punição. Mas a\r\nrainha falou de perdão. Ela\r\nlhes deu cidadania e os\r\nincentivou a fazer as pazes\r\ncom as fadas.\r\nComovidos com sua clemência,\r\nos anões juraram lealdade\r\nà rainha.\r\n\r\nE assim anões e fadas\r\nse reconciliaram.@/s"
+  },
+  {
+   "source_sha256": "d55cc4c8b6a59ac6754d35ebd0970c7d660a1006ebe4d7b151396f4248d81f72",
+   "at": "ArchiveViewer/Note20.txt#7",
+   "pt_br": "\r\nParte de um registro histórico\r\nda Rainha Elfaria escrito por\r\n@b@c(158,78,43)Matthew@/c@/b, seu conselheiro. A\r\n@b@c(158,78,43)balestra@/c@/b mágica que o\r\n@b@c(158,78,43)ferreiro Brom@/c@/b presenteou\r\nà rainha virou um símbolo\r\nde sua proteção."
+  },
+  {
+   "source_sha256": "95e6740d31b13c40c7c679edf3a1eb959478b1703f8e93faf3c6326dfbfc778b",
+   "at": "ArchiveViewer/Note21.txt#1",
+   "pt_br": "\r\nDentre todos os @b@c(158,78,43)Psyphers@/c@/b, o maior\r\ne mais temível é o que abateu\r\na @b@c(158,78,43)Rainha@/c@/b anterior: o mangual\r\n@b@c(158,78,43)Balor@/c@/b, arma abominável\r\ndo @b@c(158,78,43)Lorde Demônio@/c@/b.\r\n\r\nQuanto maior o Psypher, mais\r\ndifícil é refinar e forjar\r\nsua joia arcana.\r\n\r\nAté @b@c(158,78,43)Brom@/c@/b, nosso primeiro e melhor\r\nferreiro de Psyphers Lilliput, hesitaria\r\nem forjar uma arma tão grande.\r\n\r\n"
+  },
+  {
+   "source_sha256": "556bd3445dce56d75881e5c21697c938f6506701c0b916ce92a39a6bf626d1d8",
+   "at": "ArchiveViewer/Note21.txt#2",
+   "pt_br": "\r\nPara os @b@c(158,78,43)Aesir@/c@/b, criar o Balor foi\r\num empreendimento nacional, sem\r\npoupar recursos nem mão de obra.\r\n\r\nE no centro do projeto estavam,\r\nveja só, os @b@c(158,78,43)anões@/c@/b,\r\nnossos ex-camaradas de @b@c(158,78,43)Ragnanival@/c@/b.\r\n\r\nEm guerra com as @b@c(158,78,43)fadas@/c@/b,\r\neles se deixaram levar pelas\r\npalavras doces do @b@c(158,78,43)Lorde\r\nDemônio@/c@/b.\r\n\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "4df695cf8362a51e6af2fde0037f299854aabc348b80057350f2f8ca880aff51",
+   "at": "ArchiveViewer/Note21.txt#3",
+   "pt_br": "\r\nCom sua perícia na forja, os\r\nanões criaram um Psypher\r\nde poder sem igual.\r\n\r\nJá nós, após jurar lealdade à\r\n@b@c(158,78,43)Rainha das Fadas@/c@/b e mudar o nome\r\ndo nosso povo para @b@c(158,78,43)Lilliput@/c@/b, fomos\r\nproibidos de forjar qualquer coisa,\r\ne nossas fornalhas se apagaram.\r\n\r\nSeremos capazes de derrotar\r\nos Aesir e seu poderoso Balor\r\nnessas condições?\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "953467cf380e82c0b2e80cc0e3def070b3e8928fa0e67f645b42bd22db25c52d",
+   "at": "ArchiveViewer/Note22.txt#2",
+   "pt_br": "\r\n@c(50,35,20)\r\nBusco um pacto com a\r\nbela Rainha Odette.\r\n\r\nPeço o poder das trevas\r\npara nossa espada de cristal. A\r\nlâmina beberá o sangue dos\r\nsoldados do vosso odiado inimigo,\r\no Lorde Demônio, e erguerá uma\r\nmontanha de cadáveres.\r\n\r\n\r\nOfereço em troca a carne e a\r\nalma do espadachim Oswald.\r\n"
+  },
+  {
+   "source_sha256": "bcb71b6a1cf55f5bc87d6a4f2785233fa5e5c9cb8b07498df6245ded0282d8f5",
+   "at": "ArchiveViewer/Note22.txt#3",
+   "pt_br": "\r\n@c(50,35,20)\r\nCada uso de seu poder vos\r\ndará direito a um órgão\r\ne um osso.\r\nO corpo e a alma de Oswald são\r\nmuito superiores aos de todos os\r\nhumanos que vos ofereci até hoje.\r\nCreio que ele será do\r\nvosso agrado.\r\n\r\n\r\nPor meu verdadeiro nome, eu juro.\r\n Sobrinho da rainha de Ringford\r\n　　　　　　　　　Duque Melvin"
+  },
+  {
+   "source_sha256": "98e2da3d02700d3f22ce82e53b3de00470b97eb0da9632a517936fceddc850f3",
+   "at": "ArchiveViewer/Note22.txt#4",
+   "pt_br": "\r\nParte do pacto que o\r\nprimeiro vassalo de Ringford,\r\n@b@c(158,78,43)Melvin@/c@/b, enviou à @b@c(158,78,43)rainha do\r\nSubmundo@/c@/b.\r\nO temível poder do\r\n@b@c(158,78,43)Belderiver@/c@/b custava a\r\nvida de seu portador."
+  },
+  {
+   "source_sha256": "63730d9394e1ed4250735a55172b454dddda53dbb2152d00ea463cadf159ba8e",
+   "at": "ArchiveViewer/Prophecy00.txt#1",
+   "pt_br": "\r\n  Nesta terra, há muitos registros\r\n  que @b@c(158,78,43)predizem o Armagedom@/c@/b, e todos\r\n  foram minuciosamente examinados.\r\n  Vi as verdades do mundo com\r\n  meu único olho e obtive grande\r\n  sabedoria... Eis o que aprendi.\r\n\r\n  No crepúsculo do mundo, cinco calamidades\r\n  cairão sobre a terra:@y(25)@c(158,78,43)@/y@b@i a besta, o\r\n  senhor dos mortos, a chama, o\r\n  caldeirão e o dragão@/c@/b.@/i@y(25)@/y\r\n  A guerra pelo destino do mundo\r\n  começará.\r\n"
+  },
+  {
+   "source_sha256": "22d791d95d28c52a5bae09b3c923103c8ed502eede50b84633788217581878d6",
+   "at": "ArchiveViewer/Prophecy00.txt#2",
+   "pt_br": "\r\n\r\n  Quem sobreviver a esta batalha será\r\n  o novo rei.\r\n\r\n  Todos os exércitos de Ragnanival devem\r\n  se preparar para conquistarmos a vitória\r\n  na verdadeira batalha final.\r\n\r\n  Tomar o @b@c(158,78,43)Caldeirão@/c@/b lançará as\r\n  bases do nosso triunfo. Para\r\n  vencer, devemos dominar o poder\r\n  supremo dos Phozons infinitos.\r\n\r\n\r\n"
+  },
+  {
+   "source_sha256": "48a3685f994eebcefde1766cac96148d1dae9ee12ec70994f1fa4bbdc54bf684",
+   "at": "ArchiveViewer/Prophecy00.txt#3",
+   "pt_br": "\r\nPalavras do @b@c(158,78,43)Lorde Demônio@/c@/b ao\r\npovo sobre a verdade da\r\n@b@c(158,78,43)profecia@/c@/b. Ele expõe uma\r\ninterpretação própria e a usa\r\npara justificar o reforço de\r\nseu exército. Estaria ele\r\napenas tramando algo mais?"
+  },
+  {
+   "source_sha256": "080678a07287675014c8c13643e61dc5e793ba906c74294034462d8154b6f1fb",
+   "at": "ArchiveViewer/Prophecy01.txt#1",
+   "pt_br": "\r\n@c( 90,100,110 )@s( 1.2, 1.2 )@b@i@y( 40 )\r\nA  Besta  do  Desespero  devora\r\no  homem  e  destrói  a  esperança.\r\n\r\nO  frenesi  da  morte  desatado\r\nanseia  pela  luz  da  vida."
+  },
+  {
+   "source_sha256": "9c9ca05b689ba1101f3aea8ffd92a3486238009f9881a0f3a8b00069fafc238e",
+   "at": "ArchiveViewer/Prophecy01.txt#2",
+   "pt_br": "\r\n@c( 90,100,110 )@s( 1.2, 1.2 )@b@i@y( 40 )\r\nO  inferno  que  avança\r\ncalcina  os  arredores\r\ndo  trono.\r\nNo  Caldeirão  que\r\nexala desespero,  o  sangue\r\ndos  antigos  ferve."
+  },
+  {
+   "source_sha256": "e62adaa64f12c1822da83029a61241fb29c4824c563b80b77842d2d5caabefb2",
+   "at": "ArchiveViewer/Prophecy01.txt#3",
+   "pt_br": "\r\n@c( 90,100,110 )@s( 1.2, 1.2 )@b@i@y( 40 )\r\nQuando  Leventhan,  último\r\ndos  dragões,  devorar  a\r\npedra  de sangue,  o  caminho\r\nse  fechará,  e  o  vazio\r\ncobrirá  o  mundo.\r\n@/s@/i@/y   - \"Profecia  do  Fim\""
+  },
+  {
+   "source_sha256": "2b81a412b7f3dddcdd2e480c1464a4e82e1c293f0251496cb913312f983f57fa",
+   "at": "ArchiveViewer/Prophecy02.txt#1",
+   "pt_br": "\r\n\r\nMeus queridos filhos,\r\n\r\nCedo ou tarde, uma maldição e uma\r\nmorte inevitáveis recairão sobre\r\nvocês dois.\r\n\r\nO Caldeirão guia o caminho para o\r\nArmagedom com sua pedra final."
+  },
+  {
+   "source_sha256": "413849035446c2a18d404a9eb672e37acb14a00b2de547c868bf715283b7d7e6",
+   "at": "ArchiveViewer/Prophecy02_2.txt#1",
+   "pt_br": "\r\n\r\nMeus queridos filhos,\r\n\r\nCedo ou tarde, uma maldição e uma\r\nmorte inevitáveis recairão sobre\r\nvocês dois.\r\n\r\nO Caldeirão guia o caminho para o\r\nArmagedom com sua pedra final.\r\n"
+  },
+  {
+   "source_sha256": "3829348d9863e082969ff4ebc79d703a5f1d2cc3a1be5ef5b8e3e29840415081",
+   "at": "ArchiveViewer/Prophecy02_2.txt#2",
+   "pt_br": "\r\n    Meu querido filho, mais precioso\r\n    que a vida: sua mãe o perdoa.\r\n\r\n    Minha filha, siga sem hesitar\r\n    e deixe que o amor de sua mãe\r\n    lhe dê coragem.\r\n\r\n    Meu pai, o amor de sua filha\r\n    continua o mesmo, sempre ao seu\r\n    lado. A quem causará mal ao\r\n    mundo, rezo para que sua\r\n     alma se cure."
+  },
+  {
+   "source_sha256": "5f17212469ad529a1e78fb14f49abb709cbb7701456fca73e0e5a592afa2dd2c",
+   "at": "ArchiveViewer/Prophecy03.txt#1",
+   "pt_br": "\r\n@c( 160,160,120 )@s( 1.2, 1.2 )@i@y( 20 )\r\nA  TERRA  afunda  no\r\nfogo  do  caldeirão\r\n\r\nAINDA  que  lâminas  e  flechas\r\nsejam  lançadas,  o  fogo  que\r\ntransborda  não  pode  ser  detido\r\n\r\nSÓ  pode  ser  acorrentado"
+  },
+  {
+   "source_sha256": "bd614c65db54dfbf8dcfc8850d4dc83de76c7103f2432d876730b32d05b8d5c7",
+   "at": "ArchiveViewer/Prophecy03.txt#2",
+   "pt_br": "\r\n@c( 160,160,120 )@s( 1.2, 1.2 )@i@y( 20 )\r\n\r\nUMA  FERA  ardente  de  seis  olhos\r\napressa  a  mão  que  guia  à  salvação\r\n\r\n\r\nAQUELE  que  remove  o\r\ntormento  é  meu  próprio  filho"
+  },
+  {
+   "source_sha256": "d56bcdd572ac42410a6c15d37dedfa9f8204d08374e5c5397481aa5440788835",
+   "at": "ArchiveViewer/Prophecy03.txt#3",
+   "pt_br": "\r\n@c( 160,160,120 )@s( 1.2, 1.2 )@i@y( 20 )\r\nO  LORDE  do  Submundo\r\nsurge  numa  marcha\r\ntriunfal  da  morte\r\n\r\nQUEM  ameaça  as\r\ntrevas  é  a  sombra\r\ndo  mestre  perdido"
+  },
+  {
+   "source_sha256": "9b6faee83ca411a992df977e4d900ca5843a9aca677b2f0ff30665397b05202f",
+   "at": "ArchiveViewer/Prophecy03.txt#4",
+   "pt_br": "\r\n@c( 160,160,120 )@s( 1.2, 1.2 )@i@y( 20 )\r\nO  INCÊNDIO  iminente  virá,\r\nqueimando  as  florestas\r\n\r\nA  INUNDAÇÃO  de  fogo  que  o  homem\r\nnão  pode  suportar  é  detida\r\npela  Árvore  do  Mundo\r\ne  desaparece"
+  },
+  {
+   "source_sha256": "192754ee44b20efc7b70bffcc5eafe7dc5f481a080d6d38054ed1aace106a654",
+   "at": "ArchiveViewer/Prophecy03.txt#5",
+   "pt_br": "\r\n@c( 160,160,120 )@s( 1.2, 1.2 )@i@y( 20 )\r\n\r\nO  LORDE  das  Serpentes  consome\r\ntudo  o  que  restar\r\nNASCIDO  no  caos  e  no  fogo\r\nADORMECE  nos  braços  da  mãe\r\nA  VIDA  desaparece  da  terra\r\nTUDO  chega  ao  fim"
+  },
+  {
+   "source_sha256": "8a82a3df7018856e9b1e4f970710988c85fb7da7668e152646c45898daf53683",
+   "at": "ArchiveViewer/Prophecy03_2.txt#1",
+   "pt_br": "\r\n@c( 160,160,120 )@s( 1.2, 1.2 )@i@y( 20 )\r\nA  TERRA  afunda  no  fogo\r\ndo  caldeirão\r\n\r\nAINDA  que  lâminas  e  flechas\r\nsejam  lançadas,  o  fogo  que\r\ntransborda  não  pode  ser  detido\r\n\r\nSÓ  pode  ser  acorrentado"
+  },
+  {
+   "source_sha256": "1cc0428f30ebfdb1e898e7af628b368b7396be063c549992e3dd2f521c5da4c3",
+   "at": "ArchiveViewer/Prophecy03_2.txt#2",
+   "pt_br": "\r\n@c( 160,160,120 )@s( 1.2, 1.2 )@i@y( 20 )\r\n\r\nUMA  FERA  ardente  de  seis  olhos\r\napressa  a  mão  que  guia  à  salvação\r\n\r\n\r\nAQUELE  que  remove\r\no  tormento  é  meu  próprio  filho"
+  },
+  {
+   "source_sha256": "fbe2113295cc7ba9b37b5734f5f661325ef69ac519c0b4ac58ec5ff5b373b09c",
+   "at": "ArchiveViewer/Prophecy03_2.txt#3",
+   "pt_br": "\r\n@c( 160,160,120 )@s( 1.2, 1.2 )@i@y( 20 )\r\nO  LORDE  do  Submundo\r\nsurge  numa  marcha\r\ntriunfal  da  morte\r\n\r\nQUEM  ameaça\r\nas  trevas  é  a  sombra\r\ndo  mestre  perdido"
+  },
+  {
+   "source_sha256": "cb250d7028258b57cd58c5b08cd071887218ab5b7d1668493cc6456b86999812",
+   "at": "ArchiveViewer/Prophecy03_2.txt#6",
+   "pt_br": "\r\n@c( 160,160,120 )@s( 1.15, 1.2 )@i@y( 15 )\r\nO  ANEL  será  perdido\r\n\r\nO  CHORO  das  almas  recém-nascidas\r\n\r\nRECEBE\r\ndois  senhores  sem  coroa\r\nque  sobreviverão  ao  Armagedom\r\ne  guiarão  o  renascimento"
+  },
+  {
+   "source_sha256": "b3b1e6da048be588207b97de4259ceccf6e4a1d3384a2818bcdb2e5856848fe4",
+   "at": "ArchiveViewer/Prophecy04.txt#1",
+   "pt_br": "\r\n@c(50,35,20)\r\n Para repelir as forças invasoras\r\n de Valentine, o Rei Gallon usou o\r\n poder místico de Titania para virar\r\n a Besta Demoníaca de três cabeças;\r\n ou seja, a @b@c(138,58,23)fera de seis olhos@/b@c(50,35,20)\r\n da profecia.\r\n\r\n Como pensávamos: o Rei Gallon\r\n é a mão que guia à salvação!"
+  },
+  {
+   "source_sha256": "cb190080f06dd56a68097ff039b24e05be945364ac5161a27adddfb2388b44ec",
+   "at": "ArchiveViewer/Prophecy04.txt#2",
+   "pt_br": "\r\n@c(50,35,20)\r\n\r\n O 'Lorde do Submundo' da\r\n Saga é a Rainha Odette.\r\n\r\n O 'incêndio iminente' é o\r\n Rei do Inferno Onyx.\r\n\r\n Se o rei de Titania liberar seu\r\n poder místico, subjugar as outras\r\n nações e tomar o Caldeirão...\r\n"
+  },
+  {
+   "source_sha256": "6760929ab1c33619dae170d354867b4313d4041845a915cf15a74503cce6ab10",
+   "at": "ArchiveViewer/Prophecy04.txt#3",
+   "pt_br": "\r\n@c(50,35,20)\r\n ...o Submundo e o\r\n Reino do Fogo entrarão na guerra,\r\n e os três dragões vão\r\n erradicar tudo, trazendo-nos\r\n o Fim.\r\n\r\n Mas não temam. No fim, o mundo\r\n será salvo.\r\n\r\n Pela chegada de um @b@c(138,58,23)novo rei@/b@c(50,35,20)\r\n e por sua prometida orientação..."
+  },
+  {
+   "source_sha256": "913a7760be8571d0c9e8955ef446741279791f3beb7b99b1df6961ea2015f4d2",
+   "at": "ArchiveViewer/Prophecy04.txt#4",
+   "pt_br": "\r\n  O manuscrito original\r\n  escrito pelos Três Sábios\r\n  se perdeu no tempo.\r\n  Vale mencionar que\r\n  sua teoria é mera\r\n  conjectura, baseada na\r\n  profecia."
+  },
+  {
+   "source_sha256": "6d517a7e224320cdb51c75b1bb3123028a8f3f767ed0b743596cd9594fca2b58",
+   "at": "ArchiveViewer/Prophecy05.txt#1",
+   "pt_br": "\r\n\r\n@c( 110, 80, 50 )Salmo 2 da Saga@/c\r\n@c( 130, 38, 92 )@i\"UMA FERA ardente de seis olhos\r\napressa a mão que guia à salvação\r\n\r\nAQUELE que remove o\r\ntormento é meu próprio filho\"@/c@/i\r\n\r\nA \"fera de seis olhos\" deve ser\r\nDarkova, a Besta Demoníaca de\r\ntrês cabeças. Este trecho se\r\nbaseia numa profecia de um\r\ngrande rei de Titania."
+  },
+  {
+   "source_sha256": "5dbe18cffc60041db1c1cdffe7ce96eee75913156d4a63e0ddcc6f74b7b8c2db",
+   "at": "ArchiveViewer/Prophecy05.txt#2",
+   "pt_br": "\r\nPortanto, @c( 130, 38, 92 )@i\"Aquele que remove\r\no tormento é meu próprio filho\"@/c@/i\r\nparece se referir à linhagem\r\nda @b@c(158,78,43)família real de Titania@/c@/b.\r\nE se a fera @c( 130, 38, 92 )@i\"devora o homem\",@/c@/i\r\nentão é provável que @b@c(158,78,43)nenhum humano\r\npossa derrotá-la@/c@/b. Mas é impensável\r\nque um não humano seja rei\r\nde Titania...\r\n\r\nA não ser, claro, que ele esteja\r\n@b@c(158,78,43)amaldiçoado@/c@/b como nós e @b@c(158,78,43)não seja\r\nmais humano@/c@/b."
+  },
+  {
+   "source_sha256": "b7bda2375f68f2ad6fbac55fde9ec8b052997f031e53a0cc6bcd0ab7dbf37147",
+   "at": "ArchiveViewer/Prophecy05.txt#3",
+   "pt_br": "\r\n\r\n@c( 110, 80, 50 )Salmo 3 da Saga@/c\r\n　　@c( 130, 38, 92 )@i\"QUEM ameaça as\r\ntrevas é a sombra do\r\nmestre perdido\"@/c@/i\r\n\r\n@c( 110, 80, 50 )Profecia, Verso 1, Frase 2@/c\r\n @c( 130, 38, 92 )@i\"O frenesi da morte desatado\"@/c@/i\r\n\r\nHá algo estranho nestas\r\nfrases. Odette, Rainha dos\r\nMortos, não tem mestre para\r\n\"desatá-la\"."
+  },
+  {
+   "source_sha256": "f192ec4e4a17153ece9c98c3bf6d1a548db0566a88757c57939d01e34a50a27e",
+   "at": "ArchiveViewer/Prophecy05.txt#4",
+   "pt_br": "\r\n\r\nSe o \"Lorde do Submundo\"\r\nnão é Odette, que ser poderia\r\nemergir do Submundo?\r\n\r\nSó me vem à mente o Rei Gallon,\r\nacorrentado no Submundo.\r\nSerá que ele guiará o exército\r\ndos mortos até seu próprio país...?\r\n"
+  },
+  {
+   "source_sha256": "3ab26ace68ba7d900582b93a2a241ce49d74c9d43487c9a41914a995f12bbb4c",
+   "at": "ArchiveViewer/Prophecy05.txt#5",
+   "pt_br": "\r\n\r\nLendo os salmos com base\r\nnesta teoria, o \"falecido mestre\"\r\né Odette, e a sombra que\r\nameaça o Rei Gallon é... @b@c(158,78,43)a\r\nsombra de Odette@/c@/b?\r\n\r\nOuvi dizer que há um\r\n@b@c(158,78,43)espadachim que carrega a sombra\r\nda morte@/c@/b no Reino das Fadas,\r\nmas será que...?\r\n"
+  },
+  {
+   "source_sha256": "152ec48cb3f9a676ed36e87cd25a01374ae61beeea1ab711d5b6ca027400f732",
+   "at": "ArchiveViewer/Prophecy05.txt#6",
+   "pt_br": "\r\n\r\n@c( 110, 80, 50 )Salmo 4 da Saga@/c\r\n@c( 130, 38, 92 )@i\"O INCÊNDIO iminente virá,\r\nqueimando as florestas\r\nA INUNDAÇÃO de fogo que o homem\r\nnão pode suportar é detida pela\r\nÁrvore do Mundo e desaparece\"@/c@/i\r\n\r\nEvidentemente, o exército do Rei Onyx,\r\ndo Reino do Fogo, varrerá a\r\nterra no Armagedom."
+  },
+  {
+   "source_sha256": "a8370508669d0c3e99a68ca0b6756aa021119a2a84fb824bcda11a82375fff06",
+   "at": "ArchiveViewer/Prophecy05.txt#7",
+   "pt_br": "\r\n\r\nA Saga diz que @b@c(158,78,43)a humanidade\r\nnão pode resistir@/c@/b, mas a @b@c(158,78,43)Árvore\r\ndo Mundo@/c@/b destrói o exército.\r\n\r\nPorém, essa Árvore do Mundo existe\r\napenas nos mitos. Não há tal\r\nárvore neste mundo.\r\n"
+  },
+  {
+   "source_sha256": "2e2602b4c318f3e98a4a36d63a493658de7191c816ddb3bc11a243820244b8fc",
+   "at": "ArchiveViewer/Prophecy05.txt#8",
+   "pt_br": "\r\n\r\nA segunda pista:\r\n\r\n@c( 110, 80, 50 )Profecia, Verso 1, Frase 2@/c\r\n@c( 130, 38, 92 )@i\"Calcina os arredores\r\ndo trono...\"@/c@/i\r\n\r\nIsso significa que o próprio trono\r\nNÃO é calcinado? Se for assim,\r\npode sugerir que @b@c(158,78,43)quem está no trono@/c@/b\r\nconsegue enfrentar as chamas..."
+  },
+  {
+   "source_sha256": "c9ffe92fadc48a8901f9bf615a05008a4e792ff941f0ab94c2fa48229e1bbe0e",
+   "at": "ArchiveViewer/Prophecy05.txt#9",
+   "pt_br": "\r\n\r\n\"O caldeirão\" é, claro, O\r\nCaldeirão. Quando os esforços da\r\nprincesa forem em vão, o pesadelo\r\nse repetirá e o Armagedom\r\ncomeçará. Nosso rei deve ser\r\nquem vai desencadeá-lo.\r\n\r\n@c( 110, 80, 50 )Salmo 1 da Saga@/c\r\n@c( 130, 38, 92 )@i\"AINDA que lâminas e flechas\r\nsejam lançadas, o fogo que\r\ntransborda não pode ser detido\r\nSÓ pode ser acorrentado\"@/c@/i"
+  },
+  {
+   "source_sha256": "422360e294f18206d13156d7d6a2e7529ee66b68384d603071b582b1b6e1f0b2",
+   "at": "ArchiveViewer/Prophecy05.txt#10",
+   "pt_br": "\r\nSe alguma arma pode igualar o\r\npoder bruto do Caldeirão, deve\r\nser algum tipo de Psypher.\r\nE não uma lâmina, mas algo\r\nque possa acorrentá-lo...\r\n\r\n\r\n@c( 110, 80, 50 )Profecia, Verso 2@/c\r\n@c( 130, 38, 92 )@i\"No Caldeirão que exala\r\ndesespero, o sangue dos antigos\r\nferve.\"@/c@/i\r\n\r\n"
+  },
+  {
+   "source_sha256": "029f74fc3648c1806f505d246c5cd78aa58b452247f2d566bc6c0c0edfac3155",
+   "at": "ArchiveViewer/Prophecy05.txt#11",
+   "pt_br": "\r\n\r\nSomos recém-chegados a esta terra,\r\nentão não somos do \"sangue dos antigos\".\r\n\r\nQuem controla o Caldeirão\r\ndeve ser @b@c(158,78,43)valentiniano@/c@/b\r\ne empunhar um @b@c(158,78,43)Psypher feito de\r\ncorrentes@/c@/b.\r\n\r\nOu seja, deve ser a\r\nPrincesa @b@c(158,78,43)Velvet@/c@/b."
+  },
+  {
+   "source_sha256": "f8e3dd9bcf3691dc914017ae79a03669923c7b20975c5b9af4e70ef2a967def5",
+   "at": "ArchiveViewer/Prophecy05.txt#12",
+   "pt_br": "\r\n\r\n\r\nSe o filhote de dragão que o Mestre\r\nCornelius viu é Leventhan, como o\r\nrei disse, levará uma eternidade\r\naté ele amadurecer e\r\ndevorar o mundo.\r\n\r\n\r\nEstá escrito que o crescimento do\r\ndragão é lento, porém inevitável.\r\n"
+  },
+  {
+   "source_sha256": "09f4702cbb2e6c52afa02024058b83bc073f320bf03540f761e9bc9ab93118ef",
+   "at": "ArchiveViewer/Prophecy05.txt#13",
+   "pt_br": "\r\n\r\n@c( 110, 80, 50 )Salmo 5 da Saga@/c\r\n@c( 130, 38, 92 )@i\"NASCIDO no caos e no fogo\r\nADORMECE nos braços da mãe\"@/c@/i\r\n\r\n\r\nQue \"mãe\" é essa que faz o Lorde\r\ndas Serpentes adormecer?\r\nCom os dragões Hindel, Wagner\r\ne Belial mortos, é improvável\r\nque a mãe seja um dragão. Então,\r\nque mãe é essa nos Salmos?"
+  },
+  {
+   "source_sha256": "c5a9f001f8b4a1fd4c5753c7c612e0877561049c95cecfee03b20313518e838a",
+   "at": "ArchiveViewer/Prophecy05.txt#14",
+   "pt_br": "\r\n@c( 110, 80, 50 )Profecia, Verso 3@/c\r\n@c( 130, 38, 92 )@i\"devorar a pedra de sangue\"@/c@/i \r\n\r\nA pedra de sangue pode ser\r\nentendida como as pedras mágicas\r\nvermelhas criadas no Caldeirão.\r\n\r\n@b@c(158,78,43)Mesmo que Leventhan seja detido\r\npor uma pedra vermelha, o Armagedom\r\nnão vai parar@/c@/b.\r\nO Lorde Demônio deve ter criado\r\no Balor prevendo isso."
+  },
+  {
+   "source_sha256": "9504d99b1b1d7b83dd9bb718a60fb559eb487a4bec46c6cfca84306e0bff3eaa",
+   "at": "ArchiveViewer/Prophecy05.txt#15",
+   "pt_br": "\r\n\r\n@c( 110, 80, 50 )Salmo 6 da Saga@/c\r\n@c( 130, 38, 92 )@i\"e guiarão o renascimento\"@/c@/i\r\n\r\n\r\nO último salmo afirma claramente\r\nque o mundo vai @brenascer@/b.\r\n\r\nO Lorde Demônio e os Magos\r\nentenderam que quem\r\nsobreviver ao Armagedom\r\nse tornará os novos reis\r\ndo mundo.\r\n"
+  },
+  {
+   "source_sha256": "680da6b278b498e506c5f55d5a11abfaceca24765676f8ddbe10dc1ca0be6a9b",
+   "at": "ArchiveViewer/Prophecy05.txt#16",
+   "pt_br": "\r\n\r\nO Lorde Demônio buscou a vitória\r\npor meio de guerras, e os magos\r\ntentaram controlar o Armagedom\r\ndiretamente. \r\n\r\nPorém, todos estavam enganados.\r\n\r\nOs dois senhores que sobreviverem\r\nserão escolhidos entre os cinco\r\ndesafiantes dos desastres."
+  },
+  {
+   "source_sha256": "1c20e803b1bb6d14b49235bd19d09132342f3936c3ee0dd46d5d8a56c98a492d",
+   "at": "ArchiveViewer/Prophecy05.txt#17",
+   "pt_br": "\r\n\r\n\r\nDizem que os dois senhores não\r\ntêm coroa. Suspeito que \"senhor\"\r\nnão indique realeza, mas\r\noutra coisa.\r\n\r\nPor fim, eis a conclusão e\r\nminhas descobertas.\r\n\r\n"
+  },
+  {
+   "source_sha256": "74459ec610279d75002d73a4048ac39818edf52607659bf9a820ef21490efd5c",
+   "at": "ArchiveViewer/Prophecy05.txt#18",
+   "pt_br": "\r\n\r\nIsto é conjectura, mas a partir do\r\n\r\n\r\n@c( 110, 80, 50 )Salmo 5@/c\r\n@c( 130, 38, 92 )@i\"A VIDA desaparece da terra\r\nTUDO chega ao fim\"@/c@/i\r\n\r\n\r\nSó se pode imaginar um mundo\r\nestéril, com uma população ínfima.\r\n\r\n"
+  },
+  {
+   "source_sha256": "80a856c0112c04647003af1d2109d238b1a2f9c17fa3a56d86fbc91ebe04b77e",
+   "at": "ArchiveViewer/Prophecy05.txt#19",
+   "pt_br": "\r\n\r\nOs @b\"senhores sem coroa\"@/b seriam,\r\ntalvez, os primogenitores\r\nda humanidade no Novo Mundo?\r\n\r\nSe for assim, terão de ser,\r\nnecessariamente, dois humanos:\r\num homem e uma mulher.\r\n\r\nEntão podemos supor que a\r\nmãe do Salmo 5 pode ser\r\nentendida como:\r\n"
+  },
+  {
+   "source_sha256": "2d01fb3ddb067df3c2366362f060138232eff305e48b9a0600a247e144541ea7",
+   "at": "ArchiveViewer/Prophecy05.txt#20",
+   "pt_br": "\r\n\r\nQuem derrotar Leventhan\r\nse torna a mãe do Novo\r\nMundo...\r\n\r\nTodos, exceto os dois\r\nhumanos, vão perecer.\r\n\r\nComo isso pode ser considerado\r\nsalvação? Espero ter\r\nentendido mal as\r\nprofecias..."
+  }
+ ]
+}

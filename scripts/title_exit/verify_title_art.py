@@ -4,7 +4,9 @@
 For every build of the manifest (written by `osl-tests --title-art`, one line per SupportedBuilds entry) and every text
 language of it, the prepared original archives are read, the shipped patch's blocks are applied in memory and the
 Refined and Classic labels are read back through the patched menu files. Nothing is written; a build without prepared
-title archives is reported DATA UNAVAILABLE, never PASS.
+title archives is reported DATA UNAVAILABLE, never PASS. Portuguese (Brazil) rows read the build's English title art
+through the English layer and localization/pt-BR/visual/title-exit-ptbr.dcpx (matched as the launcher's MatchEntry
+does) and expect SAIR DO JOGO and the other rows in Portuguese (title_rows.py); the PT-BR patch must not match the files without the English layer.
 
     verify_title_art.py manifest.tsv game/prepared
 
@@ -23,12 +25,19 @@ import cpk
 import ftex
 import make_dcpx
 import make_title_exit as m
+import title_credits
+import title_secondary
+import title_rows
 
 LANGUAGE_KEYS = {'en': 'english', 'de': 'german', 'es': 'spanish', 'fr': 'french', 'it': 'italian'}
+PTBR_KEY = 'portuguese_brazil'
 UNAVAILABLE = 'DATA UNAVAILABLE'
 UNAVAILABLE_NOTE = 'real-file part not run; the Exit Game row stays off for art the patch does not know (structure row)'
 ROOT = Path(__file__).resolve().parent.parent.parent
 SHIPPED = ROOT / 'launcher' / 'title' / 'title-exit.dcpx'
+PREPARED = None
+PTBR = ROOT / 'localization' / 'pt-BR' / 'visual' / 'title-exit-ptbr.dcpx'
+TITLE_GLYPHS = {}
 OLD_ENGLISH = ROOT / 'tests' / 'fixtures' / 'title-exit-0.2.3-english.dcpx'
 
 
@@ -182,9 +191,99 @@ def check_group(group, shipped, pool):
     return language, phrases, problems
 
 
+def match_entry(targets, name, data):
+    """The launcher's MatchEntry over parsed DCPX targets: ('patched' | 'original' | 'unknown' | 'ambiguous', result)."""
+    crc = zlib.crc32(data)
+    for n, size, before, after, runs in targets:
+        if n.lower() == name.lower() and size == len(data) and after == crc:
+            return 'patched', data
+    for n, size, before, after, runs in targets:
+        if n.lower() == name.lower() and size == len(data) and before == crc:
+            return 'original', applied(data, runs)
+    originals, patched = [], 0
+    for n, size, before, after, runs in targets:
+        if n.lower() != name.lower() or size != len(data) or not runs:
+            continue
+        if all(data[off:off + 16] == old for off, old, _ in runs):
+            originals.append(applied(data, runs))
+        elif all(data[off:off + 16] == new for off, _, new in runs):
+            patched += 1
+    if originals and patched or len(set(originals)) > 1:
+        return 'ambiguous', None
+    if originals:
+        return 'original', originals[0]
+    return ('patched', data) if patched else ('unknown', None)
+
+
+def check_ptbr(group, shipped, ptbr):
+    """Portuguese (Brazil) over one English atlas group: {kind: [problems]} and the label. The PT-BR patch must turn the
+    files the English layer leaves into what the generator composes, and leave the files without that layer alone."""
+    problems = {kind: [] for kind in m.KINDS}
+    files = {kind: next(iter(v)) for kind, v in group['files'].items()}
+    art = m.NativeArt(group['atlas'], files['refined'], files['classic'])
+    metrics = []
+    blob, regenerated, status = m.process_group(art, {}, [], metrics, ptbr=True)
+    exited = m.NativeArt(blob, regenerated['refined'], regenerated['classic'])
+    blob, regenerated, _ = title_rows.paint_rows(exited, regenerated, TITLE_GLYPHS)
+    donors = None
+    try:
+        donors = m.donor_layouts(PREPARED, [f'{folder}/{archive}' for folder, archive in group['where']], files)
+        blob, regenerated = title_secondary.apply(blob, regenerated, donors)
+    except (title_secondary.SecondaryError, m.Unsupported, KeyError, StopIteration, FileNotFoundError):
+        pass
+    if donors and donors['refined']['ES'] != files['refined']:
+        try:
+            blob, _ = title_credits.apply(blob, regenerated, donors)
+        except (title_credits.CreditError, KeyError, StopIteration):
+            pass
+    expected = {}
+    for kind, spec in m.KINDS.items():
+        expected[spec['atlas']], expected[spec['mbs']] = blob, regenerated[kind]
+        if status.get(kind) != 'ok':
+            problems[kind].append(f'the generator finds no Portuguese label to paint: {status.get(kind)}')
+    sources = {}
+    for kind, spec in m.KINDS.items():
+        sources[spec['atlas']], sources[spec['mbs']] = group['atlas'], files[kind]
+    shown = {}
+    for name, original in sources.items():
+        kinds = [k for k, s in m.KINDS.items() if name in (s['atlas'], s['mbs'])]
+        layered, error = shipped.apply(name, original)
+        if error:
+            for kind in kinds:
+                problems[kind].append(error)
+            continue
+        state, result = match_entry(ptbr, name, layered)
+        if state != 'original' and not (state == 'patched' and layered == expected[name]):
+            for kind in kinds:
+                problems[kind].append(f'{name}: the PT-BR patch finds the English layer {state}')
+            continue
+        if result != expected[name]:
+            for kind in kinds:
+                problems[kind].append(f'{name}: the PT-BR patch is not what the generator composes')
+        if match_entry(ptbr, name, original)[0] != 'unknown':
+            for kind in kinds:
+                problems[kind].append(f'{name}: the PT-BR patch would also change the file without the English layer')
+        if match_entry(ptbr, name, expected[name])[0] != 'patched':
+            for kind in kinds:
+                problems[kind].append(f'{name}: the PT-BR result is not recognised as patched')
+        shown[name] = result
+    phrase = next((mt['phrase'] for mt in metrics), '')
+    if any(problems.values()) or len(shown) != len(sources):
+        return phrase, problems
+    patched = {kind: shown[spec['mbs']] for kind, spec in m.KINDS.items()}
+    for kind, spec in m.KINDS.items():
+        if phrase != m.PTBR_PHRASES[0]:
+            problems[kind].append(f'the label is {phrase}, not {m.PTBR_PHRASES[0]}')
+        problems[kind] += label_failures(kind, art, shown[spec['atlas']], patched, phrase, 'en')
+        problems[kind] += sharing_failures(m.NativeArt(shown[spec['atlas']], patched['refined'], patched['classic']))
+    return phrase, problems
+
+
 def main():
-    manifest = [line.rstrip('\n').split('\t') for line in Path(sys.argv[1]).read_text(encoding='utf-8').splitlines() if line]
+    manifest =[line.rstrip('\n').split('\t') for line in Path(sys.argv[1]).read_text(encoding='utf-8').splitlines() if line]
     prepared = Path(sys.argv[2])
+    global PREPARED
+    PREPARED = prepared
     shipped = Shipped()
     builds = [dict(label=l, folder=f, files=set(d.split(';')) if d else set(),
                    languages=[tuple(x.split('=', 1)) for x in langs.split(';') if x]) for l, f, d, langs in manifest]
@@ -201,7 +300,12 @@ def main():
         return 0
     _, reference = m.find_reference(arts)
     pool = m.build_pool(arts, reference)
+    by_language = {}
+    for crc in sorted(arts):
+        by_language.setdefault(m.language_of(arts[crc]), arts[crc])
+    TITLE_GLYPHS.update(title_rows.pool(by_language))
     checked, failed = {}, 0
+    ptbr_checked = {}
     for build in builds:
         mine = {crc: g for crc, g in groups.items()
                 if any(folder == build['folder'] and name in build['files'] for folder, name in g['where'])}
@@ -215,6 +319,9 @@ def main():
         wanted = [(key, name) for key, name in build['languages']] or [(None, 'English')]
         covered = set()
         for key, name in wanted:
+            if key == PTBR_KEY:
+                failed += ptbr_rows(build, name, by_language.get('en', []), groups, shipped, ptbr_checked, bool(mine))
+                continue
             code = next((c for c, k in LANGUAGE_KEYS.items() if k == key), 'en')
             entries = by_language.get(code, [])
             covered.add(code)
@@ -241,6 +348,36 @@ def main():
             row(build['label'], f'archives {",".join(names)}', 'FAIL: ' + '; '.join(problems['refined']), 'real files')
     failed += old_patch_is_rejected(checked, groups, pool)
     return 1 if failed else 0
+
+
+def ptbr_rows(build, name, entries, groups, shipped, checked, prepared):
+    """The Portuguese (Brazil) rows of a build: its English title art through the English layer and the PT-BR patch."""
+    if not entries:
+        reason = 'no prepared title archives' if not prepared else 'no prepared archive holds English title art'
+        for kind in m.KINDS:
+            row(build['label'], f'{name} / {kind.capitalize()}', UNAVAILABLE, reason, UNAVAILABLE_NOTE)
+        return 0
+    if not PTBR.is_file():
+        for kind in m.KINDS:
+            row(build['label'], f'{name} / {kind.capitalize()}', f'FAIL: {PTBR.name} is missing', 'real files')
+        return len(m.KINDS)
+    if 'targets' not in checked:
+        checked['targets'] = make_dcpx.parse(PTBR.read_bytes())
+    results, archives, phrase = {kind: [] for kind in m.KINDS}, [], ''
+    for crc, names, _, _ in entries:
+        if crc not in checked:
+            checked[crc] = check_ptbr(groups[crc], shipped, checked['targets'])
+        phrase, problems = checked[crc]
+        archives += names
+        for kind in m.KINDS:
+            results[kind] += problems[kind]
+    failed = 0
+    for kind in m.KINDS:
+        reasons = list(dict.fromkeys(results[kind]))
+        failed += bool(reasons)
+        row(build['label'], f'{name} / {kind.capitalize()}', 'PASS' if not reasons else 'FAIL: ' + '; '.join(reasons),
+            f'real files: {len(archives)} archive(s)', f'label "{phrase}" ({PTBR.name} over the English layer)')
+    return failed
 
 
 def old_patch_is_rejected(checked, groups, pool):

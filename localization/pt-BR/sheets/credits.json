@@ -1,0 +1,186 @@
+{
+ "kind": "credits",
+ "language": "pt-BR",
+ "entries": [
+  {
+   "source_sha256": "57d5ad4eacf40d68bbe1a5db4af9885be0b789a86cb128660b0ffc7ebe5394b5",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#6",
+   "pt_br": "Odin / Beldor / Wagner"
+  },
+  {
+   "source_sha256": "6ac2985ba7f016098034a2b13b6f3f4175010cc320e22515cc42b4d06a354754",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#7",
+   "pt_br": "Griselda / Mãe de Alice / Vulcan"
+  },
+  {
+   "source_sha256": "1eea06e8397c4a1caef32a8ec87d244801153148b05422e13e4d923875970ed0",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#8",
+   "pt_br": "Brigan / Belial"
+  },
+  {
+   "source_sha256": "aa1fb2437e8b4758b97487077e93deda09725d8b7c73b03f4a11867bd8f7c096",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#9",
+   "pt_br": "Myris"
+  },
+  {
+   "source_sha256": "549e55dbbf340ac4f04480fd237f96cecdde31315b7e44bc383a3f5f3cc0e54e",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#10",
+   "pt_br": "Valentine / Urzur"
+  },
+  {
+   "source_sha256": "72cbf8a731d6ca30524bf4eccb978aea8f3194527d55c45a12d5d9d90c1ab56e",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#11",
+   "pt_br": "Gallon"
+  },
+  {
+   "source_sha256": "69f8c63dcb96abeb7a075d710634e6d34c045e31c3d8f54f09052a28a1a5dc11",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#12",
+   "pt_br": "Meril"
+  },
+  {
+   "source_sha256": "c32c89b237f6e85d18598f0d700bcf4a503630e5ee8ccccb16776ae2cdbf195f",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#13",
+   "pt_br": "Elfaria / Odette"
+  },
+  {
+   "source_sha256": "6c5e0253445038b842d33eaf5a7d0e1a511095cfb06e0e2b000e7084d169130a",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#14",
+   "pt_br": "Matthew / Skuldi"
+  },
+  {
+   "source_sha256": "69abb85fc0814883783903ef4c352557de6ebb381d6ab3c5eca9e8a46f44462a",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#15",
+   "pt_br": "Melvin"
+  },
+  {
+   "source_sha256": "2cba68fa497a9d0d05dfb32a1b299e338a260fddf522c3a5658b6cb220622fb5",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#16",
+   "pt_br": "Onyx"
+  },
+  {
+   "source_sha256": "71a5c1be8ff084d96e2a1dec215a4132ed8be79ef628a99d0d7930f7b9f50a10",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#17",
+   "pt_br": "Ingway"
+  },
+  {
+   "source_sha256": "42ab712f9a165906ea94aa00c0f9c11e10f0a1ee32f2f8fc444ce9a5175e49bb",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#18",
+   "pt_br": "Krois / Brom / Rei de Titania"
+  },
+  {
+   "source_sha256": "4c5c43801af6885d41ee68f9784957b82c6389dbcfefbd840dc752727d45e197",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#19",
+   "pt_br": "Hindel / Espectro"
+  },
+  {
+   "source_sha256": "0e2c98c386eaaa8bcb3f1d819a0d4a0813781d8285429416b0cf5cdaf0ab48a0",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#20",
+   "pt_br": "Valquíria / Elfo"
+  },
+  {
+   "source_sha256": "8edd1057f620574bb85ecdce281e243b143322671fdbef94e1650192b83b8fac",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#21",
+   "pt_br": "Maury"
+  },
+  {
+   "source_sha256": "904775d7ecb99369db3fd3184bd2ce77f75bb43de08287abdbd88d4d512c2e70",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#22",
+   "pt_br": "Vendedor Pooka"
+  },
+  {
+   "source_sha256": "3e76d5a93e1d1b67531bc3b6f5aaa85d68a46f27cc94ff1994b93e75778ba313",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#24",
+   "pt_br": "Líder das Armaduras de Aço"
+  },
+  {
+   "source_sha256": "87da8c63b707c74836a5dd920ba23e5ee4b0a893090e3c22276b0d257b9381ac",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#26",
+   "pt_br": "Cavaleiro Fênix"
+  },
+  {
+   "source_sha256": "cf7f6ac4357bda6a81021bf53b4f742114a26f71283125547d5d91c56de7bf19",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#27",
+   "pt_br": "Myconid / Alraune"
+  },
+  {
+   "source_sha256": "32cfb92917afceaf559454cc087ffc8ddfd05be410e721fca65871222a914425",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#28",
+   "pt_br": "Anão do Encouraçado"
+  },
+  {
+   "source_sha256": "d6ca1483c5d0ad8036a9d44b4a7f064116f1787f48f53d3747bf377b83a85a32",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#29",
+   "pt_br": "Violino"
+  },
+  {
+   "source_sha256": "ddbba3a5ac14d058196ab3909b3e7bed99c74f23ecb4635b871d47ea4e33a59a",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#30",
+   "pt_br": "Oboé"
+  },
+  {
+   "source_sha256": "492f89792d8cf6fe3960ac7f3d8f40f2baa9195c323384a112ab0c8e0fc4f239",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#31",
+   "pt_br": "Clarinete"
+  },
+  {
+   "source_sha256": "90bd676e9f0637d559ff7ad379c7aea8e76b9af976dd49c3d347199979cf7078",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#32",
+   "pt_br": "Flauta"
+  },
+  {
+   "source_sha256": "8f8577a67358275619f194084a37291722fe3b1aaf65161f1ee93bd05ecf1f07",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#33",
+   "pt_br": "Vocais"
+  },
+  {
+   "source_sha256": "6a201cad2f6557a7271fee15455b73ad4bdaf6a8615627f1f8c21e675308771d",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#34",
+   "pt_br": "Rabeca"
+  },
+  {
+   "source_sha256": "bd72bca47670acb7ccf0c2710031afe68d0c940d8bd874818f5f80d1974bdeaa",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#35",
+   "pt_br": "Bodhrán"
+  },
+  {
+   "source_sha256": "f60971b49ad7fbe547746b521bc8f82281f46a4bd30dd100c173427720a90449",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#36",
+   "pt_br": "Harpa Celta / Coro"
+  },
+  {
+   "source_sha256": "d5e6989ce19a5593d9557b20efae5624c30440c02ded686ceefc0efde46d05f4",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#37",
+   "pt_br": "Tin Whistle / Harjedalspipa / Svensk sackpipa"
+  },
+  {
+   "source_sha256": "0d420b564b17e6e4e33b7a4934ee397441d7726ec502a7220bf44fa36aa81921",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#38",
+   "pt_br": "Líder de Equipe"
+  },
+  {
+   "source_sha256": "8b2085f74dfa9c78a23b7d573c23d27d6d0b0e50c82a9b13138b193325be3814",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#39",
+   "pt_br": "Gerente"
+  },
+  {
+   "source_sha256": "0f19201bc4f1f7f5704526519223863ced961ff782045a79781942628b9c85bc",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#40",
+   "pt_br": "Colaboração no Design de Fontes"
+  },
+  {
+   "source_sha256": "ce8b7dc6dc1fea1ccdd79a01850069caa9895340e329d36cc1b99d39db9858ec",
+   "at": "StaffRoll/RE_StaffRoll_Complete.txt#41",
+   "pt_br": "Gerente-Geral"
+  },
+  {
+   "source_sha256": "b984d066f603c16fd0eabe6003eb5d5f4fd77ede7eecf8bea506e55ffa8f9021",
+   "at": "StaffRoll/RE_StaffRoll_True.txt#35",
+   "pt_br": "Flauta Doce"
+  },
+  {
+   "source_sha256": "9b846d7a9dc18ee465b7709ff81aad8aa104d80917eff2effbbf799bba80cd33",
+   "at": "StaffRoll/RE_StaffRoll_True.txt#37",
+   "pt_br": "Piano, Sintetizador"
+  }
+ ]
+}

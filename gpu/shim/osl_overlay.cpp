@@ -18,6 +18,7 @@
 #include "osl_cheat_menu.h"
 #include "osl_notice.h"
 #include "osl_settings.h"
+#include "osl_ui_text.h"
 #include "runtime_cheats.h"
 #include "imgui.h"
 #include "imgui_internal.h" // RegisterUserTexture (save pictures)
@@ -184,12 +185,13 @@ void StartupNotices() {
     float top = StartupNoticeTop();
     ImDrawList* draw = ImGui::GetForegroundDrawList();
     for (OslNotice::StartupNotice& notice : startup_notices) {
-        const FpsBox box = NoticeBox(notice.text().c_str(), top);
+        const char* text = osl_ui_text(notice.text().c_str());
+        const FpsBox box = NoticeBox(text, top);
         if (notice.Visible(now, ready, kStartupNoticeSeconds)) {
             draw->AddRectFilled(box.p0, box.p1, panel_color, box.size * 0.5f);
             draw->AddRect(box.p0, box.p1, border_color, box.size * 0.5f, 0, 1.0f);
             draw->AddText(ImGui::GetFont(), box.size, ImVec2(box.p0.x + box.pad.x, box.p0.y + box.pad.y),
-                         text_color, notice.text().c_str());
+                         text_color, text);
         }
         top += (box.p1.y - box.p0.y) + gap;
     }
@@ -219,14 +221,14 @@ void TextEntryBox() {
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
                      ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav |
                      ImGuiWindowFlags_NoFocusOnAppearing);
-    ImGui::TextColored(AccentHotColor(), "%s", text_entry_prompt.c_str());
+    ImGui::TextColored(AccentHotColor(), "%s", osl_ui_text(text_entry_prompt.c_str()));
     ImGui::Separator();
     ImGui::SetWindowFontScale(1.4f);
     ImGui::Text("%s_", text_entry_text.c_str());
     ImGui::SetWindowFontScale(1.0f);
     ImGui::Separator();
-    ImGui::TextDisabled("Keyboard: type, Backspace to erase, Enter = OK, Esc = cancel");
-    ImGui::TextDisabled("Controller: Cross (A) = OK, Circle (B) = cancel");
+    ImGui::TextDisabled("%s", osl_ui_text("Keyboard: type, Backspace to erase, Enter = OK, Esc = cancel"));
+    ImGui::TextDisabled("%s", osl_ui_text("Controller: Cross (A) = OK, Circle (B) = cancel"));
     ImGui::End();
 }
 
@@ -242,7 +244,7 @@ void ChoiceBox() {
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
                      ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav |
                      ImGuiWindowFlags_NoFocusOnAppearing);
-    ImGui::TextColored(AccentHotColor(), "%s", choice_title.c_str());
+    ImGui::TextColored(AccentHotColor(), "%s", osl_ui_text(choice_title.c_str()));
     ImGui::Separator();
     // Save pictures are 228x128; rows without one keep the text aligned when others have one.
     const bool pictures = std::any_of(choice_textures.begin(), choice_textures.end(),
@@ -261,9 +263,9 @@ void ChoiceBox() {
             ImGui::SameLine();
         }
         if (selected) {
-            ImGui::TextColored(AccentHotColor(), "> %s", choice_items[i].c_str());
+            ImGui::TextColored(AccentHotColor(), "> %s", osl_ui_text(choice_items[i].c_str()));
         } else {
-            ImGui::Text("  %s", choice_items[i].c_str());
+            ImGui::Text("  %s", osl_ui_text(choice_items[i].c_str()));
         }
         ImGui::EndGroup();
         if (selected) {
@@ -279,7 +281,8 @@ void ChoiceBox() {
         }
     }
     ImGui::Separator();
-    ImGui::TextDisabled("Up/Down or D-pad: choose   Enter or Cross (A): OK   Esc or Circle (B): cancel");
+    ImGui::TextDisabled(
+        "%s", osl_ui_text("Up/Down or D-pad: choose   Enter or Cross (A): OK   Esc or Circle (B): cancel"));
     ImGui::End();
 }
 
@@ -295,7 +298,7 @@ void LoadingScreen() {
                      ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoFocusOnAppearing);
     const u32 done = loading_done, total = loading_total;
     ImGui::SetWindowFontScale(1.6f);
-    ImGui::TextUnformatted(total ? "Loading shader cache..." : "Preparing graphics...");
+    ImGui::TextUnformatted(osl_ui_text(total ? "Loading shader cache..." : "Preparing graphics..."));
     ImGui::SetWindowFontScale(1.0f);
     if (total) {
         char count[64];
@@ -303,7 +306,7 @@ void LoadingScreen() {
                       u32(u64(done) * 100 / total));
         ImGui::ProgressBar(float(done) / float(total), ImVec2(-1.0f, 0.0f), count);
     }
-    ImGui::TextDisabled("The first start after an update takes longer.");
+    ImGui::TextDisabled("%s", osl_ui_text("The first start after an update takes longer."));
     ImGui::End();
 }
 
@@ -335,7 +338,7 @@ void BackgroundLoading() {
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
                      ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav |
                      ImGuiWindowFlags_NoFocusOnAppearing);
-    ImGui::TextDisabled("Loading shader cache %u%%", u32(u64(done) * 100 / total));
+    ImGui::TextDisabled(osl_ui_text("Loading shader cache %u%%"), u32(u64(done) * 100 / total));
     ImGui::End();
 }
 
@@ -677,18 +680,18 @@ bool DrawCheatRow(const osl::cheats::MenuRow& row, size_t index, bool selected, 
     if (row.kind == osl::cheats::RowKind::Experience) {
         const bool available = runtime_experience_available() != 0;
         const int multiplier = runtime_experience_multiplier();
-        text = osl::cheats::ExperienceText(available, multiplier);
+        text = osl_ui_text(osl::cheats::ExperienceText(available, multiplier));
         unavailable = !available;
         lit = osl::cheats::ExperienceLit(available, multiplier);
     } else {
         const osl::cheats::RowState state = osl::cheats::StateOf(runtime_cheat_available(int(row.cheat)) != 0,
                                                                 runtime_cheat_enabled(int(row.cheat)) != 0);
-        text = osl::cheats::StateText(state);
+        text = osl_ui_text(osl::cheats::StateText(state));
         unavailable = state == osl::cheats::RowState::Unavailable;
         lit = state == osl::cheats::RowState::On;
     }
     draw->AddText(ImVec2(min.x + pad, y), ImGui::GetColorU32(unavailable ? dim : ImGui::GetStyleColorVec4(ImGuiCol_Text)),
-                  row.label);
+                  osl_ui_text(row.label));
     draw->AddText(ImVec2(max.x - pad - ImGui::CalcTextSize(text).x, y), ImGui::GetColorU32(lit ? accent : dim), text);
     ImGui::PopID();
     return pressed;
@@ -696,7 +699,7 @@ bool DrawCheatRow(const osl::cheats::MenuRow& row, size_t index, bool selected, 
 
 std::string CheatCloseHint() {
     const char* name = SDL_GetScancodeName(SDL_Scancode(OslSettings::Get().cheat_hotkey.load()));
-    return osl::cheats::CloseHint(name && *name ? name : "F10");
+    return OslUiTextValue(osl::cheats::CloseHint(name && *name ? name : "F10"));
 }
 
 void CheatMenu() {
@@ -752,7 +755,7 @@ void CheatMenu() {
                                        ImGuiWindowFlags_NoNav;
     if (ImGui::Begin("##osl_cheat_menu", nullptr, flags)) {
         ImGui::SetWindowFontScale(scale);
-        ImGui::TextColored(accent, "%s", osl::cheats::kMenuTitle);
+        ImGui::TextColored(accent, "%s", osl_ui_text(osl::cheats::kMenuTitle));
         ImGui::Separator();
         const float body_available = available_height - window_padding * 2.0f - header_height - footer_height;
         const float child_height = std::max(std::min(body_height, body_available), 1.0f);
@@ -788,7 +791,7 @@ void CheatMenu() {
         ImGui::EndChild();
         ImGui::Separator();
         ImGui::TextColored(dim, "%s", CheatCloseHint().c_str());
-        ImGui::TextColored(dim, "%s", osl::cheats::kMenuNote);
+        ImGui::TextColored(dim, "%s", osl_ui_text(osl::cheats::kMenuNote));
     }
     ImGui::End();
     ImGui::PopStyleVar(4);

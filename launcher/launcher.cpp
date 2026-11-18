@@ -36,6 +36,7 @@
 #include "host.h"
 #include "incident_page.h"
 #include "launcher_quit.h"
+#include "localization/ui_text.h"
 #include "options.h"
 #include "pad_capture.h"
 #include "package_browser.h"
@@ -93,9 +94,10 @@ int ScancodeOf(ImGuiKey key) {
 }
 
 std::string GameFilesHelp() {
-    return "Select your own legally obtained Odin Sphere Leifthrasir package (.pkg). Supported: " + SupportedBuildsText() +
-           ". The game is unpacked into the game folder next to the program (about 4 GB). No game files are included. "
-           "Reinstalling keeps your saves and settings.";
+    return TrValue("Select your own legally obtained Odin Sphere Leifthrasir package (.pkg). Supported: " +
+                   SupportedBuildsText() +
+                   ". The game is unpacked into the game folder next to the program (about 4 GB). No game files are "
+                   "included. Reinstalling keeps your saves and settings.");
 }
 #ifdef _WIN32
 constexpr char kShowLauncherHelp[] = "Off starts the game directly. Hold Shift while starting to bring it back.";
@@ -282,6 +284,11 @@ GameCheck CheckAndLog(const GamePaths& paths) {
     return check;
 }
 
+// Portuguese (Brazil) only when the pending Menu & Subtitles choice is it; English for every other language.
+void UseTextLanguageOf(const trg::SettingsStore& settings) {
+    localization::SetActiveLanguage(settings.Get(kTextLanguageKey, kEnglishKey));
+}
+
 std::filesystem::path SettingsPath(const OslLauncherConfig& config) {
     if (config.settings_file && *config.settings_file) {
         return PathFromUtf8(config.settings_file);
@@ -325,6 +332,8 @@ public:
         trophy_page_ = std::make_unique<TrophyPage>(host_, UserDir());
         incident_page_ = std::make_unique<IncidentPage>(IncidentPlaces());
         incident_page_->CheckReports();
+        trg::SetTranslator(&localization::TranslateLauncherText);
+        UseTextLanguageOf(settings_);
         launcher_ = std::make_unique<trg::Launcher>(MakeConfig());
         updater_ = std::make_unique<trg::update::UpdateController>(MakeUpdateConfig(InstallDir(), OSL_PORT_VERSION));
         updater_->StartCheck();
@@ -382,6 +391,7 @@ public:
 
 private:
     Outcome Frame() {
+        UseTextLanguageOf(settings_);
         TrackPlacement();
         PollInstall();
         PollPrompts();
@@ -442,7 +452,7 @@ private:
         ImFont* semibold = fonts_.semibold ? fonts_.semibold : bold;
         float subtitle = 0.0f;
         for (const trg::SubtitleSegment& segment : branding.subtitle_segments) {
-            subtitle += semibold->CalcTextSizeA(15 * s, FLT_MAX, 0.0f, segment.text.c_str()).x;
+            subtitle += semibold->CalcTextSizeA(15 * s, FLT_MAX, 0.0f, Tr(segment.text.c_str())).x;
         }
         const float title = bold->CalcTextSizeA(title_size, FLT_MAX, 0.0f, branding.title.c_str()).x;
         return 26 * s + std::max(title, subtitle) + 26 * s;
@@ -499,7 +509,8 @@ private:
             Log("settings saved, starting the game");
             break;
         case PlayRequest::kFilesNotReady:
-            launcher_->SetStatus(std::string(StatusTitle(files_)) + ". Install the game files first.", 6.0);
+            launcher_->SetStatus(std::string(Tr(StatusTitle(files_))) + ". " + Tr("Install the game files first."),
+                                 6.0);
             break;
         case PlayRequest::kBusy:
             launcher_->SetStatus("Wait for the game file changes to finish.", 6.0);
@@ -546,7 +557,7 @@ private:
     }
 
     void DrawStartingMessage() {
-        constexpr const char* kText = "Settings saved. Starting game...";
+        const char* const kText = Tr("Settings saved. Starting game...");
         ImGui::PushFont(fonts_.semibold, fonts_.size * 1.25f);
         const float size = ImGui::GetFontSize();
         const ImVec2 text_size = ImGui::CalcTextSize(kText);
@@ -652,8 +663,8 @@ private:
 
     void PagePlay(trg::Ui& ui) {
         const bool ready = files_ == GameFileState::kValid;
-        const std::string title = ready && build_ ? std::string(StatusTitle(files_)) + " \xC2\xB7 " + build_->label
-                                                  : StatusTitle(files_);
+        const std::string title = ready && build_ ? std::string(Tr(StatusTitle(files_))) + " \xC2\xB7 " + build_->label
+                                                  : Tr(StatusTitle(files_));
         const std::string detail = ready && build_ ? BuildMetadataText(*build_) : StatusDetail(files_);
         ui.StatusCard(ready ? trg::Status::kReady : trg::Status::kAttention, title.c_str(), detail.c_str());
         if (ready && build_) {
@@ -665,7 +676,7 @@ private:
         if (!install_failure_.empty()) {
             ui.Spacer(4);
             ImGui::PushStyleColor(ImGuiCol_Text, ui.theme().warn_dot);
-            ImGui::TextUnformatted(install_failure_.c_str());
+            ImGui::TextUnformatted(Tr(install_failure_.c_str()));
             ImGui::PopStyleColor();
             ui.Help(install_failure_text_.c_str());
             ui.Spacer(4);
@@ -673,7 +684,7 @@ private:
         const std::string files_help = GameFilesHelp();
         ui.Row("Game files", files_help.c_str());
         if (!ui.TaskProgress(install_)) {
-            const bool clicked = ready ? ImGui::Button("Reinstall game...", ImVec2(-FLT_MIN, 0))
+            const bool clicked = ready ? ImGui::Button(Tr("Reinstall game..."), ImVec2(-FLT_MIN, 0))
                                        : ui.AccentButton("Install game...");
             if (clicked) {
                 BrowseAndInstall();
@@ -704,7 +715,8 @@ private:
             browser_.Open(paths_.app0.parent_path().parent_path().parent_path());
             return;
         }
-        StartInstall(trg::BrowseForFile("Select your Odin Sphere Leifthrasir package", {{"PS4 packages (*.pkg)", "*.pkg"}}));
+        StartInstall(trg::BrowseForFile(Tr("Select your Odin Sphere Leifthrasir package"),
+                                        {{Tr("PS4 packages (*.pkg)"), "*.pkg"}}));
     }
 
     void StartInstall(const std::string& picked) {
@@ -765,14 +777,14 @@ private:
             if (trophy_page_) {
                 trophy_page_->Invalidate();
             }
-            launcher_->SetStatus(std::string(message.title) + ". " + message.text, 6.0);
+            launcher_->SetStatus(Tr(message.title) + ". " + TrValue(message.text), 6.0);
             prompts_installed_ = InstalledPrompts();
             ApplySavedPrompts();
             return;
         }
         if (outcome->status == InstallStatus::kCancelled) {
             Log("game install cancelled");
-            launcher_->SetStatus(std::string(message.title) + ". " + message.text, 6.0);
+            launcher_->SetStatus(Tr(message.title) + ". " + TrValue(message.text), 6.0);
             return;
         }
         Log("game install failed: %s (%s)", message.title.c_str(), outcome->detail.c_str());
@@ -781,7 +793,7 @@ private:
         }
         install_failure_ = message.title;
         install_failure_text_ = message.text;
-        launcher_->SetStatus(std::string("Install failed: ") + install_failure_, 8.0);
+        launcher_->SetStatus(TrValue("Install failed: " + Tr(install_failure_)), 8.0);
     }
 
     const Display* SelectedDisplay() const { return DisplayForSetting(displays_, settings_.GetInt(kMonitorKey, 1)); }
@@ -877,7 +889,7 @@ private:
     void GraphicsCardCombo() {
         const std::string current = settings_.Get(kGraphicsCardKey);
         ImGui::BeginDisabled(gpu_names_.empty());
-        if (ImGui::BeginCombo("##graphics_card", gpu_names_.empty() ? "None found" : current.c_str())) {
+        if (ImGui::BeginCombo("##graphics_card", gpu_names_.empty() ? Tr("None found") : current.c_str())) {
             for (const std::string& name : gpu_names_) {
                 if (ImGui::Selectable(name.c_str(), name == current) && name != current) {
                     settings_.Set(kGraphicsCardKey, name);
@@ -920,15 +932,18 @@ private:
         const std::span<const TextLanguage> available = TextLanguagesOf(build_);
         if (available.size() > 1) {
             std::vector<trg::Option> languages;
-            for (const TextLanguage& language : available) {
-                languages.push_back({std::string(language.key), std::string(language.name)});
+            for (const TextLanguage* language : TextLanguageDisplayOrder(build_)) {
+                languages.push_back({std::string(language->key), std::string(language->name)});
             }
             const std::string saved = settings_.Get(kTextLanguageKey, available.front().key);
             const std::string_view effective = ResolveTextLanguage(build_, saved).key;
             if (saved != effective) {
                 settings_.Set(kTextLanguageKey, std::string(effective));
             }
-            ui.Combo("Menu & Subtitles", kTextLanguageHelp, kTextLanguageKey, available.front().key.data(), languages);
+            if (ui.Combo("Menu & Subtitles", kTextLanguageHelp, kTextLanguageKey, available.front().key.data(),
+                         languages)) {
+                UseTextLanguageOf(settings_);
+            }
         }
         if (features_.skip_intro) {
             ui.Toggle("Skip intro", kSkipIntroHelp, kSkipIntroKey, false, "Off", "On");
@@ -1014,8 +1029,10 @@ private:
     }
 
     void KeyRow(trg::Ui& ui, OslKeyAction action) {
+        // Key names stay as they are: "##" keeps a key called Home or Up from matching a row.
+        const std::string name = KeyDisplayName(SavedKey(settings_, action));
         const std::optional<ImGuiKey> key =
-            ui.KeyBindRow(osl_key_actions[action].label, nullptr, KeyDisplayName(SavedKey(settings_, action)));
+            ui.KeyBindRow(osl_key_actions[action].label, nullptr, name.empty() ? name : name + "##key");
         if (!key) {
             return;
         }
@@ -1035,7 +1052,7 @@ private:
                 pad_capture_.Cancel();
                 pad_hold_ = true;
             }
-        } else if (ImGui::Button(osl_pad_source_label(SavedPadSource(settings_, action)), ImVec2(-FLT_MIN, 0))) {
+        } else if (ImGui::Button(Tr(osl_pad_source_label(SavedPadSource(settings_, action))), ImVec2(-FLT_MIN, 0))) {
             if (pad_capture_.Begin(action, ControllerReader::Connected())) {
                 pad_capture_drawn_ = true;
             } else {
@@ -1090,7 +1107,7 @@ private:
         }
         const bool ready = files_ == GameFileState::kValid && build_ && !install_.running();
         ImGui::BeginDisabled(!ready);
-        const char* shown = ready ? PromptStyleLabel(prompts_installed_) : "Install the game first";
+        const char* shown = ready ? PromptStyleLabel(prompts_installed_) : Tr("Install the game first");
         if (ImGui::BeginCombo("##controller_prompts", shown)) {
             for (const PromptStyle style : {PromptStyle::kPlayStation, PromptStyle::kXbox}) {
                 const bool selected = style == prompts_installed_;
@@ -1173,7 +1190,8 @@ private:
         }
         if (outcome->ok) {
             Log("controller prompts: %s (%s)", PromptStyleKey(prompts_installed_), outcome->detail.c_str());
-            launcher_->SetStatus(std::string("Controller prompts: ") + PromptStyleLabel(prompts_installed_) + ".", 6.0);
+            const std::string style = PromptStyleLabel(prompts_installed_);
+            launcher_->SetStatus(TrValue("Controller prompts: " + style + "."), 6.0);
             return;
         }
         if (outcome->cancelled) {
@@ -1374,6 +1392,8 @@ extern "C" OslLauncherResult osl_launcher_run(const OslLauncherConfig* config) {
     using namespace osl;
     const GamePaths paths{PathFromUtf8(config->app0 ? config->app0 : ""), PathFromUtf8(config->image_dir ? config->image_dir : "")};
     LauncherSettings settings(SettingsPath(*config));
+    UseTextLanguageOf(settings);
+    trg::SetTranslator(&localization::TranslateLauncherText);
     const GameCheck check = CheckAndLog(paths);
     const bool ready = check.state == GameFileState::kValid;
     const bool show_setting = settings.GetBool(kShowLauncherKey, true);

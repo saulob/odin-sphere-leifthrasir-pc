@@ -19,6 +19,7 @@
 #include "hang_watchdog.h"
 #include "isa_emulate.h"
 #include "lzcnt_compat.h"
+#include "text_glyphs.h"
 #include <cpuid.h>
 #if !defined(__x86_64__) || !defined(__GNUC__)
 #error Odin Sphere Leifthrasir PC requires x86-64 GCC or Clang (including MinGW).
@@ -662,6 +663,56 @@ static int mapped(Segment *segments, uint64_t count, uint64_t address, uint64_t 
             address - segments[i].address <= segments[i].size - bytes) return 1;
     return 0;
 }
+/* The localized visual entries of the translation, grouped by archive, reported by the runtime when first read. */
+static void install_visual_watches(void) {
+    size_t count=0;
+    const OslVisualWatch *watches=osl_text_visual_watches(&count);
+    RuntimeFileWatch *items=calloc(count ? count : 1,sizeof(*items));
+    unsigned char *done=calloc(count ? count : 1,1);
+    for (size_t i=0;items && done && i<count;++i) {
+        if (done[i]) continue;
+        size_t n=0;
+        for (size_t k=i;k<count;++k) {
+            if (done[k] || strcmp(watches[k].archive,watches[i].archive)) continue;
+            items[n++]=(RuntimeFileWatch){watches[k].offset,watches[k].size,watches[k].entry,watches[k].kind};
+            done[k]=1;
+        }
+        char guest[300];
+        snprintf(guest,sizeof(guest),"/app0/%s",watches[i].archive);
+        runtime_file_watch(guest,watches[i].archive,watches[i].source,items,n);
+    }
+    free(items);
+    free(done);
+}
+/* A port-side Menu & Subtitles language: the slot's archives served with the translated text; the files on disk are
+ * never written, and an archive that cannot be overlaid keeps its own text. */
+static void install_text_translation(const char *settings_file, const char *image_dir, const char *app0) {
+    size_t count=0;
+    const OslArchiveOverlay *overlays=osl_text_translation(settings_file,image_dir,app0,&count);
+    for (size_t i=0;i<count;++i) {
+        char guest[300];
+        snprintf(guest,sizeof(guest),"/app0/%s",overlays[i].archive);
+        RuntimeFilePatch *table=calloc(overlays[i].count ? overlays[i].count : 1,sizeof(*table));
+        for (size_t k=0;table && k<overlays[i].count;++k)
+            table[k]=(RuntimeFilePatch){overlays[i].patches[k].offset,overlays[i].patches[k].size,overlays[i].patches[k].data};
+        if (!table || runtime_file_overlay(guest,overlays[i].length,table,overlays[i].count))
+            printf("Menu & Subtitles: %s could not be overlaid, it keeps its own text\n",overlays[i].archive);
+        free(table);
+    }
+    install_visual_watches();
+}
+/* The letters the Portuguese (Brazil) text needs, added to the fonts' glyph tables once the image is relocated. */
+static void install_text_glyphs(uint8_t *image, size_t size) {
+    size_t count=0, sjis_count=0;
+    const OslSjisPatch *sjis=NULL;
+    const OslGlyphPatch *patches=osl_text_glyph_patches(&count,&sjis,&sjis_count);
+    if (!count && !sjis_count) return;
+    char detail[200];
+    if (text_glyphs_install(image,size,patches,count,sjis,sjis_count,detail,sizeof(detail)))
+        printf("Menu & Subtitles: glyph table: %s\n",detail);
+    else
+        printf("Menu & Subtitles: glyph table not changed: %s; letters it lacks will not show\n",detail);
+}
 static const char *command_line(int argc, char **argv) {
 #ifdef _WIN32
     (void)argc; (void)argv;
@@ -810,6 +861,7 @@ int main(int argc, char **argv) {
     runtime_pad_set_settings(settings_file);
     if (app0) {
         runtime_file_configure(app0, user_dir ? user_dir : "user");
+        install_text_translation(settings_file,paths.image_dir,app0);
         char sfo[4096], id[16]="";
         snprintf(sfo,sizeof(sfo),"%s/sce_sys/param.sfo",app0);
         if (sfo_value(sfo,"INSTALL_DIR_SAVEDATA",id,sizeof(id),NULL) || sfo_value(sfo,"TITLE_ID",id,sizeof(id),NULL))
@@ -1037,6 +1089,7 @@ int main(int argc, char **argv) {
         apply_unlock_bookshelf(known_build ? &game_build : NULL,image+round_page(size)+lzcnt_stub_bytes,bookshelf_stub_bytes,size);
     apply_title_menu_exit(app0,paths.image_dir,image+round_page(size)+lzcnt_stub_bytes+bookshelf_stub_bytes,
                           round_page(size)+lzcnt_stub_bytes+bookshelf_stub_bytes,title_exit_stub_bytes,size);
+    install_text_glyphs(image,size);
     unsigned char *cheat_stubs=image+round_page(size)+lzcnt_stub_bytes+bookshelf_stub_bytes+title_exit_stub_bytes;
     if (install_cheats(settings_file,known_build,segments,ns,size,cheat_stubs,cheat_stubs+cheat_stub_bytes)) protect(cheat_stubs,cheat_stub_bytes,5);
 #ifdef _WIN32

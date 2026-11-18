@@ -18,6 +18,7 @@
 #include "osl_renderer.h"
 #include "osl_settings.h"
 #include "osl_toggles.h"
+#include "osl_ui_text.h"
 #include "osl_write_log.h"
 #include "oslgpu.h"
 #include "common/elf_info.h"
@@ -211,6 +212,7 @@ static void SelectRenderer() {
 
 extern "C" int oslgpu_init(const OslGpuConfig* config) {
     OslSettings::Load(config->settings_file);
+    osl_ui_text_load_language(config->settings_file);
     SelectRenderer();
     const auto& loaded = OslSettings::Get();
     if (loaded.skip_intro) {

@@ -21,9 +21,9 @@ if ($InstallPython) {
         & $python.Exe @($python.Args) -m venv (Join-Path $script:RepoRoot '.venv')
         if ($LASTEXITCODE -ne 0) { Stop-Tool 'Could not create .venv' }
     }
-    Write-Host '  installing cryptography, numpy, scipy and Pillow into .venv'
-    & (Get-VenvPython) -m pip install --quiet --disable-pip-version-check cryptography numpy scipy Pillow
-    if ($LASTEXITCODE -ne 0) { Stop-Tool 'pip install cryptography numpy scipy Pillow failed' }
+    Write-Host '  installing tools\python-requirements.txt into .venv'
+    & (Get-VenvPython) -m pip install --quiet --disable-pip-version-check -r (Join-Path $PSScriptRoot 'python-requirements.txt')
+    if ($LASTEXITCODE -ne 0) { Stop-Tool 'pip install -r tools\python-requirements.txt failed' }
 }
 $python = Get-Python
 if (-not $python) {

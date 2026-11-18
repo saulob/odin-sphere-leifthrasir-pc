@@ -1,0 +1,60 @@
+pattern	status	reason
+*:gui/rehd_interface.mbs	PT_BR_TRANSLATED	interface-ptbr.oslv: HUD actions, save/load, YES/NO, Bookshelf status, stage cards and menu words respelled from the shared glyph font
+*:interface.mbs	PT_BR_TRANSLATED	interface-ptbr.oslv: Classic HUD and menu words respelled from the shared glyph font
+*:gui/hd_interface.ftx	PT_BR_TRANSLATED	interface-art-ptbr.oslv: HABILIDADE PRONTA, APTIDÃO PRONTA, AÇÃO, CHEFE, FÚRIA painted from the face's own letters; COMBO! (FR sprite, space closed), DESCANSAR (REST plaque), NV and A are the official ES sprites; POW, EXP, DEF and HP stay: the Portuguese corpus names the gauge POW in every dynamic string (Custo de POW, Recupera POW, Taxa de POW), so the label must match it
+*:interface.ftx	PT_BR_TRANSLATED	Classic copy of GUI/HD_Interface.ftx: same painted sprites, interface-art-ptbr.oslv
+*:gui/hd_title.ftx	PT_BR_TRANSLATED	title-exit-ptbr.dcpx: rows, PRESSIONE QUALQUER BOTÃO, the copyright line and the credit captions Apresentado por, Produtor and Diretor, set on texture 0 from the Spanish credit line of the same face (the capital A built from the face's own strokes; the personal-name rows untouched)
+*:gui/rehd_title.mbs	PT_BR_TRANSLATED	title-exit-ptbr.dcpx: row parts and quads grown for the Portuguese rows, over the Exit Game layer
+*:title.ftx	PT_BR_TRANSLATED	Classic copy of GUI/HD_title.ftx: same title patch, including the credit captions (the Classic layout draws no credit page)
+*:title.mbs	PT_BR_TRANSLATED	title-exit-ptbr.dcpx: Classic rows NOVO JOGO, CARREGAR, MODO REFINADO, SAIR DO JOGO
+*:op_press_start.*	PT_BR_TRANSLATED	press-start-ptbr.oslv: PRESSIONE QUALQUER BOTÃO set from the Spanish and French rows of the title serif face, painted into the Italian slot
+*:gui/hd_logo.ftx	PT_BR_NOT_NEEDED	no sprite is English-only and no animation of REHD_Logo.mbs draws differently in English and Spanish (company logos)
+*:gui/rehd_logo.mbs	PT_BR_NOT_NEEDED	no animation draws differently in English and Spanish
+*:logo.ftx	PT_BR_NOT_NEEDED	Classic copy of the logos
+*:logo.mbs	PT_BR_BLOCKED	Classic logo layout: its LOGO animation spells a Spanish caption under the logos with 7 glyph sprites of the shared atlas no English animation draws; not respelled yet (the boot logos play from the title intro, so this page is not known to be shown)
+*:gui/hd_fin?.ftx	PT_BR_NOT_NEEDED	no animation of REHD_fin1-3 draws differently in English and Spanish; the ending text is the corpus' credits
+*:gui/rehd_fin?.mbs	PT_BR_NOT_NEEDED	no animation draws differently in English and Spanish
+*:fin?.ftx	PT_BR_NOT_NEEDED	Classic copy of the ending atlases
+*:fin?.mbs	PT_BR_NOT_NEEDED	Classic ending layouts
+*:gui/hd_chrselect.ftx	PT_BR_NOT_NEEDED	the English-only sprites are the character names (kept in Portuguese, glossary) and the demo build's DEMO_0 captions (Thank you for playing / Summer 2016 / Game Start / Available), not shown by the retail game
+*:gui/rehd_chrselect.mbs	PT_BR_NOT_NEEDED	layout of the names and demo captions above
+*:gui/hd_mode_select.ftx	PT_BR_NOT_NEEDED	glyph atlas every language shares (illuminated capitals, small letters, the acute stroke); the Portuguese words are respelled in the layout
+*:gui/rehd_mode_select.mbs	PT_BR_TRANSLATED	mode-select-ptbr.oslv: AÇÃO / RPG, Fácil, Normal, Difícil, Heroico respelled from the shared illuminated glyph font (tilde from its s turned, cedilla from its parenthesis hook)
+*:mode_select.ftx	PT_BR_NOT_NEEDED	Classic copy of the shared Mode Select glyph atlas; the words are respelled in the layout
+*:gui/hd_installation.ftx	PT_BR_TRANSLATED	prologues-ptbr.oslv: the chapter prologue pages' glyph atlas (Spanish slot) with F, G, M, O, ê from the French, German and Italian atlases and ã, õ, ç, - composed from the face's own ñ tilde, comma and z
+*:gui/rehd_installation.mbs	PT_BR_TRANSLATED	prologues-ptbr.oslv: the six chapter prologue pages and the Wheel of Fate title respelled in their three layers and four glow copies from the canonical prologue map
+*:installation.*	PT_BR_TRANSLATED	prologues-ptbr.oslv: Classic copy of the prologue pages and atlas above
+*:gui/hd_kitchin.ftx	PT_BR_TRANSLATED	kitchen-ptbr.oslv: PARA LEVAR painted into the Spanish PARA LLEVAR slot from its own letters; BÔNUS!, BÔNUS!!, BÔNUS!!! with a circumflex drawn to the Spanish acute's size
+*:gui/rehd_kitchin.mbs	PT_BR_TRANSLATED	kitchen-layout-ptbr.oslv: TAKE OUT takes the Spanish slot's part and quad; Recipe and Price word sprites respelled Receita and Preço from the shared script letters on the Spanish line
+*:kitchin.*	PT_BR_NOT_NEEDED	Classic kitchen: atlas pixels identical in every language and the layout differs from the Spanish one only in its 2-byte build stamp; every language draws the same sprites
+*:gui/hd_skill_common.ftx	PT_BR_BLOCKED	skill names use a glyph font of this atlas whose table is not mapped yet; LEVEL, SKILL UP READY and ABILITY READY are word sprites
+*:gui/rehd_skill_common.mbs	PT_BR_BLOCKED	layout of the skill screen above
+*:butterfly.mbs	PT_BR_TRANSLATED	butterfly-ptbr.oslv: the five hero titles (VALQUÍRIA, O PRÍNCIPE POOKA, TERRA DAS FADAS, A ESPADA NEGRA, DESTINO) in the two-pass glyph layers
+*:butterfly.ftx	PT_BR_NOT_NEEDED	decoded atlas identical in every official language; only the layout changes
+*:gui/hd_bookshelf.ftx	PT_BR_NOT_NEEDED	no visible pixel differs from Spanish and no layout picks a language sprite
+*:bookshelf.ftx	PT_BR_NOT_NEEDED	Classic copy, same as above
+*:gui/hd_archive_00.ftx	PT_BR_TRANSLATED	bookshelf-new-ptbr.oslv: NOVO painted into the Spanish NUEVO slot from its own N, O and V
+*:gui/rehd_archive_00.mbs	PT_BR_TRANSLATED	bookshelf-new-ptbr.oslv: the NEW badge keys take the Spanish NUEVO part and quad
+*:gui/hd_archiveframe00*.ftx	PT_BR_BLOCKED	book frames with baked book titles (368 English sprites); need painted art
+*:gui/rehd_archiveframe00.mbs	PT_BR_BLOCKED	layout of the book frames above
+*:gui/hd_stagename.ftx	PT_BR_NOT_NEEDED	Japanese-only card shown by every language (identical in English and Spanish)
+*:gui/hd_stagename03.ftx	PT_BR_NOT_NEEDED	Nebulapolis: the Portuguese name is the English one
+*:gui/hd_stagename54.ftx	PT_BR_NOT_NEEDED	General Brigan: the Portuguese name is the English one
+*:gui/hd_stagename59.ftx	PT_BR_NOT_NEEDED	Halja: the Portuguese name is the English one
+*:gui/hd_stagename*.ftx	PT_BR_TRANSLATED	stage-cards-ptbr.oslv: the card's blue, parchment and rotated renderings, lettered from the player's own calligraphy (stage-cards.tsv, glossary wording)
+*:[0-9][0-9].ftx	PT_BR_TRANSLATED	classic-cards-ptbr.oslv: a Portuguese letter atlas packed into the card texture and a rebuilt three-layer layout, letters from the Spanish, French, German and Italian cards' Western face (ã and ç from its own ñ tilde and comma)
+*:[0-9][0-9]_*.ftx	PT_BR_TRANSLATED	classic-cards-ptbr.oslv: a Portuguese letter atlas packed into the card texture and a rebuilt three-layer layout, letters from the Spanish, French, German and Italian cards' Western face (ã and ç from its own ñ tilde and comma)
+STAGE_TITLE	PT_BR_BLOCKED	any stage card no rule above names (none in Europe 1.01)
+*:gui/rehd_stagename.mbs	PT_BR_TRANSLATED	stage-acts-ptbr.oslv: the L_* chapter and act titles (VALQUÍRIA, O PRÍNCIPE POOKA, TERRA DAS FADAS, A ESPADA NEGRA, DESTINO, ARMAGEDOM, RODA DO DESTINO, Ato, Prelúdio, Epílogo, Cap. N) set from the shared glyph font in their three layers; the digit animations are the same in every language
+*:other/hd_m43.ftx	PT_BR_NOT_NEEDED	decoded pixels identical in the English, Spanish, French, German and Italian archives (no text differs)
+MANUAL	PT_BR_BLOCKED	full-page baked manual art; needs transcription and repainted pages
+*:a0_2_1.txt	PT_BR_TRANSLATED	chapter prologue card A VALQUÍRIA: swapped by the runtime translation map (launcher/prologue_translation.cpp, prologue_translation_table.inc) before the text engine draws it; the shared story font renders the record, so no separate texture exists; visual_parity.py prologue_map checks 41/41
+*:b0_2_1.txt	PT_BR_TRANSLATED	chapter prologue card O PRÍNCIPE POOKA: swapped by the runtime translation map (launcher/prologue_translation.cpp, prologue_translation_table.inc) before the text engine draws it; the shared story font renders the record, so no separate texture exists; visual_parity.py prologue_map checks 41/41
+*:c0_2_1.txt	PT_BR_TRANSLATED	chapter prologue card TERRA DAS FADAS: swapped by the runtime translation map (launcher/prologue_translation.cpp, prologue_translation_table.inc) before the text engine draws it; the shared story font renders the record, so no separate texture exists; visual_parity.py prologue_map checks 41/41
+*:d0_2_1.txt	PT_BR_TRANSLATED	chapter prologue card ESPADA DAS TREVAS E DA MORTE: swapped by the runtime translation map (launcher/prologue_translation.cpp, prologue_translation_table.inc) before the text engine draws it; the shared story font renders the record, so no separate texture exists; visual_parity.py prologue_map checks 41/41
+*:e0_2_1.txt	PT_BR_TRANSLATED	chapter prologue card DESTINO: swapped by the runtime translation map (launcher/prologue_translation.cpp, prologue_translation_table.inc) before the text engine draws it; the shared story font renders the record, so no separate texture exists; visual_parity.py prologue_map checks 41/41
+*:f0_1_0.txt	PT_BR_TRANSLATED	chapter prologue card O FIM DE ERION: swapped by the runtime translation map (launcher/prologue_translation.cpp, prologue_translation_table.inc) before the text engine draws it; the shared story font renders the record, so no separate texture exists; visual_parity.py prologue_map checks 41/41
+TEXT_CONTAINER	PT_BR_TRANSLATED	text corpus (localization/pt-BR/sheets) served over the English slot; every translatable record is present and accepted by visual_parity.py text_containers
+LANGUAGE_INDEPENDENT	PT_BR_NOT_NEEDED	the English and Spanish entries are byte-identical
+*:[0-9][0-9].mbs	PT_BR_TRANSLATED	classic-cards-ptbr.oslv: a Portuguese letter atlas packed into the card texture and a rebuilt three-layer layout, letters from the Spanish, French, German and Italian cards' Western face (ã and ç from its own ñ tilde and comma)
+*:[0-9][0-9]_*.mbs	PT_BR_TRANSLATED	classic-cards-ptbr.oslv: a Portuguese letter atlas packed into the card texture and a rebuilt three-layer layout, letters from the Spanish, French, German and Italian cards' Western face (ã and ç from its own ñ tilde and comma)

@@ -1,6 +1,7 @@
 # Turns the files a list names (one CMake list in a text file) into one C++ source: an EmbeddedFile table
 # (embedded_file.h) of their names and bytes, in the list's order.
-#   cmake -DINPUT_LIST=<list.txt> -DOUTPUT=<file.cpp> -DSYMBOL=<name> -P embed_files.cmake
+#   cmake -DINPUT_LIST=<list.txt> -DOUTPUT=<file.cpp> -DSYMBOL=<name> [-DBASE_DIR=<dir>] -P embed_files.cmake
+# With BASE_DIR a file is named by its path relative to it, otherwise by its file name.
 file(READ "${INPUT_LIST}" inputs)
 set(arrays "")
 set(table "")
@@ -10,7 +11,11 @@ foreach(input IN LISTS inputs)
     string(LENGTH "${hex}" hex_length)
     math(EXPR size "${hex_length} / 2")
     string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1," bytes "${hex}")
-    get_filename_component(name "${input}" NAME)
+    if (BASE_DIR)
+        file(RELATIVE_PATH name "${BASE_DIR}" "${input}")
+    else()
+        get_filename_component(name "${input}" NAME)
+    endif()
     string(APPEND arrays "const uint8_t k${count}[] = {${bytes}0};\n")
     string(APPEND table "    {\"${name}\", k${count}, ${size}},\n")
     math(EXPR count "${count} + 1")

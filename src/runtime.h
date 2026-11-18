@@ -70,6 +70,16 @@ uintptr_t runtime_services_resolve(const char *name);
 void runtime_file_report(void);
 void runtime_file_configure(const char *app0, const char *user);
 int runtime_file_mount(const char *guest, const char *host);
+/* Byte ranges served in place of a game file's own bytes, possibly past its end, while the host file stays untouched. */
+typedef struct { uint64_t offset, size; const unsigned char *data; } RuntimeFilePatch;
+int runtime_file_overlay(const char *guest, uint64_t length, const RuntimeFilePatch *patches, size_t count);
+/* Localized visual entries of a game file (offsets as the guest reads it): the first read reaching an entry's start is
+ * logged once per session by kind; source is the archive's language slot, or empty. */
+enum { RUNTIME_WATCH_SERVED, RUNTIME_WATCH_PROLOGUE, RUNTIME_WATCH_MISSED, RUNTIME_WATCH_UNTRANSLATED };
+typedef struct { uint64_t offset, size; const char *entry; int kind; } RuntimeFileWatch;
+typedef struct { size_t visual_hits, visual_unique_hits, visual_missing, localized_untranslated_hits; } RuntimeFileWatchCounts;
+int runtime_file_watch(const char *guest, const char *archive, const char *source, const RuntimeFileWatch *items, size_t count);
+void runtime_file_watch_counts(RuntimeFileWatchCounts *out);
 void runtime_file_unmount(const char *guest);
 int runtime_file_translate(const char *guest, char *out, size_t size);
 int64_t runtime_file_open(const char *path, int flags, int mode);

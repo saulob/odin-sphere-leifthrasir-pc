@@ -16,6 +16,7 @@
 #include "osl_graphics.h"
 #include "osl_settings.h"
 #include "osl_title.h"
+#include "osl_ui_text.h"
 #ifdef _WIN32
 #include "video_core/renderer_opengl/gl_angle.h"
 #endif
@@ -216,7 +217,8 @@ void WindowSDL::RefreshTitle() {
     const auto& settings = OslSettings::Get();
     std::string entry;
     if (text_active) {
-        entry = " \u2014 " + text_prompt + ": " + text + "_  (Enter = OK, Esc = cancel)";
+        entry = " \u2014 " + std::string(osl_ui_text(text_prompt.c_str())) + ": " + text + "_  " +
+                osl_ui_text("(Enter = OK, Esc = cancel)");
     }
     const std::string title = OslTitle::Compose({
         .base = base_title,

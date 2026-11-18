@@ -1,0 +1,104 @@
+source	pt_br	where	notes
+A Rank Bonus	Bônus Rank A	interface
+B Rank Bonus	Bônus Rank B	interface
+C Rank Bonus	Bônus Rank C	interface
+D Rank Bonus	Bônus Rank D	interface
+S Rank Bonus	Bônus Rank S	interface
+Alchemy	Alquimia	interface	glossary
+AREA	ÁREA	interface
+ATK	ATQ	interface	corpus ATK -> ATQ
+Bag	Bolsa	interface	corpus
+BAG	BOLSA	interface	corpus Bag
+BATTLE	BATALHA	interface
+Battle Time	Tempo de batalha	interface
+Buy	Comprar	interface
+Cancel	Cancelar	interface	corpus
+CHECK	EXAMINAR	interface
+Chapter 1	Capítulo 1	interface	glossary Chapter
+Chapter 2	Capítulo 2	interface	glossary Chapter
+Chapter 3	Capítulo 3	interface	glossary Chapter
+Chapter 4	Capítulo 4	interface	glossary Chapter
+Chapter 5	Capítulo 5	interface	glossary Chapter
+COMMAND	COMANDO	interface	corpus Command
+Completion Rewards	Recompensas de conclusão	interface
+DATA	DADOS	interface
+Date	Data	interface
+DELETE	APAGAR	interface
+DEX	DES	interface	corpus DEX -> DES
+Difficulty	Dificuldade	interface	corpus
+Easy	Fácil	interface	corpus
+Easy 2	Fácil 2	interface	corpus Easy
+Ending	Final	interface
+ENTER	ENTRAR	interface	corpus Enter
+EQUIPMENT	EQUIPAMENTO	interface	corpus
+EXIT	SAIR	interface	corpus Exit
+FOODS	ALIMENTOS	interface	corpus Foods
+Gold	Ouro	interface	corpus, glossary
+Hard	Difícil	interface	corpus
+Hard 2	Difícil 2	interface	corpus Hard
+Heroic	Heroico	interface	corpus
+Heroic 2	Heroico 2	interface	corpus Heroic
+HOME	INÍCIO	interface
+IN	ENTRAR	interface	same action as ENTER
+Item Box	Baú de Itens	interface	glossary
+ITEM BOX	BAÚ DE ITENS	interface	glossary Item Box
+ITEMS	ITENS	interface
+LEVEL	NÍVEL	interface	glossary Level
+Level	Nível	interface	glossary
+LEVEL UP!	SUBIU DE NÍVEL!	interface	glossary Level Up
+LISTEN	OUVIR	interface
+LUC	SOR	interface	corpus LUC -> SOR
+MAGIC	MAGIA	interface
+MATERIALS	MATERIAIS	interface	corpus Materials
+MAX	MÁX.	interface	corpus Max -> Máx.
+Max Chain	Combo Máx.	interface	corpus Max Chain
+MID BOSS STAGE!	FASE DO SUBCHEFE!	interface	corpus Stage -> Fase
+NEW GAME	NOVO JOGO	interface	glossary
+Next	Próximo	interface	corpus Next %d EXP
+NEXT LEVEL	PRÓXIMO NÍVEL	interface	glossary Level
+NO	NÃO	interface
+NO DATA	SEM DADOS	interface
+Notes	Notas	interface	glossary
+OPTIONS	OPÇÕES	interface	corpus
+Play Time	Tempo de jogo	interface
+Prophecy	Profecia	interface	corpus
+Recipe 1	Receita 1	interface	glossary Recipe
+Recipe 2	Receita 2	interface	glossary Recipe
+Recipe 3	Receita 3	interface	glossary Recipe
+Recipe 4	Receita 4	interface	glossary Recipe
+Recipes	Receitas	interface	glossary Recipe
+RESULT	RESULTADO	interface
+RESULTS	RESULTADOS	interface
+RETRY	REPETIR	interface	corpus
+Score	Pontuação	interface	corpus
+SEEDS	SEMENTES	interface	corpus Seeds
+Sell	Vender	interface	corpus
+SERVER DATA	DADOS DO SERVIDOR	interface	corpus Server
+SETTING	DEFINIR	interface	corpus Set Shortcut -> Definir Atalho
+SHORTCUT	ATALHO	interface	corpus Shortcut
+SKILLS	HABILIDADES	interface	corpus
+SPECIAL	ESPECIAL	interface	corpus Special
+Special	Especial	interface	corpus
+STAGE!	FASE!	interface	corpus Stage -> Fase
+Stage Complete!	Fase concluída!	interface	corpus Stage -> Fase
+START!	COMEÇAR!	interface
+STATS	ATRIBUTOS	interface	corpus Stats
+STORY	HISTÓRIA	interface	corpus
+STR	FOR	interface	corpus STR -> FOR
+SUCCESS!	SUCESSO!	interface
+SUPPORT	SUPORTE	interface
+SYSTEM	SISTEMA	interface	corpus
+Staff	Créditos	interface	corpus Staff Roll
+TALK	FALAR	interface	corpus Talk
+TARGET	ALVO	interface	corpus target
+TEXT	TEXTO	interface	corpus Text Archive
+Total Time	Tempo total	interface
+TRIAL	DESAFIO	interface
+UNAVAILABLE	INDISPONÍVEL	interface
+YES	SIM	interface
+BATTLE | STAGE!	FASE DE | BATALHA!	interface	stage card; Spanish places the phrase the same way
+TRIAL | STAGE!	FASE DE | DESAFIO!	interface	stage card
+BATTLE | START!	INÍCIO DA | BATALHA!	interface	stage card
+EST | AREA	 | ÁREA DE DESCANSO	interface	rest area: decorative initial removed, bell and text centred
+Chapter	Capítulo	interface	glossary
+Recipe	Receita	interface	glossary

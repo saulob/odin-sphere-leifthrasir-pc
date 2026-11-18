@@ -30,7 +30,9 @@ target_link_libraries(osl_imgui_sdl PUBLIC SDL3::SDL3)
 # Display options: no window needed (tests link only this).
 find_package(ZLIB REQUIRED)
 add_library(osl_launcher_core STATIC bookshelf.c boot_image.cpp build_diagnostics.cpp build_scan.cpp controller_prompts.cpp cpk_patch.cpp file_browser.cpp game_files.cpp
-    game_install.cpp game_profile.cpp game_source.cpp header_art.cpp http_post.cpp incident_client.cpp incident_report.cpp json_lite.cpp log_scrubber.cpp options.cpp
+    game_install.cpp game_profile.cpp game_source.cpp game_text.cpp game_translation.cpp header_art.cpp latin_font.cpp http_post.cpp incident_client.cpp incident_report.cpp json_lite.cpp log_scrubber.cpp options.cpp
+    prologue_translation.cpp
+    localization/ui_text.cpp localization/pt_br_ui_text.cpp
     page_icons.cpp pad_capture.cpp paths.cpp pkg_extract.cpp report_history.cpp resolution.c settings.cpp skip_intro.c title_exit_assets.cpp title_menu_exit.c
     trophy_content.cpp ${PROJECT_SOURCE_DIR}/src/lzcnt_compat.c ${PROJECT_SOURCE_DIR}/src/cheats.c
     ${PROJECT_SOURCE_DIR}/src/trophies/trophy_data.cpp ${PROJECT_SOURCE_DIR}/src/trophies/trophy_key.cpp
@@ -66,6 +68,35 @@ add_custom_command(OUTPUT ${OSL_PAGE_ICON_SOURCE}
     DEPENDS ${OSL_PAGE_ICON_LIST} ${OSL_PAGE_ICONS} ${CMAKE_CURRENT_SOURCE_DIR}/embed_files.cmake
     COMMENT "Embedding the page icons")
 target_sources(osl_launcher_core PRIVATE ${OSL_PAGE_ICON_SOURCE})
+
+# The port's Menu & Subtitles text (localization/en, localization/pt-BR) as a table of byte arrays, game_translation.h.
+file(GLOB OSL_LOCALIZATION_FILES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/localization/en/sheets/*.json
+    ${PROJECT_SOURCE_DIR}/localization/en/sources/*.json ${PROJECT_SOURCE_DIR}/localization/pt-BR/sheets/*.json
+    ${PROJECT_SOURCE_DIR}/localization/pt-BR/font/*.json ${PROJECT_SOURCE_DIR}/localization/pt-BR/visual/*.dcpx
+    ${PROJECT_SOURCE_DIR}/localization/pt-BR/visual/*.oslv ${PROJECT_SOURCE_DIR}/localization/pt-BR/visual/untranslated.json)
+list(FILTER OSL_LOCALIZATION_FILES EXCLUDE REGEX "/en/sources/US\.json$")
+list(SORT OSL_LOCALIZATION_FILES)
+set(OSL_LOCALIZATION_LIST ${CMAKE_BINARY_DIR}/generated/localization_files.txt)
+file(CONFIGURE OUTPUT ${OSL_LOCALIZATION_LIST} CONTENT "${OSL_LOCALIZATION_FILES}")
+set(OSL_LOCALIZATION_SOURCE ${CMAKE_BINARY_DIR}/generated/localization_data.cpp)
+add_custom_command(OUTPUT ${OSL_LOCALIZATION_SOURCE}
+    COMMAND ${CMAKE_COMMAND} -DINPUT_LIST=${OSL_LOCALIZATION_LIST} -DOUTPUT=${OSL_LOCALIZATION_SOURCE} -DSYMBOL=kLocalizationFiles
+            -DBASE_DIR=${PROJECT_SOURCE_DIR}/localization -P ${CMAKE_CURRENT_SOURCE_DIR}/embed_files.cmake
+    DEPENDS ${OSL_LOCALIZATION_LIST} ${OSL_LOCALIZATION_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/embed_files.cmake
+    COMMENT "Embedding the Menu & Subtitles translations")
+target_sources(osl_launcher_core PRIVATE ${OSL_LOCALIZATION_SOURCE})
+
+# The Trophies page's Portuguese (Brazil) text (localization/pt-BR/trophies.tsv), trophy_translation.h.
+set(OSL_TROPHY_TEXT ${PROJECT_SOURCE_DIR}/localization/pt-BR/trophies.tsv)
+set(OSL_TROPHY_TEXT_LIST ${CMAKE_BINARY_DIR}/generated/trophy_text_files.txt)
+file(CONFIGURE OUTPUT ${OSL_TROPHY_TEXT_LIST} CONTENT "${OSL_TROPHY_TEXT}")
+set(OSL_TROPHY_TEXT_SOURCE ${CMAKE_BINARY_DIR}/generated/trophy_text_data.cpp)
+add_custom_command(OUTPUT ${OSL_TROPHY_TEXT_SOURCE}
+    COMMAND ${CMAKE_COMMAND} -DINPUT_LIST=${OSL_TROPHY_TEXT_LIST} -DOUTPUT=${OSL_TROPHY_TEXT_SOURCE} -DSYMBOL=kTrophyTextFiles
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/embed_files.cmake
+    DEPENDS ${OSL_TROPHY_TEXT_LIST} ${OSL_TROPHY_TEXT} ${CMAKE_CURRENT_SOURCE_DIR}/embed_files.cmake
+    COMMENT "Embedding the Portuguese (Brazil) trophy text")
+target_sources(osl_launcher_core PRIVATE trophy_translation.cpp ${OSL_TROPHY_TEXT_SOURCE})
 
 # The Controller prompts patch (prompts/xbox-prompts.dcpx) as a byte array, prompts_patch.h.
 set(OSL_PROMPTS_PATCH ${CMAKE_CURRENT_SOURCE_DIR}/prompts/xbox-prompts.dcpx)

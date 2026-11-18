@@ -31,11 +31,20 @@ struct PackageLayer {
     bool update;
 };
 
-// A system language the game can be told for its menus and subtitles; a build lists the ones its executable maps.
+inline constexpr std::string_view kEnglishKey = "english";
+inline constexpr std::string_view kPortugueseBrazilKey = "portuguese_brazil";
+
+// Where a Menu & Subtitles language's text comes from: the game's own slot, or the port's corpus served over that slot
+// (game_translation.h). The game always runs in a slot its executable maps.
+enum class TextSource { kNative, kPortEnglish, kPortTranslation };
+
+// A Menu & Subtitles language of a build: the system language the game is told and the archive slot it then reads.
 struct TextLanguage {
     std::string_view key;
     std::string_view name;
     int ps4_id;
+    std::string_view slot = {}; // archive suffix of the slot (US, UK, CN); empty for the Japanese archives
+    TextSource source = TextSource::kNative;
 };
 
 // Where a build's executable sites come from: its own tables below, or the signature scan of its eboot.bin that the
@@ -61,7 +70,7 @@ struct GameBuild {
     uint32_t snapshot_scale_site; // image offset of the Text Archive snapshot scale code (osl_apply_snapshot_scale)
     const OslSkipIntroSites* skip_intro; // nullptr when Skip intro is not available for the build
     const OslBookshelfSites* bookshelf;  // nullptr when Unlock Bookshelf is not available for the build
-    std::span<const TextLanguage> text_languages; // the first is the default; empty when the build has only one
+    std::span<const TextLanguage> text_languages; // native and port languages; the first is the default
     ExecutableMapping mapping;
     TextLanguageMode text_mode;
     const char* merged_sfo_version = nullptr; // VERSION of a complete (gd) package of the finished APP_VER; needs no base
@@ -71,8 +80,14 @@ struct GameBuild {
 // The supported builds, USA first.
 std::span<const GameBuild> SupportedBuilds();
 
-// The build's selectable menus-and-subtitles languages, its default first; empty when the build has one text language.
+// The build's selectable menus-and-subtitles languages, its default first; empty for an unknown build.
 std::span<const TextLanguage> TextLanguagesOf(const GameBuild* build);
+
+// The languages in dropdown order: English, Portuguese (Brazil), then the rest by displayed name.
+std::vector<const TextLanguage*> TextLanguageDisplayOrder(const GameBuild* build);
+
+// True for a language the port serves over a native slot (English on a build without it, Portuguese (Brazil)).
+inline bool IsPortLanguage(const TextLanguage& language) { return language.source != TextSource::kNative; }
 
 // The build's language for a saved key; the build's default when the key is not one of its languages.
 const TextLanguage& ResolveTextLanguage(const GameBuild* build, std::string_view key);

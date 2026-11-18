@@ -50,7 +50,7 @@ checked by scripts, but it has not yet been tested on real Linux PCs or a Steam 
 ### Gameplay
 - **Skip intro**: start at the title's PRESS START, without the startup notice, logos and intro
 - **EXIT GAME** at the end of the native title menu, in Refined and Classic mode, on Windows and Linux, leaves the game cleanly. The label is drawn from the game's own title art and follows the title language where its letters allow (Italian, Spanish, French and German); other languages show EXIT GAME
-- **Menu & Subtitles** language for the European build (English, French, German, Spanish, Italian) and the Hong Kong build (Traditional Chinese, Korean)
+- **Menu & Subtitles** language on every build: the game's own languages, English everywhere (supplied by the port where the build has none) and **Portuguese (Brazil)**, an original translation made for this port. The launcher switches to Portuguese with it
 - **Frame rate**: 30, 60 (Original, the default), 90, 120, 144, 165, 240 or Unlimited frames per second reaching the window, on Vulkan, OpenGL and Direct3D 11. The game still makes 60 new frames a second, so game speed is unchanged and the frames above 60 show the latest frame again (no interpolation)
 - Frame rate and render resolution in the window title, and an in-game **frame counter** with the frame time, toggled with **F2** while playing; both show the rate the window is presented at
 - Startup hints confirm **Skip intro** and **Unlock Bookshelf** when either is on, then disappear on their own
@@ -211,12 +211,17 @@ Their availability depends on the executable's verified code: the five builds th
 1.00, Japan 1.00 and 1.02, Europe 1.00 and 1.01) hold every cheat's code and the Experience Multiplier's; the other builds are checked the same way at
 game start.
 
-**Menu & Subtitles** is offered for the European build (CUSA05262) and the CUSA03873 builds (HK and Asia), whose executables
-select their menu and subtitle text from the console's System Language. Europe offers English, French, German, Spanish
-or Italian (English by default); CUSA03873 offers Traditional Chinese or Korean (Traditional Chinese by default). The
-setting is stored in `user\osl.ini` as `text_language` and is passed to the game as the PS4 System Language. The USA
-build contains a single English text set and the Japanese build Japanese text, so neither shows the control. A saved
-language the selected build does not offer is replaced by that build's default.
+**Menu & Subtitles** is offered on every build. The game's own languages are listed first: English for USA; English,
+French, German, Spanish and Italian for Europe; Japanese for Japan; Traditional Chinese and Korean for HK and Asia.
+Every build also offers **English** and **Portuguese (Brazil)** under the same keys (`english`, `portuguese_brazil`),
+so either choice survives switching builds. On Japan, HK and Asia the port serves English from its own corpus over the
+native slot; Portuguese (Brazil) is served over the build's English slot (Japanese or Chinese slot elsewhere). The
+translated text is read from the port's embedded corpus when the game reads its archives; the archives on disk are never
+written, and any record whose installed text differs from the text the translation was made from keeps the game's text
+(see [localization/pt-BR/README.md](localization/pt-BR/README.md) and [localization/en/README.md](localization/en/README.md)).
+With Portuguese (Brazil) selected the launcher and the port's in-game screens are in Portuguese; with any other language
+they are in English. The setting is stored in `user\osl.ini` as `text_language`. A saved native language the selected
+build does not offer is replaced by that build's default.
 
 **Voice Language** is the game's own setting. The European build ships the Japanese and English voice banks in its
 single `Odin2_BT_UK.CPK` audio container (the per-language `Odin2_BT_*.CPK` files are secondary), and the in-game

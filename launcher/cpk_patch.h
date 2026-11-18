@@ -16,10 +16,12 @@
 #include <filesystem>
 #include <functional>
 #include <istream>
+#include <memory>
 #include <optional>
 #include <span>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 namespace osl {
@@ -189,6 +191,42 @@ PatchResult ApplyBlockPatch(const std::filesystem::path& cpk, const BlockPatch& 
                             std::string_view suffix = kUndoSuffix, std::span<const KnownEntryProfile> profiles = {});
 // Puts the archive back as it was, from the undo record, and removes the record.
 PatchResult RevertBlockPatch(const std::filesystem::path& cpk, std::string_view suffix = kUndoSuffix);
+
+// What a reader of the archive sees when entries are replaced the way ApplyBlockPatch does it, without writing the file:
+// the new data appended past `length` (the archive's size) and the rewritten table of contents and header, by position.
+using SharedBytes = std::shared_ptr<const std::vector<uint8_t>>;
+
+struct ArchiveOverlay {
+    uint64_t length = 0;
+    std::vector<std::pair<uint64_t, SharedBytes>> patches;
+    struct Placed {
+        std::string path;
+        uint64_t offset = 0, size = 0;  // where the replaced entry's bytes are in the overlaid archive
+    };
+    std::vector<Placed> placed;
+};
+
+// An entry's bytes in chunks; identical chunks of different entries are one buffer (the replaced cards of an archive
+// differ in a few hundred KB and share the rest).
+struct ChunkedBytes {
+    std::vector<SharedBytes> chunks;
+    uint64_t size = 0;
+};
+
+class ChunkPool {
+public:
+    static constexpr size_t kChunkSize = size_t(1) << 20;
+    ChunkedBytes Add(std::vector<uint8_t>&& bytes);
+
+private:
+    std::unordered_map<uint32_t, std::vector<SharedBytes>> by_crc_;
+};
+
+// Nothing when the archive lacks one of the entries; `error` names it. The entries are relocated past the archive
+// and their TOC rows repointed.
+std::optional<ArchiveOverlay> OverlayEntries(const CpkArchive& archive, uint64_t length,
+                                             std::span<const std::pair<std::string, ChunkedBytes>> entries,
+                                             std::string* error = nullptr);
 
 uint32_t Crc32(std::span<const uint8_t> bytes);
 

@@ -1021,37 +1021,63 @@ void TestTextLanguages() {
     CHECK(std::string_view(hk.title_id) == "CUSA03873" && std::string_view(hk.region) == "HK");
     CHECK(hk.text_mode == TextLanguageMode::kSelectable);
     const std::span<const TextLanguage> hk_languages = TextLanguagesOf(&hk);
-    CHECK(hk_languages.size() == 2);
+    CHECK(hk_languages.size() == 4);
     CHECK(hk_languages[0].key == "traditional_chinese" && hk_languages[0].name == "Traditional Chinese" &&
           hk_languages[0].ps4_id == 10);
     CHECK(hk_languages[1].key == "korean" && hk_languages[1].name == "Korean" && hk_languages[1].ps4_id == 9);
+    CHECK(hk_languages[2].key == kEnglishKey && hk_languages[2].ps4_id == 10 && IsPortLanguage(hk_languages[2]));
+    CHECK(hk_languages[3].key == kPortugueseBrazilKey && hk_languages[3].ps4_id == 10 && IsPortLanguage(hk_languages[3]));
     CHECK(ResolveTextLanguage(&hk, "traditional_chinese").ps4_id == 10);
     CHECK(ResolveTextLanguage(&hk, "korean").ps4_id == 9);
     CHECK(ResolveTextLanguage(&hk, "invalid").ps4_id == 10);
-    CHECK(ResolveTextLanguage(&hk, "english").ps4_id == 10);
+    CHECK(ResolveTextLanguage(&hk, "english").key == kEnglishKey);
     CHECK(ResolveTextLanguage(&hk, "french").ps4_id == 10);
     CHECK(ResolveTextLanguage(&eu, "traditional_chinese").ps4_id == 1);
     CHECK(ResolveTextLanguage(&eu, "korean").ps4_id == 1);
-    for (const size_t fixed : {0, 1, 2, 3}) {
-        CHECK(builds[fixed].text_mode == TextLanguageMode::kFixed && TextLanguagesOf(&builds[fixed]).empty());
-    }
+    for (const GameBuild& build : builds) CHECK(build.text_mode == TextLanguageMode::kSelectable);
     CHECK(builds[4].text_mode == TextLanguageMode::kSelectable && eu.text_mode == TextLanguageMode::kSelectable);
 
     const std::span<const TextLanguage> languages = TextLanguagesOf(&eu);
-    CHECK(languages.size() == 5);
-    const char* keys[] = {"english", "french", "german", "spanish", "italian"};
-    const char* names[] = {"English", "French", "German", "Spanish", "Italian"};
-    const int ids[] = {1, 2, 4, 3, 5};
+    CHECK(languages.size() == 6);
+    const char* keys[] = {"english", "french", "german", "spanish", "italian", "portuguese_brazil"};
+    const char* names[] = {"English", "French", "German", "Spanish", "Italian", "Portuguese (Brazil)"};
+    const int ids[] = {1, 2, 4, 3, 5, 3};
     for (size_t i = 0; i < languages.size(); ++i) {
         CHECK(languages[i].key == keys[i]);
         CHECK(languages[i].name == names[i]);
         CHECK(languages[i].ps4_id == ids[i]);
     }
-    CHECK(TextLanguagesOf(&builds[4]).size() == 5);
-    CHECK(TextLanguagesOf(&usa).empty());
-    CHECK(TextLanguagesOf(&usa_update).empty());
-    CHECK(TextLanguagesOf(&japan).empty());
-    CHECK(TextLanguagesOf(&builds[2]).empty());
+    for (const GameBuild& build : builds) {
+        std::vector<std::string> shown;
+        for (const TextLanguage* language : TextLanguageDisplayOrder(&build)) shown.emplace_back(language->name);
+        std::vector<std::string> expected;
+        for (const TextLanguage& language : TextLanguagesOf(&build)) {
+            if (language.key == kEnglishKey) expected.emplace_back(language.name);
+        }
+        for (const TextLanguage& language : TextLanguagesOf(&build)) {
+            if (language.key == kPortugueseBrazilKey) expected.emplace_back(language.name);
+        }
+        std::vector<std::string> rest;
+        for (const TextLanguage& language : TextLanguagesOf(&build)) {
+            if (language.key != kEnglishKey && language.key != kPortugueseBrazilKey) rest.emplace_back(language.name);
+        }
+        std::sort(rest.begin(), rest.end());
+        expected.insert(expected.end(), rest.begin(), rest.end());
+        CHECK(shown == expected);
+        CHECK(shown.size() == TextLanguagesOf(&build).size());
+    }
+    const std::vector<std::string> eu_order = {"English", "Portuguese (Brazil)", "French", "German", "Italian", "Spanish"};
+    for (const GameBuild& build : builds) {
+        if (std::string_view(build.region) != "Europe") continue;
+        std::vector<std::string> shown;
+        for (const TextLanguage* language : TextLanguageDisplayOrder(&build)) shown.emplace_back(language->name);
+        CHECK(shown == eu_order);
+    }
+    CHECK(TextLanguageDisplayOrder(nullptr).empty());
+    CHECK(TextLanguagesOf(&builds[4]).size() == 6);
+    CHECK(TextLanguagesOf(&usa).size() == 2 && TextLanguagesOf(&usa_update).size() == 2);
+    CHECK(TextLanguagesOf(&japan).size() == 3 && TextLanguagesOf(&builds[2]).size() == 3);
+    CHECK(TextLanguagesOf(&japan)[0].key == "japanese" && !IsPortLanguage(TextLanguagesOf(&japan)[0]));
     CHECK(TextLanguagesOf(nullptr).empty());
 
     CHECK(ResolveTextLanguage(&eu, "french").ps4_id == 2);
@@ -1060,12 +1086,13 @@ void TestTextLanguages() {
     CHECK(std::string(ResolveTextLanguage(&eu, "").key) == "english");
     CHECK(ResolveTextLanguage(&usa, "french").ps4_id == 1);
     CHECK(ResolveTextLanguage(&usa_update, "french").ps4_id == 1);
-    CHECK(ResolveTextLanguage(&japan, "english").ps4_id == 1);
+    CHECK(ResolveTextLanguage(&japan, "english").ps4_id == 1 && IsPortLanguage(ResolveTextLanguage(&japan, "english")));
     CHECK(ResolveTextLanguage(nullptr, "spanish").ps4_id == 1);
 
     CHECK(IsValidSetting(kTextLanguageKey, "english"));
     CHECK(IsValidSetting(kTextLanguageKey, "italian"));
-    CHECK(!IsValidSetting(kTextLanguageKey, "japanese"));
+    CHECK(IsValidSetting(kTextLanguageKey, "japanese"));
+    CHECK(IsValidSetting(kTextLanguageKey, "portuguese_brazil"));
     CHECK(!IsValidSetting(kTextLanguageKey, "bogus"));
 
     const std::filesystem::path dir = TempDir("language");
@@ -3096,8 +3123,12 @@ void TestBuildContract() {
             std::set<int> ids;
             std::set<std::string_view> keys;
             bool resolved = true;
+            size_t native = 0;
             for (const TextLanguage& language : languages) {
-                ids.insert(language.ps4_id);
+                if (!IsPortLanguage(language)) {
+                    ids.insert(language.ps4_id);
+                    ++native;
+                }
                 keys.insert(language.key);
                 std::ofstream(ini) << "text_language = " << language.key << "\n";
                 resolved = resolved && IsValidSetting(kTextLanguageKey, std::string(language.key)) &&
@@ -3110,7 +3141,7 @@ void TestBuildContract() {
             PARITY("Languages", languages.size() >= 2 && &ResolveTextLanguage(&build, "invalid") == &languages.front() &&
                                     osl_text_language(ini.string().c_str(), image_dir.string().c_str()) ==
                                         languages.front().ps4_id &&
-                                    ids.size() == languages.size() && keys.size() == languages.size() &&
+                                    ids.size() == native && keys.size() == languages.size() &&
                                     std::all_of(languages.begin(), languages.end(),
                                                 [](const TextLanguage& language) { return language.ps4_id >= 0; }) &&
                                     resolved);
@@ -3984,8 +4015,8 @@ void TestHongKongBuild() {
     CHECK((data == std::vector<std::string>{"Odin2_BT_CN.CPK", "Odin2_OR_CN.CPK", "Odin2_RE_CN.CPK"}));
     CHECK(hk.mapping == ExecutableMapping::kScanned && hk.text_mode == TextLanguageMode::kSelectable);
     const std::span<const TextLanguage> languages = TextLanguagesOf(&hk);
-    CHECK(languages.size() == 2);
-    if (languages.size() == 2) {
+    CHECK(languages.size() == 4);
+    if (languages.size() == 4) {
         CHECK(languages[0].key == "traditional_chinese" && languages[0].name == "Traditional Chinese" &&
               languages[0].ps4_id == 10);
         CHECK(languages[1].key == "korean" && languages[1].name == "Korean" && languages[1].ps4_id == 9);
@@ -4083,7 +4114,7 @@ void TestUsa101Identity() {
     for (const char* name : base.data_files) {
         CHECK(std::find(data.begin(), data.end(), name) != data.end());
     }
-    CHECK(update.text_mode == base.text_mode && TextLanguagesOf(&update).empty() && TextLanguagesOf(&base).empty());
+    CHECK(update.text_mode == base.text_mode && TextLanguagesOf(&update).size() == TextLanguagesOf(&base).size());
 
     const std::filesystem::path dir = TempDir("usa-101-identity");
     const GameCheck update_package = CheckPackageIdentity(SfoText(dir, UsaSfo("gp", "01.01", "01.00")));
@@ -4896,8 +4927,8 @@ void TestAsiaBuild() {
 
     // Traditional Chinese (the default) and Korean, as on HK: the game picks its CN or KO archives from that language.
     const std::span<const TextLanguage> languages = TextLanguagesOf(&asia);
-    CHECK(asia.text_mode == TextLanguageMode::kSelectable && languages.size() == 2);
-    if (languages.size() == 2) {
+    CHECK(asia.text_mode == TextLanguageMode::kSelectable && languages.size() == 4);
+    if (languages.size() == 4) {
         CHECK(languages[0].key == "traditional_chinese" && languages[0].ps4_id == 10);
         CHECK(languages[1].key == "korean" && languages[1].ps4_id == 9);
     }

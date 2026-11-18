@@ -63,6 +63,7 @@ set(OSL_RUNTIME_SOURCES
     src/runtime_mutex.c
     src/runtime_pad.c
     src/runtime_platform.c
+
     src/runtime_redzone.c
     src/runtime_rtc.c
     src/runtime_rwlock.c
@@ -88,7 +89,7 @@ if (WIN32)
 else()
     set(OSL_PLATFORM_SOURCES src/runtime_log_posix.c)
 endif()
-set(OSL_MAIN_SOURCES src/loader.c src/crash_report.c src/hang_report.c src/isa_emulate.c src/runtime_cheats.cpp ${OSL_RUNTIME_SOURCES} ${OSL_PLATFORM_SOURCES})
+set(OSL_MAIN_SOURCES src/loader.c src/text_glyphs.c src/crash_report.c src/hang_report.c src/isa_emulate.c src/runtime_cheats.cpp ${OSL_RUNTIME_SOURCES} ${OSL_PLATFORM_SOURCES})
 if (WIN32)
     # Windows subsystem: no console window. The run log takes stdout and stderr (src/runtime_log.c).
     add_executable(odin_sphere_leifthrasir WIN32 ${OSL_MAIN_SOURCES})
@@ -265,3 +266,37 @@ add_executable(osl-window-tests EXCLUDE_FROM_ALL tests/window_fit_tests.cpp)
 set_target_properties(osl-window-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
 target_include_directories(osl-window-tests PRIVATE src)
 target_compile_options(osl-window-tests PRIVATE -Wall -Wextra -Werror)
+
+# Focused tests of the launcher's and the in-game port UI's Portuguese (Brazil) text: the table, the live language
+# switch, composed text and a scan of the sources for drawn text without a row; not part of the default build.
+# Focused tests of the Menu & Subtitles translation and its read overlay (tools/test.ps1); not part of the default build.
+add_executable(osl-text-tests EXCLUDE_FROM_ALL tests/text_translation_tests.cpp src/text_glyphs.c src/runtime_file.c)
+set_target_properties(osl-text-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_compile_definitions(osl-text-tests PRIVATE OSL_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+target_link_libraries(osl-text-tests PRIVATE osl_launcher_core)
+target_compile_options(osl-text-tests PRIVATE -Wall -Wextra -Werror)
+if (WIN32)
+    target_sources(osl-text-tests PRIVATE src/compat_win.c)
+    target_compile_definitions(osl-text-tests PRIVATE _WIN32_WINNT=0x0A00 NTDDI_VERSION=0x0A000007)
+    target_link_libraries(osl-text-tests PRIVATE onecore -pthread)
+else()
+    target_link_libraries(osl-text-tests PRIVATE Threads::Threads)
+endif()
+add_executable(osl-runtime-overlay-tests EXCLUDE_FROM_ALL tests/runtime_file_overlay_tests.c src/runtime_file.c)
+target_include_directories(osl-runtime-overlay-tests PRIVATE src)
+target_compile_definitions(osl-runtime-overlay-tests PRIVATE OSL_OVERLAY_TEST_ROOT="${CMAKE_BINARY_DIR}/runtime-overlay-tests")
+target_compile_options(osl-runtime-overlay-tests PRIVATE -Wall -Wextra -Werror)
+if (WIN32)
+    target_sources(osl-runtime-overlay-tests PRIVATE src/compat_win.c)
+    target_compile_definitions(osl-runtime-overlay-tests PRIVATE _WIN32_WINNT=0x0A00 NTDDI_VERSION=0x0A000007)
+    target_link_libraries(osl-runtime-overlay-tests PRIVATE onecore bcrypt -pthread)
+else()
+    target_link_libraries(osl-runtime-overlay-tests PRIVATE Threads::Threads)
+endif()
+
+add_executable(osl-ui-text-tests EXCLUDE_FROM_ALL tests/ui_text_tests.cpp)
+set_target_properties(osl-ui-text-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_compile_definitions(osl-ui-text-tests PRIVATE OSL_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+    OSL_TRG_SOURCE_DIR="${OSL_SOURCE_DIR_trg-launcher}")
+target_link_libraries(osl-ui-text-tests PRIVATE osl_launcher_core)
+target_compile_options(osl-ui-text-tests PRIVATE -Wall -Wextra -Werror)

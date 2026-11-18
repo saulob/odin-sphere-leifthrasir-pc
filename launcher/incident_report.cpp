@@ -287,8 +287,14 @@ std::string LogDateText(std::time_t written) {
     localtime_r(&written, &local);
 #endif
     char text[40];
-    std::snprintf(text, sizeof(text), "%s %d, %04d %02d:%02d", kMonths[std::clamp(local.tm_mon, 0, 11)], local.tm_mday,
-                  local.tm_year + 1900, local.tm_hour, local.tm_min);
+    const char* month = Tr(kMonths[std::clamp(local.tm_mon, 0, 11)]);
+    if (localization::PortugueseBrazilSelected()) {
+        std::snprintf(text, sizeof(text), "%d %s %04d %02d:%02d", local.tm_mday, month, local.tm_year + 1900,
+                      local.tm_hour, local.tm_min);
+    } else {
+        std::snprintf(text, sizeof(text), "%s %d, %04d %02d:%02d", month, local.tm_mday, local.tm_year + 1900,
+                      local.tm_hour, local.tm_min);
+    }
     return text;
 }
 

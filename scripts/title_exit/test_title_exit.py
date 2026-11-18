@@ -222,6 +222,46 @@ class NativeGlyphs(unittest.TestCase):
         self.assertIs(letters['A'], own)
         self.assertEqual(sources, {'A': 'own', 'T': 'pool'})
 
+    def test_j_is_one_stroke_from_i_and_o(self):
+        o = np.zeros((38, 29, 4), np.uint8)
+        o[..., :3] = 255
+        ys, xs = np.mgrid[0:38, 0:29]
+        ring = ((xs - 14) / 14.5) ** 2 + ((ys - 19) / 16.5) ** 2
+        o[(ring <= 1) & (ring >= 0.45), 3] = 255
+        i = glyph(9, (3, 35))
+        j = m.compose_j(o, i)
+        ink = j[..., 3] > m.ALPHA_FLOOR
+        self.assertEqual(len(m.components(j)), 1)
+        self.assertLess(j.shape[1], o.shape[1] + 1)
+        self.assertTrue(ink[3:m.J_JOIN, -6:].any(axis=1).all(), 'the stem runs from the top')
+        self.assertFalse(ink[:m.J_HOOK - 1, :j.shape[1] // 3].any(), 'nothing on the left above the hook')
+        self.assertTrue(ink[m.J_HOOK:, :j.shape[1] // 3].any(), 'the hook is there')
+        self.assertTrue((j[ink][:, :3] == 255).all())
+        self.assertTrue((m.compose_j(o.copy(), i.copy()) == j).all())
+
+    def test_ptbr_letters_come_from_the_english_art_itself(self):
+        reference = {c: glyph(20) for c in 'EGAMITX'}
+        own = {c: glyph(21) for c in 'LOADINSTCME'}
+        ra = glyph(56)
+        art = type('Art', (), {'crop': lambda self, kind, part: ra, 'role_parts': lambda self, kind, role: [10]})()
+        with mock.patch.object(m, 'language_of', return_value='en'), \
+                mock.patch.object(m, 'reference_glyphs', return_value=reference), \
+                mock.patch.object(m, 'labelled_glyphs', return_value=own), \
+                mock.patch.object(m, 'components', return_value=[(0, 26, 3, 35, glyph(26)), (30, 86, 3, 35, ra)]), \
+                mock.patch.object(m, 'compose_j', return_value=glyph(18)):
+            letters, sources = m.ptbr_letters(art, m.PTBR_PHRASES[0])
+        self.assertEqual(set(letters), set('SAIRDOJG'))
+        self.assertEqual(sources['R'], 'cut from XTRA')
+        self.assertEqual(sources['J'], 'composed from I and O')
+        self.assertTrue(all(sources[c] == 'own' for c in 'SAIDOG'))
+        self.assertIs(letters['S'], own['S'])
+
+    def test_ptbr_is_only_set_on_english_art(self):
+        with mock.patch.object(m, 'language_of', return_value='de'):
+            with self.assertRaises(m.Unsupported):
+                m.ptbr_letters(object(), 'SAIR DO JOGO')
+        self.assertEqual(m.PTBR_PHRASES[0], 'SAIR DO JOGO')
+
     def test_free_rect_is_aligned_transparent_and_avoids_other_art(self):
         atlas = np.zeros((64, 128, 4), np.uint8)
         atlas[0:64, 0:60, 3] = 255
@@ -237,7 +277,7 @@ class NativeGlyphs(unittest.TestCase):
         self.assertIsNone(m.find_free_rect(atlas, [], (0, 0, 4, 4), 8, 8))
 
     def test_no_external_font_in_the_generator(self):
-        source = Path(m.__file__).read_text()
+        source = Path(m.__file__).read_text(encoding='utf-8')
         for word in ('ImageFont', 'ImageDraw', '.ttf', 'Marcellus', '--font', 'truetype'):
             self.assertNotIn(word, source)
         self.assertFalse(list(Path(m.__file__).parent.glob('*.ttf')))
@@ -715,6 +755,22 @@ class LocalVariants(unittest.TestCase):
                 self.check_install_layers_agree(patched, kind, f'{crc:08x}')
             self.check_sizes(crc, art, files, metrics)
             self.check_whole_labels(crc, art, blob, files, metrics)
+
+    def test_english_variants_take_sair_do_jogo_whole(self):
+        groups = m.collect(os.environ['TITLE_EXIT_GAME'])
+        english = 0
+        for crc, group in groups.items():
+            art = m.NativeArt(group['atlas'], next(iter(group['files']['refined'])), next(iter(group['files']['classic'])))
+            if m.language_of(art) != 'en':
+                continue
+            english += 1
+            metrics = []
+            blob, files, status = m.process_group(art, {}, [], metrics, ptbr=True)
+            self.assertEqual(status, {'refined': 'ok', 'classic': 'ok'}, f'{crc:08x}')
+            self.assertEqual({mt['phrase'] for mt in metrics}, {'SAIR DO JOGO'}, f'{crc:08x}')
+            self.assertFalse(any(mt['width_limited'] for mt in metrics), f'{crc:08x}')
+            self.check_whole_labels(crc, art, blob, files, metrics)
+        self.assertGreater(english, 0)
 
     def check_whole_labels(self, crc, art, blob, files, metrics):
         for mt in metrics:

@@ -5,12 +5,15 @@
 #include <fstream>
 #include <functional>
 #include <regex>
+#include <set>
 #include <sstream>
 #include <string>
 #include <unistd.h>
 #include <vector>
 
 #include "crypto.h"
+#include "game_profile.h"
+#include "localization/ui_text.h"
 #include "osl_png.h"
 #include "options.h"
 #include "trophy_content.h"
@@ -21,6 +24,7 @@
 #include "trophies/trophy_store.h"
 #include "trophies/trophy_view.h"
 #include "trophies/trp_archive.h"
+#include "trophy_translation.h"
 
 namespace fs = std::filesystem;
 using namespace osl;
@@ -901,6 +905,8 @@ void TestKeyManagementFlow(const fs::path& base) {
         },
         base / "log1.txt");
     CHECK(content.state == TrophyPageState::kList && content.key_configured && content.view.total == 5);
+    CHECK(content.view_pt_br.rows.size() == 5 && content.view_pt_br.rows[4].name == content.view.rows[4].name &&
+          content.view_pt_br.unlocked == content.view.unlocked);
     CHECK(content.view.unlocked == 1 && content.view.rows[2].unlocked);
     CHECK(log.find("Trophy Key saved") != std::string::npos);
     CHECK(log.find(hex) == std::string::npos && log.find(Upper(hex)) == std::string::npos);
@@ -950,6 +956,107 @@ void TestLauncherPieces(const fs::path& base) {
     CHECK(!OslPng::LoadRgba((base / "fake.png").string().c_str(), image));
 }
 
+// Valid UTF-8 with no C1 controls, replacement characters or UTF-8 read as Latin-1 ("Ã©").
+bool CleanUtf8(const std::string& text) {
+    for (size_t i = 0; i < text.size();) {
+        const unsigned char c = static_cast<unsigned char>(text[i]);
+        const size_t length = c < 0x80 ? 1 : (c >> 5) == 6 ? 2 : (c >> 4) == 14 ? 3 : (c >> 3) == 30 ? 4 : 0;
+        if (length == 0 || i + length > text.size() || (length == 2 && c < 0xC2)) return false;
+        uint32_t code = length == 1 ? c : c & (0x7F >> length);
+        for (size_t k = 1; k < length; ++k) {
+            const unsigned char next = static_cast<unsigned char>(text[i + k]);
+            if ((next & 0xC0) != 0x80) return false;
+            code = (code << 6) | (next & 0x3F);
+        }
+        if ((code < 0x20 && code != '\t') || (code >= 0x7F && code < 0xA0) || code == 0xFFFD) return false;
+        if ((code == 0xC3 || code == 0xC2) && i + length < text.size()) {
+            const unsigned char next = static_cast<unsigned char>(text[i + length]);
+            if (next == 0xC2 || next == 0xC3) return false;
+        }
+        i += length;
+    }
+    return true;
+}
+
+void TestTrophyTranslation() {
+    const fs::path tsv_path = fs::path(OSL_TROPHY_SOURCE_DIR) / ".." / ".." / "localization" / "pt-BR" / "trophies.tsv";
+    const std::string file = ReadAll(tsv_path);
+    const TrophyTextTable parsed = ParseTrophyTextTable(file);
+    const TrophyTextTable& table = PortugueseBrazilTrophyText();
+    CHECK(!file.empty() && parsed.errors.empty() && table.errors.empty());
+    CHECK(table.rows.size() == 48 && parsed.rows.size() == table.rows.size());
+    std::set<int> ids;
+    bool same = parsed.rows.size() == table.rows.size(), clean = true, accented = false;
+    for (size_t i = 0; i < table.rows.size() && same; ++i) {
+        const TrophyTextRow& row = table.rows[i];
+        ids.insert(row.id);
+        same = row.id == parsed.rows[i].id && row.source_sha256 == parsed.rows[i].source_sha256 &&
+               row.name == parsed.rows[i].name && row.detail == parsed.rows[i].detail;
+        clean = clean && !row.name.empty() && !row.detail.empty() && CleanUtf8(row.name) && CleanUtf8(row.detail) &&
+                row.name.front() != ' ' && row.name.back() != ' ' && row.detail.back() != ' ';
+        accented = accented || row.name.find("\xC3\xA9") != std::string::npos || row.detail.find("\xC3\xA9") != std::string::npos;
+    }
+    CHECK(same && clean && accented);
+    CHECK(ids.size() == 48 && *ids.begin() == 0 && *ids.rbegin() == 47);
+    CHECK(table.Find(1) && table.Find(1)->name == "Valqu\xC3\xADria" && !table.Find(48));
+
+    CHECK(TrophySourceSha256("Odin Sphere", "Obtained all trophies!") ==
+          "2a016aefd3c39a239e9f0c68efe831e7daecde6ffeb4ef5f6b7df27818d33974");
+    CHECK(!CleanUtf8("Trof\xC3\x83\xC2\xA9u") && !CleanUtf8("\xC3") && !CleanUtf8("\xEF\xBF\xBD") && CleanUtf8("Trof\xC3\xA9u"));
+
+    const std::string tab = "\t", hash(64, 'a');
+    CHECK(ParseTrophyTextTable("id\tname\n").errors.size() == 1);
+    const TrophyTextTable bad = ParseTrophyTextTable(
+        std::string(kTrophyTextHeader) + "\n1" + tab + hash + tab + "A" + tab + "B\n" + "1" + tab + hash + tab + "C" + tab +
+        "D\n" + "x" + tab + hash + tab + "A" + tab + "B\n" + "2" + tab + "ab" + tab + "A" + tab + "B\n" + "3" + tab + hash +
+        tab + tab + "B\n" + "4" + tab + hash + tab + "A\n" + "128" + tab + hash + tab + "A" + tab + "B\r\n");
+    CHECK(bad.rows.size() == 1 && bad.errors.size() == 6);
+
+    TrophySet set;
+    set.np_comm_id = "NPWR10696_00";
+    set.trophies = {{0, Grade::kPlatinum, false, kNoTrophy, -1, "Odin Sphere", "Obtained all trophies!"},
+                    {1, Grade::kBronze, false, 0, -1, "Valkyrie", "Completed the Prelude of Gwendolyn's tale (changed)."},
+                    {2, Grade::kBronze, true, 0, -1, "Clipped Wings", "Completed Chapter 3 of Gwendolyn's tale."},
+                    {60, Grade::kBronze, false, 0, -1, "Extra", "Not in the table."}};
+    TrophyStore store;
+    TrophyPageContent content;
+    content.view = BuildTrophyView(set, store);
+    content.view_pt_br = TranslateTrophyView(content.view, set, table);
+    const std::vector<TrophyRow>& pt = content.view_pt_br.rows;
+    CHECK(pt.size() == 4 && pt[0].name == table.Find(0)->name && pt[0].detail == "Obteve todos os trof\xC3\xA9us!");
+    CHECK(pt[1].name == "Valkyrie" && pt[1].detail == set.trophies[1].detail);
+    CHECK(pt[2].masked && pt[2].name == "Trof\xC3\xA9u Oculto" && pt[2].detail != kHiddenTrophyDetail);
+    CHECK(pt[3].name == "Extra" && content.view.rows[0].name == "Odin Sphere" && content.view.rows[2].name == kHiddenTrophyName);
+    CHECK(content.view_pt_br.total == content.view.total && content.view_pt_br.percent == content.view.percent);
+    store.Unlock(2, 5);
+    content.view = BuildTrophyView(set, store);
+    content.view_pt_br = TranslateTrophyView(content.view, set, table);
+    CHECK(content.view_pt_br.rows[2].name == "Asas Cortadas" && content.view.rows[2].name == "Clipped Wings");
+
+    for (const std::string_view language : {kEnglishKey, std::string_view("japanese"), std::string_view("")}) {
+        localization::SetActiveLanguage(language);
+        CHECK(&DisplayedTrophyView(content, localization::PortugueseBrazilSelected()) == &content.view);
+    }
+    localization::SetActiveLanguage(kPortugueseBrazilKey);
+    CHECK(&DisplayedTrophyView(content, localization::PortugueseBrazilSelected()) == &content.view_pt_br);
+    localization::SetActiveLanguage(kEnglishKey);
+    CHECK(DisplayedTrophyView(content, localization::PortugueseBrazilSelected()).rows[0].name == "Odin Sphere");
+
+    // The local pack's English, when this checkout has one: every row must still match it.
+    const fs::path user = fs::path(OSL_TROPHY_SOURCE_DIR) / ".." / ".." / "user";
+    if (const std::optional<TrophySet> local = LoadTrophySet(user, "NPWR10696_00")) {
+        int matched = 0;
+        for (const TrophyTextRow& row : table.rows) {
+            const Trophy* trophy = local->Find(row.id);
+            matched += trophy && TrophySourceSha256(trophy->name, trophy->detail) == row.source_sha256;
+        }
+        CHECK(matched == 48 && local->trophies.size() == 48);
+        std::printf("PT-BR trophy text: %d/%zu rows match the local NPWR10696_00 pack\n", matched, table.rows.size());
+    } else {
+        std::printf("PT-BR trophy text: %zu rows (no local NPWR10696_00 pack to compare)\n", table.rows.size());
+    }
+}
+
 void TestNoEmbeddedKey() {
     const std::regex sixteen_byte_literal("(0[xX][0-9A-Fa-f]{2}[ \t]*,[ \t\r\n]*){15}0[xX][0-9A-Fa-f]{2}");
     for (const fs::directory_entry& entry : fs::directory_iterator(OSL_TROPHY_SOURCE_DIR)) {
@@ -984,6 +1091,7 @@ int main() {
     TestKeyManagementFlow(base);
     TestLauncherPieces(base);
     TestNoEmbeddedKey();
+    TestTrophyTranslation();
 
     std::error_code ec;
     fs::remove_all(base, ec);

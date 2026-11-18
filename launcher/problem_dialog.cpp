@@ -6,10 +6,16 @@
 
 #include <imgui.h>
 
+#include "localization/ui_text.h"
+
 namespace osl {
 namespace {
 
 constexpr char kTitle[] = "The game could not start";
+constexpr char kPopupId[] = "###osl_problem";
+
+// The popup keeps one id whatever language its title is shown in.
+std::string PopupName() { return std::string(Tr(kTitle)) + kPopupId; }
 
 } // namespace
 
@@ -25,7 +31,7 @@ void ProblemDialog::Draw(const trg::Fonts& fonts, const trg::Theme& theme) {
         return;
     }
     if (!opened_) {
-        ImGui::OpenPopup(kTitle);
+        ImGui::OpenPopup(PopupName().c_str());
         opened_ = true;
     }
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -44,13 +50,13 @@ void ProblemDialog::Draw(const trg::Fonts& fonts, const trg::Theme& theme) {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(fonts.size, fonts.size));
     constexpr ImGuiWindowFlags kFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
                                         ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
-    if (ImGui::BeginPopupModal(kTitle, nullptr, kFlags)) {
+    if (ImGui::BeginPopupModal(PopupName().c_str(), nullptr, kFlags)) {
         ImGui::PushTextWrapPos(0.0f);
-        ImGui::TextUnformatted("Odin Sphere Leifthrasir PC cannot run on this system.");
+        ImGui::TextUnformatted(Tr("Odin Sphere Leifthrasir PC cannot run on this system."));
         ImGui::Spacing();
-        ImGui::TextUnformatted(cause_.c_str());
+        ImGui::TextUnformatted(TrValue(cause_).c_str());
         ImGui::Spacing();
-        ImGui::TextUnformatted(advice_.c_str());
+        ImGui::TextUnformatted(TrValue(advice_).c_str());
         ImGui::PopTextWrapPos();
         ImGui::Dummy(ImVec2(0.0f, fonts.size * 0.5f));
         const bool key = ImGui::IsKeyPressed(ImGuiKey_Escape, false) || ImGui::IsKeyPressed(ImGuiKey_Enter, false) ||
@@ -58,7 +64,7 @@ void ProblemDialog::Draw(const trg::Fonts& fonts, const trg::Theme& theme) {
                          ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight, false);
         ImGui::SetCursorPosX(std::max(0.0f, (ImGui::GetWindowWidth() - fonts.size * 6.0f) * 0.5f));
         ImGui::PushStyleColor(ImGuiCol_Text, theme.on_accent);
-        const bool clicked = ImGui::Button("OK", ImVec2(fonts.size * 6.0f, 0.0f));
+        const bool clicked = ImGui::Button(Tr("OK"), ImVec2(fonts.size * 6.0f, 0.0f));
         ImGui::PopStyleColor();
         if (clicked || key) {
             ImGui::CloseCurrentPopup();

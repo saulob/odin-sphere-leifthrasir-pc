@@ -1,0 +1,4 @@
+cryptography>=42
+numpy>=2.0,<3
+scipy>=1.13,<2
+Pillow>=10,<14

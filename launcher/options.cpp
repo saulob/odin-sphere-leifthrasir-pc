@@ -2,6 +2,8 @@
 
 #include <SDL3/SDL_keyboard.h>
 
+#include "localization/ui_text.h"
+
 namespace osl {
 namespace {
 
@@ -57,7 +59,7 @@ std::string ResolutionLabel(const OslResolution& resolution) {
 std::string WindowSizeLabel(WindowSize size) {
     std::string label = Dimensions(size.width, size.height);
     if (size == kGamePictureSize) {
-        label += "   (the game's own size)";
+        label += std::string("   ") + Tr("(the game's own size)");
     }
     return label;
 }
@@ -65,11 +67,11 @@ std::string WindowSizeLabel(WindowSize size) {
 std::string MonitorLabel(int monitor, const std::vector<Display>& displays) {
     const std::string number = std::to_string(monitor);
     if (monitor < 1 || monitor > static_cast<int>(displays.size())) {
-        return "Display " + number + " (not connected)";
+        return TrValue("Display " + number) + " " + Tr("(not connected)");
     }
     const Display& display = displays[static_cast<size_t>(monitor - 1)];
-    std::string label = "Display " + number + (display.primary ? " (primary)" : "") + "   " +
-                        Dimensions(display.bounds.w, display.bounds.h);
+    std::string label = TrValue("Display " + number) + (display.primary ? std::string(" ") + Tr("(primary)") : "") +
+                        "   " + Dimensions(display.bounds.w, display.bounds.h);
     if (!display.name.empty() && display.name != "Generic PnP Monitor") {
         label += "   " + display.name;
     }
