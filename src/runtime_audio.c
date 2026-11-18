@@ -8,6 +8,7 @@
  * ports only follow the clock. */
 #define _GNU_SOURCE
 #include "runtime.h"
+#include "audio_backlog.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -222,6 +223,13 @@ static int32_t output_port(int32_t handle, const void *data, int pace) {
             /* The device drains the queue in quanta (21 ms on PipeWire), so the level
                is a sawtooth: its minimum over ~32 buffers is what gets controlled. */
             int low=2*(int)bytes, queued=SDL_GetAudioStreamQueued(p->stream);
+            /* A queue far above the target means the device stopped pulling (sleep, endpoint reset). */
+            int dropped=audio_backlog_drop(&queued,low,bytes,p->frames,&p->window_count,&p->adjust_ns);
+            if (dropped) {
+                printf("Runtime: audio port %d dropped %.0f ms of backlog (device stalled)\n",(int)(p-ports),
+                       audio_backlog_ms(dropped,period,bytes));
+                SDL_ClearAudioStream(p->stream);
+            }
             if (queued<(int)bytes) {
                 static const unsigned char silence[2048*8*4];
                 SDL_PutAudioStreamData(p->stream,silence,low-queued<(int)bytes ? low-queued : (int)bytes);

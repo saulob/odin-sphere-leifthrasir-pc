@@ -15,6 +15,7 @@
 #include "osl_overlay.h"
 #include "osl_settings.h"
 #include "osl_graphics.h"
+#include "osl_pipeline_startup.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 #include "video_core/texture_cache/image.h"
@@ -27,6 +28,7 @@
 #include <cmath>
 #include <csetjmp>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <filesystem>
@@ -158,7 +160,13 @@ Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_
     OslOverlay::Init(instance, swapchain.GetSurfaceFormat().format, num_images);
 
     if (instance.GetPipelineBinaryGlobalKey().keySize != 0) {
-        rasterizer->GetPipelineCache().StartOnDemand();
+        // Restoring a binary is cheaper than compiling but still a hitch on the GPU thread.
+        const auto startup = Osl::ChoosePipelineStartup(
+            std::getenv("OSL_PIPELINE_ON_DEMAND"),
+            [&] { return rasterizer->GetPipelineCache().StartBackgroundWarmUp(); });
+        if (startup == Osl::PipelineStartup::OnDemand) {
+            rasterizer->GetPipelineCache().StartOnDemand();
+        }
         return;
     }
 

@@ -192,6 +192,14 @@ target_include_directories(osl-renderer-selection-tests PRIVATE gpu/shim gpu/sha
 target_compile_definitions(osl-renderer-selection-tests PRIVATE OSL_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 target_compile_options(osl-renderer-selection-tests PRIVATE -Wall -Wextra -Werror)
 
+# Focused tests of the audio backlog cap and the pipeline startup, toolchain and dialog sources (tools/test.ps1); no
+# audio or Vulkan device. Not part of the default build.
+add_executable(osl-runtime-stability-tests EXCLUDE_FROM_ALL tests/runtime_stability_tests.cpp)
+set_target_properties(osl-runtime-stability-tests PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+target_include_directories(osl-runtime-stability-tests PRIVATE src gpu/shim)
+target_compile_definitions(osl-runtime-stability-tests PRIVATE OSL_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+target_compile_options(osl-runtime-stability-tests PRIVATE -Wall -Wextra -Werror)
+
 # Focused tests of the Vulkan buffer arenas (sparse and fully resident layouts, BDA entries, migration) on fake arenas
 # (tools/test.ps1); no Vulkan device. Not part of the default build.
 add_executable(osl-buffer-arena-tests EXCLUDE_FROM_ALL tests/buffer_arena_tests.cpp)

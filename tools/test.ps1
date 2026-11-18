@@ -23,7 +23,7 @@
   built (build\cmake\clang64\bin\bug-report-request.json); that file is deleted before the Launcher group runs, so a
   request left by an earlier run is never used.
 .PARAMETER Group
-  Runtime, CPU, Packages, Launcher, Updater, Features, Graphics, or All (the default). Several can be given.
+  Runtime, RuntimeStability, CPU, Packages, Launcher, Updater, Features, Graphics, or All (the default). Several can be given.
 .PARAMETER TimeoutSeconds
   Fails a test that runs longer than this.
 .EXAMPLE
@@ -40,7 +40,7 @@ param(
 . (Join-Path $PSScriptRoot '_common.ps1')
 $root = $script:RepoRoot
 $buildDir = Join-Path $root 'build\cmake\clang64'
-$groupOrder = @('Runtime', 'CPU', 'Packages', 'Launcher', 'Updater', 'Features', 'Graphics')
+$groupOrder = @('Runtime', 'RuntimeStability', 'CPU', 'Packages', 'Launcher', 'Updater', 'Features', 'Graphics')
 # powershell -File passes "-Group A,B" as one string.
 $Group = @($Group | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 foreach ($name in $Group) {
@@ -283,6 +283,9 @@ function Invoke-ReleaseHelper([hashtable]$Built) {
 
 $steps = @(
     (Step 'Runtime' 'runtime locks and the guest memory table' 'osl-runtime-tests'),
+    (Step 'RuntimeStability' 'audio backlog cap: at, below and above the cap, invalid sizes, three formats, reset state, log milliseconds, runtime call site' 'osl-runtime-stability-tests' -Block { Invoke-TestExe 'osl-runtime-stability-tests' $built @('(?m)^Runtime stability: audio backlog cap: \d+ checks, 0 failures') @('--audio') }),
+    (Step 'RuntimeStability' 'pipeline startup: binaries with the variable absent, empty, 0, 1 and any other value, background unavailable, path without binaries' 'osl-runtime-stability-tests' -Block { Invoke-TestExe 'osl-runtime-stability-tests' $built @('(?m)^Runtime stability: pipeline startup: \d+ checks, 0 failures') @('--pipeline') }),
+    (Step 'RuntimeStability' 'current toolchain: sirit cstdlib, game_install algorithm, presenter cstdlib, CommonDialog initializer' 'osl-runtime-stability-tests' -Block { Invoke-TestExe 'osl-runtime-stability-tests' $built @('(?m)^Runtime stability: current toolchain: \d+ checks, 0 failures') @('--toolchain') }),
     (Step 'Runtime' 'Windows guest memory (sparse backing, commitment, aliases, release)' 'osl-memory-windows-tests'),
     (Step 'Runtime' 'run log retention and capture in a Windows-subsystem process without standard handles' 'osl-log-tests'),
     (Step 'Runtime' 'game file read overlay: replaced ranges, data past the end, size, seek, the host file untouched' 'osl-runtime-overlay-tests' -Expect @('(?m)^runtime file overlay: OK')),
@@ -335,7 +338,8 @@ $steps = @(
     (Step 'Graphics' 'ANGLE dependency (pin, cache, extraction, DLL staging, package checks, no network)' -Block { Invoke-PowerShellScript 'tests\angle_dependency_tests.ps1' })
 )
 
-$wanted = @(if ($Group -contains 'All') { $groupOrder } else { $groupOrder | Where-Object { $Group -contains $_ } })
+# Features includes the runtime stability steps once.
+$wanted = @(if ($Group -contains 'All') { $groupOrder } else { $groupOrder | Where-Object { $Group -contains $_ -or ($_ -eq 'RuntimeStability' -and $Group -contains 'Features') } })
 $steps = @($steps | Where-Object { $wanted -contains $_.Group })
 $targets = @($steps | Where-Object { $_.Target } | ForEach-Object { $_.Target } | Select-Object -Unique)
 
@@ -382,7 +386,7 @@ foreach ($name in $wanted) {
     $counts[$state]++
     $seconds = ($mine | Measure-Object -Property Seconds -Sum).Sum
     $color = @{ PASS = 'Green'; FAIL = 'Red'; SKIPPED = 'Yellow'; PARTIAL = 'Yellow' }[$state]
-    Write-Host ('{0,-12}{1,-9}{2,6:N1} s' -f $name, $state, $seconds) -ForegroundColor $color
+    Write-Host ('{0,-18}{1,-9}{2,6:N1} s' -f $name, $state, $seconds) -ForegroundColor $color
     foreach ($entry in $failed) { Write-Host "    failed: $($entry.Step.Title): $($entry.Result.Reason)" -ForegroundColor Red }
     foreach ($entry in $skipped) { Write-Host "    skipped: $($entry.Step.Title): $($entry.Result.Reason)" -ForegroundColor Yellow }
     foreach ($entry in $mine) { foreach ($note in $entry.Result.Notes) { Write-Host "    note: $note" -ForegroundColor DarkGray } }

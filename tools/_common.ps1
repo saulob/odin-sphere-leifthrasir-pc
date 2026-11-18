@@ -120,9 +120,18 @@ function Get-DllClosure([string]$Exe, [string]$Dir, [string]$Objdump) {
     return $found
 }
 
+function Get-FileSha256([string]$Path) {
+    $stream = [IO.File]::OpenRead($Path)
+    try {
+        $sha = [Security.Cryptography.SHA256]::Create()
+        try { return ([BitConverter]::ToString($sha.ComputeHash($stream)) -replace '-', '').ToLowerInvariant() } finally { $sha.Dispose() }
+    }
+    finally { $stream.Dispose() }
+}
+
 function Test-Sha256([string]$Path, [string]$Expected) {
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $false }
-    return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash -ieq $Expected
+    return (Get-FileSha256 $Path) -ieq $Expected
 }
 
 function Read-AnglePin([string]$Descriptor = (Join-Path $script:RepoRoot 'gpu\angle-runtime.txt')) {
