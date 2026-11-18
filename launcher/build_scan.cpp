@@ -934,6 +934,7 @@ FeatureState CheatFeatureState(OslCheatState state) {
     case OSL_CHEAT_MISSING: return FeatureState::kMissing;
     case OSL_CHEAT_AMBIGUOUS: return FeatureState::kAmbiguous;
     case OSL_CHEAT_INVALID: return FeatureState::kInvalid;
+    case OSL_CHEAT_INHERENT: return FeatureState::kInherent;
     }
     return FeatureState::kInvalid;
 }
@@ -957,11 +958,17 @@ std::string CheatSiteLine(const Scan& s, const OslCheatSite& site, const OslChea
         if (site.kind == OSL_CHEAT_SITE_SAME_FUNCTION) {
             return head + "unique at " + Hex(found.at[0]);
         }
+        if (site.kind == OSL_CHEAT_SITE_GLOBAL) {
+            return head + "unique at " + Hex(found.patch) + ", root object global " + Hex(found.global);
+        }
         return head + "unique at " + Hex(found.patch) + ", original bytes " + original + " valid";
     case OSL_CHEAT_SITE_PATCHED:
     case OSL_CHEAT_SITE_MODIFIED:
         if (site.kind == OSL_CHEAT_SITE_PLAYER_ACCESSOR) {
             return head + "unique at " + Hex(found.at[0]) + ", but the call does not reach the player accessor";
+        }
+        if (site.kind == OSL_CHEAT_SITE_GLOBAL) {
+            return head + "unique at " + Hex(found.patch) + ", but the lea does not give a global in the image";
         }
         return head + "unique at " + Hex(found.patch) + ", original bytes " + original + " invalid: found " +
                HexBytes(s.image(), found.patch, found.patch + site.patch_size) +
@@ -975,6 +982,10 @@ FeatureScan ReportSites(Scan& s, const char* label, const OslCheatSite* sites, s
                         bool applied, std::string& text) {
     FeatureScan feature{label, {}, {}, {}, CheatFeatureState(scan.state)};
     text += std::string("  ") + label + ":\n";
+    if (scan.state == OSL_CHEAT_INHERENT) {
+        text += std::string("    nothing to change: ") + scan.reason + "\n    status: " + FeatureStateName(feature.state) + "\n";
+        return feature;
+    }
     size_t once = 0;
     for (size_t i = 0; i < site_count; ++i) {
         const OslCheatSite& site = sites[i];
@@ -985,6 +996,11 @@ FeatureScan ReportSites(Scan& s, const char* label, const OslCheatSite* sites, s
         if (found.hits == 0) {
             std::vector<int16_t> pattern(site.signature, site.signature + site.signature_size);
             std::fill_n(pattern.begin() + static_cast<std::ptrdiff_t>(site.patch_at), site.patch_size, int16_t{-1});
+            for (size_t k = 0; site.mask && k < site.signature_size; ++k) {
+                if (site.mask[k] != 'x') {
+                    pattern[k] = -1;
+                }
+            }
             s.blocks.emplace_back();
             PartialRuns(s, pattern, static_cast<int64_t>(site.patch_at));
             text += s.blocks.back();
@@ -1017,29 +1033,44 @@ std::string ScanCheats(Scan& s) {
     for (const Range& r : s.eboot_exec) {
         ranges.push_back({r.begin, r.end});
     }
-    OslCheatScan scans[OSL_CHEAT_COUNT];
-    OslCheatScan experience;
+    OslCheatScan scans[OSL_ENGINE_COUNT][OSL_CHEAT_COUNT];
+    OslCheatScan experience[OSL_ENGINE_COUNT];
+    unsigned hooked[OSL_ENGINE_COUNT];
     const size_t image_size = s.image().size();
-    const size_t stubs_size = OSL_CHEAT_STUBS_BYTES + OSL_CHEAT_STUB_BYTES;
+    const size_t stubs_size = size_t{OSL_CHEAT_STUBS_BYTES} + size_t{OSL_EXPERIENCE_STUBS_BYTES};
     Bytes scratch(image_size + stubs_size + OSL_CHEAT_COUNT + 1, 0);
     std::copy(s.image().begin(), s.image().end(), scratch.begin());
     unsigned char* stubs = scratch.data() + image_size;
     unsigned char* flags = stubs + stubs_size;
-    const unsigned applied = osl_install_cheats(scratch.data(), image_size, ranges.data(), ranges.size(), stubs,
-                                                OSL_CHEAT_STUBS_BYTES, flags, scans);
-    const bool experience_applied =
-        osl_install_experience(scratch.data(), image_size, ranges.data(), ranges.size(), stubs + OSL_CHEAT_STUBS_BYTES,
-                               OSL_CHEAT_STUB_BYTES, flags + OSL_CHEAT_COUNT, &experience) != 0;
+    osl_install_cheats_engines(scratch.data(), image_size, ranges.data(), ranges.size(), stubs, OSL_CHEAT_STUBS_BYTES, flags,
+                               scans[OSL_ENGINE_REFINED], scans[OSL_ENGINE_CLASSIC], hooked);
+    const unsigned experience_hooked = osl_install_experience_engines(
+        scratch.data(), image_size, ranges.data(), ranges.size(), stubs + OSL_CHEAT_STUBS_BYTES, OSL_EXPERIENCE_STUBS_BYTES,
+        flags + OSL_CHEAT_COUNT, &experience[OSL_ENGINE_REFINED], &experience[OSL_ENGINE_CLASSIC]);
     std::string text = "Cheats (identified only; applied only for a supported build whose sites validate):\n";
-    for (int c = 0; c < OSL_CHEAT_COUNT; ++c) {
-        const OslCheatInfo& info = osl_cheats[c];
-        s.result.cheats.push_back(ReportSites(s, info.label, info.sites, info.site_count, scans[c],
-                                              (applied & osl_cheat_bit(info.cheat)) != 0, text));
+    for (int e = 0; e < OSL_ENGINE_COUNT; ++e) {
+        const OslEngine engine = static_cast<OslEngine>(e);
+        std::vector<FeatureScan>& cheats = e == OSL_ENGINE_CLASSIC ? s.result.classic_cheats : s.result.cheats;
+        if (e == OSL_ENGINE_CLASSIC) {
+            text += "Cheats, Classic engine:\n";
+        }
+        for (int c = 0; c < OSL_CHEAT_COUNT; ++c) {
+            const OslCheatInfo& info = osl_cheats[c];
+            size_t site_count = 0;
+            const OslCheatSite* sites = osl_cheat_engine_sites(&info, engine, &site_count);
+            cheats.push_back(ReportSites(s, info.label, sites, site_count, scans[e][c],
+                                         (hooked[e] & osl_cheat_bit(info.cheat)) != 0, text));
+        }
+        const bool classic = e == OSL_ENGINE_CLASSIC;
+        FeatureScan report = ReportSites(s, osl_experience_multiplier.label,
+                                         classic ? osl_experience_multiplier.classic_sites : osl_experience_multiplier.sites,
+                                         classic ? osl_experience_multiplier.classic_site_count
+                                                 : osl_experience_multiplier.site_count,
+                                         experience[e], (experience_hooked & (1u << e)) != 0, text);
+        (classic ? s.result.classic_experience : s.result.experience) = std::move(report);
+        text += "  " + (classic ? ClassicCheatSummary(s.result) : CheatSummary(s.result)) + "\n";
+        text += "  " + (classic ? ClassicExperienceSummary(s.result) : ExperienceSummary(s.result)) + "\n";
     }
-    s.result.experience = ReportSites(s, osl_experience_multiplier.label, osl_experience_multiplier.sites,
-                                      osl_experience_multiplier.site_count, experience, experience_applied, text);
-    text += "  " + CheatSummary(s.result) + "\n";
-    text += "  " + ExperienceSummary(s.result) + "\n";
     return text;
 }
 
@@ -1086,6 +1117,7 @@ const char* FeatureStateName(FeatureState state) {
     case FeatureState::kMissing: return "MISSING";
     case FeatureState::kAmbiguous: return "AMBIGUOUS";
     case FeatureState::kInvalid: return "INVALID";
+    case FeatureState::kInherent: return "INHERENTLY SATISFIED";
     }
     return "?";
 }
@@ -1128,6 +1160,32 @@ std::string ExperienceSummary(const ScanResult& scan) {
         return "Experience Multiplier: not scanned (the executable did not map)";
     }
     return std::string("Experience Multiplier: ") + FeatureStateName(scan.experience->state);
+}
+
+std::string ClassicCheatSummary(const ScanResult& scan) {
+    if (scan.classic_cheats.empty()) {
+        return "Classic cheats: not scanned (the executable did not map)";
+    }
+    size_t complete = 0, inherent = 0;
+    std::string others;
+    for (const FeatureScan& cheat : scan.classic_cheats) {
+        if (cheat.state == FeatureState::kComplete) {
+            ++complete;
+        } else if (cheat.state == FeatureState::kInherent) {
+            ++inherent;
+        } else {
+            others += ", " + cheat.name + " " + FeatureStateName(cheat.state);
+        }
+    }
+    return "Classic cheats: " + std::to_string(complete) + "/" + std::to_string(scan.classic_cheats.size()) + " COMPLETE, " +
+           std::to_string(inherent) + " INHERENTLY SATISFIED" + others;
+}
+
+std::string ClassicExperienceSummary(const ScanResult& scan) {
+    if (!scan.classic_experience) {
+        return "Classic Experience Multiplier: not scanned (the executable did not map)";
+    }
+    return std::string("Classic Experience Multiplier: ") + FeatureStateName(scan.classic_experience->state);
 }
 
 std::vector<OslResolutionSite> ResolutionSitesAt(std::span<const GameBuild> templates,

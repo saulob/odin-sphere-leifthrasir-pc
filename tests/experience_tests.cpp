@@ -798,7 +798,7 @@ void TestDiagnostics() {
     for (size_t at = diagnostics.find("ExperienceSummary(scan)"); at != std::string::npos;
          at = diagnostics.find("ExperienceSummary(scan)", at + 1))
         ++count;
-    CHECK(count == 2);
+    CHECK(count == 4); // the Refined and the Classic summary, in each report
 }
 
 void TestMenuRow() {
@@ -875,8 +875,8 @@ void TestMenuRow() {
     }
     const std::string loader = ReadFile(fs::path(OSL_SOURCE_DIR) / "src" / "loader.c");
     CHECK(Contains(loader, "printf(\"Cheats: %s %s\\n\", osl_experience_multiplier.label, osl_experience_label(experience));"));
-    CHECK(Contains(loader, "osl_install_experience(") && Contains(loader, "round_page(OSL_CHEAT_COUNT + 1)") &&
-          Contains(loader, "round_page(OSL_CHEAT_STUBS_BYTES + OSL_CHEAT_STUB_BYTES)"));
+    CHECK(Contains(loader, "osl_install_experience_engines(") && Contains(loader, "round_page(OSL_CHEAT_COUNT + 1)") &&
+          Contains(loader, "round_page(OSL_CHEAT_STUBS_BYTES + OSL_EXPERIENCE_STUBS_BYTES)"));
 }
 
 void TestPageRow() {

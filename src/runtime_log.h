@@ -37,6 +37,8 @@ void runtime_log_set_session_path(const char *path);
  * runtime_log_install_cleanup for normal exits and called explicitly before hard exits. */
 void runtime_log_finalize(void);
 void runtime_log_install_cleanup(void);
+/* DEBUG_SAULO: printed once by runtime_log_finalize, before the log is closed. */
+void runtime_log_set_exit_report(void (*report)(void));
 
 /* The normal shutdown: marks the exit clean, finalizes and flushes the log, ends the process with status 0. */
 void runtime_exit_clean(void) __attribute__((noreturn));

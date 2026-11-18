@@ -206,7 +206,8 @@ target_compile_options(osl-build-diagnostics-tests PRIVATE -Wall -Wextra -Werror
 # The cheats: table, settings, Cheats page, signature locator and patch, the Issue #20 reference bytes, the local
 # prepared builds, coexistence with the other image patches and the diagnostics; no window.
 add_executable(osl-cheats-tests EXCLUDE_FROM_ALL ../tests/cheats_tests.cpp ../tests/cheats_menu_tests.cpp
-    ../tests/experience_tests.cpp ../src/runtime_cheats.cpp)
+    ../tests/experience_tests.cpp ../tests/cheats_classic_tests.cpp ../src/runtime_cheats.cpp
+    ../src/debug_saulo_cheat_probe.c) # DEBUG_SAULO: debug_saulo_cheat_probe.c
 target_compile_definitions(osl-cheats-tests PRIVATE OSL_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 target_include_directories(osl-cheats-tests PRIVATE ${PROJECT_SOURCE_DIR}/tests)
 target_link_libraries(osl-cheats-tests PRIVATE osl_launcher_core)

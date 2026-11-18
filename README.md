@@ -207,6 +207,17 @@ and the multiplier as `cheat_experience_multiplier` (1, 2, 5, 10 or 100; anythin
   is never worth more than 2,500,000 (the total the last level needs). Level-ups, their thresholds and the AP they give
   follow the game's own rules, so a large award can raise several levels at once
 
+The same switches work in **Refined** and **Classic** mode: the executable holds a separate gameplay engine for each, and
+every cheat that has something to change is hooked in both. In Classic, gold is five coin stacks (worth 10, 5, 20, 10 and
+1 G, 999 coins at most each), so **Max Gold Gain** fills all five on a sale or a coin pickup: 45,954 G, the most Classic
+can hold. **Max Phozon Gain** fills PP on every phozon absorbed and takes the Psypher level to its last (98) on the first,
+through the game's own level-ups. **Infinite Health** covers hits and other damage, **Infinite POW** the POW gauge that
+attacks, guarding and skills drain, **Infinite PP** the PP that Psypher skills spend and **Infinite Arrows** Mercedes's
+ammunition (every shot kind), for the controlled character only. The **Experience Multiplier** behaves as in Refined,
+capped at 99,999,999 experience in Classic, where experience comes from food and items only (defeated enemies give none).
+**No AP Consumption** is already true in Classic, which has no AP (skills unlock by Psypher level, free); the run log says
+so.
+
 Their availability depends on the executable's verified code: the five builds this port is tested with locally (USA
 1.00, Japan 1.00 and 1.02, Europe 1.00 and 1.01) hold every cheat's code and the Experience Multiplier's; the other builds are checked the same way at
 game start.

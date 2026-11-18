@@ -11,6 +11,7 @@
 #include "oslgpu.h"
 #include "osl_cheats.h"
 #include "runtime_cheats.h"
+#include "debug_saulo_cheat_probe.h" /* DEBUG_SAULO */
 #include "osl_launcher.h"
 #include "osl_resolution.h"
 #include "osl_version.h"
@@ -486,20 +487,32 @@ static unsigned install_cheats(const char *settings_file, int known_build, const
             const uint64_t end = segments[i].address + segments[i].size;
             ranges[range_count++] = (OslCodeRange){segments[i].address, end < eboot_end ? end : eboot_end};
         }
-    OslCheatScan scans[OSL_CHEAT_COUNT];
-    const unsigned available = osl_install_cheats(image, size, ranges, range_count, stubs, OSL_CHEAT_STUBS_BYTES, flags, scans);
+    OslCheatScan scans[OSL_ENGINE_COUNT][OSL_CHEAT_COUNT];
+    unsigned hooked[OSL_ENGINE_COUNT];
+    debug_saulo_cheat_probe_start(); /* DEBUG_SAULO */
+    runtime_log_set_exit_report(debug_saulo_cheat_probe_summary); /* DEBUG_SAULO */
+    const unsigned available = osl_install_cheats_engines(image, size, ranges, range_count, stubs, OSL_CHEAT_STUBS_BYTES, flags,
+                                                          scans[OSL_ENGINE_REFINED], scans[OSL_ENGINE_CLASSIC], hooked);
     runtime_cheats_set_available(available, flags);
-    for (int c = 0; c < OSL_CHEAT_COUNT; ++c)
-        if (!(available & osl_cheat_bit((OslCheat)c)))
-            printf("Cheats: %s unavailable (%s): %s\n", osl_cheats[c].label, osl_cheat_state_name(scans[c].state),
-                   scans[c].reason);
-    OslCheatScan experience_scan;
-    const int experience_hooked = osl_install_experience(image, size, ranges, range_count, stubs + OSL_CHEAT_STUBS_BYTES,
-                                                         OSL_CHEAT_STUB_BYTES, flags + OSL_CHEAT_COUNT, &experience_scan);
-    runtime_experience_set_available(experience_hooked, experience_flag);
-    if (!experience_hooked)
-        printf("Cheats: %s unavailable (%s): %s\n", osl_experience_multiplier.label,
-               osl_cheat_state_name(experience_scan.state), experience_scan.reason);
+    for (int e = 0; e < OSL_ENGINE_COUNT; ++e)
+        for (int c = 0; c < OSL_CHEAT_COUNT; ++c)
+            if (scans[e][c].state == OSL_CHEAT_INHERENT)
+                printf("Cheats: %s in %s: %s (%s)\n", osl_cheats[c].label, osl_engine_name((OslEngine)e),
+                       osl_cheat_state_name(scans[e][c].state), scans[e][c].reason);
+            else if (!(hooked[e] & osl_cheat_bit((OslCheat)c)))
+                printf("Cheats: %s unavailable in %s (%s): %s\n", osl_cheats[c].label, osl_engine_name((OslEngine)e),
+                       osl_cheat_state_name(scans[e][c].state), scans[e][c].reason);
+    OslCheatScan experience_scans[OSL_ENGINE_COUNT];
+    const unsigned experience_hooked = osl_install_experience_engines(image, size, ranges, range_count,
+                                                                      stubs + OSL_CHEAT_STUBS_BYTES, OSL_EXPERIENCE_STUBS_BYTES,
+                                                                      flags + OSL_CHEAT_COUNT, &experience_scans[OSL_ENGINE_REFINED],
+                                                                      &experience_scans[OSL_ENGINE_CLASSIC]);
+    runtime_experience_set_available(experience_hooked != 0, experience_flag);
+    for (int e = 0; e < OSL_ENGINE_COUNT; ++e)
+        if (!(experience_hooked & (1u << e)))
+            printf("Cheats: %s unavailable in %s (%s): %s\n", osl_experience_multiplier.label, osl_engine_name((OslEngine)e),
+                   osl_cheat_state_name(experience_scans[e].state), experience_scans[e].reason);
+    debug_saulo_cheat_probe_report(); /* DEBUG_SAULO */
     return available || experience_hooked;
 }
 #ifndef _WIN32
@@ -985,7 +998,7 @@ int main(int argc, char **argv) {
     const int bookshelf_unlock = osl_unlock_bookshelf(settings_file);
     const size_t bookshelf_stub_bytes = bookshelf_unlock ? round_page(OSL_BOOKSHELF_STUB_BYTES) : 0;
     const size_t title_exit_stub_bytes = round_page(OSL_TITLE_EXIT_STUB_BYTES);
-    const size_t cheat_stub_bytes = round_page(OSL_CHEAT_STUBS_BYTES + OSL_CHEAT_STUB_BYTES);
+    const size_t cheat_stub_bytes = round_page(OSL_CHEAT_STUBS_BYTES + OSL_EXPERIENCE_STUBS_BYTES);
     const size_t cheat_flag_bytes = round_page(OSL_CHEAT_COUNT + 1);
     image = allocate(round_page(size) + lzcnt_stub_bytes + bookshelf_stub_bytes + title_exit_stub_bytes + cheat_stub_bytes + cheat_flag_bytes);
     if (fread(image, 1, size, f) != size || fgetc(f) != EOF) fail("incorrect memory image size");

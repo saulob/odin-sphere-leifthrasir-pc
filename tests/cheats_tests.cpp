@@ -91,7 +91,7 @@ const OslCheatSite* SiteNamed(const char* id, OslCheat* owner = nullptr) {
     }
     // A site missing from the table fails here instead of crashing the planting helpers.
     static const unsigned char none[1] = {0};
-    static const OslCheatSite absent{"", "", OSL_CHEAT_SITE_HOOK, nullptr, 0, none, 0, 0, none, 0, 0, 0, nullptr, 0, -1, -1};
+    static const OslCheatSite absent{"", "", OSL_CHEAT_SITE_HOOK, nullptr, 0, none, 0, 0, none, 0, 0, 0, nullptr, 0, -1, -1, nullptr, -1, -1};
     CHECK(!"site in the cheat table");
     return &absent;
 }
@@ -596,6 +596,23 @@ std::vector<Span> SignatureSpans(const OslCheatScan* scans) {
     return spans;
 }
 
+// The Classic engine's sites (and its Experience Multiplier's) as spans, found in `image` the way the loader finds them.
+std::vector<Span> ClassicSignatureSpans(const Bytes& image, const std::vector<OslCodeRange>& code) {
+    std::vector<Span> spans;
+    OslCheatScan scans[OSL_CHEAT_COUNT], experience;
+    osl_cheat_scan_engine(image.data(), image.size(), code.data(), code.size(), OSL_ENGINE_CLASSIC, scans);
+    osl_experience_scan_engine(image.data(), image.size(), code.data(), code.size(), OSL_ENGINE_CLASSIC, &experience);
+    const auto add = [&](const OslCheatSite* sites, size_t count, const OslCheatScan& scan) {
+        for (size_t s = 0; s < count; ++s) {
+            const uint64_t start = scan.sites[s].patch - sites[s].patch_at - sites[s].prefix_size;
+            spans.push_back({start, start + sites[s].prefix_size + sites[s].signature_size});
+        }
+    };
+    for (const OslCheatInfo& info : osl_cheats) add(info.classic_sites, info.classic_site_count, scans[info.cheat]);
+    add(osl_experience_multiplier.classic_sites, osl_experience_multiplier.classic_site_count, experience);
+    return spans;
+}
+
 bool Inside(const std::vector<Span>& spans, uint64_t at) {
     return std::any_of(spans.begin(), spans.end(), [&](const Span& s) { return at >= s.begin && at < s.end; });
 }
@@ -765,7 +782,7 @@ size_t CheatStubOffset(const MappedExecutable& mapped) {
 }
 
 size_t BufferSize(const MappedExecutable& mapped) {
-    return CheatStubOffset(mapped) + RoundPage(size_t{OSL_CHEAT_STUBS_BYTES} + size_t{OSL_CHEAT_STUB_BYTES}) +
+    return CheatStubOffset(mapped) + RoundPage(size_t{OSL_CHEAT_STUBS_BYTES} + size_t{OSL_EXPERIENCE_STUBS_BYTES}) +
            RoundPage(size_t{OSL_CHEAT_COUNT} + 1);
 }
 
@@ -881,13 +898,14 @@ void TestLocalBuilds() {
             const std::string refused = ApplyOtherPatches(build, mapped, buffer);
             if (!refused.empty()) std::printf("    refused:%s\n", refused.c_str());
             CHECK(refused.empty());
-            const std::vector<Span> spans = SignatureSpans(scans);
+            std::vector<Span> spans = SignatureSpans(scans);
+            for (const Span& classic : ClassicSignatureSpans(mapped.image, code)) spans.push_back(classic);
             const std::vector<size_t> others = Differences(original, buffer);
             CHECK(!others.empty());
             CHECK(std::none_of(others.begin(), others.end(), [&](size_t at) { return Inside(spans, at); }));
 
             const size_t cheat_at = CheatStubOffset(mapped);
-            const size_t flags_at = cheat_at + RoundPage(size_t{OSL_CHEAT_STUBS_BYTES} + size_t{OSL_CHEAT_STUB_BYTES});
+            const size_t flags_at = cheat_at + RoundPage(size_t{OSL_CHEAT_STUBS_BYTES} + size_t{OSL_EXPERIENCE_STUBS_BYTES});
             // As the loader does: the seven cheats, then the Experience Multiplier after their stubs and flags.
             const auto install = [&](Bytes& image) {
                 const unsigned cheats = osl_install_cheats(image.data(), mapped.image.size(), code.data(), code.size(),
@@ -895,7 +913,7 @@ void TestLocalBuilds() {
                                                            image.data() + flags_at, nullptr);
                 const int experience = osl_install_experience(image.data(), mapped.image.size(), code.data(), code.size(),
                                                               image.data() + cheat_at + OSL_CHEAT_STUBS_BYTES,
-                                                              OSL_CHEAT_STUB_BYTES, image.data() + flags_at + OSL_CHEAT_COUNT,
+                                                              OSL_EXPERIENCE_STUBS_BYTES, image.data() + flags_at + OSL_CHEAT_COUNT,
                                                               nullptr);
                 return experience == 1 ? cheats : 0u;
             };
@@ -1858,6 +1876,7 @@ int main() {
     TestSemantics();
     cheat_test::RunMenuTests();
     cheat_test::RunExperienceTests();
+    cheat_test::RunClassicTests();
     std::printf("%s (%d checks, %d failures)\n", g_failures ? "FAILED" : "OK", g_checks, g_failures);
     return g_failures ? 1 : 0;
 }

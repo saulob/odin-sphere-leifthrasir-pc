@@ -23,7 +23,7 @@ struct ScannedMapping {
     std::vector<uint32_t> lzcnt_offsets; // LZCNT_RANGE_COUNT entries
 };
 
-enum class FeatureState { kComplete, kPartial, kMissing, kAmbiguous, kInvalid };
+enum class FeatureState { kComplete, kPartial, kMissing, kAmbiguous, kInvalid, kInherent };
 const char* FeatureStateName(FeatureState state);
 
 // One part of a feature: `expected` sites, of which `unique` were placed and `ambiguous` matched too often.
@@ -47,8 +47,10 @@ struct ScanResult {
     bool anything_found = false;         // at least one Odin Sphere Leifthrasir pattern matched
     ScannedMapping mapping;
     std::vector<FeatureScan> features;   // Skip intro, Unlock Bookshelf, Snapshot scale, Resolution, Legacy CPU LZCNT
-    std::vector<FeatureScan> cheats;     // osl_cheats order; optional, so never part of `unresolved`
+    std::vector<FeatureScan> cheats;     // osl_cheats order, the Refined engine's; optional, so never part of `unresolved`
     std::optional<FeatureScan> experience; // the Experience Multiplier, reported apart from the cheats
+    std::vector<FeatureScan> classic_cheats; // the same cheats in the Classic engine
+    std::optional<FeatureScan> classic_experience;
     bool complete() const { return unresolved.empty(); }
 };
 
@@ -57,6 +59,10 @@ std::string CheatSummary(const ScanResult& scan);
 
 // "Experience Multiplier: COMPLETE", or MISSING, AMBIGUOUS, PARTIAL or INVALID.
 std::string ExperienceSummary(const ScanResult& scan);
+
+// The same two summaries for the Classic engine, with "INHERENTLY SATISFIED" for what the Classic engine already does.
+std::string ClassicCheatSummary(const ScanResult& scan);
+std::string ClassicExperienceSummary(const ScanResult& scan);
 
 // Finds the candidate sites of every executable-dependent feature with the production patterns and the sites of
 // `templates` as the shape to expect. `image` is the eboot's mapping with the bundled modules linked after it;

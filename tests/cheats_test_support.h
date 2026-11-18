@@ -42,4 +42,7 @@ void RunMenuTests();
 // The Experience Multiplier (experience_tests.cpp).
 void RunExperienceTests();
 
+// The cheats in the Classic engine and the build x mode x cheat matrix (cheats_classic_tests.cpp).
+void RunClassicTests();
+
 } // namespace cheat_test
