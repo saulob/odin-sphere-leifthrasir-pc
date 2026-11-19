@@ -1,13 +1,13 @@
 pattern	status	reason
 *:gui/rehd_interface.mbs	PT_BR_TRANSLATED	interface-ptbr.oslv: HUD actions, save/load, YES/NO, Bookshelf status, stage cards and menu words respelled from the shared glyph font
-*:interface.mbs	PT_BR_TRANSLATED	interface-ptbr.oslv: Classic HUD and menu words respelled from the shared glyph font
+*:interface.mbs	PT_BR_TRANSLATED	interface-ptbr.oslv: Classic HUD, status (Equipamento, Pontos transferidos), stage result (Tempo de conclusão, Bônus de dano, Pontos transferidos, Dano), SUCESSO, SAIR, save slots (SEM DADOS without the English DATA overlay, Última partida), shop, level-up banners, CARREGANDO (line and book arc) respelled from the shared glyph font; the L_* act titles (heroes' book titles, Ato, Prelúdio, Epílogo, Cap.) set as stage_acts.py sets the Refined ones
 *:gui/hd_interface.ftx	PT_BR_TRANSLATED	interface-art-ptbr.oslv: HABILIDADE PRONTA, APTIDÃO PRONTA, AÇÃO, CHEFE, FÚRIA painted from the face's own letters; COMBO! (FR sprite, space closed), DESCANSAR (REST plaque), NV and A are the official ES sprites; POW, EXP, DEF and HP stay: the Portuguese corpus names the gauge POW in every dynamic string (Custo de POW, Recupera POW, Taxa de POW), so the label must match it
 *:interface.ftx	PT_BR_TRANSLATED	Classic copy of GUI/HD_Interface.ftx: same painted sprites, interface-art-ptbr.oslv
-*:gui/hd_title.ftx	PT_BR_TRANSLATED	title-exit-ptbr.dcpx: rows, PRESSIONE QUALQUER BOTÃO, the copyright line and the credit captions Apresentado por, Produtor and Diretor, set on texture 0 from the Spanish credit line of the same face (the capital A built from the face's own strokes; the personal-name rows untouched)
+*:gui/hd_title.ftx	PT_BR_TRANSLATED	title-exit-ptbr.dcpx: rows, PRESSIONE QUALQUER BOTÃO (full size between the Spanish row's ornaments, in free atlas rows), the copyright line and the credit captions Apresentado por, Produtor and Diretor, set on texture 0 from the Spanish credit line of the same face (the capital A built from the face's own strokes; the personal-name rows untouched)
 *:gui/rehd_title.mbs	PT_BR_TRANSLATED	title-exit-ptbr.dcpx: row parts and quads grown for the Portuguese rows, over the Exit Game layer
 *:title.ftx	PT_BR_TRANSLATED	Classic copy of GUI/HD_title.ftx: same title patch, including the credit captions (the Classic layout draws no credit page)
 *:title.mbs	PT_BR_TRANSLATED	title-exit-ptbr.dcpx: Classic rows NOVO JOGO, CARREGAR, MODO REFINADO, SAIR DO JOGO
-*:op_press_start.*	PT_BR_TRANSLATED	press-start-ptbr.oslv: PRESSIONE QUALQUER BOTÃO set from the Spanish and French rows of the title serif face, painted into the Italian slot
+*:op_press_start.*	PT_BR_TRANSLATED	press-start-ptbr.oslv: PRESSIONE QUALQUER BOTÃO set from the Spanish and French rows of the title serif face between the Spanish row's own ornaments, at the size of the official rows, painted into the atlas's free rows (the Italian row is left as shipped)
 *:gui/hd_logo.ftx	PT_BR_NOT_NEEDED	no sprite is English-only and no animation of REHD_Logo.mbs draws differently in English and Spanish (company logos)
 *:gui/rehd_logo.mbs	PT_BR_NOT_NEEDED	no animation draws differently in English and Spanish
 *:logo.ftx	PT_BR_NOT_NEEDED	Classic copy of the logos
@@ -58,3 +58,7 @@ TEXT_CONTAINER	PT_BR_TRANSLATED	text corpus (localization/pt-BR/sheets) served o
 LANGUAGE_INDEPENDENT	PT_BR_NOT_NEEDED	the English and Spanish entries are byte-identical
 *:[0-9][0-9].mbs	PT_BR_TRANSLATED	classic-cards-ptbr.oslv: a Portuguese letter atlas packed into the card texture and a rebuilt three-layer layout, letters from the Spanish, French, German and Italian cards' Western face (ã and ç from its own ñ tilde and comma)
 *:[0-9][0-9]_*.mbs	PT_BR_TRANSLATED	classic-cards-ptbr.oslv: a Portuguese letter atlas packed into the card texture and a rebuilt three-layer layout, letters from the Spanish, French, German and Italian cards' Western face (ã and ç from its own ñ tilde and comma)
+*:gui/hd_worldmap.ftx	PT_BR_TRANSLATED	worldmap-ptbr.oslv: not localized by any official language (same pixels in all); the banner caption Map of ERION reads Mapa de ERION, set from the caption's own ink letters (d the face's p turned, e its o opened with a tongue); ERION kept
+*:worldmap.ftx	PT_BR_TRANSLATED	Classic copy of GUI/HD_worldmap.ftx: same banner, worldmap-ptbr.oslv
+*:onmemory/hd_op_press_start.ftx	PT_BR_TRANSLATED	press-start-ptbr.oslv: not localized by any official language; the single English row of every build (Refined press line of USA and Japan) replaced by the Portuguese row of the European atlas, scaled into the atlas
+*:onmemory/rehd_op_press_start.mbs	PT_BR_TRANSLATED	press-start-ptbr.oslv: the row keys draw the Portuguese row on quads grown by the European Portuguese/English ratio

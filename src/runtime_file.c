@@ -57,8 +57,8 @@ typedef struct { char archive[64], source[8]; WatchItem *items; unsigned char *s
 typedef struct { char guest[512]; WatchTable *table; } Watched;
 typedef struct { int used, host; Listing *dir; size_t position; char path[512]; const Overlay *overlay; const WatchTable *watch; } File;
 typedef struct { char guest[64]; char host[512]; } Mount;
-#define MAX_OVERLAYS 16
-#define MAX_WATCHED 32
+#define MAX_OVERLAYS 64
+#define MAX_WATCHED 64
 static Watched watched[MAX_WATCHED];
 static size_t watched_count;
 static size_t visual_hits, visual_unique_hits, visual_missing, localized_untranslated_hits;

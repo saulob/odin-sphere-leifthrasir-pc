@@ -76,3 +76,36 @@ int text_glyphs_install(uint8_t *image, size_t size, const OslGlyphPatch *patche
     snprintf(detail, detail_size, "%zu glyph records and %zu Shift-JIS codes added", count, sjis_count);
     return 1;
 }
+
+/* Latin-1, in the game's language order; the game draws the slot language's word beside the button icon. */
+static const char PROMPT_TABLE[] = "Press\0dr\xfc" "cken\0Appuyez sur\0Premi\0Pulsa";
+#define PROMPT_SPANISH (sizeof(PROMPT_TABLE) - sizeof("Pulsa"))
+
+int text_prompt_install(uint8_t *image, size_t size, const char *word, char *detail, size_t detail_size) {
+    const size_t table = sizeof(PROMPT_TABLE);
+    uint8_t *found = NULL;
+    for (size_t at = 1; at + table <= size; ++at) {
+        if (image[at - 1] != 0 || memcmp(image + at, PROMPT_TABLE, table)) continue;
+        if (found) {
+            snprintf(detail, detail_size, "the button prompt table appears more than once");
+            return 0;
+        }
+        found = image + at;
+    }
+    if (!found) {
+        snprintf(detail, detail_size, "no button prompt table in this executable");
+        return 0;
+    }
+    uint8_t *slot = found + PROMPT_SPANISH;
+    size_t room = sizeof("Pulsa");
+    while (slot + room < image + size && slot[room] == 0) ++room;
+    const size_t length = strlen(word) + 1;
+    if (length > room - 1) {
+        snprintf(detail, detail_size, "\"%s\" does not fit the %zu bytes of the Spanish word", word, room - 1);
+        return 0;
+    }
+    memset(slot, 0, length);
+    memcpy(slot, word, length - 1);
+    snprintf(detail, detail_size, "Spanish \"Pulsa\" reads \"%s\"", word);
+    return 1;
+}

@@ -5,7 +5,8 @@ language shares (the stage card packs' atlases). A word is one channel of three 
 one: the letters scattered, settled, and stretched three times as wide while they fade. Letters and accent marks are
 taken from the settled lines of the five European layouts (named by the words they spell, OFFICIAL); a Portuguese line
 the Spanish, French, German or Italian layout already spells is copied from it, any other is set from the letters with
-the official spacing and placed on the English line's centre.
+the official spacing and placed on the English line's centre. The Classic Interface.mbs draws the same L_* animations
+from the interface glyph font; make_visuals.py writes them with the rest of that layout (classic_design).
 """
 import argparse
 import struct
@@ -75,7 +76,10 @@ class ActError(Exception):
 
 
 def base_name(anim):
-    return anim[:-2] if anim.endswith('_1') and anim[:-2] in OFFICIAL else anim
+    for suffix in ('_1', '_00'):
+        if anim.endswith(suffix) and anim[:-len(suffix)] in OFFICIAL:
+            return anim[:-len(suffix)]
+    return anim
 
 
 def channel_layers(layout, channel):
@@ -376,6 +380,13 @@ def designs(layouts, pool, report):
 def respell(data, plan, where):
     """A build's layout with every designed L_* channel written over its own layers; None when nothing changes."""
     layout = M.Mbs(data)
+    if not respell_layout(layout, plan, where):
+        return None, None
+    return layout.bytes(), layout.inserts
+
+
+def respell_layout(layout, plan, where):
+    """Writes every designed L_* channel over its own layers of `layout`, in place; False when nothing changes."""
     writer = Writer(layout)
     done = set()
     for anim, _, _ in layout.anims():
@@ -396,10 +407,10 @@ def respell(data, plan, where):
                 writer.layer(layer, items, template, layout.key(layout.layer_range(layer)[0])['colour'])
             done.update(layers)
     if not writer.keys:
-        return None, None
+        return False
     writer.finish()
     _grow_anim_boxes(layout)
-    return layout.bytes(), layout.inserts
+    return True
 
 
 def _grow_anim_boxes(layout):
@@ -473,39 +484,53 @@ def find_sprite(texture, sprite):
     return int(x), int(y)
 
 
-def relocate(plan, data, reference, target):
+def relocate(plan, data, reference, target, known=None, mover=None):
     """The plan with every glyph pointing at the same sprite in a build's own atlas: where the build's layout draws the
-    same sprite id, else where its atlas holds the same pixels. Raises ActError for a glyph the atlas lacks."""
+    same sprite id, else where its atlas holds the same pixels, else where `known` ({reference rect: (target rect,
+    quarter turns)}) has found it, moved by `mover`. Raises ActError for a glyph the atlas lacks."""
     layout = M.Mbs(data)
     by_sprite = defaultdict(list)
     for k in range(layout.count(M.KEYS)):
         key = layout.key(k)
         if key['part'] < layout.count(M.PARTS):
-            by_sprite[(key['sprite'], key['texture'])].append(bytes(layout.record(M.PARTS, key['part'])))
+            by_sprite[key['sprite']].append((key['texture'], bytes(layout.record(M.PARTS, key['part']))))
     moved = {}
 
     def place(record, raw):
+        """(part, key) drawing the reference sprite in the target atlas; the sprite may sit in another texture there."""
         texture = raw[7]
         if (record, texture) in moved:
             return moved[(record, texture)]
         x0, y0, x1, y1 = part_rect(record)
         sprite = reference[texture][y0:y1, x0:x1]
         found = None
-        if same_pixels(target[texture][y0:y1, x0:x1], sprite):
-            found = record
-        for candidate in by_sprite.get((struct.unpack_from('<I', raw)[0], texture), []):
+        if texture < len(target) and same_pixels(target[texture][y0:y1, x0:x1], sprite):
+            found = record, texture
+        candidates = sorted(by_sprite.get(struct.unpack_from('<I', raw)[0], []), key=lambda c: c[0] != texture)
+        for t, candidate in candidates:
             cx0, cy0, cx1, cy1 = part_rect(candidate)
-            if found is None and same_pixels(target[texture][cy0:cy1, cx0:cx1], sprite):
-                found = moved_part(record, cx0 - x0, cy0 - y0)
+            if found is None and t < len(target) and same_pixels(target[t][cy0:cy1, cx0:cx1], sprite):
+                found = moved_part(record, cx0 - x0, cy0 - y0), t
+        for t in sorted(range(len(target)), key=lambda t: t != texture):
+            if found is not None:
+                break
+            if target[t].shape[0] >= sprite.shape[0] and target[t].shape[1] >= sprite.shape[1]:
+                at = find_sprite(target[t], sprite)
+                if at is not None:
+                    found = moved_part(record, at[0] - x0, at[1] - y0), t
+        hit = known.get((texture, x0, y0, x1, y1)) if known else None
+        if found is None and hit:
+            (t, *rect), turns = hit
+            found = mover(record, (texture, x0, y0, x1, y1), (t, *rect), turns), t
         if found is None:
-            at = find_sprite(target[texture], sprite)
-            if at is None:
-                raise ActError(f'the atlas has no sprite {x0, y0, x1, y1} of texture {texture}')
-            found = moved_part(record, at[0] - x0, at[1] - y0)
-        moved[(record, texture)] = found
-        return found
+            raise ActError(f'the atlas has no sprite {x0, y0, x1, y1} of texture {texture}')
+        part, t = found
+        key = bytearray(raw)
+        key[7] = t
+        moved[(record, texture)] = part, bytes(key)
+        return moved[(record, texture)]
 
-    return {key: tuple([(place(part, raw), raw, box) for part, raw, box in layer] for layer in layers)
+    return {key: tuple([(*place(part, raw), box) for part, raw, box in layer] for layer in layers)
             for key, layers in plan.items()}
 
 
@@ -514,12 +539,27 @@ SOURCES = (('CUSA05262-1.01', 'Odin2_EU_PATCH1_RE_UK.CPK'), ('CUSA05262-1.01', '
            ('CUSA01290-1.00', 'Odin2_RE.CPK'), ('CUSA01290-1.02', 'Odin2_RE.CPK'))
 
 
-def generate(prepared, sources=SOURCES):
-    layouts = {L: M.Mbs(read_entry(prepared, EUROPE, [a.format(L) for a in EUROPE_ARCHIVES], LAYOUT)) for L in LANGUAGES}
+CLASSIC_LAYOUT, CLASSIC_ATLAS = 'Interface.mbs', 'Interface.ftx'
+CLASSIC_ARCHIVES = ('Odin2_EU_PATCH1_OR_{}.CPK', 'Odin2_OR_{}.CPK')
+
+
+def design(prepared, layout_name, archives, atlas_name, reference_archive):
+    """(plan, reference atlas alpha, report) of the L_* titles of a layout family, from its five European layouts."""
+    layouts = {L: M.Mbs(read_entry(prepared, EUROPE, [a.format(L) for a in archives], layout_name)) for L in LANGUAGES}
     pool = learn(layouts)
-    targets, report = {}, [('pool', '', '', '', f'skipped: {line}') for line in pool.skipped]
+    report = [('pool', '', '', '', f'skipped: {line}') for line in pool.skipped]
     plan = designs(layouts, pool, report)
-    reference = atlas_alpha(read_entry(prepared, EUROPE, ['Odin2_RE_UK.CPK'], ATLAS))
+    return plan, atlas_alpha(read_entry(prepared, EUROPE, [reference_archive], atlas_name)), report, layouts
+
+
+def classic_design(prepared):
+    """The Classic act titles (L_* of Interface.mbs), which the interface patch writes with its labels."""
+    return design(prepared, CLASSIC_LAYOUT, CLASSIC_ARCHIVES, CLASSIC_ATLAS, CLASSIC_ARCHIVES[0].format('UK'))[:3]
+
+
+def generate(prepared, sources=SOURCES):
+    plan, reference, report, layouts = design(prepared, LAYOUT, EUROPE_ARCHIVES, ATLAS, 'Odin2_RE_UK.CPK')
+    targets = {}
     for build, archive in sources:
         where = f'{build} {archive}'
         data = read_entry(prepared, build, [archive], LAYOUT)

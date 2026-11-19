@@ -112,6 +112,10 @@ typedef struct {
 
 const OslGlyphPatch *osl_text_glyph_patches(size_t *count, const OslSjisPatch **sjis, size_t *sjis_count);
 
+/* The verb the executable's button prompts take for the last osl_text_translation's language, or NULL to keep the
+ * game's. */
+const char *osl_text_prompt_word(void);
+
 /* Prints into the run log the Gameplay choices the loader applies, starting with the menus-and-subtitles language. */
 void osl_log_gameplay_settings(const char* settings_file, const char* image_dir);
 

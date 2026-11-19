@@ -314,6 +314,8 @@ class Plan:
 
 TILDE, CIRCUMFLEX, CEDILLA = 'tilde', 'circumflex', 'cedilla'
 TILDE_SIZE = (0.34, 0.58)
+CIRCUMFLEX_SIZE = (1.3, 0.6)
+CIRCUMFLEX_LIFT = 0.3
 
 
 def compose(font, text):
@@ -398,9 +400,13 @@ def mark_pieces(font, mark, box, capital, s):
         y1 = top + (my + 2.5) * s
         return [('s', [(cx - w / 2 + px * w, y1 - h + py * h) for px, py in rotated(g.pattern)], True)]
     if mark == CIRCUMFLEX:
-        grave = font.marks.get(('grave', capital)) or font.marks.get(('grave', not capital))
-        half = (max(c[0] for c in acute) - min(c[0] for c in acute)) * 0.3
-        return [('grave', placed(_centred(grave), -half, 0.75), None), ('acute', placed(_centred(acute), half, 0.75), None)]
+        # The face's v turned upside down, one outlined piece where the acute would stand: two outlined strokes would
+        # cut into each other at the apex.
+        x0, y0, x1, y1 = quad_box(placed(_centred(acute)))
+        w, h = (x1 - x0) * CIRCUMFLEX_SIZE[0], (y1 - y0) * CIRCUMFLEX_SIZE[1]
+        mx, bottom = (x0 + x1) / 2, y1 - (y1 - y0) * CIRCUMFLEX_LIFT
+        corners = [(mx - w / 2 + (1 - px) * w, bottom - h + (1 - py) * h) for px, py in font.glyphs['v'].pattern]
+        return [('v', corners, None)]
     corners = font.marks.get((mark, capital)) or font.marks.get((mark, not capital))
     return [(mark, placed(corners), None)]
 

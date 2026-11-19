@@ -102,3 +102,40 @@ BATTLE | START!	INÍCIO DA | BATALHA!	interface	stage card
 EST | AREA	 | ÁREA DE DESCANSO	interface	rest area: decorative initial removed, bell and text centred
 Chapter	Capítulo	interface	glossary
 Recipe	Receita	interface	glossary
+SUCCESS	SUCESSO	interface	Classic tutorial
+Equipment	Equipamento	interface	corpus Equipment
+Clear Time	Tempo de conclusão	interface	Classic result
+ClearTmie	Tempo de conclusão	interface	Classic result, misspelled English layer of Clear Time
+Damage Bonus	Bônus de dano	interface	Classic result
+Carried Over	Pontos transferidos	interface	Classic result
+CarryOverScore	Pontos transferidos	interface	Classic status, same score as Carried Over
+Dmg	Dano	interface	Classic result
+Last Play	Última partida	interface	Classic save slot
+NOW LOADING	CARREGANDO	interface	Classic loading
+SAVE	SALVAR	interface	corpus Save
+SHOP	LOJA	interface	Classic map
+HEAR	OUVIR	interface	same action as LISTEN
+RELOAD	RECARREGAR	interface	corpus Reload -> Recarga
+BOSS	CHEFE	interface	same word as the painted BOSS sprite
+NO INDICATION	SEM INDICAÇÃO	interface	Classic HUD
+HITPOINT LEVELUP	HP SUBIU DE NÍVEL	interface	glossary Level Up; corpus keeps HP
+PSYPHER LEVELUP	PSYPHER SUBIU DE NÍVEL	interface	glossary Level Up, Psypher
+Pay	Pago	interface	Classic shop
+Change	Troco	interface	Classic shop
+CoinBag	Moedas	interface	Classic shop: the coins carried
+TEXT ARCHIVE	ARQUIVO DE TEXTOS	interface	glossary Text Archive
+Note	Notas	interface	glossary
+KitchenMenu	Cozinha	interface	glossary Kitchen
+CafeMenu	Café	interface	glossary Cafe
+BATTLE | STAGE!!	FASE DE | BATALHA!	interface	Japan stage card
+TRIAL | STAGE!!	FASE DE | DESAFIO!	interface	Japan stage card
+BATTLE | START!!	INÍCIO DA | BATALHA!	interface	Japan stage card
+MIDDLE BOSS STAGE!!	FASE DO SUBCHEFE!	interface	Japan stage card
+OPTION	OPÇÕES	interface	Japan spelling of OPTIONS
+SKILL	HABILIDADES	interface	Japan spelling of SKILLS
+NEXT	PRÓXIMO	interface	Japan gauge
+LEVELUP!	SUBIU DE NÍVEL!	interface	Japan spelling of LEVEL UP!
+Stage Clear!	Fase concluída!	interface	Japan spelling of Stage Complete!
+Clear Reward	Recompensa de conclusão	interface	Japan spelling of Completion Rewards; glossary Area Completion Reward
+ClearReward	Recompensa de conclusão	interface	Japan spelling of Completion Rewards
+MagicMix	Alquimia	interface	Japan name of the Alchemy page

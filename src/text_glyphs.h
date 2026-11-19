@@ -17,6 +17,11 @@ extern "C" {
 int text_glyphs_install(uint8_t *image, size_t size, const OslGlyphPatch *patches, size_t count, const OslSjisPatch *sjis,
                         size_t sjis_count, char *detail, size_t detail_size);
 
+/* 1 when the Spanish word of the executable's button prompt table (Press, drücken, Appuyez sur, Premi, Pulsa) now reads
+ * `word`, written in that word's own slot and padding. 0, with nothing written, when the table is not found exactly once
+ * or the word does not fit. */
+int text_prompt_install(uint8_t *image, size_t size, const char *word, char *detail, size_t detail_size);
+
 #ifdef __cplusplus
 }
 #endif

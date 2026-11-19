@@ -3,7 +3,9 @@
 The English layouts draw PRESS ANY BUTTON as two sprites; the Spanish layouts draw one row. The Refined layout draws the
 copyright as one sprite and the Classic layout adds a trademark line. The Portuguese is painted into the Spanish slots
 (letters of the Spanish, French and English rows of the same face) and the English keys are edited in place to draw
-those slots with the Spanish quads, so the layouts keep their size and the result stays a block patch.
+those slots with the Spanish quads, so the layouts keep their size and the result stays a block patch. The press line
+keeps the size of the other rows: it is painted, between the Spanish row's ornaments, into free rows of the atlas, and
+the press keys' part and quad records are rewritten in place to draw it.
 """
 import struct
 import sys
@@ -177,8 +179,58 @@ def trademark_image(atlas, slot):
     return out
 
 
-def press_image(face, slot):
-    return P.fitted(P.row_image(face), (slot[4] - slot[2], slot[3] - slot[1], 4))
+def press_image(face, atlas, slot):
+    t, x0, y0, x1, y1 = slot
+    return P.row_image(face, atlas[t][y0:y1, x0:x1])
+
+
+def free_rect(atlas, texture, shape):
+    """(texture, x0, y0, x1, y1) of an empty area holding an image of `shape`, 4-pixel aligned: in `texture` when it
+    has room, else in the first other texture that does."""
+    h, w = shape[:2]
+    for t in [texture] + [t for t in range(len(atlas)) if t != texture]:
+        used = atlas[t][..., 3] > 0
+        for y in range(4, used.shape[0] - h - 4, 4):
+            band = used[y - 4:y + h + 4].any(axis=0)
+            run = 0
+            for x in range(used.shape[1]):
+                run = 0 if band[x] else run + 1
+                if run >= w + 8:
+                    left = (x - run + 1 + 4 + 3) // 4 * 4
+                    if left + w <= x - 3:
+                        return t, left, y, left + w, y + h
+    raise SecondaryError('the title atlas has no free rows for the press line')
+
+
+def widen_press(layout, slot, rect):
+    """The keys drawing `slot` draw `rect` instead, on their quad grown about its centre in proportion."""
+    fx = (rect[3] - rect[1]) / (slot[3] - slot[1])
+    fy = (rect[4] - rect[2]) / (slot[4] - slot[2])
+    keys = [k for k in range(layout.count(M.KEYS))
+            if layout.key(k)['part'] < layout.count(M.PARTS) and rect_of(layout, layout.key(k)) == slot]
+    done = set()
+    for k in keys:
+        raw = bytearray(layout.record(M.KEYS, k))
+        raw[7] = rect[0]
+        layout.put(M.KEYS, k, bytes(raw))
+    for k in keys:
+        key = layout.key(k)
+        if (key['part'], key['geom']) in done:
+            continue
+        values = list(struct.unpack('<12f', layout.record(M.PARTS, key['part'])))
+        for i in range(1, 6):
+            values[2 * i] = rect[1] if values[2 * i] <= slot[1] else rect[3]
+            values[2 * i + 1] = rect[2] if values[2 * i + 1] <= slot[2] else rect[4]
+        values[0], values[1] = (rect[1] + rect[3]) / 2, (rect[2] + rect[4]) / 2
+        layout.put(M.PARTS, key['part'], struct.pack('<12f', *values))
+        quad = layout.geom(key['geom'])
+        cx, cy = sum(q[0] for q in quad) / 4, sum(q[1] for q in quad) / 4
+        wide = [(cx + (x - cx) * fx, cy + (y - cy) * fy) for x, y in quad]
+        xs, ys = [q[0] for q in wide], [q[1] for q in wide]
+        flat = [v for q in wide for v in q]
+        layout.put(M.GEOMS, key['geom'], struct.pack('<12f', (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, *flat,
+                                                     *wide[0]))
+        done.add((key['part'], key['geom']))
 
 
 def paint(blob, painted):
@@ -242,7 +294,9 @@ def apply(blob, layouts, donors):
             raise SecondaryError(f'{kind}: the Spanish layout lacks a press or copyright slot')
     atlas = [visuals.decode(blob, t) for t in ftex.textures(blob)]
     face = P.face_of(atlas, {'ES': slots['refined']['press'], 'UK': PRESS_LEFT})
-    painted = {found['press']: press_image(face, found['press']) for found in slots.values()}
+    press = press_image(face, atlas, slots['refined']['press'])
+    row = free_rect(atlas, slots['refined']['press'][0], press.shape)
+    painted = {row: press}
     painted[slots['refined']['copyright']] = refined_copyright(atlas[0], slots['refined']['copyright'])
     classic = slots['classic']['copyright']
     painted[classic] = trademark_image(atlas[classic[0]], classic)
@@ -252,6 +306,7 @@ def apply(blob, layouts, donors):
         for name in ('copyright', 'press'):
             redraw(layout, spanish[kind], donor_key(spanish[kind], slots[kind][name]), TARGETS[kind][name], False)
         redraw(layout, spanish[kind], donor_key(spanish[kind], slots[kind]['press']), TARGETS[kind]['hidden'], True)
+        widen_press(layout, slots[kind]['press'], row)
         if kind == 'classic':
             redraw(layout, spanish[kind], donor_key(spanish[kind], TRADEMARK_LEFT), {TRADEMARK_LEFT}, False)
         out[kind] = layout.bytes()

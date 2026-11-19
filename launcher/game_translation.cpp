@@ -709,6 +709,37 @@ void AddServedWatches(TextTranslation& result, const std::string& archive, const
     }
 }
 
+// A Spanish-slot run mounts the English base archives too: their copies of the entries the visual deltas rebuild get the
+// same Portuguese result, so no path of the game draws the English art.
+template <class Paired>
+void AddEnglishBaseDeltas(const std::vector<std::string>& slot_names, const std::vector<VisualDeltaTarget>& deltas,
+                          const Paired& paired,
+                          std::map<std::string, std::vector<std::pair<std::string, std::vector<uint8_t>>>>& art,
+                          TextTranslation& result) {
+    for (const std::string& name : slot_names) {
+        const std::string base = PairedArchive(name, "ES", "UK");
+        CpkArchive* english = base.empty() ? nullptr : paired(name);
+        if (!english) continue;
+        auto& served = art[base];
+        for (const CpkEntry& entry : english->entries()) {
+            if (std::any_of(served.begin(), served.end(), [&](const auto& s) { return s.first == entry.path; })) continue;
+            std::string error;
+            std::vector<uint8_t> data;
+            for (const VisualDeltaTarget& t : deltas) {
+                if (t.name != entry.path || t.file == kPrologueVisuals) continue;
+                if (data.empty()) data = english->Read(entry, &error);
+                std::optional<std::vector<uint8_t>> rebuilt = ApplyVisualDelta(t, data);
+                if (!rebuilt) continue;
+                if (*rebuilt != data) {
+                    served.emplace_back(entry.path, std::move(*rebuilt));
+                    ++result.visuals;
+                }
+                break;
+            }
+        }
+    }
+}
+
 } // namespace
 
 TextTranslation TranslateGameText(const std::filesystem::path& app0, const GameBuild& build, const TextLanguage& language,
@@ -912,6 +943,8 @@ TextTranslation TranslateGameText(const std::filesystem::path& app0, const GameB
         result.archives.push_back({name, std::move(*overlay), replaced.size()});
     }
 
+    if (es_base) AddEnglishBaseDeltas(slot_names, deltas, paired, art, result);
+
     // Glyph atlases and art whose entry lives only in the English base archives the game mounts with the localized layer.
     std::map<std::string, std::vector<std::pair<std::string, std::vector<uint8_t>>>> extra = std::move(art);
     for (auto& [atlas_archive, entry] : result.glyphs.atlases) {
@@ -969,6 +1002,7 @@ namespace {
 osl::TextTranslation g_translation;
 std::vector<OslGlyphPatch> g_glyph_patches;
 std::vector<OslSjisPatch> g_sjis_patches;
+const char* g_prompt_word = nullptr;
 
 // "ES" for Odin2_RE_ES.CPK; empty when the archive's name carries no language (the Japanese and Asian archives).
 std::string SourceSlotOf(std::string_view archive) {
@@ -1008,6 +1042,7 @@ extern "C" const OslArchiveOverlay* osl_text_translation(const char* settings_fi
         g_glyph_patches.push_back(g);
     }
     for (const SjisPatch& p : t.glyphs.sjis_patches) g_sjis_patches.push_back({p.table, p.lead, p.trail, p.code});
+    g_prompt_word = language.key == kPortugueseBrazilKey ? "Pressione" : nullptr;
     const long long ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count();
     const std::string slot = language.slot.empty() ? std::string("Japanese") : std::string(language.slot);
     std::printf("Menu & Subtitles: %.*s served over the %s slot: %zu of %zu records, %zu kept in the slot's text, "
@@ -1057,4 +1092,8 @@ extern "C" const OslGlyphPatch* osl_text_glyph_patches(size_t* count, const OslS
     *sjis = g_sjis_patches.data();
     *sjis_count = g_sjis_patches.size();
     return g_glyph_patches.data();
+}
+
+extern "C" const char* osl_text_prompt_word(void) {
+    return g_prompt_word;
 }

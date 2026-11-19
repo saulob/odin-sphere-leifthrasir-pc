@@ -489,6 +489,41 @@ void TestGlyphTableInstall() {
     CHECK(!text_glyphs_install(copy.data(), copy.size(), &patch, 1, &taken, 1, detail, sizeof(detail)) && copy == image);
 }
 
+void TestPromptWord(const std::filesystem::path& prepared) {
+    static const char table[] = "\0Press\0dr\xfc" "cken\0Appuyez sur\0Premi\0Pulsa\0\0\0\0\0\0\0Gift";
+    std::vector<uint8_t> image(64, 0xAA);
+    image.insert(image.end(), table, table + sizeof(table));
+    char detail[200];
+    std::vector<uint8_t> copy = image;
+    CHECK(text_prompt_install(copy.data(), copy.size(), "Pressione", detail, sizeof(detail)));
+    const size_t slot = 64 + std::string_view(table, sizeof(table)).find("Pulsa");
+    CHECK(std::string(reinterpret_cast<const char*>(&copy[slot])) == "Pressione");
+    CHECK(std::equal(copy.begin(), copy.begin() + slot, image.begin()));
+    CHECK(std::string(reinterpret_cast<const char*>(&copy[copy.size() - 5])) == "Gift");
+    copy = image;
+    CHECK(!text_prompt_install(copy.data(), copy.size(), "Pressionem!", detail, sizeof(detail)) && copy == image);
+    std::vector<uint8_t> twice = image;
+    twice.insert(twice.end(), table, table + sizeof(table));
+    CHECK(!text_prompt_install(twice.data(), twice.size(), "Pressione", detail, sizeof(detail)));
+    for (const char* folder : {"CUSA05262-1.00", "CUSA05262-1.01", "CUSA05083-1.00", "CUSA01290-1.00", "CUSA01290-1.02"}) {
+        const std::filesystem::path eboot = prepared / folder / "eboot.bin";
+        if (!std::filesystem::is_regular_file(eboot)) {
+            std::printf("button prompt: %s DATA UNAVAILABLE\n", folder);
+            continue;
+        }
+        std::ifstream in(eboot, std::ios::binary);
+        std::vector<uint8_t> bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        std::vector<uint8_t> patched = bytes;
+        const bool europe = std::string_view(folder).rfind("CUSA05262", 0) == 0;
+        const bool done = text_prompt_install(patched.data(), patched.size(), "Pressione", detail, sizeof(detail)) != 0;
+        CHECK(done == europe);
+        size_t changed = 0;
+        for (size_t i = 0; i < bytes.size(); ++i) changed += bytes[i] != patched[i];
+        CHECK(europe ? changed > 0 && changed <= 10 : changed == 0);
+        std::printf("button prompt: %s %s\n", folder, detail);
+    }
+}
+
 void TestEmbeddedCorpus() {
     const TextCorpus& corpus = EmbeddedTextCorpus();
     CHECK(corpus.errors.empty());
@@ -1093,6 +1128,14 @@ void TestVisualTelemetry() {
         CHECK(w && w->kind == VisualWatchKind::kUntranslated);
     }
     CHECK(WatchOf(t, "Odin2_OR_ES.CPK", "Logo.mbs") && WatchOf(t, "Odin2_OR_ES.CPK", "Logo.mbs")->kind == VisualWatchKind::kUntranslated);
+    for (const auto& [archive, entry] : {std::pair{"Odin2_EU_PATCH1_OR_ES.CPK", "Interface.mbs"}, {"Odin2_EU_PATCH1_OR_UK.CPK", "Interface.mbs"},
+                                         {"Odin2_OR_UK.CPK", "Interface.mbs"}, {"Odin2_EU_PATCH1_RE_UK.CPK", "GUI/REHD_Interface.mbs"},
+                                         {"Odin2_RE_UK.CPK", "GUI/HD_worldmap.ftx"}}) {
+        const VisualWatch* w = WatchOf(t, archive, entry);
+        CHECK(w && w->kind == VisualWatchKind::kServed);
+        if (!w) std::printf("visual telemetry: %s %s not served\n", archive, entry);
+    }
+    CHECK(!WatchOf(t, "Odin2_OR_UK.CPK", "Installation.mbs"));
     for (const char* entry : {"GUI/HD_fin1.ftx", "GUI/REHD_fin1.mbs", "GUI/HD_logo.ftx", "GUI/HD_Bookshelf.ftx"}) {
         CHECK(!WatchOf(t, "Odin2_RE_ES.CPK", entry));
     }
@@ -1200,6 +1243,7 @@ int main(int argc, char** argv) {
         TestProloguePages();
         TestVisualTelemetry();
         TestRealGlyphs(std::filesystem::path(OSL_SOURCE_DIR) / "game" / "prepared");
+        TestPromptWord(std::filesystem::path(OSL_SOURCE_DIR) / "game" / "prepared");
     }
     std::printf("text translation: %s (%d checks, %d failed)\n", failures ? "FAIL" : "OK", checks, failures);
     return failures ? 1 : 0;

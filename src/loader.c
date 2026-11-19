@@ -726,6 +726,16 @@ static void install_text_glyphs(uint8_t *image, size_t size) {
     else
         printf("Menu & Subtitles: glyph table not changed: %s; letters it lacks will not show\n",detail);
 }
+/* The verb beside the button icon in the game's prompts (tutorial footers), a table in the executable itself. */
+static void install_prompt_word(uint8_t *image, size_t size) {
+    const char *word=osl_text_prompt_word();
+    if (!word) return;
+    char detail[200];
+    if (text_prompt_install(image,size,word,detail,sizeof(detail)))
+        printf("Menu & Subtitles: button prompt: %s\n",detail);
+    else
+        printf("Menu & Subtitles: button prompt not changed: %s\n",detail);
+}
 static const char *command_line(int argc, char **argv) {
 #ifdef _WIN32
     (void)argc; (void)argv;
@@ -1103,6 +1113,7 @@ int main(int argc, char **argv) {
     apply_title_menu_exit(app0,paths.image_dir,image+round_page(size)+lzcnt_stub_bytes+bookshelf_stub_bytes,
                           round_page(size)+lzcnt_stub_bytes+bookshelf_stub_bytes,title_exit_stub_bytes,size);
     install_text_glyphs(image,size);
+    install_prompt_word(image,size);
     unsigned char *cheat_stubs=image+round_page(size)+lzcnt_stub_bytes+bookshelf_stub_bytes+title_exit_stub_bytes;
     if (install_cheats(settings_file,known_build,segments,ns,size,cheat_stubs,cheat_stubs+cheat_stub_bytes)) protect(cheat_stubs,cheat_stub_bytes,5);
 #ifdef _WIN32

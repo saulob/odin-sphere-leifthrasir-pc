@@ -26,6 +26,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / 'prompts'))
 import cpk  # noqa: E402
 import ftex  # noqa: E402
+import arc_text as A  # noqa: E402
 import layout_text as T  # noqa: E402
 import mbs as M  # noqa: E402
 import oslv  # noqa: E402
@@ -42,6 +43,8 @@ ENGLISH = {
     'CUSA05083-1.00': ('Odin2_RE_US.CPK', 'Odin2_OR_US.CPK'),
     'CUSA05262-1.00': ('Odin2_RE_UK.CPK', 'Odin2_OR_UK.CPK'),
     'CUSA05262-1.01': ('Odin2_RE_UK.CPK', 'Odin2_OR_UK.CPK', 'Odin2_EU_PATCH1_RE_UK.CPK', 'Odin2_EU_PATCH1_OR_UK.CPK'),
+    'CUSA01290-1.00': ('Odin2_RE.CPK', 'Odin2_ORHD.CPK'),
+    'CUSA01290-1.02': ('Odin2_RE.CPK', 'Odin2_ORHD.CPK'),
 }
 
 # The interface glyph font in the European atlas: (texture, x0, y0, x1, y1) -> letter. Pieces whose meaning depends on
@@ -340,6 +343,97 @@ def rest_area(layout, layer, lines, plans, font):
     text.drop = tuple(decor)
 
 
+def _anim_line_boxes(layout, reader, first, count):
+    """{channel: [(text, absolute box)]} of the glyph lines each channel of an animation draws in its first segment."""
+    out = {}
+    for channel in range(first, first + count):
+        segments = list(layout.channel_segments(channel))
+        if not segments:
+            continue
+        layer = layout.segment_layer(segments[0])
+        if layer >= layout.count(M.LAYERS):
+            continue
+        x, y, sx, sy = layout.segment_transform(segments[0])
+        found = [(compact(T.line_text(layout, line, reader)),
+                  (x + line.box[0] * sx, y + line.box[1] * sy, x + line.box[2] * sx, y + line.box[3] * sy))
+                 for line in T.lines(layout, reader, [layer])]
+        if found:
+            out[channel] = found
+    return out
+
+
+def overlaid_channels(layout, reader, slack=4.0):
+    """{animation: [channel]} of English channels whose only line repeats, in the same place, part of a longer line
+    another channel of the animation draws: the save slot's NO DATA draws a separate DATA over its own DATA. The
+    official languages draw the longer line alone; respelled apart, the two words would no longer coincide."""
+    out = {}
+    for name, first, count in layout.anims():
+        lines = _anim_line_boxes(layout, reader, first, count)
+        for channel, mine in lines.items():
+            if len(mine) != 1:
+                continue
+            text, box = mine[0]
+            for other, theirs in lines.items():
+                if other == channel:
+                    continue
+                if any(len(t) > len(text) and text in t and b[0] - slack <= box[0] and box[2] <= b[2] + slack and
+                       b[1] - slack <= box[1] and box[3] <= b[3] + slack for t, b in theirs):
+                    out.setdefault(name, []).append(channel)
+                    break
+    return out
+
+
+def hide_channels(layout, hidden):
+    """Points the hidden channels at copies of their segments that draw an empty layer (the game's own layouts draw
+    empty layers too); other animations drawing the same layers are untouched."""
+    if not hidden:
+        return 0
+    drawn = {layout.segment_layer(s) for c in range(layout.count(M.CHANNELS)) for s in layout.channel_segments(c)}
+    empty = next((l for l in sorted(drawn) if l < layout.count(M.LAYERS) and layout.layer_range(l)[1] == 0), None)
+    if empty is None:
+        raw = bytearray(layout.record(M.LAYERS, 0))
+        struct.pack_into('<4f', raw, 0, 0.0, 0.0, 0.0, 0.0)
+        struct.pack_into('<H', raw, 16, 0)
+        struct.pack_into('<H', raw, 22, 0)
+        empty = layout.append(M.LAYERS, [bytes(raw)])
+    done = 0
+    for channels in hidden.values():
+        for channel in channels:
+            segments = list(layout.channel_segments(channel))
+            copies = []
+            for s in segments:
+                raw = bytearray(layout.record(M.SEGMENTS, s))
+                struct.pack_into('<I', raw, 0, empty)
+                copies.append(bytes(raw))
+            start = layout.append(M.SEGMENTS, copies)
+            raw = bytearray(layout.record(M.CHANNELS, channel))
+            struct.pack_into('<HH', raw, 0, start, len(copies))
+            layout.put(M.CHANNELS, channel, bytes(raw))
+            done += 1
+    return done
+
+
+def respell_arcs(layout, reader, font, labels, report, where):
+    """Labels whose letters stand around a circle (the line reader cannot group them), set on the same circle."""
+    done = 0
+    for layer in range(layout.count(M.LAYERS)):
+        keys = A.letters(layout, reader, layer)
+        if not keys or len(keys) < 4:
+            continue
+        row = labels.get(''.join(ch for _, ch in keys))
+        if row is None or sum(len(line.keys) for line in T.lines(layout, reader, [layer])) == len(keys):
+            continue
+        try:
+            placed = A.place(font, row['pt_br'], A.geometry(layout, font, keys, row['source']))
+        except (A.ArcError, KeyError) as e:
+            report.append((where, 'arc', row['source'], row['pt_br'], f'BLOCKED {e}'))
+            continue
+        A.respell(layout, font, layer, keys, placed)
+        report.append((where, 'arc', row['source'], row['pt_br'], f'layer {layer}'))
+        done += 1
+    return done
+
+
 def plan_layout(layout, reader, font, labels, peers, layouts, readers, sprites, report, where):
     plans = []
     glyph_keys = set(reader.table)
@@ -392,9 +486,13 @@ def plan_layout(layout, reader, font, labels, peers, layouts, readers, sprites, 
 
 def build(prepared, out, report_path):
     import interface_art
+    import stage_acts
     labels = read_labels()
     archives = Archives(prepared)
     targets, report = [], []
+    acts_plan, acts_reference, acts_report = stage_acts.classic_design(prepared)
+    report.extend((f'{EUROPE} Classic act titles', 'act', english, pt_br, note)
+                  for _, _, english, pt_br, note in acts_report)
     for mbs_name, ftx_name in LAYOUTS:
         europe = {L: M.Mbs(archives.read(EUROPE, [a.format(L) for a in EUROPE_ARCHIVES], mbs_name)) for L in LANGUAGES}
         base_europe = {L: M.Mbs(archives.read(EUROPE, [a.format(L) for a in EUROPE_ARCHIVES if 'PATCH1' not in a], mbs_name)) for L in LANGUAGES}
@@ -425,9 +523,23 @@ def build(prepared, out, report_path):
                 peers = layer_peers(layout, others)
                 drawn = target_font(font, found)
                 where = f'{build_name} {archive} {mbs_name}'
+                overlaid = overlaid_channels(layout, reader)
                 plans = plan_layout(layout, reader, drawn, labels, peers, layouts, readers, sprites, report, where)
                 if plans:
                     T.respell(layout, drawn, reader, plans)
+                arcs = respell_arcs(layout, reader, drawn, labels, report, where)
+                hidden = hide_channels(layout, overlaid)
+                for name, channels in sorted(overlaid.items()):
+                    report.append((where, 'overlay', name, '', f'channels {channels} hidden: their word is part of a longer line'))
+                acted = False
+                if mbs_name == stage_acts.CLASSIC_LAYOUT:
+                    try:
+                        moved = stage_acts.relocate(acts_plan, data, acts_reference, [p[..., 3] for p in pixels],
+                                                    found, moved_part)
+                        acted = stage_acts.respell_layout(layout, moved, where)
+                        report.append((where, 'act', 'L_* titles', '', 'ok' if acted else 'nothing to respell'))
+                    except stage_acts.ActError as e:
+                        report.append((where, 'act', 'L_* titles', '', f'BLOCKED {e}'))
                 where_rects = interface_art.resolve(eu_pixels, pixels)
                 if where_rects is not None:
                     vintage = europe if 'PATCH1' in archive else base_europe
@@ -437,7 +549,7 @@ def build(prepared, out, report_path):
                 else:
                     painted = 0
                     report.append((where, 'art', 'painted sprites', '', 'BLOCKED the atlas does not hold the European sprites'))
-                if not plans and not painted:
+                if not plans and not painted and not hidden and not acted and not arcs:
                     report.append((where, 'layout', mbs_name, '', 'nothing to respell'))
                     continue
                 new = layout.bytes()

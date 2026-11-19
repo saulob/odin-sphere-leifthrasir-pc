@@ -26170,7 +26170,7 @@
   {
    "source_sha256": "797a23de3e508c0c79f3fb15262e8e91dd8b1075aa0982305a89a345bfa04fd0",
    "at": "story/sysmsg#1018",
-   "pt_br": "Vá para a próxima fase pelo marcador \"EXIT\".\n[Segure @#(42) e pressione @#(100) para mudar de fase.]"
+   "pt_br": "Vá para a próxima fase pelo marcador \"SAIR\".\n[Segure @#(42) e pressione @#(100) para mudar de fase.]"
   },
   {
    "source_sha256": "d241ddd021de839045201253235366ba5e4c515c0588fec2e2366c90dbce2646",
@@ -26200,7 +26200,7 @@
   {
    "source_sha256": "c2638496322285a14f7e5f92af634344184258d0b62136c7e47b17c72b1dac2c",
    "at": "story/sysmsg#1024",
-   "pt_br": "Ao concluir a fase, todas as saídas (EXIT)\naparecem como pontos amarelos no mapa circular."
+   "pt_br": "Ao concluir a fase, todas as saídas (SAIR)\naparecem como pontos amarelos no mapa circular."
   },
   {
    "source_sha256": "d7bce986b8eaf4b925e0a55999b96fd58dbf50f7933266e82ee248de0444a3c8",
@@ -26430,7 +26430,7 @@
   {
    "source_sha256": "fac836d02f7eec9d046667e4396cf507f286ad4c9b55d8013253e062dccf16cc",
    "at": "story/sysmsg#1070",
-   "pt_br": "Repila os Vanir e siga para o Caldeirão."
+   "pt_br": "Expulse os Vanir e siga para o Caldeirão."
   },
   {
    "source_sha256": "8aba94788b9c7c782268a7d9b8e13c549d8174f9fa3e15685b1226a022f2346f",
