@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.saulob.odin_sphere_leifthrasir_pc</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0-or-later</project_license>
+  <name>Odin Sphere Leifthrasir PC</name>
+  <summary>PC port of Odin Sphere Leifthrasir (bring your own game package)</summary>
+  <description>
+    <p>
+      An unofficial native PC port of Vanillaware's Odin Sphere Leifthrasir (PS4). The game's own x86-64 code runs on
+      the PC with a replacement for the PS4 system libraries and a Vulkan renderer derived from shadPS4.
+    </p>
+    <p>
+      No game files are included. Install your own Odin Sphere Leifthrasir PS4 package from the launcher: CUSA05083
+      (USA) 1.00 and 1.01, CUSA01290 (Japan) 1.00 and 1.02, CUSA05262 (Europe) 1.00 and 1.01, or CUSA03873 1.00
+      (Hong Kong and Asia).
+    </p>
+    <ul>
+      <li>Refined and Classic mode, with a Portuguese (Brazil) translation of the text and the in-game art</li>
+      <li>Optional cheats, changed in game with the F10 menu</li>
+      <li>Controller rebinding, Xbox and PlayStation button prompts, Skip Intro and Exit Game</li>
+      <li>Render resolution, aspect ratio, SMAA, FSR 1, texture filtering and frame rate options</li>
+      <li>Trophies, a Bug Report page and a built-in updater</li>
+    </ul>
+    <p>
+      An unofficial fan-made port. It is not affiliated with or endorsed by Vanillaware, Atlus, SEGA, Sony Interactive
+      Entertainment or any other rights holder, and it contains none of their files.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.saulob.odin_sphere_leifthrasir_pc.desktop</launchable>
+  <icon type="stock">odin-sphere-leifthrasir-pc</icon>
+  <developer id="io.github.saulob">
+    <name>saulob</name>
+  </developer>
+  <url type="homepage">https://github.com/saulob/odin-sphere-leifthrasir-pc</url>
+  <url type="bugtracker">https://github.com/saulob/odin-sphere-leifthrasir-pc/issues</url>
+  <url type="donation">https://github.com/sponsors/saulob</url>
+  <categories>
+    <category>Game</category>
+  </categories>
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+    <control>gamepad</control>
+  </supports>
+  <releases>
+    <release version="@VERSION@" date="@DATE@"/>
+  </releases>
+</component>

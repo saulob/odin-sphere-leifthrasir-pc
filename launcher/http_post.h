@@ -9,7 +9,7 @@
 
 namespace osl {
 
-enum class HttpFailure { kNone, kInvalidAddress, kUnreachable, kTimedOut, kCertificate };
+enum class HttpFailure { kNone, kInvalidAddress, kUnreachable, kTimedOut, kCertificate, kClientMissing };
 
 struct HttpReply {
     HttpFailure failure = HttpFailure::kNone;

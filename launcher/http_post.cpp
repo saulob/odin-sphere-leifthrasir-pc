@@ -331,7 +331,7 @@ HttpReply PostJsonHttps(const std::string& url, const std::string& body, const H
     if (spawned != 0) {
         CloseDescriptor(to_child[1]);
         CloseDescriptor(from_child[0]);
-        reply.failure = HttpFailure::kUnreachable;
+        reply.failure = spawned == ENOENT ? HttpFailure::kClientMissing : HttpFailure::kUnreachable;
         return reply;
     }
 

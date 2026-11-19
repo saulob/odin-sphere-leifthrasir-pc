@@ -81,7 +81,7 @@ $Cases = [ordered]@{
     'missing sponsor heart'     = @{ Missing = 'assets\launcher\sponsor-heart.png' }
     'missing ANGLE DLL'         = @{ Missing = 'libGLESv2.dll' }
     'missing ANGLE licence'     = @{ Missing = 'licenses\angleproject\LICENSE' }
-    'stale ANGLE DLL'           = @{ Item = 'libEGL.dll'; Text = 'not the pinned build' }
+    'stale ANGLE DLL'           = @{ Item = 'libEGL.dll'; Text = 'not the pinned build'; Stderr = $true }
 }
 
 function New-LinkedCopy([string]$Source, [string]$Target) {
@@ -122,9 +122,12 @@ try {
                 else { [IO.File]::WriteAllText($target, 'placeholder') }
             }
         }
+        # llvm-objdump reports the corrupt DLL on stderr, which Windows PowerShell would otherwise raise as a fatal error.
+        $ErrorActionPreference = if ($spec['Stderr']) { 'Continue' } else { 'Stop' }
         & $powershell -NoProfile -File $checker -VerifyOnly $stage *> $null
         $accepted = $LASTEXITCODE -eq 0
-        $expected = $spec.Count -eq 0
+        $ErrorActionPreference = 'Stop'
+        $expected = @($spec.Keys | Where-Object { $_ -ne 'Stderr' }).Count -eq 0
         if ($accepted -ne $expected) {
             Write-Bad "$case (accepted: $accepted)"
             $failures++

@@ -445,6 +445,8 @@ Nothing was sent. The clock of this PC, a proxy or a security program may be int
 Change the description or choose another log, then send it again.	Altere a descrição ou escolha outro log e envie de novo.
 This is not your fault. Try again in a few minutes; your text is kept.	Isso não é culpa sua. Tente de novo em alguns minutos; seu texto foi mantido.
 Nothing was sent. Check OSL_BUG_REPORT_URL, or save the report on this PC.	Nada foi enviado. Verifique OSL_BUG_REPORT_URL ou salve o relatório neste PC.
+Sending a report needs curl	Enviar um relatório requer o curl
+Nothing was sent. Install curl from your distribution's packages and press Send report again, or save the report on this PC; your text is kept.	Nada foi enviado. Instale o curl pelos pacotes da sua distribuição e pressione Enviar relatório de novo, ou salve o relatório neste PC; seu texto foi mantido.
 Description	Descrição
 Launcher version	Versão do launcher
 Game build	Build do jogo

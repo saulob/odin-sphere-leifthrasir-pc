@@ -82,6 +82,7 @@ ReportOutcome OutcomeOfFailure(HttpFailure failure) {
     case HttpFailure::kTimedOut: return ReportOutcome::kTimedOut;
     case HttpFailure::kCertificate: return ReportOutcome::kCertificate;
     case HttpFailure::kInvalidAddress: return ReportOutcome::kNotConfigured;
+    case HttpFailure::kClientMissing: return ReportOutcome::kClientMissing;
     case HttpFailure::kUnreachable: break;
     }
     return ReportOutcome::kUnreachable;
@@ -107,6 +108,7 @@ const char* OutcomeTitle(ReportOutcome outcome) {
     case ReportOutcome::kRefused: return "The report was not accepted";
     case ReportOutcome::kServiceError: return "The report service could not take the report";
     case ReportOutcome::kNotConfigured: return "The report service address is not valid";
+    case ReportOutcome::kClientMissing: return "Sending a report needs curl";
     }
     return nullptr;
 }
@@ -125,6 +127,9 @@ const char* OutcomeAdvice(ReportOutcome outcome) {
     case ReportOutcome::kRefused: return "Change the description or choose another log, then send it again.";
     case ReportOutcome::kServiceError: return "This is not your fault. Try again in a few minutes; your text is kept.";
     case ReportOutcome::kNotConfigured: return "Nothing was sent. Check OSL_BUG_REPORT_URL, or save the report on this PC.";
+    case ReportOutcome::kClientMissing:
+        return "Nothing was sent. Install curl from your distribution's packages and press Send report again, or save the "
+               "report on this PC; your text is kept.";
     }
     return nullptr;
 }

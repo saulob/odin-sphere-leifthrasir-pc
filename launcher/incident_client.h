@@ -34,7 +34,7 @@ struct ServiceConfig {
     std::function<void(const std::string&)> log; // never receives a receipt or any report text
 };
 
-enum class ReportOutcome { kSent, kRecentLimit, kDailyLimit, kUnreachable, kTimedOut, kCertificate, kRefused, kServiceError, kNotConfigured };
+enum class ReportOutcome { kSent, kRecentLimit, kDailyLimit, kUnreachable, kTimedOut, kCertificate, kRefused, kServiceError, kNotConfigured, kClientMissing };
 
 // What a failed transfer or an answer code means for the page.
 ReportOutcome OutcomeOfFailure(HttpFailure failure);

@@ -371,7 +371,7 @@ void TestDataTables() {
         ExpectCovered(message.title, "install", missing);
         ExpectCovered(message.text, "install", missing);
     }
-    for (int outcome = 1; outcome <= static_cast<int>(ReportOutcome::kNotConfigured); ++outcome) {
+    for (int outcome = 1; outcome <= static_cast<int>(ReportOutcome::kClientMissing); ++outcome) {
         ExpectCovered(OutcomeTitle(static_cast<ReportOutcome>(outcome)), "bug report", missing);
         ExpectCovered(OutcomeAdvice(static_cast<ReportOutcome>(outcome)), "bug report", missing);
     }

@@ -860,7 +860,7 @@ index 3096280..2621b23 100644
 +  report.system_error = 0;
 +
 +  std::vector<std::string> arguments = {
-+      "-sS", "-f", "--proto", target.Secure() ? "=https" : "=http", "--connect-timeout",
++      "-sS", "-N", "-f", "--proto", target.Secure() ? "=https" : "=http", "--connect-timeout",
 +      std::to_string(Seconds(options.connect_timeout_ms)), "--speed-limit", "1", "--speed-time",
 +      std::to_string(Seconds(options.receive_timeout_ms)), "-A", options.user_agent, "-w",
 +      "%{stderr}" + std::string(kResultMarker) + "%{http_code} %{redirect_url}\\n"};

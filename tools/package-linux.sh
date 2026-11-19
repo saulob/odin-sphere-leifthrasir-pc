@@ -40,6 +40,9 @@ die() { echo "ERROR: $*" >&2; exit 1; }
 max_glibc=2.31
 program=odin_sphere_leifthrasir
 app=odin-sphere-leifthrasir-pc
+app_id=io.github.saulob.odin_sphere_leifthrasir_pc
+desktop_file=$app_id.desktop
+metainfo=usr/share/metainfo/$app_id.appdata.xml
 doc_name=OdinSphereLeifthrasirPC
 appimagetool_version=1.9.1
 appimagetool_sha256=ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
@@ -55,8 +58,8 @@ forbidden_patterns='\.(pkg|pdb|debug|log|dmp|ini|bin|self|sprx|prx|elf|cpk|sfo|j
 # The only places a file may be: anything else in the AppDir is refused.
 allowed_path() { # relative path of a file or link
     case $1 in
-        AppRun | "$app.desktop" | "$app.png" | .DirIcon | "usr/bin/$program" | usr/bin/assets/launcher/header-art.png | usr/bin/assets/launcher/sponsor-heart.png | \
-        "usr/share/applications/$app.desktop" | "usr/share/icons/hicolor/256x256/apps/$app.png" | \
+        AppRun | "$desktop_file" | "$metainfo" | "$app.png" | .DirIcon | "usr/bin/$program" | usr/bin/assets/launcher/header-art.png | usr/bin/assets/launcher/sponsor-heart.png | \
+        "usr/share/applications/$desktop_file" | "usr/share/icons/hicolor/256x256/apps/$app.png" | \
         "usr/share/doc/$doc_name/README.txt" | "usr/share/licenses/$doc_name/"*) return 0 ;;
         usr/lib/compat/*) [[ $1 =~ ^usr/lib/compat/(libstdc\+\+|libgcc_s)\.so[.0-9]*$ ]] ;;
         usr/lib/*) [[ $1 =~ ^usr/lib/[A-Za-z0-9_+.-]+\.so[.0-9]*$ ]] ;;
@@ -133,7 +136,7 @@ check_appdir() { # dir [the AppImage file, whose runtime is an ELF too]
             LC_ALL=C grep -a -q -P -- "${patterns[$i]}" "$item" && { problem "UTF-16 local path or marker '${needles[$i]}' in $rel"; break; }
         done
     done < <(find "$dir" -mindepth 1 -print0)
-    for leaf in AppRun "$app.desktop" "$app.png" .DirIcon "usr/bin/$program" usr/bin/assets/launcher/header-art.png usr/bin/assets/launcher/sponsor-heart.png \
+    for leaf in AppRun "$desktop_file" "usr/share/applications/$desktop_file" "$metainfo" "$app.png" .DirIcon "usr/bin/$program" usr/bin/assets/launcher/header-art.png usr/bin/assets/launcher/sponsor-heart.png \
                 "usr/share/licenses/$doc_name/LICENSE.txt" "usr/share/licenses/$doc_name/THIRD-PARTY-LICENSES.txt" \
                 "usr/share/licenses/$doc_name/THIRD-PARTY-LICENSES-LINUX.txt" \
                 "usr/share/licenses/$doc_name/NotoSansTC/LICENSE-NotoSansTC.txt" "usr/share/doc/$doc_name/README.txt"; do
@@ -174,15 +177,17 @@ if [[ -n $verify_file ]]; then
 fi
 
 [[ $(uname -s) == Linux && $(uname -m) == x86_64 ]] || die 'Packaging needs Linux x86_64 (Windows: tools\package.ps1).'
-for tool in patchelf objcopy readelf strip curl dpkg dpkg-query ldd sha256sum; do
-    command -v "$tool" >/dev/null || die "Missing $tool"
+for tool in patchelf objcopy readelf strip curl dpkg dpkg-query ldd sha256sum appstreamcli; do
+    command -v "$tool" >/dev/null || die "Missing $tool (packaging/linux/ci-deps.sh installs it)"
 done
 host_glibc=$(getconf GNU_LIBC_VERSION | cut -d' ' -f2)
 newer_than "$host_glibc" "$max_glibc" &&
     die "This system has glibc $host_glibc. Release AppImages are built on Ubuntu 20.04 (glibc $max_glibc): see packaging/linux/ci-deps.sh."
 
-version=$(sed -nE 's/^set\(OSL_PORT_VERSION "([0-9]+\.[0-9]+\.[0-9]+)"\)$/\1/p' CMakeLists.txt)
+version=$(sed -nE 's/^set\(OSL_PORT_VERSION "([0-9]+\.[0-9]+\.[0-9]+)"\)\r?$/\1/p' CMakeLists.txt)
 [[ -n $version ]] || die 'OSL_PORT_VERSION not found in CMakeLists.txt'
+release_date=${OSL_RELEASE_DATE:-$(date -u +%Y-%m-%d)}
+[[ $release_date =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || die "OSL_RELEASE_DATE is not YYYY-MM-DD: $release_date"
 name=OdinSphereLeifthrasirPC-v$version-x86_64
 build_dir=$root/build/cmake/linux-release
 loader=$build_dir/bin/$program
@@ -203,7 +208,8 @@ grep -qsx 'CMAKE_BUILD_TYPE:STRING=Release' "$build_dir/CMakeCache.txt" ||
 
 rm -rf "$appdir" "$symbols"
 mkdir -p "$dist" "$symbols" "$appdir/usr/bin" "$appdir/usr/lib/compat" "$appdir/usr/share/licenses/$doc_name" \
-         "$appdir/usr/share/doc/$doc_name" "$appdir/usr/share/applications" "$appdir/usr/share/icons/hicolor/256x256/apps"
+         "$appdir/usr/share/doc/$doc_name" "$appdir/usr/share/applications" "$appdir/usr/share/metainfo" \
+         "$appdir/usr/share/icons/hicolor/256x256/apps"
 rm -f "$dist/$name.AppImage" "$dist/$name.sha256"
 
 step "Staging $program without debug information"
@@ -257,14 +263,18 @@ gcc_need=$(objdump -T "$appdir/usr/bin/$program" "$appdir"/usr/lib/*.so* | grep 
            sed 's/^GCC_//; s/\..*//' | sort -n | tail -1)
 sed "s/@GLIBCXX_NEED@/${glibcxx_need:-0}/g; s/@GCC_NEED@/${gcc_need:-0}/g" packaging/linux/AppRun > "$appdir/AppRun"
 chmod 755 "$appdir/AppRun"
-install -m644 "packaging/linux/$app.desktop" "$appdir/$app.desktop"
-install -m644 "packaging/linux/$app.desktop" "$appdir/usr/share/applications/$app.desktop"
+install -m644 "packaging/linux/$desktop_file" "$appdir/$desktop_file"
+install -m644 "packaging/linux/$desktop_file" "$appdir/usr/share/applications/$desktop_file"
 install -m644 packaging/icons/app-icon-256.png "$appdir/$app.png"
 install -m644 packaging/icons/app-icon-256.png "$appdir/usr/share/icons/hicolor/256x256/apps/$app.png"
 ln -s "$app.png" "$appdir/.DirIcon"
 if command -v desktop-file-validate >/dev/null; then
-    desktop-file-validate "$appdir/$app.desktop" || die "$app.desktop is not a valid desktop entry"
+    desktop-file-validate "$appdir/$desktop_file" || die "$desktop_file is not a valid desktop entry"
 fi
+sed "s/@VERSION@/$version/; s/@DATE@/$release_date/" "packaging/linux/$app_id.appdata.xml" > "$appdir/$metainfo"
+chmod 644 "$appdir/$metainfo"
+grep -qF "<release version=\"$version\" date=\"$release_date\"/>" "$appdir/$metainfo" || die 'the metainfo has no release entry'
+appstreamcli validate --no-net "$appdir/$metainfo" || die "$metainfo does not validate"
 sed "s/@VERSION@/$version/g" packaging/README-linux.txt > "$appdir/usr/share/doc/$doc_name/README.txt"
 
 licenses=$appdir/usr/share/licenses/$doc_name
@@ -329,7 +339,7 @@ echo "$appimagetool_sha256  $tool" | sha256sum -c --status - || die "$tool does 
 # appimagetool would otherwise download the unpinned "continuous" runtime.
 runtime=$work/runtime-osl-x86_64
 bash tools/build-appimage-runtime.sh "$runtime" "$work/appimage-runtime"
-ARCH=x86_64 "$tool" --appimage-extract-and-run --no-appstream --runtime-file "$runtime" "$appdir" "$dist/$name.AppImage.new" \
+ARCH=x86_64 "$tool" --appimage-extract-and-run --runtime-file "$runtime" "$appdir" "$dist/$name.AppImage.new" \
     >"$work/appimagetool.log" 2>&1 || { cat "$work/appimagetool.log" >&2; die 'appimagetool failed'; }
 chmod 755 "$dist/$name.AppImage.new"
 bash tools/build-appimage-runtime.sh --check "$dist/$name.AppImage.new"

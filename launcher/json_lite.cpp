@@ -202,7 +202,7 @@ private:
             if (at_ >= text_.size() || text_[at_++] != ':') return std::nullopt;
             std::optional<Value> member = ParseValue(depth + 1);
             if (!member) return std::nullopt;
-            value.object.emplace_back(std::move(key), std::move(*member));
+            value.object.push_back({std::move(key), std::move(*member)});
             SkipSpace();
             if (at_ >= text_.size()) return std::nullopt;
             if (text_[at_] == ',') {

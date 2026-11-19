@@ -22,7 +22,9 @@ public:
     int64_t number = 0;
     std::string string;
     std::vector<Value> array;
-    std::vector<std::pair<std::string, Value>> object;
+    // A pair of an incomplete Value is ill-formed under libstdc++; Member is complete before any use.
+    struct Member;
+    std::vector<Member> object;
 
     bool IsObject() const { return kind == Kind::kObject; }
     bool IsArray() const { return kind == Kind::kArray; }
@@ -35,6 +37,11 @@ public:
     std::string StringOr(std::string_view key) const;
     int64_t NumberOr(std::string_view key) const;
     bool BoolOr(std::string_view key) const;
+};
+
+struct Value::Member {
+    std::string first;
+    Value second;
 };
 
 // nullopt for anything that is not exactly one JSON value; nesting is limited and fractions are refused.

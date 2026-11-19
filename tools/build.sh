@@ -6,7 +6,7 @@
 #   tools/build.sh             build build/cmake/linux/bin/odin_sphere_leifthrasir
 #   tools/build.sh --release   build build/cmake/linux-release/bin/odin_sphere_leifthrasir (Release)
 #   tools/build.sh --clean     delete the configuration's build folder first
-#   tools/build.sh --test      also build and run the focused tests
+#   tools/build.sh --test      also build and run the focused and feature tests (headless)
 #
 # Missing tools or libraries are listed; packaging/linux/ci-deps.sh installs them on Ubuntu 20.04 (the release baseline).
 set -euo pipefail
@@ -74,8 +74,12 @@ if ! grep -qs "CMAKE_BUILD_TYPE:STRING=$config" "$build_dir/CMakeCache.txt" || [
 fi
 step 'Building'
 targets=(odin_sphere_leifthrasir)
+feature_tests=(osl-cheats-tests osl-text-tests osl-ui-text-tests osl-bug-report-tests osl-build-diagnostics-tests
+               osl-runtime-stability-tests osl-runtime-overlay-tests osl-launcher-asset-tests osl-frame-pacing-tests
+               osl-renderer-selection-tests osl-buffer-arena-tests osl-update-network-tests osl-opengl-backend-tests
+               osl-opengl-perf-tests)
 ((test)) && targets+=(osl-tests osl-log-tests osl-trophy-tests osl-window-tests osl-cursor-tests osl-runtime-tests
-                      osl-tiling-tests osl-update-tests osl-isa-tests osl-notice-tests)
+                      osl-tiling-tests osl-update-tests osl-isa-tests osl-notice-tests "${feature_tests[@]}")
 ninja -C "$build_dir" "${targets[@]}"
 loader=$build_dir/bin/odin_sphere_leifthrasir
 [[ -x $loader ]] || die "Missing $loader"
@@ -84,7 +88,7 @@ if ((test)); then
     step 'Running the patch workflow tests'
     cmake "-DOSL_TEST_DIR=$build_dir/patch-workflow-tests" -P "$root/tests/patch_workflow_tests.cmake"
     for test_program in osl-tests osl-log-tests osl-trophy-tests osl-window-tests osl-cursor-tests osl-notice-tests \
-                        osl-runtime-tests osl-tiling-tests osl-update-tests osl-isa-tests; do
+                        osl-runtime-tests osl-tiling-tests osl-update-tests osl-isa-tests "${feature_tests[@]}"; do
         step "Running $test_program"
         if [[ $test_program == osl-tests ]]; then
             game_tests=$("$build_dir/bin/$test_program") || { printf '%s\n' "$game_tests"; exit 1; }

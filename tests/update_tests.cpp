@@ -771,7 +771,8 @@ void TestVersionSource() {
     for (const char* source : {"CMakeLists.txt", "tools/build.ps1", "launcher/update_config.h",
                                "src/odin_sphere_leifthrasir.rc", "src/odin_sphere_leifthrasir.manifest",
                                "packaging/README.txt", "packaging/README-linux.txt", "packaging/linux/AppRun",
-                               "packaging/linux/odin-sphere-leifthrasir-pc.desktop"}) {
+                               "packaging/linux/io.github.saulob.odin_sphere_leifthrasir_pc.desktop",
+                               "packaging/linux/io.github.saulob.odin_sphere_leifthrasir_pc.appdata.xml"}) {
         const std::string text = ReadFile(std::filesystem::path(OSL_SOURCE_DIR) / source);
         CHECK(!text.empty() && text.find("osl-loader") == std::string::npos && text.find("osl.loader") == std::string::npos);
     }

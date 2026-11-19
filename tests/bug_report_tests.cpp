@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <regex>
@@ -431,6 +432,7 @@ void TestClient(const fs::path& scratch) {
         {HttpFailure::kTimedOut, 0, "", ReportOutcome::kTimedOut},
         {HttpFailure::kCertificate, 0, "", ReportOutcome::kCertificate},
         {HttpFailure::kInvalidAddress, 0, "", ReportOutcome::kNotConfigured},
+        {HttpFailure::kClientMissing, 0, "", ReportOutcome::kClientMissing},
         {HttpFailure::kNone, 429, R"({"error":"hourly_limit"})", ReportOutcome::kRecentLimit},
         {HttpFailure::kNone, 429, R"({"error":"limit"})", ReportOutcome::kRecentLimit},
         {HttpFailure::kNone, 429, R"({"error":"daily_limit"})", ReportOutcome::kDailyLimit},
@@ -459,6 +461,8 @@ void TestClient(const fs::path& scratch) {
     CHECK(std::string(OutcomeTitle(ReportOutcome::kUnreachable)) == "Cannot reach the report service");
     CHECK(Has(OutcomeAdvice(ReportOutcome::kUnreachable), "press Send report again") && Has(OutcomeAdvice(ReportOutcome::kUnreachable), "your text is kept"));
     CHECK(std::string(OutcomeTitle(ReportOutcome::kServiceError)) == "The report service could not take the report");
+    CHECK(Has(OutcomeTitle(ReportOutcome::kClientMissing), "curl") && Has(OutcomeAdvice(ReportOutcome::kClientMissing), "Install curl") &&
+          Has(OutcomeAdvice(ReportOutcome::kClientMissing), "your text is kept"));
     for (const ReportOutcome outcome : {ReportOutcome::kUnreachable, ReportOutcome::kServiceError, ReportOutcome::kNotConfigured, ReportOutcome::kRefused}) {
         CHECK(!Has(OutcomeTitle(outcome), "online service") && !Has(OutcomeAdvice(outcome), "not set up") && !Has(OutcomeAdvice(outcome), "not deployed"));
     }
@@ -526,6 +530,16 @@ void TestTransportAddress() {
     const HttpReply invalid = PostJsonHttps("http://reports.example/v1/reports", "{}", HttpLimits{});
     CHECK(invalid.failure == HttpFailure::kInvalidAddress && invalid.status == 0);
     CHECK(PostJsonHttps("", "{}", HttpLimits{}).failure == HttpFailure::kInvalidAddress);
+#ifndef _WIN32
+    // Without curl on PATH the transport says so instead of reporting the service unreachable; nothing is sent.
+    const char* path = std::getenv("PATH");
+    const std::string saved = path ? path : "";
+    setenv("PATH", "/nonexistent-osl-bug-report-test", 1);
+    const HttpReply no_curl = PostJsonHttps("https://reports.example/v1/reports", "{}", HttpLimits{});
+    setenv("PATH", saved.c_str(), 1);
+    CHECK(no_curl.failure == HttpFailure::kClientMissing && no_curl.status == 0);
+    CHECK(OutcomeOfFailure(no_curl.failure) == ReportOutcome::kClientMissing);
+#endif
 }
 
 void TestHistory(const fs::path& scratch) {

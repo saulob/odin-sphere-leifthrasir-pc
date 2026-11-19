@@ -45,14 +45,20 @@ packaged copy keeps only a `.gnu_debuglink`. No `LD_LIBRARY_PATH` is set, except
 loader and drivers, X11/Wayland and the audio libraries always come from the player's system.
 
 `package-linux.sh` refuses to package on a system with a newer glibc than 2.31, and checks the staged AppDir and the
-written AppImage again: every file must be in an allowed place (AppRun, the desktop entry and icon, the program, the
-launcher images, the bundled libraries, the licences and README); every ELF (found by content) must be x86-64, need no glibc
+written AppImage again: every file must be in an allowed place (AppRun, the desktop entry and the AppStream metadata, the
+icon, the program, the launcher images, the bundled libraries, the licences and README); every ELF (found by content) must be x86-64, need no glibc
 newer than 2.31 (its version-needs section), carry no debug sections, no absolute RPATH/RUNPATH and no RenderDoc or
 Vulkan layer; the program must resolve every library (`ldd`) through `$ORIGIN/../lib`; and the package must hold no game
 data, PS4 packages, user files, saves, trophies, logs, caches, hang reports, crash dumps, symbols, updater leftovers,
 objects or static libraries, scripts, sources, Windows programs, links other than `.DirIcon`, glibc or system graphics
 libraries, `DEBUG_SAULO` or local paths (searched as text and as UTF-16), and must hold the licences and README. The
 extracted AppImage must hold exactly the staged files, byte for byte.
+
+The desktop entry is `io.github.saulob.odin_sphere_leifthrasir_pc.desktop`, named after the AppStream id, and the
+AppStream metadata is `usr/share/metainfo/io.github.saulob.odin_sphere_leifthrasir_pc.appdata.xml`, written from
+`packaging/linux/io.github.saulob.odin_sphere_leifthrasir_pc.appdata.xml` with `OSL_PORT_VERSION` and the release date
+(today, or `OSL_RELEASE_DATE=YYYY-MM-DD`). `package-linux.sh` validates it with `appstreamcli validate --no-net`
+(package `appstream`, installed by `packaging/linux/ci-deps.sh`) and asks appimagetool to process it.
 
 The data folders `game`, `user` and `logs` live next to the AppImage file (`$APPIMAGE`); a read-only folder falls back
 to `$XDG_DATA_HOME/OdinSphereLeifthrasirPC`, and `OSL_PORTABLE_DIR` chooses the place explicitly (`launcher/paths.cpp`).

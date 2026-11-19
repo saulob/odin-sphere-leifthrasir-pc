@@ -75,7 +75,7 @@ echo 'deb [signed-by=/usr/share/keyrings/ubuntu-toolchain-r.gpg] https://ppa.lau
 apt-get update
 apt-get install -y --no-install-recommends \
     clang-20 lld-20 libstdc++-14-dev make ninja-build pkg-config python3 perl file patchelf binutils rsync xz-utils bzip2 \
-    desktop-file-utils libvulkan-dev libfreetype-dev libpng-dev zlib1g-dev \
+    desktop-file-utils appstream libvulkan-dev libfreetype-dev libpng-dev zlib1g-dev \
     libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxss-dev libxtst-dev libxfixes-dev \
     libxinerama-dev libxkbcommon-dev libwayland-dev libwayland-bin wayland-protocols libdrm-dev libgbm-dev \
     libegl-dev libasound2-dev libpulse-dev libudev-dev libdbus-1-dev libibus-1.0-dev libpango1.0-dev
