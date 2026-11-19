@@ -16,7 +16,7 @@
 
 ## Status
 
-**v0.2.3** is the current release. The loader and runtime map and run the game's own x86-64 code, with the
+**v0.3.0** is the current release. The loader and runtime map and run the game's own x86-64 code, with the
 shadPS4-derived Vulkan video core, the launcher and installer, local trophies, the self-updater and the diagnostics.
 The USA release (`CUSA05083` base 1.00 plus its 1.01 update), the Japanese release (`CUSA01290` base 1.00 plus its 1.02
 update) and the European release (`CUSA05262` base 1.00 plus its 1.01 update) are supported. Both known `CUSA03873`
@@ -28,6 +28,29 @@ and the log then holds detailed read-only diagnostics useful for adding it (see 
 
 Windows is the supported platform. The native Linux build, shipped as an AppImage, is **experimental**: it is built and
 checked by scripts, but it has not yet been tested on real Linux PCs or a Steam Deck.
+
+### New in v0.3.0
+
+- **Portuguese (Brazil)**: an original translation of the game's menus, subtitles, story text and archives, offered on
+  every supported build, with the in-game art that carries words (title menu, HUD, save and load screens, stage and act
+  cards, chapter prologue pages, the world map and more) redrawn in Portuguese, in both **Refined** and **Classic**
+  mode. The launcher follows the language. Accented letters are verified on USA 1.00, Europe and Japan; a few painted
+  screens (the Bookshelf book frames, the manual pages, the Skill screen) are still English. See
+  [Menu & Subtitles](#the-launcher) and [localization/pt-BR/README.md](localization/pt-BR/README.md)
+- **Native cheats**: **Max Gold Gain**, **Max Phozon Gain**, **No AP Consumption**, **Infinite PP**, **Infinite POW**,
+  **Infinite Health**, **Infinite Arrows** and an **Experience Multiplier**, set in the launcher and changed in game with
+  the **F10** cheat menu, in Refined and Classic mode
+- **Controller bindings**: every controller button can be rebound, with **Reset to defaults**
+- **Bug Report** page in the launcher, and detailed read-only diagnostics when a build is not supported
+- **Supported builds**: the Asian `CUSA03873` 1.00 release (with Korean archives) joins the Hong Kong one; the Exit Game
+  title art is corrected across builds
+- **Renderers and frame rate**: experimental OpenGL and Direct3D 11 renderers, a **Frame rate** setting up to 240 FPS or
+  Unlimited, Vulkan on graphics cards without sparse buffer binding (their buffers are fully resident), and a launcher
+  that opens on systems without Vulkan 1.3
+- **Runtime stability**: a cap on the audio backlog puts the sound back in sync after the PC resumes from sleep, and
+  the Vulkan pipeline binaries are warmed up in the background to reduce hitches
+- **Launcher and updater**: a modernized launcher layout and a stricter updater (GitHub release hosts only, a watchdog
+  for stalled downloads, SHA-256 checked)
 
 ## Features
 
@@ -50,7 +73,7 @@ checked by scripts, but it has not yet been tested on real Linux PCs or a Steam 
 ### Gameplay
 - **Skip intro**: start at the title's PRESS START, without the startup notice, logos and intro
 - **EXIT GAME** at the end of the native title menu, in Refined and Classic mode, on Windows and Linux, leaves the game cleanly. The label is drawn from the game's own title art and follows the title language where its letters allow (Italian, Spanish, French and German); other languages show EXIT GAME
-- **Menu & Subtitles** language on every build: the game's own languages, English everywhere (supplied by the port where the build has none) and **Portuguese (Brazil)**, an original translation made for this port. The launcher switches to Portuguese with it
+- **Menu & Subtitles** language on every build: English first, then **Portuguese (Brazil)**, an original translation made for this port (text and redrawn art, in Refined and Classic mode), then the game's own other languages. English is supplied by the port where the build has none, and the launcher switches to Portuguese with it
 - **Frame rate**: 30, 60 (Original, the default), 90, 120, 144, 165, 240 or Unlimited frames per second reaching the window, on Vulkan, OpenGL and Direct3D 11. The game still makes 60 new frames a second, so game speed is unchanged and the frames above 60 show the latest frame again (no interpolation)
 - Frame rate and render resolution in the window title, and an in-game **frame counter** with the frame time, toggled with **F2** while playing; both show the rate the window is presented at
 - Startup hints confirm **Skip intro** and **Unlock Bookshelf** when either is on, then disappear on their own
@@ -112,9 +135,9 @@ both can be installed.
 
 ### Windows
 
-1. Download **OdinSphereLeifthrasirPC-v0.2.3-windows-x64.zip** from the
+1. Download **OdinSphereLeifthrasirPC-v0.3.0-windows-x64.zip** from the
    [latest release](https://github.com/saulob/odin-sphere-leifthrasir-pc/releases/latest) and extract it anywhere you
-   can write to (not `Program Files`). It contains one folder, `OdinSphereLeifthrasirPC-v0.2.3-windows-x64`.
+   can write to (not `Program Files`). It contains one folder, `OdinSphereLeifthrasirPC-v0.3.0-windows-x64`.
 2. Run **odin_sphere_leifthrasir.exe** from that folder. The launcher opens.
 3. On the **Play** page click **Install game...** and select your own Odin Sphere Leifthrasir `.pkg` file.
 4. Wait until **Ready to play** appears. The package is unpacked on your PC into the `game` folder next to the program
@@ -128,7 +151,7 @@ both can be installed.
 
 ### Linux and Steam Deck (experimental)
 
-1. Download **OdinSphereLeifthrasirPC-v0.2.3-x86_64.AppImage**, put it in a folder you can write to and make it
+1. Download **OdinSphereLeifthrasirPC-v0.3.0-x86_64.AppImage**, put it in a folder you can write to and make it
    executable (right-click > **Properties** > **Permissions** > **Is executable**, or `chmod +x`).
 2. Run it and install your own `.pkg` from the **Play** page, as on Windows. `game`, `user` and `logs` are kept next to
    the AppImage.
@@ -165,7 +188,7 @@ Everything is kept next to the program (next to the AppImage on Linux):
 - **Play**: install or reinstall the game from your `.pkg`, the **Ready to play** status and **Show this launcher**
 - **Display**: display mode, window size, monitor, Aspect Ratio, Renderer (Auto, Vulkan, OpenGL, and on Windows Direct3D 11), graphics card, VSync, Presentation, FSR 1 upscaling and RCAS sharpening
 - **Graphics**: Render resolution, SMAA anti-aliasing and anisotropic texture filtering
-- **Gameplay**: Menu & Subtitles language (the European and Hong Kong builds), **Skip intro**, **Unlock Bookshelf**, **Frame rate**, frame rate and render resolution in the title, and the in-game frame counter
+- **Gameplay**: Menu & Subtitles language (every build), **Skip intro**, **Unlock Bookshelf**, **Frame rate**, frame rate and render resolution in the title, and the in-game frame counter
 - **Cheats**: seven optional gameplay modifiers in two groups, Resources and Combat, each Off or On, and the **Experience Multiplier** (Off, 2x, 5x, 10x or 100x) last; they set the state the game starts with, and **F10** changes them while playing
 - **Controls**: **Controller prompts** (PlayStation or Xbox), **Controller bindings**, every keyboard binding and the port hotkeys, each with **Reset to defaults**. Xbox changes the button pictures the game shows (A/B/X/Y, LB/RB, LT/RT, MENU and VIEW) in the port's own copy of the game; the touchpad prompt becomes VIEW. PlayStation puts the originals back. Your `.pkg` file is never changed.
 - **Trophies**: your local PS4 trophy progress, the trophy list and the Trophy Key setup
@@ -222,17 +245,28 @@ Their availability depends on the executable's verified code: the five builds th
 1.00, Japan 1.00 and 1.02, Europe 1.00 and 1.01) hold every cheat's code and the Experience Multiplier's; the other builds are checked the same way at
 game start.
 
-**Menu & Subtitles** is offered on every build. The game's own languages are listed first: English for USA; English,
-French, German, Spanish and Italian for Europe; Japanese for Japan; Traditional Chinese and Korean for HK and Asia.
-Every build also offers **English** and **Portuguese (Brazil)** under the same keys (`english`, `portuguese_brazil`),
-so either choice survives switching builds. On Japan, HK and Asia the port serves English from its own corpus over the
-native slot; Portuguese (Brazil) is served over the build's English slot (Japanese or Chinese slot elsewhere). The
-translated text is read from the port's embedded corpus when the game reads its archives; the archives on disk are never
-written, and any record whose installed text differs from the text the translation was made from keeps the game's text
-(see [localization/pt-BR/README.md](localization/pt-BR/README.md) and [localization/en/README.md](localization/en/README.md)).
+**Menu & Subtitles** is offered on every build, listed as **English**, **Portuguese (Brazil)**, then the build's own other
+languages alphabetically: French, German, Italian and Spanish for Europe; Japanese for Japan; Korean and Traditional
+Chinese for HK and Asia (only the Asian release ships Korean archives, so Korean is unverified on HK); none for USA. English and Portuguese (Brazil) have the same keys (`english`,
+`portuguese_brazil`) on every build, so either choice survives switching builds. Where a build has no English (Japan,
+HK, Asia) the port serves English from its own corpus over the native slot. Portuguese (Brazil) is served over a native
+slot too: English on USA, Spanish on Europe, Japanese on Japan and Chinese on HK and Asia. The translated text is read
+from the port's embedded corpus when the game reads its archives; the archives on disk are never written, and any
+record whose installed text differs from the text the translation was made from keeps the game's text (see
+[localization/pt-BR/README.md](localization/pt-BR/README.md) and [localization/en/README.md](localization/en/README.md)).
 With Portuguese (Brazil) selected the launcher and the port's in-game screens are in Portuguese; with any other language
 they are in English. The setting is stored in `user\osl.ini` as `text_language`. A saved native language the selected
 build does not offer is replaced by that build's default.
+
+**Portuguese (Brazil)** covers the game's text, subtitles and story, and in both **Refined** and **Classic** mode the art
+that carries words: the title menu (NOVO JOGO, CARREGAR, SAIR DO JOGO, PRESSIONE QUALQUER BOTÃO), the HUD and menu tabs,
+save and load screens, stage results, stage and location cards, chapter and act titles, the chapter prologue pages, Mode
+Select, the kitchen, the world map and the Bookshelf NEW badge. Letters the game's fonts lack (`ã õ Ã Õ Ç` and others) are
+drawn into your own font atlas, in memory. The accents are verified against the real files of USA 1.00, Europe 1.00 and
+1.01 and Japan 1.00 and 1.02 (Japan 1.00 translates 9,321 of 14,925 records and 1.02 translates 14,148; the rest keep
+Japanese). USA 1.01, HK and Asia use the same translation, but their executables' fonts have not been measured, so a
+record that needs a letter the font lacks keeps the game's own text there. Painted screens that are still English: the
+Bookshelf book frames, the manual pages, the Skill screen and the Classic logo and ending layouts.
 
 **Voice Language** is the game's own setting. The European build ships the Japanese and English voice banks in its
 single `Odin2_BT_UK.CPK` audio container (the per-language `Odin2_BT_*.CPK` files are secondary), and the in-game
@@ -242,13 +276,13 @@ change the game's choice; Menu & Subtitles affects text only.
 **Skip intro** (Gameplay, Off by default) skips the startup notice and the title intro with its logos, so the game opens
 at the title's PRESS START, in both Refined and Classic mode. It acts once per start of the game: returning to the title,
 switching mode and the title's own demo play as usual. The save data and trophy checks before the title still run. It is
-stored in `user\osl.ini` as `skip_intro`, and it is available for every supported build.
+stored in `user\osl.ini` as `skip_intro`, and it is available on every build whose executable sites were found (the five locally tested builds, and USA 1.01, HK and Asia when their installation scan finds them).
 
 **Unlock Bookshelf** (Gameplay, Off by default) makes the attic Bookshelf usable from the start of the game and shows
 every entry in it: the Prophecies, Alchemy, Notes, Cafe and Kitchen recipes, and the Special artwork. It only changes
 what the Bookshelf shows. Your save is not changed, nothing is marked as found, no trophy is affected, and turning the
 option Off puts the Bookshelf back to what your save has earned. It is stored in `user\osl.ini` as `unlock_bookshelf`,
-and it is available for every supported build.
+and it is available on the same builds as Skip intro.
 
 **Frame rate** (Gameplay, 60 FPS (Original) by default) chooses how many frames a second reach the window: 30 FPS, 60 FPS
 (Original), 90 FPS, 120 FPS, 144 FPS, 165 FPS, 240 FPS or Unlimited. It is stored in `user\osl.ini` as `frame_rate` (30, 60,
@@ -292,7 +326,9 @@ launcher's **Trophies** page lists your progress with the trophy list and icons 
 When the launcher opens it asks GitHub once, in the background, for the latest release. A newer one is shown at the top
 right of the header with its release notes and **UPDATE NOW**; the launcher downloads it, checks its SHA-256 checksum,
 replaces only the port's own files and restarts. The game files, `user` and `logs` are never touched, and a failed
-update puts the previous version back. Without a connection, or while there is no release, nothing is shown.
+update puts the previous version back. Without a connection, or while there is no release, nothing is shown. Downloads are
+accepted only over HTTPS from GitHub's release hosts and this project's release assets, and a transfer that stalls is
+cancelled and can be retried.
 
 - **Windows**: the release ZIP's one folder is unpacked into a temporary workspace, and the small helper
   `trg-updater.exe`, run from that workspace, waits for the launcher to close, backs up and replaces the program files,
@@ -319,8 +355,8 @@ for 15 seconds while the game is in front and not minimized. The game keeps runn
 
 1. Install [MSYS2](https://www.msys2.org) with the CLANG64 toolchain. `.\tools\setup.ps1` checks it and prints the `pacman` command for anything missing.
 2. `.\tools\build.ps1` fetches the pinned dependencies (TRG Launcher, Dear ImGui and a few small libraries) and builds `build\cmake\clang64\bin\odin_sphere_leifthrasir.exe`.
-3. `.\tools\build.ps1 -Run` also starts it. Install the game from the launcher's Play page, as in a release; the development build keeps it in `game\prepared\<build folder>` and the boot image in `build\image\<build folder>` of the repository (`CUSA05083-1.00`, `CUSA05083-1.01`, `CUSA01290-1.00`, `CUSA01290-1.02`, `CUSA05262-1.00`, `CUSA05262-1.01` or `CUSA03873-1.00`).
-4. `.\tools\test.ps1` builds and runs the focused headless tests in groups (`-Group Runtime, CPU, Packages, Launcher, Updater, Features, Graphics`; the Graphics group covers the renderer selection, the OpenGL backend and the pinned ANGLE runtime without creating a window or a graphics context; the Launcher group includes the Bug Report page and its Worker, the Updater group the loopback network tests; the Features group proves the title menu's Exit Game art for every supported build and language, and needs Python with numpy, scipy and Pillow: `.\tools\setup.ps1 -InstallPython`). `.\tools\worker.ps1 -DryRun` checks the Bug Report Worker's deployment without uploading it, and `.\tools\worker.ps1` deploys it (see [docs/BUG_REPORTS.md](docs/BUG_REPORTS.md)). Python is not needed to build, run or play; the optional development scripts in `scripts\` use it (`.\tools\setup.ps1 -InstallPython`).
+3. `.\tools\build.ps1 -Run` also starts it. Install the game from the launcher's Play page, as in a release; the development build keeps it in `game\prepared\<build folder>` and the boot image in `build\image\<build folder>` of the repository (`CUSA05083-1.00`, `CUSA05083-1.01`, `CUSA01290-1.00`, `CUSA01290-1.02`, `CUSA05262-1.00`, `CUSA05262-1.01`, `CUSA03873-1.00` or `CUSA03873-1.00-Asia`).
+4. `.\tools\test.ps1` builds and runs the focused headless tests in groups (`-Group Runtime, RuntimeStability, CPU, Packages, Launcher, Updater, Features, Graphics`; the Graphics group covers the renderer selection, the OpenGL backend and the pinned ANGLE runtime without creating a window or a graphics context; the Launcher group includes the Bug Report page and its Worker, the Updater group the loopback network tests; the Features group proves the title menu's Exit Game art for every supported build and language, and needs Python with numpy, scipy and Pillow: `.\tools\setup.ps1 -InstallPython`). `.\tools\worker.ps1 -DryRun` checks the Bug Report Worker's deployment without uploading it, and `.\tools\worker.ps1` deploys it (see [docs/BUG_REPORTS.md](docs/BUG_REPORTS.md)). Python is not needed to build, run or play; the optional development scripts in `scripts\` use it (`.\tools\setup.ps1 -InstallPython`).
 5. `.\tools\package.ps1` builds the Release configuration (`.\tools\build.ps1 -Release`, in `build\cmake\clang64-release`: `-O3` with ThinLTO across the program and its own libraries, without a symbol table or build id) and the release update helper (`.\tools\build-updater.ps1`: MSYS2 CLANG64 clang++ and LLD, static, only Windows system DLLs, its debug information split into `trg-updater.debug`), then packages `dist\OdinSphereLeifthrasirPC-v<version>-windows-x64.zip`, which holds one folder of that name, and its `.sha256` file. The ZIP is extracted again, compared file by file with the staging folder and scanned, checked with the updater's own rules, and the update helper tests run against the packaged `trg-updater.exe`; `trg-updater.debug` goes to `dist\OdinSphereLeifthrasirPC-v<version>-windows-x64-symbols\`, outside the ZIP. `.\tools\package.ps1 -VerifyOnly <ZIP>` checks a finished ZIP, and `.\tools\test-release-check.ps1` checks that the release check refuses player files, game data, symbols, local paths and leftovers. Nothing is published.
 6. Linux: `tools/build.sh` builds on Linux x86_64 (`--release` for the Release configuration in `build/cmake/linux-release`), and `tools/package-linux.sh` packages `dist/OdinSphereLeifthrasirPC-v<version>-x86_64.AppImage` and its `.sha256` on Ubuntu 20.04 (in WSL2 from this Windows checkout: `tools/package-release-linux.sh`); `--verify-only <AppImage>` checks a finished one. See [docs/LINUX.md](docs/LINUX.md).
 
@@ -381,6 +417,7 @@ Odin Sphere Leifthrasir PC is maintained and developed in my free time. If you e
 - [gow3_pc](https://github.com/FelipePrado0/gow3_pc) and its lineage, uncharted-ndc-native, MediEvil PC and the HayatoG ports, for the loader, runtime and video core this port grew from
 - Dragon's Crown Pro PC, the port this architecture is reproduced from
 - Initial CUSA03873 cheat patch research was contributed by @zarawong272-cloud in [Issue #20](https://github.com/saulob/odin-sphere-leifthrasir-pc/issues/20)
+- The fallback for graphics drivers without sparse buffer binding, and the fixes for audio after resuming from sleep and for pipeline hitches, follow [PR #21](https://github.com/saulob/odin-sphere-leifthrasir-pc/pull/21) by N0rule and [PR #24](https://github.com/saulob/odin-sphere-leifthrasir-pc/pull/24) by KlaPeWin; they were reimplemented in this port rather than merged
 - [TRG Launcher](https://github.com/TekRantGaming/trg-launcher) by TekRantGaming, the launcher interface, pinned at v1.1.0, licensed under the MIT License
 - The licenses of the libraries the release includes are in the `licenses` folder of the ZIP
 

@@ -25,14 +25,9 @@ void runtime_log_set_session_path(const char *path) {
     finalized = 0;
 }
 
-static void (*exit_report)(void); /* DEBUG_SAULO */
-
-void runtime_log_set_exit_report(void (*report)(void)) { exit_report = report; } /* DEBUG_SAULO */
-
 void runtime_log_finalize(void) {
     if (finalized) return;
     finalized = 1;
-    if (exit_report) exit_report(); /* DEBUG_SAULO */
     if (!runtime_log_should_remove(detailed_logging, clean_exit, crash_reported)) return;
     if (!session_log_path[0]) return;
     runtime_log_flush();

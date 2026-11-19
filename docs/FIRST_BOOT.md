@@ -1,6 +1,6 @@
 # First boot
 
-The project builds and the installed USA 1.00 and 1.01, Japanese 1.00 and 1.02, European 1.00 and 1.01 and Hong Kong 1.00 games are recognized and prepared.
+The project builds and the installed USA 1.00 and 1.01, Japanese 1.00 and 1.02, European 1.00 and 1.01, Hong Kong 1.00 and Asia 1.00 games are recognized and prepared.
 These checks run without a window and without executing game code:
 
 ```powershell
@@ -36,7 +36,7 @@ runtime, graphics, audio, controller and UI behavior is tested manually only.
 
 The first manual pass should also check the new parity features: Display's Aspect Ratio and Window
 size choices, Graphics' Render resolution (try 720p, then 1440p, then 4K), the Gameplay readouts and
-(for the European and Hong Kong builds) the **Menu & Subtitles** language and the game's own Voice Language choice
+(on any build) the **Menu & Subtitles** language and the game's own Voice Language choice
 (in the in-game Options), the Trophies page, and the Controls page's keyboard bindings. Keep Render
 resolution at Native while checking the rest first.
 

@@ -19,7 +19,7 @@ page and its atlas are laid on together or not at all; any other build or langua
 | Build | Slot | Records in Portuguese | Letters added to the game's fonts |
 | --- | --- | --- | --- |
 | CUSA05083 1.00 USA | English | 14,925 / 14,925 | 31 (`ã õ Ã Õ Ç`, and every accent in HD_font_c) |
-| CUSA05262 1.00, 1.01 Europe | English (UK) | 14,925 / 14,925 | 10 (`ã õ Â Ã Õ`) |
+| CUSA05262 1.00, 1.01 Europe | Spanish | 14,925 / 14,925 | 10 (`ã õ Â Ã Õ`) |
 | CUSA01290 1.02 Japan | Japanese | 14,148 / 14,925 | 52, and 26 Shift-JIS codes for the story files |
 | CUSA01290 1.00 Japan | Japanese | 9,321 / 14,925 | 52, and 26 Shift-JIS codes |
 | CUSA05083 1.01 USA, CUSA03873 HK and Asia | English, Chinese | not measured: no local files; accented records keep the slot's text until `font/glyphs.json` knows the executable | - |
@@ -55,9 +55,9 @@ The English is in `localization/en`. Credits translate only role headings; names
 
 ## Not translated
 
-- Baked art the official languages localize (`visual/INVENTORY.md`, 278 of 757 resources blocked with their reason):
-  title rows NEW GAME, LOAD, CLASSIC MODE, stage and location cards, manual pages, Bookshelf book frames, and a few
-  painted interface sprites (REST plaque, SKILL UP READY, ABILITY READY). SAIR DO JOGO and the interface words are done.
+- Baked art the official languages localize and that is not generated yet (`visual/INVENTORY.md`, 61 of 757 resources
+  blocked, each with its reason): the Bookshelf book frames, the 44 manual pages, the Skill screen and the Classic logo
+  layout. The title rows, stage and location cards, chapter and act titles, prologue pages and interface words are done.
 - Japanese records whose numbers, neighbours or arguments do not prove them to be the English record (777 on 1.02),
   Japanese credits (laid out differently) and 12 ArchiveViewer pages with no English counterpart block.
 

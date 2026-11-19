@@ -88,7 +88,12 @@ PLAYING
 - Controllers are read through SDL's gamepad support.
 - The keyboard works too; the launcher's Controls page lists the keys.
 - The Controls page also chooses the button prompts the game shows:
-  PlayStation (the original) or Xbox.
+  PlayStation (the original) or Xbox, and rebinds every controller button.
+- F10 opens the in-game Cheats menu (optional cheats and an Experience
+  Multiplier, all off by default; the Cheats page of the launcher sets how the
+  game starts).
+- The Gameplay page chooses the Menu & Subtitles language: English, Portuguese
+  (Brazil) and the game's own languages.
 - To open the launcher again after turning it off, hold Shift while starting
   (X11 sessions), start the AppImage with --launcher, or use the "Show
   launcher" action of its desktop entry.

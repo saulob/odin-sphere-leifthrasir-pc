@@ -82,7 +82,12 @@ PLAYING
 - Xbox controllers work without setup.
 - The keyboard works too; the launcher's Controls page lists the keys.
 - The Controls page also chooses the button prompts the game shows: PlayStation
-  (the original) or Xbox.
+  (the original) or Xbox, and rebinds every controller button.
+- F10 opens the in-game Cheats menu (optional cheats and an Experience
+  Multiplier, all off by default; the Cheats page of the launcher sets how the
+  game starts).
+- The Gameplay page chooses the Menu & Subtitles language: English, Portuguese
+  (Brazil) and the game's own languages.
 - To open the launcher again after turning it off, hold Shift while starting.
 
 
@@ -128,6 +133,6 @@ metadata and structure, never game content). Never upload game files. The build 
 unsupported until a release adds it.
 
 The launcher's Bug Report page shows the description, the system details and the
-selected log after the privacy filter, and "Save report" writes that report to
-"logs\reports" so it can be attached to the issue. The report service that
-"Send report" needs is not online yet.
+selected log after the privacy filter. "Send report" sends exactly that report to
+the developer, and "Save report" writes it to "logs\reports" so it can be
+attached to the issue instead.

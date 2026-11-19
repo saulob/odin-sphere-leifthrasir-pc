@@ -382,8 +382,7 @@ void TestVulkanDoesNotGateOtherRenderers() {
     CHECK(renderer.find("OslRenderer::PlayAllowed(choice, vulkan_usable)") != std::string::npos);
 }
 
-// Issue #23: on Windows the Graphics card list went straight to CreateInstance, whose assertion ended the launcher on a
-// Vulkan 1.0 runtime.
+// A Vulkan 1.0 runtime must be reported, never reach CreateInstance's assertion.
 void TestIssue23VulkanOneNeverAsserts() {
     FakeVulkan vulkan;
     vulkan.version = OslVulkan::Version(1, 0);

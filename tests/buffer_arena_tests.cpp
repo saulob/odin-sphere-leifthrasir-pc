@@ -1,5 +1,6 @@
 // Vulkan buffer arena tests: sparse and fully resident layouts, BDA page-table entries and the fully resident migration
 // (the same ResidentArenaFor the buffer cache runs) on fake arenas, plus the sources that must agree. No Vulkan device.
+#include <algorithm>
 #include <cstdio>
 #include <fstream>
 #include <list>
@@ -56,7 +57,7 @@ bool Has(const std::string& text, const std::string& needle) {
 constexpr u64 GiB = u64{1} << 30;
 constexpr u64 MiB = u64{1} << 20;
 
-// The constructor's sparse sizing before the fully resident fallback existed.
+// The sparse page sizing the layout must keep.
 u64 OriginalSparsePageBits(u64 max_buffer_size) {
     u64 bits = 32;
     while (bits > 30 && (u64{2} << bits) > max_buffer_size) {

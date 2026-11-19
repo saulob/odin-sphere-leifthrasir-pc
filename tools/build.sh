@@ -90,7 +90,7 @@ if ((test)); then
             game_tests=$("$build_dir/bin/$test_program") || { printf '%s\n' "$game_tests"; exit 1; }
             printf '%s\n' "$game_tests"
             for label in 'CUSA05083 1.00 USA' 'CUSA05083 1.01 USA' 'CUSA01290 1.00 Japan' 'CUSA01290 1.02 Japan' \
-                         'CUSA05262 1.00 Europe' 'CUSA05262 1.01 Europe' 'CUSA03873 1.00 HK'; do
+                         'CUSA05262 1.00 Europe' 'CUSA05262 1.01 Europe' 'CUSA03873 1.00 HK' 'CUSA03873 1.00 Asia'; do
                 grep -qxE "  $label +PASS" <<<"$game_tests" || die "Build parity has no PASS row for $label"
             done
         else

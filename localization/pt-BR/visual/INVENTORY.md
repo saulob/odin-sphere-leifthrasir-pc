@@ -43,6 +43,7 @@ Duplicates (the Classic archive's copy of a Refined entry) take the status of th
 
 | `classic-cards-ptbr.oslv` | The 61 Classic cards (`NN.ftx` + `NN.mbs`) of every local build: a Portuguese letter atlas packed into the player's own card texture and a rebuilt layout of three layers (scattered, settled, stretched exit). Letters are the Western face of the Spanish, French, German and Italian cards, named by aligning each language's own location names to its sprites, then by shape; Q, Ú, ô, í and y pinned by card fingerprint; ã from the face's ñ tilde, ç from its comma. Made by `scripts/localization/classic_cards.py` |
 | `stage-acts-ptbr.oslv` | The chapter and act titles of `GUI/REHD_StageName.mbs` (L_* and their _1 copies): VALQUÍRIA, O PRÍNCIPE POOKA, TERRA DAS FADAS, A ESPADA NEGRA, DESTINO, ARMAGEDOM, RODA DO DESTINO, Ato, Prelúdio, Epílogo, Cap. N. Lines an official language already spells are copied from it; the rest are set from the shared glyph font, glyphs relocated by sprite id in USA and Japan atlases. Made by `scripts/localization/stage_acts.py` |
+| `butterfly-ptbr.oslv` | The five hero titles of the Classic character screen's `Butterfly.mbs` (VALQUÍRIA, O PRÍNCIPE POOKA, TERRA DAS FADAS, A ESPADA NEGRA, DESTINO) in their two-pass glyph layers; the atlas is identical in every official language. Made by `scripts/localization/butterfly_titles.py` |
 | `mode-select-ptbr.oslv` | Mode Select: AÇÃO / RPG, Fácil, Normal, Difícil, Heroico from the shared illuminated glyph font. Made by `scripts/localization/family_respell.py mode_select` |
 | `kitchen-ptbr.oslv`, `kitchen-layout-ptbr.oslv` | Kitchen: PARA LEVAR (Spanish slot), BÔNUS!/!!/!!! (circumflex drawn to the Spanish acute's size), Receita and Preço respelled from the shared script letters. Made by `sprite_slots.py kitchen` and `family_respell.py kitchen` |
 | `interface-art-ptbr.oslv` | The painted sprites of the interface atlas (`GUI/HD_Interface.ftx`, Classic `Interface.ftx`; Europe 1.00 and 1.01 old and patched atlases, found by pixel search): HABILIDADE PRONTA and APTIDÃO PRONTA (condensed orange face), AÇÃO, CHEFE and FÚRIA (block face; tilde and cedilla drawn in its strokes), COMBO! (the French sprite with the space before the mark closed), painted into a donor language's slot. `interface-ptbr.oslv` also draws the official Spanish DESCANSAR plaque, NV tab and A icon, and the painted sprites, in the English layout (`layer_graft.py`). POW, EXP, DEF and HP stay as the corpus keeps them. Made by `scripts/localization/interface_art.py` (letters: `ink_font.py`) |
@@ -76,8 +77,7 @@ no period; MÁX. and Combo Máx. take the dot of its own exclamation mark.
 
 ## Blocked
 
-- Skill screen, Classic butterfly letters, Bookshelf book frames (368 baked book titles) and the 44 manual
-  pages: not generated yet.
+- Skill screen, Bookshelf book frames (368 baked book titles) and the 44 manual pages: not generated yet.
 - Classic `Logo.mbs`: its LOGO animation spells a Spanish caption with 7 glyph sprites of the shared atlas; the boot
   logos play from the title intro, so the page is not known to be shown.
 - `visual/untranslated.json` lists every blocked entry; a Portuguese (Brazil) run logs

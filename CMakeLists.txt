@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.24)
 project(odin_sphere_leifthrasir_pc LANGUAGES C CXX)
-set(OSL_PORT_VERSION "0.2.3")
+set(OSL_PORT_VERSION "0.3.0")
 
 if (NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
     message(FATAL_ERROR "Build with Clang: MSYS2 CLANG64 (tools\\build.ps1) on Windows, tools/build.sh on Linux.")
@@ -90,7 +90,7 @@ else()
     set(OSL_PLATFORM_SOURCES src/runtime_log_posix.c)
 endif()
 set(OSL_MAIN_SOURCES src/loader.c src/text_glyphs.c src/crash_report.c src/hang_report.c src/isa_emulate.c src/runtime_cheats.cpp
-    src/debug_saulo_cheat_probe.c ${OSL_RUNTIME_SOURCES} ${OSL_PLATFORM_SOURCES}) # DEBUG_SAULO: debug_saulo_cheat_probe.c
+    ${OSL_RUNTIME_SOURCES} ${OSL_PLATFORM_SOURCES})
 if (WIN32)
     # Windows subsystem: no console window. The run log takes stdout and stderr (src/runtime_log.c).
     add_executable(odin_sphere_leifthrasir WIN32 ${OSL_MAIN_SOURCES})

@@ -24,7 +24,6 @@
 
 #include "build_scan.h"
 #include "cheats_test_support.h"
-#include "debug_saulo_cheat_probe.h" // DEBUG_SAULO
 #include "game_profile.h"
 #include "osl_cheats.h"
 #include "runtime_cheats.h"
@@ -832,7 +831,7 @@ constexpr size_t SlotAt(Slot s) { return static_cast<size_t>(s) * kSlot; }
 
 class ClassicImage {
 public:
-    explicit ClassicImage(bool probes = false) { // DEBUG_SAULO: probes
+    ClassicImage() {
         uint8_t* base = block_.data();
         const auto put = [&](size_t at, const char* masked) {
             const Bytes code = Concrete(masked);
@@ -884,12 +883,10 @@ public:
         Rel32(base, MockAt(kInsert) + 2, kInsertResultAt);
         InsertAccepts(true);
         const OslCodeRange range{0, kImageSize};
-        if (probes) osl_cheat_set_probe(debug_saulo_cheat_probe_thunk()); // DEBUG_SAULO
         installed_ = osl_install_cheats_engines(base, kImageSize, &range, 1, base + kStubsAt, OSL_CHEAT_STUBS_BYTES, base + kFlagsAt,
                                                 scans_[OSL_ENGINE_REFINED], scans_[OSL_ENGINE_CLASSIC], hooked_);
         experience_hooked_ = osl_install_experience_engines(base, kImageSize, &range, 1, base + kExperienceStubsAt, OSL_EXPERIENCE_STUBS_BYTES,
                                                             base + kFlagsAt + OSL_CHEAT_COUNT, &experience_scans_[0], &experience_scans_[1]);
-        osl_cheat_set_probe(nullptr); // DEBUG_SAULO
         // What ends each fixture, written once the hooks are in.
         for (const Slot s : {kDamage, kHit, kSale, kShot, kAttack, kGuard, kGuardHeld, kSpend}) base[SlotAt(s) + ends_[s]] = 0xc3;
         Jump(base, SlotAt(kExp) + ends_[kExp], SlotAt(kExp) + 0x13e);
@@ -1953,64 +1950,6 @@ void TestSemantics() {
                 "  character only. Experience Multiplier: Classic awards EXP for food and items only, never for a defeated enemy\n");
 }
 
-// DEBUG_SAULO: the telemetry the next gameplay test logs with. Every Classic hook calls the probe at its entry and after its
-// block; the probe changes nothing the hooks do (every semantic model gives the same results through it) and counts the hits,
-// the changes and the runs with the switch off per site.
-void TestProbes() {
-    if (!__builtin_cpu_supports("bmi") || !__builtin_cpu_supports("avx")) return;
-    const int before = g_failures;
-    debug_saulo_cheat_probe_quiet(1);
-    osl_cheat_probe_reset();
-    debug_saulo_cheat_probe_clear();
-    {
-        const ClassicImage image(true);
-        CHECK(image.installed() == kClassicMask && image.experience_hooked() == 2);
-        CHECK(osl_cheat_probe_count() == 15);
-        for (size_t i = 0; i < osl_cheat_probe_count(); ++i) {
-            const OslCheatProbeSite* site = osl_cheat_probe_site(i);
-            CHECK(site->installed && site->engine == OSL_ENGINE_CLASSIC && site->region < kImageSize);
-            CHECK(site->global == 0 || site->global == site->image + kGlobalAt);
-        }
-        CHECK(SemanticGold(image) && SemanticPhozon(image) && SemanticPp(image) && SemanticPow(image) && SemanticHealth(image) &&
-              SemanticArrows(image) && SemanticExperience(image) && Coexistence(image));
-
-        const auto totals = [](const char* id, uint64_t hits, uint64_t applied, uint64_t original) {
-            uint64_t h = 0, a = 0, o = 0;
-            debug_saulo_cheat_probe_totals(id, &h, &a, &o);
-            return h == hits && a == applied && o == original;
-        };
-        bool clean = false;
-        Object player, enemy;
-        // On for the controlled character, on for another one, then off: one hit each, one change, one original run.
-        debug_saulo_cheat_probe_clear();
-        for (const int round : {0, 1, 2}) {
-            const bool on = round < 2, mine = round != 1;
-            SetCheat(OSL_CHEAT_INFINITE_POW, on);
-            SetCheat(OSL_CHEAT_INFINITE_HEALTH, on);
-            SetCheat(OSL_CHEAT_INFINITE_PP, on);
-            SetCheat(OSL_CHEAT_MAX_PHOZON_GAIN, on);
-            SetCheat(OSL_CHEAT_INFINITE_ARROWS, on);
-            const Who who = mine ? Who::kPlayer : Who::kEnemy;
-            Drain(image, kAttack, who, 100.0f, 30.0f, &clean);
-            Hit(image, mine ? player : enemy, &player, true, 100, 30, &clean);
-            PpSpend(image, who, 500, 900, 300, &clean);
-            Absorb(image, who, 100, 900, 50, &clean);
-            Shot(image, who, 10, 0, round == 0, &clean);
-        }
-        for (const char* id : {"C-W3", "C-H3", "C-K1", "C-P1", "C-A1"}) CHECK(totals(id, 3, 1, 1));
-        SetExperience(10);
-        Experience(image, 1000, 50, &clean);
-        SetExperience(OSL_EXPERIENCE_OFF);
-        Experience(image, 1000, 50, &clean);
-        CHECK(totals("C-E1", 2, 1, 1));
-        for (int c = 0; c < OSL_CHEAT_COUNT; ++c) SetCheat(static_cast<OslCheat>(c), false);
-    }
-    osl_cheat_probe_reset();
-    debug_saulo_cheat_probe_quiet(0);
-    std::printf("DEBUG_SAULO cheat probes: %s (15 Classic hooks probed, every semantic model unchanged through the probes, hits, "
-                "changes and switch-off runs counted per site)\n", g_failures == before ? "VERIFIED" : "FAILED");
-}
-
 }  // namespace
 
 void RunClassicTests() {
@@ -2019,7 +1958,6 @@ void RunClassicTests() {
     TestLocalBuilds(&totals);
     TestFixturesInBuilds();
     TestSemantics();
-    TestProbes(); // DEBUG_SAULO
     TestFailurePaths();
     TestMatrix();
 }

@@ -784,53 +784,12 @@ static int fits_rel32(int64_t delta) { return delta >= INT32_MIN && delta <= INT
 
 static void put32(unsigned char *at, int32_t value) { memcpy(at, &value, 4); }
 
-/* DEBUG_SAULO: the telemetry probes. A probe is lea rsp,[rsp-0x80]; push id; call [rip+slot]; lea rsp,[rsp+0x88], the
- * slot being the stub's last 8 bytes, which hold the thunk's address. */
-enum { PROBE_BYTES = 24, PROBE_SLOT_BYTES = 8 };
-static const void *probe_thunk;
-static OslCheatProbeSite probe_sites[OSL_CHEAT_PROBE_SITES];
-static size_t probe_count;
-
-void osl_cheat_set_probe(const void *thunk) { probe_thunk = thunk; }
-
-void osl_cheat_probe_reset(void) {
-    memset(probe_sites, 0, sizeof(probe_sites));
-    probe_count = 0;
-}
-
-size_t osl_cheat_probe_count(void) { return probe_count; }
-
-const OslCheatProbeSite *osl_cheat_probe_site(size_t id) { return id < probe_count ? &probe_sites[id] : NULL; }
-
-static void emit_probe(unsigned char *code, size_t *n, const unsigned char *address, int id, int phase) {
-    static const unsigned char lea_down[] = {0x48, 0x8d, 0x64, 0x24, 0x80};
-    static const unsigned char lea_up[] = {0x48, 0x8d, 0xa4, 0x24, 0x88, 0x00, 0x00, 0x00};
-    memcpy(code + *n, lea_down, sizeof(lea_down));
-    *n += sizeof(lea_down);
-    code[(*n)++] = 0x68; /* push imm32 */
-    put32(code + *n, id * 4 + phase);
-    *n += 4;
-    code[(*n)++] = 0xff; /* call [rip+disp32] */
-    code[(*n)++] = 0x15;
-    const unsigned char *slot = address + OSL_CHEAT_STUB_BYTES - PROBE_SLOT_BYTES;
-    put32(code + *n, (int32_t)(slot - (address + *n + 4)));
-    *n += 4;
-    memcpy(code + *n, lea_up, sizeof(lea_up));
-    *n += sizeof(lea_up);
-}
-
-/* Writes the stub at `code` (which will live at `address`); 0 when a jump or the flag is out of reach. `probe` is the
- * DEBUG_SAULO telemetry id, or -1. */
+/* Writes the stub at `code` (which will live at `address`); 0 when a jump or the flag is out of reach. */
 static int emit_stub(unsigned char *code, const unsigned char *address, const unsigned char *original, size_t size,
-                     const unsigned char *changed, size_t changed_size, const unsigned char *back, const unsigned char *flag,
-                     int probe) {
+                     const unsigned char *changed, size_t changed_size, const unsigned char *back, const unsigned char *flag) {
     static const unsigned char lea_down[LEA_DOWN_BYTES] = {0x48, 0x8d, 0x64, 0x24, 0x80};
     static const unsigned char lea_up[LEA_UP_BYTES] = {0x48, 0x8d, 0xa4, 0x24, 0x80, 0x00, 0x00, 0x00};
     size_t n = 0;
-    if (probe >= 0) {
-        emit_probe(code, &n, address, probe, 0);
-        memcpy(code + OSL_CHEAT_STUB_BYTES - PROBE_SLOT_BYTES, &probe_thunk, PROBE_SLOT_BYTES);
-    }
     memcpy(code + n, lea_down, sizeof(lea_down));
     n += sizeof(lea_down);
     code[n++] = 0x9c; /* pushfq */
@@ -842,21 +801,20 @@ static int emit_stub(unsigned char *code, const unsigned char *address, const un
     n += 4;
     code[n++] = 0x00;
     code[n++] = 0x75; /* jne changed */
-    code[n++] = (unsigned char)(1 + LEA_UP_BYTES + size + (probe >= 0 ? PROBE_BYTES : 0) + JMP_BYTES);
+    code[n++] = (unsigned char)(1 + LEA_UP_BYTES + size + JMP_BYTES);
     for (int pass = 0; pass < 2; ++pass) {
         code[n++] = 0x9d; /* popfq */
         memcpy(code + n, lea_up, sizeof(lea_up));
         n += sizeof(lea_up);
         memcpy(code + n, pass ? changed : original, pass ? changed_size : size);
         n += pass ? changed_size : size;
-        if (probe >= 0) emit_probe(code, &n, address, probe, 1 + pass);
         const int64_t back_delta = (int64_t)(intptr_t)back - (int64_t)(intptr_t)(address + n + JMP_BYTES);
         if (!fits_rel32(back_delta)) return 0;
         code[n++] = 0xe9;
         put32(code + n, (int32_t)back_delta);
         n += 4;
     }
-    return n <= OSL_CHEAT_STUB_BYTES - (probe >= 0 ? PROBE_SLOT_BYTES : 0);
+    return n <= OSL_CHEAT_STUB_BYTES;
 }
 
 typedef struct {
@@ -864,13 +822,11 @@ typedef struct {
     uint64_t region;
     size_t region_size;
     int32_t jump;
-    int probe; /* DEBUG_SAULO */
 } PlannedHook;
 
 /* Where the changed block starts in a stub: after the flag test and the original block's return jump. */
-static size_t changed_block_at(size_t region_size, int probe) {
-    return LEA_DOWN_BYTES + 1 + CMP_BYTES + 2 + 1 + LEA_UP_BYTES + region_size + JMP_BYTES + 1 + LEA_UP_BYTES +
-           (probe >= 0 ? 2 * PROBE_BYTES : 0);
+static size_t changed_block_at(size_t region_size) {
+    return LEA_DOWN_BYTES + 1 + CMP_BYTES + 2 + 1 + LEA_UP_BYTES + region_size + JMP_BYTES + 1 + LEA_UP_BYTES;
 }
 
 /* Points the rel32 at `at` in the changed block (which will run at `block`) to `target`. */
@@ -883,25 +839,9 @@ static int link_rel32(unsigned char *changed, size_t changed_size, int at, const
     return 1;
 }
 
-/* DEBUG_SAULO: a telemetry id for a hook about to be planned, or -1 when no probe is set. */
-static int reserve_probe(const OslCheatSite *site, int cheat, OslEngine engine, const unsigned char *image, uint64_t player_global,
-                         const unsigned char *flag) {
-    if (!probe_thunk || probe_count >= OSL_CHEAT_PROBE_SITES) return -1;
-    OslCheatProbeSite *entry = &probe_sites[probe_count];
-    memset(entry, 0, sizeof(*entry));
-    entry->site = site;
-    entry->cheat = cheat;
-    entry->engine = engine;
-    entry->image = (uint64_t)(uintptr_t)image;
-    entry->global = player_global ? (uint64_t)(uintptr_t)(image + player_global) : 0;
-    entry->flag = flag;
-    return (int)probe_count++;
-}
-
 static int plan_hook(PlannedHook *hook, unsigned char *image, uint64_t image_size, const OslCheatSite *site,
                      const OslCheatSiteScan *found, uint64_t player_global, uint64_t callee, unsigned char *stub_at,
-                     const unsigned char *flag, int probe) {
-    hook->probe = probe;
+                     const unsigned char *flag) {
     const int64_t region = (int64_t)found->at[0] + site->region_at;
     const size_t size = site->region_size;
     if (size < JMP_BYTES || size > OSL_CHEAT_REGION_MAX || region < 0 || (uint64_t)region + size > image_size) return 0;
@@ -913,7 +853,7 @@ static int plan_hook(PlannedHook *hook, unsigned char *image, uint64_t image_siz
         if (site->changed_size > sizeof(changed)) return 0;
         changed_size = site->changed_size;
         memcpy(changed, site->changed, changed_size);
-        const unsigned char *block = stub_at + changed_block_at(size, probe);
+        const unsigned char *block = stub_at + changed_block_at(size);
         if (site->changed_player_at >= 0 &&
             (!player_global || !link_rel32(changed, changed_size, site->changed_player_at, block, image + player_global)))
             return 0;
@@ -926,8 +866,7 @@ static int plan_hook(PlannedHook *hook, unsigned char *image, uint64_t image_siz
         memcpy(changed + patch_in_region, site->replacement, site->patch_size);
     }
     memset(hook->stub, 0xcc, sizeof(hook->stub));
-    if (!emit_stub(hook->stub, stub_at, image + region, size, changed, changed_size, image + region + size, flag, probe)) return 0;
-    if (probe >= 0) probe_sites[probe].region = (uint64_t)region;
+    if (!emit_stub(hook->stub, stub_at, image + region, size, changed, changed_size, image + region + size, flag)) return 0;
     const int64_t jump = (int64_t)(intptr_t)stub_at - (int64_t)(intptr_t)(image + region + JMP_BYTES);
     if (!fits_rel32(jump)) return 0;
     hook->region = (uint64_t)region;
@@ -938,8 +877,7 @@ static int plan_hook(PlannedHook *hook, unsigned char *image, uint64_t image_siz
 
 /* Hooks a COMPLETE group with its stubs from `*used` on, all or nothing; 0 (and the scan INVALID) when it cannot. */
 static int install_group(unsigned char *image, uint64_t image_size, OslCheatScan *scan, SiteGroup sites,
-                         unsigned char *stubs, size_t stubs_size, size_t *used, const unsigned char *flag, int cheat,
-                         OslEngine engine) {
+                         unsigned char *stubs, size_t stubs_size, size_t *used, const unsigned char *flag) {
     if (scan->state != OSL_CHEAT_COMPLETE) return 0;
     PlannedHook hooks[OSL_CHEAT_MAX_SITES];
     uint64_t player_global = 0, callee = 0;
@@ -954,9 +892,8 @@ static int install_group(unsigned char *image, uint64_t image_size, OslCheatScan
     size_t planned = 0;
     for (size_t s = 0; ok && s < sites.site_count; ++s) {
         if (sites.sites[s].kind != OSL_CHEAT_SITE_HOOK) continue;
-        const int probe = reserve_probe(&sites.sites[s], cheat, engine, image, player_global, flag);
         ok = plan_hook(&hooks[planned], image, image_size, &sites.sites[s], &scan->sites[s], player_global, callee,
-                       stubs + *used + planned * OSL_CHEAT_STUB_BYTES, flag, probe);
+                       stubs + *used + planned * OSL_CHEAT_STUB_BYTES, flag);
         ++planned;
     }
     if (!ok) {
@@ -970,7 +907,6 @@ static int install_group(unsigned char *image, uint64_t image_size, OslCheatScan
         at[0] = 0xe9;
         put32(at + 1, hooks[h].jump);
         memset(at + JMP_BYTES, 0x90, hooks[h].region_size - JMP_BYTES);
-        if (hooks[h].probe >= 0) probe_sites[hooks[h].probe].installed = 1;
     }
     *used += hook_count * OSL_CHEAT_STUB_BYTES;
     return 1;
@@ -987,8 +923,7 @@ unsigned osl_install_cheats_engines(unsigned char *image, uint64_t image_size, c
     for (int e = 0; e < OSL_ENGINE_COUNT; ++e) {
         for (int c = 0; c < OSL_CHEAT_COUNT; ++c) {
             const int group = e * ENGINE_GROUPS + c;
-            if (install_group(image, image_size, &all[group], group_of(group), stubs, stubs_size, &used, flags + c, c,
-                              (OslEngine)e))
+            if (install_group(image, image_size, &all[group], group_of(group), stubs, stubs_size, &used, flags + c))
                 by_engine[e] |= osl_cheat_bit((OslCheat)c);
         }
         installed |= by_engine[e];
@@ -1013,8 +948,7 @@ unsigned osl_install_experience_engines(unsigned char *image, uint64_t image_siz
     unsigned installed = 0;
     for (int e = 0; e < OSL_ENGINE_COUNT; ++e) {
         const int group = e * ENGINE_GROUPS + EXPERIENCE_GROUP;
-        if (install_group(image, image_size, &all[group], group_of(group), stubs, stubs_size, &used, flag, OSL_CHEAT_COUNT,
-                          (OslEngine)e))
+        if (install_group(image, image_size, &all[group], group_of(group), stubs, stubs_size, &used, flag))
             installed |= 1u << e;
     }
     if (scan) *scan = all[EXPERIENCE_GROUP];

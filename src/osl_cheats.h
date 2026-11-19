@@ -34,7 +34,7 @@ enum {
     OSL_CHEAT_MAX_SITES = 8,
     OSL_CHEAT_MAX_HITS = 8,
     OSL_CHEAT_REASON_BYTES = 192,
-    OSL_CHEAT_STUB_BYTES = 256,  /* DEBUG_SAULO: 128 without the telemetry probes */
+    OSL_CHEAT_STUB_BYTES = 128,
     OSL_CHEAT_STUBS_BYTES = 0x2000,
     OSL_CHEAT_REGION_MAX = 16,
     OSL_CHEAT_CHANGED_MAX = 64
@@ -210,25 +210,6 @@ unsigned osl_install_experience_engines(unsigned char *image, uint64_t image_siz
 /* 1 when the Experience Multiplier is hooked in at least one engine. */
 int osl_install_experience(unsigned char *image, uint64_t image_size, const OslCodeRange *ranges, size_t range_count,
                            unsigned char *stubs, size_t stubs_size, unsigned char *flag, OslCheatScan *scan);
-
-/* DEBUG_SAULO: temporary hook telemetry. While a probe thunk is set, every hook installed calls it at its entry and
- * after its original or changed block with `push id*4+phase` (phase 0 entry, 1 original, 2 changed) on the stack; the
- * thunk must preserve every register and the flags. */
-typedef struct {
-    const OslCheatSite *site;
-    int cheat; /* an OslCheat, or OSL_CHEAT_COUNT for the Experience Multiplier */
-    OslEngine engine;
-    uint64_t image;  /* the image's address */
-    uint64_t region; /* image offset of the hooked region */
-    uint64_t global; /* address of the root global the group's hooks read; 0 when none */
-    const volatile unsigned char *flag;
-    int installed;
-} OslCheatProbeSite;
-enum { OSL_CHEAT_PROBE_SITES = 64 };
-void osl_cheat_set_probe(const void *thunk);
-void osl_cheat_probe_reset(void);
-size_t osl_cheat_probe_count(void);
-const OslCheatProbeSite *osl_cheat_probe_site(size_t id);
 
 #ifdef __cplusplus
 }

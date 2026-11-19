@@ -323,7 +323,7 @@ $steps = @(
         '(?m)^  Classic Infinite Health +HOOK VERIFIED  SEMANTIC MODEL VERIFIED  LIVE TOGGLE VERIFIED', '(?m)^  Classic Infinite Arrows +HOOK VERIFIED  SEMANTIC MODEL VERIFIED  LIVE TOGGLE VERIFIED',
         '(?m)^  Classic Experience Multiplier +HOOK VERIFIED  SEMANTIC MODEL VERIFIED  LIVE TOGGLE VERIFIED',
         '(?m)^  Classic Infinite PP +HOOK VERIFIED  SEMANTIC MODEL VERIFIED  LIVE TOGGLE VERIFIED',
-        '(?m)^  Classic No AP Consumption +INHERENTLY SATISFIED', '(?m)^Classic coexistence: VERIFIED', '(?m)^DEBUG_SAULO cheat probes: VERIFIED',
+        '(?m)^  Classic No AP Consumption +INHERENTLY SATISFIED', '(?m)^Classic coexistence: VERIFIED',
         '(?m)^Cheat matrix \(build x mode x cheat\): \d+ builds x 2 modes x 8 cheats = \d+ cells: \d+ VERIFIED PATCHED on real files, \d+ INHERENTLY SATISFIED, \d+ DATA UNAVAILABLE, 0 UNKNOWN')),
     (Step 'Features' 'local trophies' 'osl-trophy-tests'),
     (Step 'Features' 'Menu & Subtitles: English and Portuguese (Brazil) on every build, saved choice across builds, text containers, control tokens, Portuguese letters, embedded corpus, real archives through the overlay (known fingerprint served, changed one refused, no game file written)' 'osl-text-tests' -Expect @('(?m)^text translation: OK', '(?m)^fingerprint check: ', '(?m)^visual telemetry: \d+ watched',

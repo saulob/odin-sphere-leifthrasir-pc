@@ -11,7 +11,6 @@
 #include "oslgpu.h"
 #include "osl_cheats.h"
 #include "runtime_cheats.h"
-#include "debug_saulo_cheat_probe.h" /* DEBUG_SAULO */
 #include "osl_launcher.h"
 #include "osl_resolution.h"
 #include "osl_version.h"
@@ -489,8 +488,6 @@ static unsigned install_cheats(const char *settings_file, int known_build, const
         }
     OslCheatScan scans[OSL_ENGINE_COUNT][OSL_CHEAT_COUNT];
     unsigned hooked[OSL_ENGINE_COUNT];
-    debug_saulo_cheat_probe_start(); /* DEBUG_SAULO */
-    runtime_log_set_exit_report(debug_saulo_cheat_probe_summary); /* DEBUG_SAULO */
     const unsigned available = osl_install_cheats_engines(image, size, ranges, range_count, stubs, OSL_CHEAT_STUBS_BYTES, flags,
                                                           scans[OSL_ENGINE_REFINED], scans[OSL_ENGINE_CLASSIC], hooked);
     runtime_cheats_set_available(available, flags);
@@ -512,7 +509,6 @@ static unsigned install_cheats(const char *settings_file, int known_build, const
         if (!(experience_hooked & (1u << e)))
             printf("Cheats: %s unavailable in %s (%s): %s\n", osl_experience_multiplier.label, osl_engine_name((OslEngine)e),
                    osl_cheat_state_name(experience_scans[e].state), experience_scans[e].reason);
-    debug_saulo_cheat_probe_report(); /* DEBUG_SAULO */
     return available || experience_hooked;
 }
 #ifndef _WIN32

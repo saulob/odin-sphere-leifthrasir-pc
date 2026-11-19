@@ -68,15 +68,14 @@ checks `wrangler.toml` (own name, own namespace, no other project's values) and 
 
 ## Deploy (manual; nothing in this repository deploys)
 
-The Worker will be named `odin-sphere-bug-reports`, so its address will probably be
-`https://odin-sphere-bug-reports.saulobenigno.workers.dev`, assuming your account subdomain. That address does not exist
-until you deploy.
+The Worker is named `odin-sphere-bug-reports`; its address is the launcher's `kBugReportServiceUrl`
+(`launcher/game_profile.h`). Redeploying is manual, as below.
 
 1. Install Wrangler if you do not have it (`npm install -g wrangler`, or use `npx wrangler`), and sign in with
    `npx wrangler login`. Check the account with `npx wrangler whoami`.
-2. In `wrangler.toml`, replace `SET_UNIQUE_ODIN_RATE_LIMIT_NAMESPACE_ID` (the `REPORT_LIMITER` rate-limit `namespace_id`) with
-   an integer that no other rate-limit binding in your Cloudflare account uses. It must be unique per account; keep the
-   block, it is the edge abuse limit. `tools\worker.ps1` stops before Wrangler while it is a placeholder.
+2. `wrangler.toml` holds the `REPORT_LIMITER` rate-limit `namespace_id`. It must be an integer that no other rate-limit
+   binding in your Cloudflare account uses; keep the block, it is the edge abuse limit. `tools\worker.ps1` stops before
+   Wrangler while it is the placeholder `SET_UNIQUE_ODIN_RATE_LIMIT_NAMESPACE_ID`.
 3. `.\tools\worker.ps1 -DryRun` from the repository root checks the files and the configuration and has Wrangler bundle the
    Worker. Nothing is uploaded.
 4. Make a random token of 24 or more characters and keep it in your password manager:
